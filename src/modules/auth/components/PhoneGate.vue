@@ -76,7 +76,7 @@ async function retryVerify() {
           {{ firstName ? `${firstName}, telefon raqamingiz kerak` : 'Telefon raqamingiz kerak' }}
         </h1>
         <p class="text-sm leading-relaxed text-muted-foreground">
-          AdSpace'dan foydalanish uchun telefon raqamingizni Telegram orqali ulashing.
+          Reklama Bozor'dan foydalanish uchun telefon raqamingizni Telegram orqali ulashing.
           Bu bir martalik va xavfsiz.
         </p>
       </div>

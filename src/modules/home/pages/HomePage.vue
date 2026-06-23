@@ -16,9 +16,9 @@ const router = useRouter()
 const { user: telegramUser } = useTelegram()
 
 const displayName = computed(() => {
-  if (auth.user) return fullName(auth.user) || 'AdSpace'
+  if (auth.user) return fullName(auth.user) || 'Reklama Bozor'
   if (telegramUser.value?.first_name) return telegramUser.value.first_name
-  return 'AdSpace'
+  return 'Reklama Bozor'
 })
 
 const isAgent = computed(() => (auth.user ? isBusinessUser(auth.user) : false))

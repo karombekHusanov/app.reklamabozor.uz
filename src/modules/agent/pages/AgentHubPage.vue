@@ -45,7 +45,7 @@ const headerSubtitle = computed(() => {
   if (agent.isApproved) return 'Your business workspace'
   if (agent.isPending) return 'Pending review'
   if (agent.isRejected) return 'Action needed'
-  return 'Grow with AdSpace'
+  return 'Grow with Reklama Bozor'
 })
 
 // The KYC form is shown for a brand-new application, or when editing/resubmitting.

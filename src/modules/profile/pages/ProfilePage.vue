@@ -87,7 +87,7 @@ function tabClass(tab: Tab) {
   <div>
     <AppHeader
       title="Profile"
-      :subtitle="isAgent ? 'Your agent account' : 'Your AdSpace account'"
+      :subtitle="isAgent ? 'Your agent account' : 'Your Reklama Bozor account'"
     />
 
     <section class="space-y-5 px-5">
