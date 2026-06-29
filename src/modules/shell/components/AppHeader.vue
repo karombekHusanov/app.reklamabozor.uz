@@ -1,31 +1,52 @@
 <script setup lang="ts">
-import Avatar from '@/core/ui/Avatar.vue'
+import { Bell, ChevronLeft } from '@lucide/vue'
+import { useRouter } from 'vue-router'
 import type { HTMLAttributes } from 'vue'
 
 withDefaults(defineProps<{
   class?: HTMLAttributes['class']
   title: string
   subtitle?: string
-  showAvatar?: boolean
-  userName?: string
+  /** Show a back chevron (sub-pages). */
+  showBack?: boolean
 }>(), {
-  showAvatar: false,
+  showBack: false,
 })
+
+const router = useRouter()
 </script>
 
 <template>
-  <header class="safe-top px-5 pb-4 pt-3">
-    <div class="flex items-start justify-between gap-4">
-      <div class="space-y-1">
-        <p v-if="subtitle" class="text-sm text-muted-foreground">
-          {{ subtitle }}
-        </p>
-        <h1 class="text-2xl font-semibold tracking-tight text-foreground">
-          {{ title }}
-        </h1>
-      </div>
+  <header class="safe-top px-5 pb-4 pt-3 text-white">
+    <!-- Top control row -->
+    <div class="flex items-center justify-between">
+      <button
+        v-if="showBack"
+        type="button"
+        class="-ml-1 flex size-9 items-center justify-center rounded-xl text-white transition active:scale-95"
+        @click="router.back()"
+      >
+        <ChevronLeft class="size-6" />
+      </button>
+      <span v-else />
 
-      <Avatar v-if="showAvatar" :name="userName" size="md" />
+      <button
+        type="button"
+        class="relative flex size-9 items-center justify-center rounded-full bg-white/15 transition active:scale-95"
+      >
+        <Bell class="size-4.5" />
+        <span class="absolute right-1.5 top-1.5 size-2 rounded-full bg-red-500 ring-2 ring-[#02305C]" />
+      </button>
+    </div>
+
+    <!-- Title -->
+    <div class="mt-2 space-y-0.5">
+      <p v-if="subtitle" class="text-sm text-white/70">
+        {{ subtitle }}
+      </p>
+      <h1 class="text-2xl font-bold tracking-tight text-white">
+        {{ title }}
+      </h1>
     </div>
   </header>
 </template>

@@ -5,6 +5,9 @@ import GlassCard from '@/core/ui/GlassCard.vue'
 import Avatar from '@/core/ui/Avatar.vue'
 import Skeleton from '@/core/ui/Skeleton.vue'
 import { fetchTopAgents, type PublicAgent } from '@/modules/marketplace/services/agents.service'
+import { useLocaleStore } from '@/core/i18n/locale.store'
+
+const locale = useLocaleStore()
 
 const agents = ref<PublicAgent[]>([])
 const loading = ref(true)
@@ -49,11 +52,11 @@ onBeforeUnmount(stopAuto)
   <div v-if="loading || agents.length" class="space-y-3">
     <div class="flex items-center justify-between px-1">
       <h2 class="text-lg font-semibold">
-        Top agencies
+        {{ locale.t.home.topAgencies }}
       </h2>
       <span class="inline-flex items-center gap-1 text-xs text-muted-foreground">
         <BadgeCheck class="size-3.5 text-primary" />
-        Verified
+        {{ locale.t.home.verified }}
       </span>
     </div>
 

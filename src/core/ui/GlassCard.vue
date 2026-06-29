@@ -22,7 +22,7 @@ const paddingClasses = {
 <template>
   <div
     :class="cn(
-      'glass-card rounded-3xl border shadow-[0_8px_32px_rgba(15,23,42,0.08)]',
+      'glass-card rounded-3xl border shadow-[0_2px_12px_rgba(2,48,92,0.06)]',
       paddingClasses[padding],
       interactive && 'transition-transform duration-200 active:scale-[0.98]',
       props.class,

@@ -8,6 +8,7 @@ import Badge from '@/core/ui/Badge.vue'
 import Skeleton from '@/core/ui/Skeleton.vue'
 import { Button } from '@/core/ui/button'
 import { useTelegram } from '@/core/composables/useTelegram'
+import { useLocaleStore } from '@/core/i18n/locale.store'
 import { useAuthStore } from '@/modules/auth/stores/auth.store'
 import { ROUTES } from '@/modules/shell/constants/routes'
 import AgentApplicationForm from '@/modules/agent/components/AgentApplicationForm.vue'
@@ -24,6 +25,7 @@ const auth = useAuthStore()
 const agent = useAgentStore()
 const router = useRouter()
 const route = useRoute()
+const locale = useLocaleStore()
 const { haptic } = useTelegram()
 
 const editing = ref(false)
@@ -36,16 +38,16 @@ const focusOrderId = computed(() => {
 })
 
 const headerTitle = computed(() => {
-  if (agent.isApproved) return 'Agent hub'
-  if (agent.hasProfile) return 'Your application'
-  return 'Become an agent'
+  if (agent.isApproved) return locale.t.agent.hubTitle
+  if (agent.hasProfile) return locale.t.agent.applicationTitle
+  return locale.t.agent.becomeTitle
 })
 
 const headerSubtitle = computed(() => {
-  if (agent.isApproved) return 'Your business workspace'
-  if (agent.isPending) return 'Pending review'
-  if (agent.isRejected) return 'Action needed'
-  return 'Grow with Reklama Bozor'
+  if (agent.isApproved) return locale.t.agent.hubSubtitle
+  if (agent.isPending) return locale.t.agent.pendingSubtitle
+  if (agent.isRejected) return locale.t.agent.rejectedSubtitle
+  return locale.t.agent.growSubtitle
 })
 
 // The KYC form is shown for a brand-new application, or when editing/resubmitting.
@@ -91,16 +93,16 @@ function startEditing() {
       <!-- Guest -->
       <GlassCard v-if="!auth.isAuthenticated" class="space-y-4">
         <Badge variant="primary">
-          B2B onboarding
+          {{ locale.t.agent.b2bBadge }}
         </Badge>
         <h2 class="text-xl font-semibold">
-          Turn your ad inventory into a marketplace profile
+          {{ locale.t.agent.guestTitle }}
         </h2>
         <p class="text-sm leading-relaxed text-muted-foreground">
-          Sign in with Telegram to submit your company details, get verified, and start receiving client requests.
+          {{ locale.t.agent.guestBody }}
         </p>
         <Button class="h-12 w-full rounded-2xl text-base" @click="router.push(ROUTES.profile)">
-          Sign in to apply
+          {{ locale.t.agent.signInToApply }}
         </Button>
       </GlassCard>
 
@@ -114,22 +116,22 @@ function startEditing() {
         <!-- Intro (no profile yet) -->
         <GlassCard v-if="!agent.hasProfile" class="space-y-3">
           <Badge variant="primary">
-            B2B onboarding
+            {{ locale.t.agent.b2bBadge }}
           </Badge>
           <h2 class="text-xl font-semibold">
-            Become an advertising agent
+            {{ locale.t.agent.introTitle }}
           </h2>
           <p class="text-sm leading-relaxed text-muted-foreground">
-            Submit your company &amp; legal details for verification. Once approved, you can build your public marketplace profile.
+            {{ locale.t.agent.introBody }}
           </p>
-          <div class="flex items-start gap-3 rounded-2xl bg-black/5 p-4 dark:bg-white/5">
+          <div class="flex items-start gap-3 rounded-2xl bg-muted p-4 dark:bg-white/5">
             <ShieldCheck class="mt-0.5 size-5 text-primary" />
             <div>
               <p class="font-medium">
-                Verified agent badge
+                {{ locale.t.agent.verifiedBadgeTitle }}
               </p>
               <p class="text-sm text-muted-foreground">
-                Build trust with business verification and ratings.
+                {{ locale.t.agent.verifiedBadgeBody }}
               </p>
             </div>
           </div>
@@ -141,10 +143,10 @@ function startEditing() {
         <!-- Approved → presentation editor -->
         <template v-if="agent.isApproved && agent.profile">
           <div class="flex items-center justify-between px-1">
-            <h3 class="text-base font-semibold">
-              Public profile
+            <h3 class="text-base font-semibold text-white">
+              {{ locale.t.agent.publicProfile }}
             </h3>
-            <span class="text-xs text-muted-foreground">Shown to clients</span>
+            <span class="text-xs text-white/70">{{ locale.t.agent.shownToClients }}</span>
           </div>
           <AgentDetailsForm
             :profile="agent.profile"
@@ -164,7 +166,7 @@ function startEditing() {
           @click="startEditing"
         >
           <PencilLine class="size-4" />
-          {{ agent.isRejected ? 'Update & resubmit' : 'Edit application' }}
+          {{ agent.isRejected ? locale.t.agent.updateResubmit : locale.t.agent.editApplication }}
         </Button>
 
         <!-- The KYC application form -->

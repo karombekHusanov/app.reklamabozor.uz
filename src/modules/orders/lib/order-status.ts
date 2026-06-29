@@ -2,14 +2,8 @@ import type { OfferStatus, OrderStatus } from '@/modules/orders/types/order'
 
 type BadgeVariant = 'default' | 'primary' | 'success' | 'warning'
 
-const ORDER_LABELS: Record<OrderStatus, string> = {
-  new: 'New',
-  offers_sent: 'Offers received',
-  client_selected: 'Agency selected',
-  in_progress: 'In progress',
-  completed: 'Completed',
-  cancelled: 'Cancelled',
-}
+// Status text labels live in the i18n messages (`orders.status` / `orders.offerStatus`);
+// this module owns only the visual variant mapping and price formatting.
 
 const ORDER_VARIANTS: Record<OrderStatus, BadgeVariant> = {
   new: 'primary',
@@ -20,28 +14,14 @@ const ORDER_VARIANTS: Record<OrderStatus, BadgeVariant> = {
   cancelled: 'default',
 }
 
-const OFFER_LABELS: Record<OfferStatus, string> = {
-  pending: 'Pending',
-  accepted: 'Accepted',
-  rejected: 'Not selected',
-}
-
 const OFFER_VARIANTS: Record<OfferStatus, BadgeVariant> = {
   pending: 'default',
   accepted: 'success',
   rejected: 'default',
 }
 
-export function orderStatusLabel(status: OrderStatus): string {
-  return ORDER_LABELS[status] ?? status
-}
-
 export function orderStatusVariant(status: OrderStatus): BadgeVariant {
   return ORDER_VARIANTS[status] ?? 'default'
-}
-
-export function offerStatusLabel(status: OfferStatus): string {
-  return OFFER_LABELS[status] ?? status
 }
 
 export function offerStatusVariant(status: OfferStatus): BadgeVariant {

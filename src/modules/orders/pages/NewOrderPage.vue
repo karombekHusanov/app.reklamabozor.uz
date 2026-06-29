@@ -7,6 +7,7 @@ import GlassCard from '@/core/ui/GlassCard.vue'
 import Skeleton from '@/core/ui/Skeleton.vue'
 import { Button } from '@/core/ui/button'
 import { useTelegram } from '@/core/composables/useTelegram'
+import { useLocaleStore } from '@/core/i18n/locale.store'
 import { useAuthStore } from '@/modules/auth/stores/auth.store'
 import { ROUTES } from '@/modules/shell/constants/routes'
 import OrderForm from '@/modules/orders/components/OrderForm.vue'
@@ -19,6 +20,7 @@ const route = useRoute()
 const router = useRouter()
 const auth = useAuthStore()
 const orders = useOrdersStore()
+const locale = useLocaleStore()
 const { haptic } = useTelegram()
 
 const serviceType = computed(() => {
@@ -31,7 +33,7 @@ const loadingCategories = ref(false)
 const submitted = ref(false)
 
 const headerSubtitle = computed(() =>
-  serviceType.value === 'designer' ? 'Find a designer' : 'Find an agency',
+  serviceType.value === 'designer' ? locale.t.orders.findDesigner : locale.t.orders.findAgency,
 )
 
 async function loadCategories() {
@@ -63,7 +65,7 @@ async function handleSubmit(payload: CreateOrderPayload) {
 
 <template>
   <div>
-    <AppHeader title="New request" :subtitle="headerSubtitle" />
+    <AppHeader :title="locale.t.orders.newTitle" :subtitle="headerSubtitle" />
 
     <section class="space-y-5 px-5">
       <!-- Success -->
@@ -72,13 +74,13 @@ async function handleSubmit(payload: CreateOrderPayload) {
           <CircleCheck class="size-8" />
         </div>
         <h2 class="text-xl font-semibold">
-          Request sent!
+          {{ locale.t.orders.successTitle }}
         </h2>
         <p class="text-sm leading-relaxed text-muted-foreground">
-          Your request was submitted successfully. Our specialists will review it and contact you with offers.
+          {{ locale.t.orders.successBody }}
         </p>
         <Button class="h-11 w-full rounded-2xl" @click="router.replace(ROUTES.orders)">
-          View my orders
+          {{ locale.t.orders.viewMyOrders }}
         </Button>
       </GlassCard>
 
@@ -88,13 +90,13 @@ async function handleSubmit(payload: CreateOrderPayload) {
           <LogIn class="size-6" />
         </div>
         <h2 class="text-lg font-semibold">
-          Sign in to place a request
+          {{ locale.t.orders.signInPlaceTitle }}
         </h2>
         <p class="text-sm text-muted-foreground">
-          Your requests are tied to your account so agencies can reach you.
+          {{ locale.t.orders.signInPlaceBody }}
         </p>
         <Button class="h-11 w-full rounded-2xl" @click="router.push(ROUTES.profile)">
-          Go to Profile
+          {{ locale.t.orders.goToProfile }}
         </Button>
       </GlassCard>
 

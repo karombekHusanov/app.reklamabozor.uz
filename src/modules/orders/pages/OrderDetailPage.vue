@@ -1,12 +1,13 @@
 <script setup lang="ts">
-import { ArrowLeft, FileText, MessageSquareQuote } from '@lucide/vue'
+import { FileText, MessageSquareQuote } from '@lucide/vue'
 import { computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
 import AppHeader from '@/modules/shell/components/AppHeader.vue'
 import GlassCard from '@/core/ui/GlassCard.vue'
 import EmptyState from '@/core/ui/EmptyState.vue'
 import Skeleton from '@/core/ui/Skeleton.vue'
 import { useTelegram } from '@/core/composables/useTelegram'
+import { useLocaleStore } from '@/core/i18n/locale.store'
+import { categoryName } from '@/core/i18n/category-name'
 import OrderStatusBadge from '@/modules/orders/components/OrderStatusBadge.vue'
 import OfferCard from '@/modules/orders/components/OfferCard.vue'
 import { useOrdersStore } from '@/modules/orders/stores/orders.store'
@@ -14,7 +15,7 @@ import { useOrdersStore } from '@/modules/orders/stores/orders.store'
 const props = defineProps<{ id: string }>()
 
 const orders = useOrdersStore()
-const router = useRouter()
+const locale = useLocaleStore()
 const { haptic } = useTelegram()
 
 const order = computed(() => orders.currentOrder)
@@ -35,17 +36,9 @@ async function acceptOffer(offerId: number) {
 
 <template>
   <div>
-    <AppHeader title="Order" subtitle="Request details" />
+    <AppHeader :title="locale.t.orders.detailTitle" :subtitle="locale.t.orders.detailSubtitle" show-back />
 
     <section class="space-y-4 px-5">
-      <button
-        type="button"
-        class="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground"
-        @click="router.back()"
-      >
-        <ArrowLeft class="size-4" />
-        Back
-      </button>
 
       <template v-if="orders.isLoading && !order">
         <Skeleton class="h-40 w-full rounded-3xl" />
@@ -57,7 +50,7 @@ async function acceptOffer(offerId: number) {
         <GlassCard class="space-y-3">
           <div class="flex items-start justify-between gap-3">
             <h2 class="text-lg font-semibold leading-tight">
-              {{ order.category?.name_uz ?? order.title }}
+              {{ order.category ? categoryName(order.category, locale.locale) : order.title }}
             </h2>
             <OrderStatusBadge :status="order.status" class="shrink-0" />
           </div>
@@ -71,27 +64,27 @@ async function acceptOffer(offerId: number) {
             :href="order.tz_file"
             target="_blank"
             rel="noopener"
-            class="inline-flex items-center gap-2 rounded-2xl bg-white/50 px-4 py-2.5 text-sm font-medium text-primary dark:bg-white/5"
+            class="inline-flex items-center gap-2 rounded-2xl bg-secondary px-4 py-2.5 text-sm font-medium text-primary dark:bg-white/5"
           >
             <FileText class="size-4" />
-            View brief (TZ)
+            {{ locale.t.orders.viewBrief }}
           </a>
         </GlassCard>
 
         <!-- Offers -->
         <div class="space-y-3">
           <div class="flex items-center gap-2 px-1">
-            <MessageSquareQuote class="size-4 text-primary" />
-            <h3 class="text-base font-semibold">
-              Offers ({{ offers.length }})
+            <MessageSquareQuote class="size-4 text-white" />
+            <h3 class="text-base font-semibold text-white">
+              {{ locale.t.orders.offersHeading }} ({{ offers.length }})
             </h3>
           </div>
 
           <GlassCard v-if="offers.length === 0" padding="none" class="overflow-hidden">
             <EmptyState
               :icon="MessageSquareQuote"
-              title="No offers yet"
-              description="Agencies will send their proposals here soon."
+              :title="locale.t.orders.noOffersTitle"
+              :description="locale.t.orders.noOffersBody"
             />
           </GlassCard>
 
@@ -114,8 +107,8 @@ async function acceptOffer(offerId: number) {
       <GlassCard v-else padding="none" class="overflow-hidden">
         <EmptyState
           :icon="MessageSquareQuote"
-          title="Order not found"
-          description="This order may have been removed."
+          :title="locale.t.orders.notFoundTitle"
+          :description="locale.t.orders.notFoundBody"
         />
       </GlassCard>
     </section>

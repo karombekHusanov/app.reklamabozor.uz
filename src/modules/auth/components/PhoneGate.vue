@@ -4,12 +4,14 @@ import { computed, ref } from 'vue'
 import GlassCard from '@/core/ui/GlassCard.vue'
 import { Button } from '@/core/ui/button'
 import { useTelegram } from '@/core/composables/useTelegram'
+import { useLocaleStore } from '@/core/i18n/locale.store'
 import { requestTelegramContact } from '@/core/lib/telegram-init'
 import { useAuthStore } from '@/modules/auth/stores/auth.store'
 
 type GateState = 'idle' | 'sharing' | 'verifying' | 'declined' | 'timeout'
 
 const auth = useAuthStore()
+const locale = useLocaleStore()
 const { haptic } = useTelegram()
 
 const state = ref<GateState>('idle')
@@ -73,18 +75,17 @@ async function retryVerify() {
 
       <div class="space-y-2">
         <h1 class="text-xl font-semibold">
-          {{ firstName ? `${firstName}, telefon raqamingiz kerak` : 'Telefon raqamingiz kerak' }}
+          {{ firstName ? locale.t.auth.phoneTitleNamed.replace('{name}', firstName) : locale.t.auth.phoneTitle }}
         </h1>
         <p class="text-sm leading-relaxed text-muted-foreground">
-          Reklama Bozor'dan foydalanish uchun telefon raqamingizni Telegram orqali ulashing.
-          Bu bir martalik va xavfsiz.
+          {{ locale.t.auth.phoneBody }}
         </p>
       </div>
 
-      <div class="flex items-start gap-3 rounded-2xl bg-white/40 p-4 text-left dark:bg-white/5">
+      <div class="flex items-start gap-3 rounded-2xl bg-muted p-4 text-left dark:bg-white/5">
         <ShieldCheck class="mt-0.5 size-5 shrink-0 text-primary" />
         <p class="text-xs text-muted-foreground">
-          Raqamingiz faqat hisobingizni tasdiqlash uchun ishlatiladi va boshqalarga ko'rsatilmaydi.
+          {{ locale.t.auth.phonePrivacy }}
         </p>
       </div>
 
@@ -96,13 +97,13 @@ async function retryVerify() {
         <Loader2 v-if="busy" class="size-4 animate-spin" />
         <Phone v-else class="size-4" />
         <template v-if="state === 'sharing'">
-          Telegram oynasi ochilmoqda…
+          {{ locale.t.auth.phoneOpening }}
         </template>
         <template v-else-if="state === 'verifying'">
-          Tasdiqlanmoqda…
+          {{ locale.t.auth.phoneVerifying }}
         </template>
         <template v-else>
-          Telefon raqamni ulashish
+          {{ locale.t.auth.phoneShare }}
         </template>
       </Button>
 
@@ -110,15 +111,15 @@ async function retryVerify() {
         v-if="state === 'declined'"
         class="text-xs text-amber-600 dark:text-amber-400"
       >
-        Raqam ulashilmadi. Davom etish uchun yuqoridagi tugmani bosing va "Ulashish"ni tanlang.
+        {{ locale.t.auth.phoneDeclined }}
       </p>
 
       <div v-else-if="state === 'timeout'" class="space-y-2">
         <p class="text-xs text-muted-foreground">
-          Raqam hali tasdiqlanmadi. Bir lahzadan so'ng qayta urinib ko'ring.
+          {{ locale.t.auth.phoneTimeout }}
         </p>
         <Button variant="outline" class="h-10 w-full rounded-2xl" @click="retryVerify">
-          Qayta tekshirish
+          {{ locale.t.auth.phoneRetry }}
         </Button>
       </div>
     </GlassCard>

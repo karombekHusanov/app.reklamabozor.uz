@@ -5,9 +5,12 @@ import GlassCard from '@/core/ui/GlassCard.vue'
 import EmptyState from '@/core/ui/EmptyState.vue'
 import Skeleton from '@/core/ui/Skeleton.vue'
 import { useTelegram } from '@/core/composables/useTelegram'
+import { useLocaleStore } from '@/core/i18n/locale.store'
 import AgentOrderItem from '@/modules/agent/components/AgentOrderItem.vue'
 import { useOrdersStore } from '@/modules/orders/stores/orders.store'
 import type { CreateOfferPayload } from '@/modules/orders/types/order'
+
+const locale = useLocaleStore()
 
 const props = defineProps<{
   /** Deep-link target — scroll to and highlight this order once loaded. */
@@ -42,10 +45,10 @@ async function handleSubmit(orderId: number, payload: CreateOfferPayload) {
 <template>
   <div class="space-y-3">
     <div class="flex items-center justify-between px-1">
-      <h3 class="text-base font-semibold">
-        Order opportunities
+      <h3 class="text-base font-semibold text-white">
+        {{ locale.t.agent.orderOpportunities }}
       </h3>
-      <span class="text-xs text-muted-foreground">In your categories</span>
+      <span class="text-xs text-white/70">{{ locale.t.agent.inYourCategories }}</span>
     </div>
 
     <template v-if="orders.isLoadingAgent && orders.availableOrders.length === 0">
@@ -55,8 +58,8 @@ async function handleSubmit(orderId: number, payload: CreateOfferPayload) {
     <GlassCard v-else-if="orders.availableOrders.length === 0" padding="none" class="overflow-hidden">
       <EmptyState
         :icon="Inbox"
-        title="No open orders right now"
-        description="New orders in your categories will appear here — you'll also get a Telegram notification."
+        :title="locale.t.agent.noOpenOrders"
+        :description="locale.t.agent.noOpenOrdersBody"
       />
     </GlassCard>
 

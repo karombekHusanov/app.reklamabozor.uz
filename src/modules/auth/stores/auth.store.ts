@@ -34,6 +34,10 @@ export const useAuthStore = defineStore('auth', () => {
     error.value = null
   }
 
+  function setUser(nextUser: User) {
+    user.value = nextUser
+  }
+
   function clearSession() {
     user.value = null
     token.value = null
@@ -191,6 +195,7 @@ export const useAuthStore = defineStore('auth', () => {
     restoreSession,
     refreshUser,
     saveAvatar,
+    setUser,
     logout,
     clearSession,
     bootstrapTelegramAuth,

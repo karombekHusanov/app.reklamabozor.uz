@@ -12,7 +12,7 @@ defineProps<{
   <div class="flex flex-col items-center justify-center gap-3 px-6 py-12 text-center">
     <div
       v-if="icon"
-      class="flex size-14 items-center justify-center rounded-3xl bg-white/50 text-muted-foreground dark:bg-white/5"
+      class="flex size-14 items-center justify-center rounded-3xl bg-muted text-muted-foreground dark:bg-white/5"
     >
       <component :is="icon" class="size-7" />
     </div>

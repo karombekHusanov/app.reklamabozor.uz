@@ -4,7 +4,8 @@ import GlassCard from '@/core/ui/GlassCard.vue'
 import Avatar from '@/core/ui/Avatar.vue'
 import Badge from '@/core/ui/Badge.vue'
 import { Button } from '@/core/ui/button'
-import { formatPrice, offerStatusLabel, offerStatusVariant } from '@/modules/orders/lib/order-status'
+import { useLocaleStore } from '@/core/i18n/locale.store'
+import { formatPrice, offerStatusVariant } from '@/modules/orders/lib/order-status'
 import type { Offer } from '@/modules/orders/types/order'
 
 defineProps<{
@@ -15,6 +16,8 @@ defineProps<{
 }>()
 
 defineEmits<{ accept: [] }>()
+
+const locale = useLocaleStore()
 </script>
 
 <template>
@@ -23,12 +26,12 @@ defineEmits<{ accept: [] }>()
       <div class="flex min-w-0 items-center gap-3">
         <Avatar
           :src="offer.agent.company_logo"
-          :name="offer.agent.company_name ?? 'Agency'"
+          :name="offer.agent.company_name ?? locale.t.orders.agencyFallback"
           size="md"
         />
         <div class="min-w-0">
           <p class="truncate font-semibold leading-tight">
-            {{ offer.agent.company_name ?? 'Agency' }}
+            {{ offer.agent.company_name ?? locale.t.orders.agencyFallback }}
           </p>
           <p v-if="offer.agent.location_label" class="truncate text-xs text-muted-foreground">
             {{ offer.agent.location_label }}
@@ -36,7 +39,7 @@ defineEmits<{ accept: [] }>()
         </div>
       </div>
       <Badge :variant="offerStatusVariant(offer.status)" class="shrink-0">
-        {{ offerStatusLabel(offer.status) }}
+        {{ locale.t.orders.offerStatus[offer.status] }}
       </Badge>
     </div>
 
@@ -56,7 +59,7 @@ defineEmits<{ accept: [] }>()
     >
       <Loader2 v-if="accepting" class="size-4 animate-spin" />
       <CircleCheck v-else class="size-4" />
-      Work with this agency
+      {{ locale.t.orders.workWithAgency }}
     </Button>
   </GlassCard>
 </template>

@@ -3,6 +3,9 @@ import 'leaflet/dist/leaflet.css'
 import L from 'leaflet'
 import { Loader2, LocateFixed, MapPin } from '@lucide/vue'
 import { onBeforeUnmount, onMounted, ref } from 'vue'
+import { useLocaleStore } from '@/core/i18n/locale.store'
+
+const locale = useLocaleStore()
 
 const props = defineProps<{
   lat: number | null
@@ -65,7 +68,7 @@ function placeMarker(lat: number, lng: number, pan = true) {
 
 function detectLocation() {
   if (!navigator.geolocation) {
-    errorMsg.value = 'Geolocation is not available.'
+    errorMsg.value = locale.t.ui.errGeolocation
     return
   }
 
@@ -82,7 +85,7 @@ function detectLocation() {
       locating.value = false
     },
     () => {
-      errorMsg.value = 'Could not get your location.'
+      errorMsg.value = locale.t.ui.errLocation
       locating.value = false
     },
     { enableHighAccuracy: true, timeout: 10000 },
@@ -92,7 +95,7 @@ function detectLocation() {
 onMounted(() => {
   if (!mapEl.value) {
     status.value = 'error'
-    errorMsg.value = 'Map container is unavailable.'
+    errorMsg.value = locale.t.ui.errMapContainer
     return
   }
 
@@ -121,7 +124,7 @@ onMounted(() => {
   }
   catch (e) {
     status.value = 'error'
-    errorMsg.value = e instanceof Error ? e.message : 'Failed to load the map.'
+    errorMsg.value = e instanceof Error ? e.message : locale.t.ui.errMapLoad
   }
 })
 
@@ -155,7 +158,7 @@ onBeforeUnmount(() => {
 
     <div class="flex items-center justify-between gap-2">
       <p v-if="status === 'ready'" class="text-xs text-muted-foreground">
-        Tap the map or drag the pin.
+        {{ locale.t.ui.tapMap }}
       </p>
       <button
         type="button"
@@ -164,7 +167,7 @@ onBeforeUnmount(() => {
       >
         <Loader2 v-if="locating" class="size-3.5 animate-spin" />
         <LocateFixed v-else class="size-3.5" />
-        Use my location
+        {{ locale.t.ui.useMyLocation }}
       </button>
     </div>
 

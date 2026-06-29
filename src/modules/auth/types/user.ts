@@ -11,6 +11,8 @@ export interface User {
   avatar_file_id: number | null
   avatar: string | null
   role: UserRole
+  /** Timestamp the user chose their role at onboarding; null = not yet selected. */
+  role_selected_at: string | null
   is_active: boolean
   created_at: string
   updated_at: string

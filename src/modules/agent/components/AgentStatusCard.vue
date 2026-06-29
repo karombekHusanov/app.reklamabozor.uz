@@ -5,35 +5,38 @@ import GlassCard from '@/core/ui/GlassCard.vue'
 import Badge from '@/core/ui/Badge.vue'
 import Avatar from '@/core/ui/Avatar.vue'
 import CategoryChips from '@/modules/agent/components/CategoryChips.vue'
+import { useLocaleStore } from '@/core/i18n/locale.store'
 import type { AgentProfile } from '@/modules/agent/types/agent'
 
 const props = defineProps<{
   profile: AgentProfile
 }>()
 
+const locale = useLocaleStore()
+
 const meta = computed(() => {
   switch (props.profile.status) {
     case 'approved':
       return {
         icon: CircleCheck,
-        label: 'Approved',
-        message: 'Live in the marketplace, visible to clients.',
+        label: locale.t.agent.statusApproved,
+        message: locale.t.agent.statusApprovedMsg,
         iconWrap: 'bg-emerald-500/12 text-emerald-600 dark:text-emerald-400',
         badgeClass: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300',
       }
     case 'rejected':
       return {
         icon: CircleX,
-        label: 'Rejected',
-        message: 'Needs changes — see the feedback below.',
+        label: locale.t.agent.statusRejected,
+        message: locale.t.agent.statusRejectedMsg,
         iconWrap: 'bg-red-500/12 text-red-600 dark:text-red-400',
         badgeClass: 'bg-red-500/15 text-red-700 dark:text-red-300',
       }
     default:
       return {
         icon: Clock,
-        label: 'Pending',
-        message: 'Under review · usually 1–2 business days.',
+        label: locale.t.agent.statusPending,
+        message: locale.t.agent.statusPendingMsg,
         iconWrap: 'bg-primary/12 text-primary',
         badgeClass: 'bg-primary/15 text-primary',
       }
@@ -76,7 +79,7 @@ const meta = computed(() => {
     <!-- Profile completion (approved only) -->
     <div v-if="profile.status === 'approved'" class="space-y-1.5">
       <div class="flex items-center justify-between text-xs">
-        <span class="font-medium text-muted-foreground">Profile completeness</span>
+        <span class="font-medium text-muted-foreground">{{ locale.t.agent.profileCompleteness }}</span>
         <span class="font-semibold text-primary">{{ profile.completion_percent }}%</span>
       </div>
       <div class="h-2 overflow-hidden rounded-full bg-black/10 dark:bg-white/10">
@@ -93,7 +96,7 @@ const meta = computed(() => {
       class="rounded-2xl bg-red-500/10 px-4 py-3 text-sm text-red-700 dark:text-red-300"
     >
       <p class="font-medium">
-        Reviewer feedback
+        {{ locale.t.agent.reviewerFeedback }}
       </p>
       <p class="mt-1">
         {{ profile.rejection_reason }}
@@ -106,7 +109,7 @@ const meta = computed(() => {
       class="border-t border-black/5 pt-4 dark:border-white/10"
     >
       <p class="mb-2.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-        Categories
+        {{ locale.t.agent.categories }}
       </p>
       <CategoryChips :categories="profile.categories" />
     </div>

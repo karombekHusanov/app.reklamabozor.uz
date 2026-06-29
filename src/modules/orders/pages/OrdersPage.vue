@@ -8,6 +8,7 @@ import EmptyState from '@/core/ui/EmptyState.vue'
 import Skeleton from '@/core/ui/Skeleton.vue'
 import { Button } from '@/core/ui/button'
 import { useAuthStore } from '@/modules/auth/stores/auth.store'
+import { useLocaleStore } from '@/core/i18n/locale.store'
 import { ROUTES } from '@/modules/shell/constants/routes'
 import OrderCard from '@/modules/orders/components/OrderCard.vue'
 import { useOrdersStore } from '@/modules/orders/stores/orders.store'
@@ -15,6 +16,7 @@ import { useOrdersStore } from '@/modules/orders/stores/orders.store'
 const auth = useAuthStore()
 const orders = useOrdersStore()
 const router = useRouter()
+const locale = useLocaleStore()
 
 function load() {
   if (auth.isAuthenticated) orders.loadMyOrders()
@@ -30,18 +32,18 @@ function openOrder(id: number) {
 
 <template>
   <div>
-    <AppHeader title="My Orders" subtitle="Your campaign requests" />
+    <AppHeader :title="locale.t.orders.myOrdersTitle" :subtitle="locale.t.orders.myOrdersSubtitle" />
 
     <section class="space-y-4 px-5">
       <template v-if="!auth.isAuthenticated">
         <GlassCard padding="none" class="overflow-hidden">
           <EmptyState
             :icon="LogIn"
-            title="Sign in to see your orders"
-            description="Your orders are tied to your account."
+            :title="locale.t.orders.signInTitle"
+            :description="locale.t.orders.signInBody"
           >
             <Button class="mt-1 rounded-2xl" @click="router.push(ROUTES.profile)">
-              Go to Profile
+              {{ locale.t.orders.goToProfile }}
             </Button>
           </EmptyState>
         </GlassCard>
@@ -55,12 +57,12 @@ function openOrder(id: number) {
         <GlassCard padding="none" class="overflow-hidden">
           <EmptyState
             :icon="ClipboardList"
-            title="No orders yet"
-            description="Place a request and agencies will send you offers."
+            :title="locale.t.orders.emptyTitle"
+            :description="locale.t.orders.emptyBody"
           >
             <Button class="mt-1 rounded-2xl" @click="router.push(ROUTES.newOrder)">
               <Plus class="size-4" />
-              New request
+              {{ locale.t.orders.newRequest }}
             </Button>
           </EmptyState>
         </GlassCard>
@@ -69,7 +71,7 @@ function openOrder(id: number) {
       <template v-else>
         <Button class="h-11 w-full rounded-2xl" @click="router.push(ROUTES.newOrder)">
           <Plus class="size-4" />
-          New request
+          {{ locale.t.orders.newRequest }}
         </Button>
         <OrderCard
           v-for="order in orders.myOrders"

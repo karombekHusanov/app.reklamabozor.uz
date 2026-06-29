@@ -6,10 +6,13 @@ import FileUpload from '@/core/ui/FileUpload.vue'
 import StickyActionBar from '@/core/ui/StickyActionBar.vue'
 import { Button } from '@/core/ui/button'
 import { cn } from '@/core/lib/utils'
+import { useLocaleStore } from '@/core/i18n/locale.store'
 import type {
   AgentApplicationPayload,
   AgentProfile,
 } from '@/modules/agent/types/agent'
+
+const locale = useLocaleStore()
 
 const props = defineProps<{
   initial?: AgentProfile | null
@@ -43,21 +46,21 @@ const normalizePassport = (value: string) => value.replace(/\s/g, '').toUpperCas
 function validate(): boolean {
   Object.keys(fieldErrors).forEach((key) => delete fieldErrors[key])
 
-  if (form.company_name.trim() === '') fieldErrors.company_name = 'Company name is required.'
-  if (form.legal_form.trim() === '') fieldErrors.legal_form = 'Legal form is required.'
-  if (!/^\d{9}$/.test(digits(form.inn))) fieldErrors.inn = 'INN must be 9 digits.'
-  if (form.director_name.trim() === '') fieldErrors.director_name = 'Director name is required.'
+  if (form.company_name.trim() === '') fieldErrors.company_name = locale.t.agent.errCompanyName
+  if (form.legal_form.trim() === '') fieldErrors.legal_form = locale.t.agent.errLegalForm
+  if (!/^\d{9}$/.test(digits(form.inn))) fieldErrors.inn = locale.t.agent.errInn
+  if (form.director_name.trim() === '') fieldErrors.director_name = locale.t.agent.errDirectorName
   if (!/^[A-Z]{2}\d{7}$/.test(normalizePassport(form.director_passport))) {
-    fieldErrors.director_passport = 'Format: AA1234567.'
+    fieldErrors.director_passport = locale.t.agent.errPassport
   }
-  if (form.director_passport_file_id === null) fieldErrors.director_passport_file_id = 'Passport scan is required.'
+  if (form.director_passport_file_id === null) fieldErrors.director_passport_file_id = locale.t.agent.errPassportScan
   if (form.registration_certificate_file_id === null) {
-    fieldErrors.registration_certificate_file_id = 'Registration certificate is required.'
+    fieldErrors.registration_certificate_file_id = locale.t.agent.errRegCert
   }
-  if (form.bank_name.trim() === '') fieldErrors.bank_name = 'Bank name is required.'
-  if (!/^\d{20,26}$/.test(digits(form.bank_account))) fieldErrors.bank_account = 'Account must be 20–26 digits.'
-  if (!/^\d{5}$/.test(digits(form.mfo))) fieldErrors.mfo = 'MFO must be 5 digits.'
-  if (form.phone.trim() === '') fieldErrors.phone = 'Phone number is required.'
+  if (form.bank_name.trim() === '') fieldErrors.bank_name = locale.t.agent.errBankName
+  if (!/^\d{20,26}$/.test(digits(form.bank_account))) fieldErrors.bank_account = locale.t.agent.errAccount
+  if (!/^\d{5}$/.test(digits(form.mfo))) fieldErrors.mfo = locale.t.agent.errMfo
+  if (form.phone.trim() === '') fieldErrors.phone = locale.t.agent.errPhone
 
   return Object.keys(fieldErrors).length === 0
 }
@@ -88,17 +91,17 @@ const inputClass = 'glass-input'
     <!-- Company -->
     <GlassCard class="space-y-4">
       <p class="text-sm font-semibold">
-        Company
+        {{ locale.t.agent.company }}
       </p>
 
       <div class="space-y-1.5">
-        <label class="text-sm font-medium" for="company_name">Company name *</label>
+        <label class="text-sm font-medium" for="company_name">{{ locale.t.agent.companyName }}</label>
         <input id="company_name" v-model="form.company_name" type="text" placeholder="Nova Media Group" :class="inputClass">
         <p v-if="fieldErrors.company_name" class="text-xs text-destructive">{{ fieldErrors.company_name }}</p>
       </div>
 
       <div class="space-y-1.5">
-        <label class="text-sm font-medium" for="legal_form">Legal form *</label>
+        <label class="text-sm font-medium" for="legal_form">{{ locale.t.agent.legalForm }}</label>
         <input id="legal_form" v-model="form.legal_form" type="text" list="legal-forms" placeholder="MChJ" :class="inputClass">
         <datalist id="legal-forms">
           <option value="YaTT" />
@@ -109,7 +112,7 @@ const inputClass = 'glass-input'
       </div>
 
       <div class="space-y-1.5">
-        <label class="text-sm font-medium" for="inn">INN (STIR) *</label>
+        <label class="text-sm font-medium" for="inn">{{ locale.t.agent.innLabel }}</label>
         <input id="inn" v-model="form.inn" type="text" inputmode="numeric" maxlength="9" placeholder="123456789" :class="inputClass">
         <p v-if="fieldErrors.inn" class="text-xs text-destructive">{{ fieldErrors.inn }}</p>
       </div>
@@ -118,26 +121,26 @@ const inputClass = 'glass-input'
     <!-- Director -->
     <GlassCard class="space-y-4">
       <p class="text-sm font-semibold">
-        Director
+        {{ locale.t.agent.director }}
       </p>
 
       <div class="space-y-1.5">
-        <label class="text-sm font-medium" for="director_name">Full name *</label>
+        <label class="text-sm font-medium" for="director_name">{{ locale.t.agent.fullName }}</label>
         <input id="director_name" v-model="form.director_name" type="text" placeholder="Akmal Karimov" :class="inputClass">
         <p v-if="fieldErrors.director_name" class="text-xs text-destructive">{{ fieldErrors.director_name }}</p>
       </div>
 
       <div class="space-y-1.5">
-        <label class="text-sm font-medium" for="director_passport">Passport *</label>
+        <label class="text-sm font-medium" for="director_passport">{{ locale.t.agent.passport }}</label>
         <input id="director_passport" v-model="form.director_passport" type="text" maxlength="9" placeholder="AA1234567" :class="cn(inputClass, 'uppercase')">
         <p v-if="fieldErrors.director_passport" class="text-xs text-destructive">{{ fieldErrors.director_passport }}</p>
       </div>
 
       <FileUpload
         v-model="form.director_passport_file_id"
-        label="Passport scan *"
-        hint="Photo or PDF, max 5 MB."
-        :current-name="initial?.director_passport_file ? 'Passport scan' : null"
+        :label="locale.t.agent.passportScan"
+        :hint="locale.t.agent.photoOrPdf"
+        :current-name="initial?.director_passport_file ? locale.t.agent.passportScanName : null"
         :invalid="!!fieldErrors.director_passport_file_id"
       />
       <p v-if="fieldErrors.director_passport_file_id" class="-mt-2 text-xs text-destructive">
@@ -148,14 +151,14 @@ const inputClass = 'glass-input'
     <!-- Registration + bank -->
     <GlassCard class="space-y-4">
       <p class="text-sm font-semibold">
-        Registration &amp; bank
+        {{ locale.t.agent.registrationBank }}
       </p>
 
       <FileUpload
         v-model="form.registration_certificate_file_id"
-        label="Registration certificate (guvohnoma) *"
-        hint="Photo or PDF, max 5 MB."
-        :current-name="initial?.registration_certificate_file ? 'Registration certificate' : null"
+        :label="locale.t.agent.registrationCert"
+        :hint="locale.t.agent.photoOrPdf"
+        :current-name="initial?.registration_certificate_file ? locale.t.agent.regCertName : null"
         :invalid="!!fieldErrors.registration_certificate_file_id"
       />
       <p v-if="fieldErrors.registration_certificate_file_id" class="-mt-2 text-xs text-destructive">
@@ -163,25 +166,25 @@ const inputClass = 'glass-input'
       </p>
 
       <div class="space-y-1.5">
-        <label class="text-sm font-medium" for="bank_name">Bank name *</label>
+        <label class="text-sm font-medium" for="bank_name">{{ locale.t.agent.bankName }}</label>
         <input id="bank_name" v-model="form.bank_name" type="text" placeholder="Ipoteka Bank" :class="inputClass">
         <p v-if="fieldErrors.bank_name" class="text-xs text-destructive">{{ fieldErrors.bank_name }}</p>
       </div>
 
       <div class="space-y-1.5">
-        <label class="text-sm font-medium" for="bank_account">Account number (hisob raqami) *</label>
+        <label class="text-sm font-medium" for="bank_account">{{ locale.t.agent.accountNumber }}</label>
         <input id="bank_account" v-model="form.bank_account" type="text" inputmode="numeric" maxlength="26" placeholder="2020 8000 9001 2345 6789" :class="inputClass">
         <p v-if="fieldErrors.bank_account" class="text-xs text-destructive">{{ fieldErrors.bank_account }}</p>
       </div>
 
       <div class="space-y-1.5">
-        <label class="text-sm font-medium" for="mfo">MFO *</label>
+        <label class="text-sm font-medium" for="mfo">{{ locale.t.agent.mfo }}</label>
         <input id="mfo" v-model="form.mfo" type="text" inputmode="numeric" maxlength="5" placeholder="00440" :class="inputClass">
         <p v-if="fieldErrors.mfo" class="text-xs text-destructive">{{ fieldErrors.mfo }}</p>
       </div>
 
       <div class="space-y-1.5">
-        <label class="text-sm font-medium" for="phone">Contact phone *</label>
+        <label class="text-sm font-medium" for="phone">{{ locale.t.agent.contactPhone }}</label>
         <input id="phone" v-model="form.phone" type="tel" inputmode="tel" placeholder="+998 90 123 45 67" :class="inputClass">
         <p v-if="fieldErrors.phone" class="text-xs text-destructive">{{ fieldErrors.phone }}</p>
       </div>
@@ -190,7 +193,7 @@ const inputClass = 'glass-input'
     <StickyActionBar>
       <Button type="submit" class="h-12 w-full rounded-2xl text-base shadow-lg shadow-primary/20" :disabled="submitting">
         <Loader2 v-if="submitting" class="size-4 animate-spin" />
-        {{ submitting ? 'Submitting…' : initial ? 'Resubmit application' : 'Submit for verification' }}
+        {{ submitting ? locale.t.agent.submitting : initial ? locale.t.agent.resubmit : locale.t.agent.submitVerify }}
       </Button>
     </StickyActionBar>
   </form>

@@ -3,7 +3,10 @@ import { ImagePlus, Loader2, X } from '@lucide/vue'
 import { ref, watch } from 'vue'
 import { useFileUpload } from '@/core/composables/useFileUpload'
 import { cn } from '@/core/lib/utils'
+import { useLocaleStore } from '@/core/i18n/locale.store'
 import type { HTMLAttributes } from 'vue'
+
+const locale = useLocaleStore()
 
 const props = withDefaults(defineProps<{
   /** Uploaded file id (the value persisted on the resource). */
@@ -89,7 +92,7 @@ function clear() {
             class="rounded-full bg-primary/10 px-3 py-1.5 text-xs font-medium text-primary"
             @click="pick"
           >
-            {{ preview ? 'Replace' : 'Upload' }}
+            {{ preview ? locale.t.ui.replace : locale.t.ui.upload }}
           </button>
           <button
             v-if="preview"
@@ -98,7 +101,7 @@ function clear() {
             @click="clear"
           >
             <X class="size-3" />
-            Remove
+            {{ locale.t.ui.remove }}
           </button>
         </div>
       </div>

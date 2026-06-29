@@ -1,20 +1,25 @@
 <script setup lang="ts">
-import { Search, Store } from '@lucide/vue'
+import { Store } from '@lucide/vue'
 import { computed, onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import AppHeader from '@/modules/shell/components/AppHeader.vue'
 import GlassCard from '@/core/ui/GlassCard.vue'
 import EmptyState from '@/core/ui/EmptyState.vue'
 import Skeleton from '@/core/ui/Skeleton.vue'
 import { cn } from '@/core/lib/utils'
 import { getApiErrorMessage } from '@/core/api/api-error'
+import { useLocaleStore } from '@/core/i18n/locale.store'
+import { categoryName } from '@/core/i18n/category-name'
 import AgentCard from '@/modules/marketplace/components/AgentCard.vue'
 import { fetchTopAgents, type PublicAgent } from '@/modules/marketplace/services/agents.service'
+
+const locale = useLocaleStore()
+const router = useRouter()
 
 const agents = ref<PublicAgent[]>([])
 const loading = ref(true)
 const error = ref<string | null>(null)
 
-const query = ref('')
 const activeCategory = ref<'all' | number>('all')
 
 onMounted(async () => {
@@ -29,64 +34,47 @@ onMounted(async () => {
   }
 })
 
-// Category chips built from the categories the fetched agents actually serve.
+// Category tabs built from the categories the fetched agents actually serve.
 const categories = computed(() => {
   const map = new Map<number, string>()
-  agents.value.forEach(agent => agent.categories.forEach(c => map.set(c.id, c.name_uz)))
+  agents.value.forEach(agent => agent.categories.forEach(c => map.set(c.id, categoryName(c, locale.locale))))
   return [...map.entries()].map(([id, name]) => ({ id, name }))
 })
 
-const filtered = computed(() => {
-  const search = query.value.trim().toLowerCase()
+const filtered = computed(() =>
+  agents.value.filter(agent =>
+    activeCategory.value === 'all'
+    || agent.categories.some(c => c.id === activeCategory.value),
+  ),
+)
 
-  return agents.value.filter((agent) => {
-    const matchesCategory = activeCategory.value === 'all'
-      || agent.categories.some(c => c.id === activeCategory.value)
-
-    const matchesQuery = !search
-      || agent.company_name.toLowerCase().includes(search)
-      || (agent.bio?.toLowerCase().includes(search) ?? false)
-      || (agent.location_label?.toLowerCase().includes(search) ?? false)
-
-    return matchesCategory && matchesQuery
-  })
-})
+function openAgent(id: number) {
+  router.push(`/agents/${id}`)
+}
 </script>
 
 <template>
   <div>
-    <AppHeader
-      title="Agents"
-      subtitle="Find your next campaign partner"
-    />
+    <AppHeader :title="locale.t.marketplace.title" show-back />
 
-    <section class="space-y-5 px-5">
-      <GlassCard padding="sm" class="flex items-center gap-3">
-        <Search class="size-5 text-muted-foreground" />
-        <input
-          v-model="query"
-          type="search"
-          placeholder="Search agencies, services, locations…"
-          class="w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground"
-        >
-      </GlassCard>
-
-      <div v-if="categories.length" class="flex gap-2 overflow-x-auto pb-1">
+    <section class="space-y-4 px-5">
+      <!-- Category tabs -->
+      <div v-if="categories.length" class="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         <button
           type="button"
-          class="shrink-0 rounded-full px-4 py-2 text-sm font-medium transition"
-          :class="activeCategory === 'all' ? 'bg-primary text-primary-foreground shadow-sm' : 'glass-chip'"
+          class="shrink-0 rounded-full px-5 py-2.5 text-sm font-semibold transition"
+          :class="activeCategory === 'all' ? 'bg-primary text-white shadow-sm' : 'bg-white/15 text-white/85'"
           @click="activeCategory = 'all'"
         >
-          All
+          {{ locale.t.marketplace.all }}
         </button>
         <button
           v-for="category in categories"
           :key="category.id"
           type="button"
           :class="cn(
-            'shrink-0 rounded-full px-4 py-2 text-sm font-medium transition',
-            activeCategory === category.id ? 'bg-primary text-primary-foreground shadow-sm' : 'glass-chip',
+            'shrink-0 rounded-full px-5 py-2.5 text-sm font-semibold transition',
+            activeCategory === category.id ? 'bg-primary text-white shadow-sm' : 'bg-white/15 text-white/85',
           )"
           @click="activeCategory = category.id"
         >
@@ -96,11 +84,11 @@ const filtered = computed(() => {
 
       <!-- Loading -->
       <template v-if="loading">
-        <Skeleton v-for="n in 3" :key="n" class="h-40 w-full rounded-3xl" />
+        <Skeleton v-for="n in 4" :key="n" class="h-24 w-full rounded-3xl" />
       </template>
 
       <!-- Error -->
-      <p v-else-if="error" class="rounded-2xl bg-destructive/10 px-4 py-3 text-sm text-destructive">
+      <p v-else-if="error" class="rounded-2xl bg-destructive/10 px-4 py-3 text-sm text-white">
         {{ error }}
       </p>
 
@@ -108,26 +96,20 @@ const filtered = computed(() => {
       <GlassCard v-else-if="filtered.length === 0" padding="none" class="overflow-hidden">
         <EmptyState
           :icon="Store"
-          title="No agencies found"
-          :description="agents.length === 0
-            ? 'Approved agencies will appear here soon.'
-            : 'Try a different search or category.'"
+          :title="locale.t.marketplace.emptyTitle"
+          :description="agents.length === 0 ? locale.t.marketplace.emptyApproved : locale.t.marketplace.emptyTry"
         />
       </GlassCard>
 
       <!-- List -->
-      <template v-else>
-        <p class="px-1 text-sm text-muted-foreground">
-          {{ filtered.length }} {{ filtered.length === 1 ? 'agency' : 'agencies' }} available
-        </p>
-        <div class="space-y-4">
-          <AgentCard
-            v-for="agent in filtered"
-            :key="agent.id"
-            :agent="agent"
-          />
-        </div>
-      </template>
+      <div v-else class="space-y-3">
+        <AgentCard
+          v-for="agent in filtered"
+          :key="agent.id"
+          :agent="agent"
+          @open="openAgent(agent.id)"
+        />
+      </div>
     </section>
   </div>
 </template>

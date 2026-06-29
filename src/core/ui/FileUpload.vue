@@ -3,6 +3,9 @@ import { CircleCheck, FileText, Loader2, Upload, X } from '@lucide/vue'
 import { ref, watch } from 'vue'
 import { useFileUpload } from '@/core/composables/useFileUpload'
 import { cn } from '@/core/lib/utils'
+import { useLocaleStore } from '@/core/i18n/locale.store'
+
+const locale = useLocaleStore()
 
 const props = withDefaults(defineProps<{
   /** Uploaded file id (the value persisted on the resource). */
@@ -63,10 +66,10 @@ const hasFile = () => props.modelValue !== null || fileName.value !== null
 
     <div
       v-if="hasFile()"
-      class="flex items-center gap-3 rounded-2xl border border-black/10 bg-white/70 px-4 py-3 dark:border-white/10 dark:bg-white/5"
+      class="flex items-center gap-3 rounded-2xl border border-border bg-card px-4 py-3 dark:bg-white/5"
     >
       <CircleCheck class="size-5 shrink-0 text-emerald-500" />
-      <span class="min-w-0 flex-1 truncate text-sm">{{ fileName ?? 'Attached file' }}</span>
+      <span class="min-w-0 flex-1 truncate text-sm">{{ fileName ?? locale.t.ui.attachedFile }}</span>
       <button
         type="button"
         class="shrink-0 rounded-full p-1 text-muted-foreground transition hover:bg-black/5 dark:hover:bg-white/10"
@@ -88,7 +91,7 @@ const hasFile = () => props.modelValue !== null || fileName.value !== null
     >
       <Loader2 v-if="isUploading" class="size-4 animate-spin" />
       <Upload v-else class="size-4" />
-      {{ isUploading ? 'Uploading…' : 'Upload file' }}
+      {{ isUploading ? locale.t.ui.uploading : locale.t.ui.uploadFile }}
       <FileText v-if="!isUploading" class="size-4 opacity-50" />
     </button>
 

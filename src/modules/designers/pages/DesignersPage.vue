@@ -3,21 +3,24 @@ import { Brush } from '@lucide/vue'
 import AppHeader from '@/modules/shell/components/AppHeader.vue'
 import GlassCard from '@/core/ui/GlassCard.vue'
 import EmptyState from '@/core/ui/EmptyState.vue'
+import { useLocaleStore } from '@/core/i18n/locale.store'
+
+const locale = useLocaleStore()
 </script>
 
 <template>
   <div>
     <AppHeader
-      title="Designers"
-      subtitle="Creative studios & freelancers"
+      :title="locale.t.designers.title"
+      :subtitle="locale.t.designers.subtitle"
     />
 
     <section class="px-5">
       <GlassCard padding="none" class="overflow-hidden">
         <EmptyState
           :icon="Brush"
-          title="Designers coming soon"
-          description="Verified designer profiles will appear here once the design marketplace goes live."
+          :title="locale.t.designers.comingSoonTitle"
+          :description="locale.t.designers.comingSoonBody"
         />
       </GlassCard>
     </section>

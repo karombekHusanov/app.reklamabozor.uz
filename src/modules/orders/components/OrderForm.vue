@@ -6,8 +6,12 @@ import FileUpload from '@/core/ui/FileUpload.vue'
 import StickyActionBar from '@/core/ui/StickyActionBar.vue'
 import { Button } from '@/core/ui/button'
 import { cn } from '@/core/lib/utils'
+import { useLocaleStore } from '@/core/i18n/locale.store'
+import { categoryName } from '@/core/i18n/category-name'
 import type { Category } from '@/modules/agent/types/agent'
 import type { CreateOrderPayload } from '@/modules/orders/types/order'
+
+const locale = useLocaleStore()
 
 defineProps<{
   categories: Category[]
@@ -34,9 +38,9 @@ function selectCategory(id: number) {
 function validate(): boolean {
   Object.keys(fieldErrors).forEach((key) => delete fieldErrors[key])
 
-  if (form.category_id === null) fieldErrors.category_id = 'Choose a service.'
-  if (form.description.trim() === '') fieldErrors.description = 'Add a short comment.'
-  if (form.tz_file_id === null) fieldErrors.tz_file_id = 'Attach your brief (TZ).'
+  if (form.category_id === null) fieldErrors.category_id = locale.t.orders.errChooseService
+  if (form.description.trim() === '') fieldErrors.description = locale.t.orders.errComment
+  if (form.tz_file_id === null) fieldErrors.tz_file_id = locale.t.orders.errBrief
 
   return Object.keys(fieldErrors).length === 0
 }
@@ -60,10 +64,10 @@ const inputClass = 'glass-input'
     <GlassCard class="space-y-3">
       <div>
         <p class="text-sm font-medium">
-          What service do you need? *
+          {{ locale.t.orders.serviceQuestion }}
         </p>
         <p class="text-xs text-muted-foreground">
-          Pick a category — specialists in it will be notified.
+          {{ locale.t.orders.servicePick }}
         </p>
       </div>
 
@@ -81,7 +85,7 @@ const inputClass = 'glass-input'
           @click="selectCategory(category.id)"
         >
           <Check v-if="form.category_id === category.id" class="size-3.5" />
-          {{ category.name_uz }}
+          {{ categoryName(category, locale.locale) }}
         </button>
       </div>
       <p v-if="fieldErrors.category_id" class="text-xs text-destructive">
@@ -93,8 +97,8 @@ const inputClass = 'glass-input'
     <GlassCard class="space-y-4">
       <FileUpload
         v-model="form.tz_file_id"
-        label="Technical brief (TZ) *"
-        hint="Upload your requirements — document or image, max 5 MB."
+        :label="locale.t.orders.briefLabel"
+        :hint="locale.t.orders.briefHint"
         :invalid="!!fieldErrors.tz_file_id"
       />
       <p v-if="fieldErrors.tz_file_id" class="-mt-2 text-xs text-destructive">
@@ -102,12 +106,12 @@ const inputClass = 'glass-input'
       </p>
 
       <div class="space-y-1.5">
-        <label class="text-sm font-medium" for="description">Comment *</label>
+        <label class="text-sm font-medium" for="description">{{ locale.t.orders.commentLabel }}</label>
         <textarea
           id="description"
           v-model="form.description"
           rows="4"
-          placeholder="Describe what you need, deadlines, any details…"
+          :placeholder="locale.t.orders.commentPlaceholder"
           :class="cn(inputClass, 'resize-none')"
         />
         <p v-if="fieldErrors.description" class="text-xs text-destructive">
@@ -119,7 +123,7 @@ const inputClass = 'glass-input'
     <StickyActionBar>
       <Button type="submit" class="h-12 w-full rounded-2xl text-base shadow-lg shadow-primary/20" :disabled="submitting">
         <Loader2 v-if="submitting" class="size-4 animate-spin" />
-        {{ submitting ? 'Sending…' : 'Send request' }}
+        {{ submitting ? locale.t.orders.sending : locale.t.orders.sendRequest }}
       </Button>
     </StickyActionBar>
   </form>

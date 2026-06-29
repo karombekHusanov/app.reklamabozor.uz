@@ -2,11 +2,15 @@
 import { ChevronRight, MessageSquareQuote } from '@lucide/vue'
 import GlassCard from '@/core/ui/GlassCard.vue'
 import OrderStatusBadge from '@/modules/orders/components/OrderStatusBadge.vue'
+import { useLocaleStore } from '@/core/i18n/locale.store'
+import { categoryName } from '@/core/i18n/category-name'
 import type { Order } from '@/modules/orders/types/order'
 
 defineProps<{ order: Order }>()
 
 defineEmits<{ open: [] }>()
+
+const locale = useLocaleStore()
 </script>
 
 <template>
@@ -14,7 +18,7 @@ defineEmits<{ open: [] }>()
     <div class="flex items-start justify-between gap-3">
       <div class="min-w-0">
         <p class="truncate font-semibold leading-tight">
-          {{ order.category?.name_uz ?? order.title }}
+          {{ order.category ? categoryName(order.category, locale.locale) : order.title }}
         </p>
         <p class="mt-1 line-clamp-2 text-sm text-muted-foreground">
           {{ order.description }}
@@ -26,7 +30,7 @@ defineEmits<{ open: [] }>()
     <div class="flex items-center justify-between text-xs text-muted-foreground">
       <span class="inline-flex items-center gap-1.5">
         <MessageSquareQuote class="size-3.5" />
-        {{ order.offers_count ?? order.offers?.length ?? 0 }} offers
+        {{ order.offers_count ?? order.offers?.length ?? 0 }} {{ locale.t.orders.offersSuffix }}
       </span>
       <ChevronRight class="size-4" />
     </div>

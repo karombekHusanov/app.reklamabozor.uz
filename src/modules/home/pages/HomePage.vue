@@ -1,18 +1,20 @@
 <script setup lang="ts">
-import { ArrowRight, Brush, Megaphone, ShieldCheck } from '@lucide/vue'
-import { computed } from 'vue'
+import { Bell, ChevronRight, Menu, Star, TrendingDown, TrendingUp } from '@lucide/vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import AppHeader from '@/modules/shell/components/AppHeader.vue'
-import GlassCard from '@/core/ui/GlassCard.vue'
-import { Button } from '@/core/ui/button'
-import TopAgenciesSlider from '@/modules/home/components/TopAgenciesSlider.vue'
+import Avatar from '@/core/ui/Avatar.vue'
 import { useTelegram } from '@/core/composables/useTelegram'
+import { useLocaleStore } from '@/core/i18n/locale.store'
 import { useAuthStore } from '@/modules/auth/stores/auth.store'
-import { fullName, isBusinessUser } from '@/modules/auth/types/user'
+import { useOrdersStore } from '@/modules/orders/stores/orders.store'
+import { fetchTopAgents, type PublicAgent } from '@/modules/marketplace/services/agents.service'
+import { fullName } from '@/modules/auth/types/user'
 import { ROUTES } from '@/modules/shell/constants/routes'
 
 const auth = useAuthStore()
+const orders = useOrdersStore()
 const router = useRouter()
+const locale = useLocaleStore()
 const { user: telegramUser } = useTelegram()
 
 const displayName = computed(() => {
@@ -21,89 +23,206 @@ const displayName = computed(() => {
   return 'Reklama Bozor'
 })
 
-const isAgent = computed(() => (auth.user ? isBusinessUser(auth.user) : false))
+const ordersCount = computed(() => orders.myOrders.length)
 
-const greeting = computed(() => {
-  const hour = new Date().getHours()
-  if (hour < 12) return 'Good morning'
-  if (hour < 18) return 'Good afternoon'
-  return 'Good evening'
+// --- Placeholder data (no backend yet — wire to real endpoints later) ---
+const onlineCount = 460
+const rating = 88
+const ratingStars = 4
+const banners = [
+  { id: 1, title: 'Banner Reklama' },
+  { id: 2, title: 'Banner Reklama' },
+  { id: 3, title: 'Banner Reklama' },
+  { id: 4, title: 'Banner Reklama' },
+  { id: 5, title: 'Banner Reklama' },
+  { id: 6, title: 'Banner Reklama' },
+]
+const placeholderStats = [
+  { name: 'Ziynat', value: 220190, up: true },
+  { name: 'Focus', value: 210890, up: false },
+  { name: 'Delavoy gorod', value: 190690, up: false },
+]
+// ------------------------------------------------------------------------
+
+const topAgents = ref<PublicAgent[]>([])
+
+/** Real agency names when available, otherwise the placeholder demo rows. */
+const stats = computed(() => {
+  if (topAgents.value.length === 0) return placeholderStats
+  return topAgents.value.slice(0, 3).map((agent, i) => ({
+    name: agent.company_name,
+    value: placeholderStats[i]?.value ?? 100000,
+    up: placeholderStats[i]?.up ?? true,
+  }))
 })
 
-function placeOrder(type: 'agent' | 'designer') {
-  router.push({ path: ROUTES.newOrder, query: { type } })
+const numberFmt = new Intl.NumberFormat('en-US')
+
+// Banner slider active-dot tracking.
+const scroller = ref<HTMLElement | null>(null)
+const activeBanner = ref(0)
+function onBannerScroll() {
+  const el = scroller.value
+  if (!el) return
+  activeBanner.value = Math.round(el.scrollLeft / el.clientWidth)
 }
+
+async function load() {
+  if (auth.isAuthenticated) void orders.loadMyOrders()
+  try {
+    topAgents.value = await fetchTopAgents(3)
+  }
+  catch {
+    // ignore — fall back to placeholder stats
+  }
+}
+
+onMounted(load)
+watch(() => auth.isAuthenticated, load)
 </script>
 
 <template>
   <div>
-    <AppHeader
-      :subtitle="greeting"
-      :title="displayName"
-      :show-avatar="auth.isAuthenticated"
-      :user-name="displayName"
-    />
+    <!-- ===== Dark brand hero ===== -->
+    <header class="brand-hero safe-top rounded-b-[2rem] px-5 pb-6 pt-3 text-white">
+      <!-- Top row -->
+      <div class="flex items-center justify-between">
+        <button
+          type="button"
+          class="flex size-10 items-center justify-center rounded-xl bg-white/10 transition active:scale-95"
+          @click="router.push(ROUTES.profile)"
+        >
+          <Menu class="size-5" />
+        </button>
 
-    <section class="space-y-5 px-5">
-      <!-- Advertising CTA -->
-      <GlassCard class="relative overflow-hidden">
-        <div class="absolute inset-0 -z-10 bg-gradient-to-br from-primary/20 via-primary/10 to-violet-500/20" />
-        <div class="flex size-11 items-center justify-center rounded-2xl bg-primary/15 text-primary">
-          <Megaphone class="size-6" />
-        </div>
-        <h2 class="mt-3 text-lg font-semibold">
-          Want to advertise?
-        </h2>
-        <p class="mt-1 text-sm leading-relaxed text-muted-foreground">
-          Leave a request and verified agencies will reach out to you with their offers — no searching required.
-        </p>
-        <Button class="mt-4 h-11 w-full rounded-2xl" @click="placeOrder('agent')">
-          Place a request
-          <ArrowRight class="size-4" />
-        </Button>
-      </GlassCard>
+        <button
+          type="button"
+          class="relative flex size-10 items-center justify-center rounded-full bg-white/10 transition active:scale-95"
+        >
+          <Bell class="size-5" />
+          <span class="absolute right-1.5 top-1.5 size-2 rounded-full bg-red-500 ring-2 ring-[#02305C]" />
+        </button>
+      </div>
 
-      <!-- Designer CTA -->
-      <GlassCard class="relative overflow-hidden">
-        <div class="absolute inset-0 -z-10 bg-gradient-to-br from-amber-400/20 via-orange-400/10 to-amber-500/20" />
-        <div class="flex size-11 items-center justify-center rounded-2xl bg-amber-500/15 text-amber-600 dark:text-amber-400">
-          <Brush class="size-6" />
-        </div>
-        <h2 class="mt-3 text-lg font-semibold">
-          Need a designer?
-        </h2>
-        <p class="mt-1 text-sm leading-relaxed text-muted-foreground">
-          Choose the service you need and our specialists will contact you with proposals.
-        </p>
-        <Button variant="outline" class="mt-4 h-11 w-full rounded-2xl" @click="placeOrder('designer')">
-          Find a designer
-          <ArrowRight class="size-4" />
-        </Button>
-      </GlassCard>
+      <!-- Online count -->
+      <p class="mt-3 flex items-center justify-center gap-1.5 text-xs text-white/80">
+        <span class="size-2 rounded-full bg-emerald-400" />
+        {{ locale.t.home.onlineAccounts }}: {{ onlineCount }}
+      </p>
 
-      <!-- Top agencies slider -->
-      <TopAgenciesSlider />
-
-      <!-- Become an agent -->
-      <GlassCard
-        v-if="!isAgent"
-        interactive
-        class="flex items-center gap-4"
-        @click="router.push(ROUTES.agentHub)"
-      >
-        <div class="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-          <ShieldCheck class="size-6" />
-        </div>
+      <!-- Identity -->
+      <div class="mt-3 flex items-center gap-3">
+        <Avatar :src="auth.user?.avatar" :name="displayName" size="lg" class="rounded-2xl ring-2 ring-white/30" />
         <div class="min-w-0 flex-1">
-          <p class="font-semibold">
-            Become an advertising agent
+          <p class="text-sm text-white/70">
+            {{ locale.t.home.welcome }}
           </p>
-          <p class="text-sm text-muted-foreground">
-            Offer your services and receive client orders.
+          <h1 class="truncate text-xl font-bold leading-tight">
+            {{ displayName }}
+          </h1>
+          <p class="mt-0.5 text-xs text-white/70">
+            {{ locale.t.home.ordersCountLabel }}: {{ ordersCount }} {{ locale.t.home.unit }}
           </p>
         </div>
-        <ArrowRight class="size-5 shrink-0 text-muted-foreground" />
-      </GlassCard>
+      </div>
+
+      <!-- Rating -->
+      <div class="mt-3 flex items-center gap-3">
+        <div class="flex items-center gap-0.5">
+          <Star
+            v-for="n in 5"
+            :key="n"
+            class="size-4"
+            :class="n <= ratingStars ? 'fill-amber-400 text-amber-400' : 'text-white/30'"
+          />
+        </div>
+        <span class="inline-flex items-center gap-1 text-sm font-semibold text-emerald-300">
+          <TrendingUp class="size-4" />
+          {{ locale.t.home.rating }}: {{ rating }}
+        </span>
+      </div>
+
+      <!-- Banner slider -->
+      <div class="mt-5">
+        <div
+          ref="scroller"
+          class="flex snap-x snap-mandatory gap-3 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          @scroll="onBannerScroll"
+        >
+          <div
+            v-for="banner in banners"
+            :key="banner.id"
+            class="flex min-w-full snap-center items-center gap-3 rounded-2xl bg-gradient-to-br from-white to-sky-100 p-4 text-[#02305C] shadow-sm"
+          >
+            <img src="/images/logo.png" alt="Reklama Bozor" class="size-10 shrink-0 object-contain">
+            <div>
+              <p class="text-[11px] font-semibold leading-none text-primary">
+                Reklama <span class="italic">Bozor</span>
+              </p>
+              <p class="mt-1 text-lg font-bold leading-tight">
+                {{ banner.title }}
+              </p>
+            </div>
+          </div>
+        </div>
+        <div class="mt-3 flex items-center justify-center gap-1.5">
+          <span
+            v-for="(banner, i) in banners"
+            :key="banner.id"
+            class="h-1.5 rounded-full transition-all"
+            :class="i === activeBanner ? 'w-4 bg-white' : 'w-1.5 bg-white/40'"
+          />
+        </div>
+      </div>
+    </header>
+
+    <!-- ===== Body ===== -->
+    <section class="space-y-5 px-5 pt-5">
+      <!-- Sold-goods shortcuts (placeholder destinations) -->
+      <div class="grid grid-cols-2 gap-3">
+        <button
+          v-for="n in 2"
+          :key="n"
+          type="button"
+          class="flex min-h-24 items-center justify-center rounded-3xl bg-gradient-to-br from-sky-100 to-sky-200 px-4 py-5 text-center text-base font-bold text-[#02305C] shadow-sm transition active:scale-[0.98] dark:from-sky-900/40 dark:to-sky-800/30 dark:text-sky-100"
+        >
+          {{ locale.t.home.soldGoods }}
+        </button>
+      </div>
+
+      <!-- Statistics -->
+      <div class="rounded-3xl border border-border bg-card p-5 shadow-[0_2px_12px_rgba(2,48,92,0.06)]">
+        <div class="flex items-center justify-between">
+          <h2 class="text-lg font-bold">
+            {{ locale.t.home.statistika }}
+          </h2>
+          <button
+            type="button"
+            class="inline-flex items-center gap-0.5 text-sm text-muted-foreground"
+            @click="router.push(ROUTES.marketplace)"
+          >
+            {{ locale.t.home.viewAll }}
+            <ChevronRight class="size-4" />
+          </button>
+        </div>
+
+        <ul class="mt-4 space-y-4">
+          <li v-for="(row, i) in stats" :key="i" class="flex items-center gap-3">
+            <Avatar :name="row.name" size="md" class="rounded-xl" />
+            <div class="min-w-0 flex-1">
+              <p class="flex items-center gap-1 truncate font-semibold leading-tight">
+                {{ row.name }}
+                <TrendingUp v-if="row.up" class="size-4 shrink-0 text-emerald-500" />
+                <TrendingDown v-else class="size-4 shrink-0 text-red-500" />
+              </p>
+              <p class="text-xs text-muted-foreground">
+                {{ locale.t.home.outdoorAd }}
+              </p>
+            </div>
+            <span class="shrink-0 font-semibold tabular-nums">{{ numberFmt.format(row.value) }}</span>
+          </li>
+        </ul>
+      </div>
     </section>
   </div>
 </template>

@@ -5,8 +5,12 @@ import GlassCard from '@/core/ui/GlassCard.vue'
 import Badge from '@/core/ui/Badge.vue'
 import { Button } from '@/core/ui/button'
 import { cn } from '@/core/lib/utils'
-import { formatPrice, offerStatusLabel, offerStatusVariant } from '@/modules/orders/lib/order-status'
+import { useLocaleStore } from '@/core/i18n/locale.store'
+import { categoryName } from '@/core/i18n/category-name'
+import { formatPrice, offerStatusVariant } from '@/modules/orders/lib/order-status'
 import type { AgentOrder, CreateOfferPayload } from '@/modules/orders/types/order'
+
+const locale = useLocaleStore()
 
 const props = defineProps<{
   order: AgentOrder
@@ -48,14 +52,14 @@ const inputClass = 'glass-input'
     <div class="flex items-start justify-between gap-3">
       <div class="min-w-0">
         <p class="truncate font-semibold leading-tight">
-          {{ order.category?.name_uz ?? order.title }}
+          {{ order.category ? categoryName(order.category, locale.locale) : order.title }}
         </p>
         <p v-if="order.client.first_name" class="text-xs text-muted-foreground">
-          from {{ order.client.first_name }}
+          {{ locale.t.agent.fromLabel }}: {{ order.client.first_name }}
         </p>
       </div>
       <Badge v-if="order.my_offer" :variant="offerStatusVariant(order.my_offer.status)" class="shrink-0">
-        {{ offerStatusLabel(order.my_offer.status) }}
+        {{ locale.t.orders.offerStatus[order.my_offer.status] }}
       </Badge>
     </div>
 
@@ -71,37 +75,37 @@ const inputClass = 'glass-input'
       class="inline-flex items-center gap-2 text-sm font-medium text-primary"
     >
       <FileText class="size-4" />
-      View brief (TZ)
+      {{ locale.t.orders.viewBrief }}
     </a>
 
     <!-- Already offered -->
     <div
       v-if="order.my_offer"
-      class="rounded-2xl bg-black/5 px-4 py-3 text-sm dark:bg-white/5"
+      class="rounded-2xl bg-muted px-4 py-3 text-sm dark:bg-white/5"
     >
-      <span class="text-muted-foreground">Your offer:</span>
+      <span class="text-muted-foreground">{{ locale.t.agent.yourOffer }}</span>
       <span class="ml-1 font-semibold text-primary">{{ formatPrice(order.my_offer.price) }}</span>
     </div>
 
     <!-- Offer form -->
     <template v-else>
       <div v-if="showForm" class="space-y-2.5">
-        <input v-model="form.price" type="number" inputmode="numeric" min="0" placeholder="Price (so‘m)" :class="inputClass">
-        <textarea v-model="form.comment" rows="2" placeholder="Your pitch / what's included…" :class="cn(inputClass, 'resize-none')" />
+        <input v-model="form.price" type="number" inputmode="numeric" min="0" :placeholder="locale.t.agent.pricePlaceholder" :class="inputClass">
+        <textarea v-model="form.comment" rows="2" :placeholder="locale.t.agent.pitchPlaceholder" :class="cn(inputClass, 'resize-none')" />
         <div class="flex gap-2">
           <Button class="h-10 flex-1 rounded-2xl" :disabled="!canSubmit || submitting" @click="send">
             <Loader2 v-if="submitting" class="size-4 animate-spin" />
             <Send v-else class="size-4" />
-            Send offer
+            {{ locale.t.agent.sendOffer }}
           </Button>
           <Button variant="outline" class="h-10 rounded-2xl" @click="showForm = false">
-            Cancel
+            {{ locale.t.agent.cancel }}
           </Button>
         </div>
       </div>
       <Button v-else variant="outline" class="h-10 w-full rounded-2xl" @click="showForm = true">
         <Send class="size-4" />
-        Send an offer
+        {{ locale.t.agent.sendAnOffer }}
       </Button>
     </template>
   </GlassCard>

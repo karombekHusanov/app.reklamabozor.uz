@@ -8,6 +8,9 @@ export interface PublicAgent {
   company_logo: string | null
   bio: string | null
   location_label: string | null
+  /** Decimal strings (decimal:7) or null when the agent hasn't set a location. */
+  lat: string | null
+  lng: string | null
   website_url: string | null
   completion_percent: number
   categories: Category[]
@@ -18,6 +21,13 @@ export async function fetchTopAgents(limit = 10): Promise<PublicAgent[]> {
   const { data } = await api.get<ApiSuccess<PublicAgent[]>>('/api/v1/agents', {
     params: { limit },
   })
+
+  return data.data
+}
+
+/** Single approved agent for the public marketplace profile page. */
+export async function fetchPublicAgent(id: number): Promise<PublicAgent> {
+  const { data } = await api.get<ApiSuccess<PublicAgent>>(`/api/v1/agents/${id}`)
 
   return data.data
 }

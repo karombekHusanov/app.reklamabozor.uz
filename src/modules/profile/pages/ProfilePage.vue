@@ -26,13 +26,17 @@ import OrderCard from '@/modules/orders/components/OrderCard.vue'
 import { useAuthStore } from '@/modules/auth/stores/auth.store'
 import { useAgentStore } from '@/modules/agent/stores/agent.store'
 import { useOrdersStore } from '@/modules/orders/stores/orders.store'
+import { useLocaleStore } from '@/core/i18n/locale.store'
 import { ROUTES } from '@/modules/shell/constants/routes'
-import { fullName, roleLabel } from '@/modules/auth/types/user'
+import { fullName } from '@/modules/auth/types/user'
 
 const auth = useAuthStore()
 const agent = useAgentStore()
 const orders = useOrdersStore()
 const router = useRouter()
+const locale = useLocaleStore()
+
+const dateLocale = computed(() => ({ uz: 'uz-UZ', ru: 'ru-RU', en: 'en-US' })[locale.locale])
 
 type Tab = 'profile' | 'orders'
 const activeTab = ref<Tab>('profile')
@@ -43,7 +47,7 @@ const isAgent = computed(() => agent.isApproved)
 
 const memberSince = computed(() => {
   if (!user.value) return ''
-  return new Date(user.value.created_at).toLocaleDateString('en-US', {
+  return new Date(user.value.created_at).toLocaleDateString(dateLocale.value, {
     month: 'long',
     day: 'numeric',
     year: 'numeric',
@@ -86,8 +90,8 @@ function tabClass(tab: Tab) {
 <template>
   <div>
     <AppHeader
-      title="Profile"
-      :subtitle="isAgent ? 'Your agent account' : 'Your Reklama Bozor account'"
+      :title="locale.t.profile.title"
+      :subtitle="isAgent ? locale.t.profile.subtitleAgent : locale.t.profile.subtitleUser"
     />
 
     <section class="space-y-5 px-5">
@@ -95,10 +99,10 @@ function tabClass(tab: Tab) {
         <!-- Tabs -->
         <div class="glass-segment flex gap-1 rounded-2xl p-1">
           <button type="button" :class="tabClass('profile')" @click="activeTab = 'profile'">
-            My Profile
+            {{ locale.t.profile.tabProfile }}
           </button>
           <button type="button" :class="tabClass('orders')" @click="activeTab = 'orders'">
-            My Orders
+            {{ locale.t.profile.tabOrders }}
           </button>
         </div>
 
@@ -122,7 +126,7 @@ function tabClass(tab: Tab) {
               </p>
               <div class="mt-3">
                 <Badge :variant="isAgent ? 'success' : 'primary'" class="uppercase">
-                  {{ isAgent ? 'Agent' : roleLabel(user.role) }}
+                  {{ isAgent ? locale.t.roles.agent : locale.t.roles[user.role] }}
                 </Badge>
               </div>
             </div>
@@ -134,10 +138,10 @@ function tabClass(tab: Tab) {
               <Phone class="size-5 shrink-0 text-primary" />
               <div class="min-w-0">
                 <p class="text-sm text-muted-foreground">
-                  Phone
+                  {{ locale.t.profile.phone }}
                 </p>
                 <p class="font-medium">
-                  {{ user.phone ?? 'Not added yet' }}
+                  {{ user.phone ?? locale.t.common.notAdded }}
                 </p>
               </div>
             </GlassCard>
@@ -146,7 +150,7 @@ function tabClass(tab: Tab) {
               <UserRound class="size-5 shrink-0 text-primary" />
               <div class="min-w-0">
                 <p class="text-sm text-muted-foreground">
-                  Telegram ID
+                  {{ locale.t.profile.telegramId }}
                 </p>
                 <p class="font-medium">
                   {{ user.telegram_id }}
@@ -173,12 +177,12 @@ function tabClass(tab: Tab) {
                     {{ agent.profile.company_name }}
                   </p>
                   <p class="mt-0.5 text-sm text-muted-foreground">
-                    Verified marketplace profile
+                    {{ locale.t.profile.verifiedProfile }}
                   </p>
                 </div>
               </div>
               <Badge variant="success" class="shrink-0">
-                Approved
+                {{ locale.t.profile.approved }}
               </Badge>
             </div>
 
@@ -187,7 +191,7 @@ function tabClass(tab: Tab) {
               class="border-t border-black/5 pt-4 dark:border-white/10"
             >
               <p class="mb-2.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                Works in
+                {{ locale.t.profile.worksIn }}
               </p>
               <CategoryChips :categories="agent.profile.categories" />
             </div>
@@ -197,7 +201,7 @@ function tabClass(tab: Tab) {
               class="h-11 w-full rounded-2xl"
               @click="router.push(ROUTES.agentHub)"
             >
-              Manage agent profile
+              {{ locale.t.profile.manageProfile }}
               <ArrowRight class="size-4" />
             </Button>
           </GlassCard>
@@ -215,24 +219,24 @@ function tabClass(tab: Tab) {
             <div class="min-w-0 flex-1">
               <p class="font-semibold">
                 <template v-if="agent.isPending">
-                  Application under review
+                  {{ locale.t.profile.appUnderReview }}
                 </template>
                 <template v-else-if="agent.isRejected">
-                  Application needs changes
+                  {{ locale.t.profile.appNeedsChanges }}
                 </template>
                 <template v-else>
-                  Become an advertising agent
+                  {{ locale.t.profile.becomeAgent }}
                 </template>
               </p>
               <p class="truncate text-sm text-muted-foreground">
                 <template v-if="agent.isPending">
-                  Tap to view your application status.
+                  {{ locale.t.profile.tapStatus }}
                 </template>
                 <template v-else-if="agent.isRejected">
-                  Tap to review feedback and resubmit.
+                  {{ locale.t.profile.tapResubmit }}
                 </template>
                 <template v-else>
-                  Offer your services and receive client orders.
+                  {{ locale.t.profile.offerServices }}
                 </template>
               </p>
             </div>
@@ -241,7 +245,7 @@ function tabClass(tab: Tab) {
 
           <GlassCard>
             <p class="text-sm text-muted-foreground">
-              Member since
+              {{ locale.t.profile.memberSince }}
             </p>
             <p class="mt-1 font-medium">
               {{ memberSince }}
@@ -254,7 +258,7 @@ function tabClass(tab: Tab) {
             @click="handleLogout"
           >
             <LogOut class="size-4" />
-            Sign out
+            {{ locale.t.profile.signOut }}
           </Button>
         </template>
 
@@ -271,12 +275,12 @@ function tabClass(tab: Tab) {
           >
             <EmptyState
               :icon="ClipboardList"
-              title="No orders yet"
-              description="Place a request and agencies will send you offers."
+              :title="locale.t.orders.emptyTitle"
+              :description="locale.t.orders.emptyBody"
             >
               <Button class="mt-1 rounded-2xl" @click="router.push(ROUTES.newOrder)">
                 <Plus class="size-4" />
-                New request
+                {{ locale.t.orders.newRequest }}
               </Button>
             </EmptyState>
           </GlassCard>
@@ -284,7 +288,7 @@ function tabClass(tab: Tab) {
           <template v-else>
             <Button class="h-11 w-full rounded-2xl" @click="router.push(ROUTES.newOrder)">
               <Plus class="size-4" />
-              New request
+              {{ locale.t.orders.newRequest }}
             </Button>
             <OrderCard
               v-for="order in orders.myOrders"
@@ -302,10 +306,10 @@ function tabClass(tab: Tab) {
           <Avatar name="Guest" size="lg" class="mx-auto" />
           <div class="space-y-2">
             <h2 class="text-xl font-semibold">
-              You are browsing as a guest
+              {{ locale.t.profile.guestTitle }}
             </h2>
             <p class="text-sm leading-relaxed text-muted-foreground">
-              Sign in with Telegram to save your profile and access agent features.
+              {{ locale.t.profile.guestBody }}
             </p>
           </div>
           <TelegramLoginButton />
