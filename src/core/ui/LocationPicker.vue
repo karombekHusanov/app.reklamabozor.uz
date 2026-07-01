@@ -137,27 +137,37 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="space-y-2">
-    <div class="relative overflow-hidden rounded-2xl border border-white/40 dark:border-white/10">
-      <div ref="mapEl" class="h-52 w-full bg-white/40 dark:bg-white/5" />
-
+    <div class="overflow-hidden z-0!  rounded-2xl border border-white/40 dark:border-white/10">
       <div
-        v-if="status === 'loading'"
-        class="pointer-events-none absolute inset-0 flex items-center justify-center bg-white/40 dark:bg-black/30"
+        ref="mapEl"
+        class="h-52 w-full bg-white/40 dark:bg-white/5 z-0!"
       >
-        <Loader2 class="size-5 animate-spin text-primary" />
-      </div>
+        <!-- Leaflet gives its own container `position: relative` once initialised,
+             so these overlays anchor to it without us adding any position/z-index. -->
+        <div
+          v-if="status === 'loading'"
+          class="pointer-events-none absolute inset-0 flex items-center justify-center bg-white/40 dark:bg-black/30"
+        >
+          <Loader2 class="size-5 animate-spin text-primary" />
+        </div>
 
-      <div
-        v-else-if="status === 'error'"
-        class="absolute inset-0 flex flex-col items-center justify-center gap-1 bg-white/60 p-4 text-center dark:bg-black/40"
-      >
-        <MapPin class="size-5 text-muted-foreground" />
-        <p class="text-xs text-muted-foreground">{{ errorMsg }}</p>
+        <div
+          v-else-if="status === 'error'"
+          class="absolute inset-0 flex flex-col items-center justify-center gap-1 bg-white/60 p-4 text-center dark:bg-black/40"
+        >
+          <MapPin class="size-5 text-muted-foreground" />
+          <p class="text-xs text-muted-foreground">
+            {{ errorMsg }}
+          </p>
+        </div>
       </div>
     </div>
 
-    <div class="flex items-center justify-between gap-2">
-      <p v-if="status === 'ready'" class="text-xs text-muted-foreground">
+    <div class="flex flex-col items-center gap-2">
+      <p
+        v-if="status === 'ready'"
+        class="text-xs text-muted-foreground"
+      >
         {{ locale.t.ui.tapMap }}
       </p>
       <button
@@ -165,13 +175,22 @@ onBeforeUnmount(() => {
         class="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1.5 text-xs font-medium text-primary"
         @click="detectLocation"
       >
-        <Loader2 v-if="locating" class="size-3.5 animate-spin" />
-        <LocateFixed v-else class="size-3.5" />
+        <Loader2
+          v-if="locating"
+          class="size-3.5 animate-spin"
+        />
+        <LocateFixed
+          v-else
+          class="size-3.5"
+        />
         {{ locale.t.ui.useMyLocation }}
       </button>
     </div>
 
-    <p v-if="errorMsg && status === 'ready'" class="text-xs text-destructive">
+    <p
+      v-if="errorMsg && status === 'ready'"
+      class="text-xs text-destructive"
+    >
       {{ errorMsg }}
     </p>
   </div>

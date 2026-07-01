@@ -6,6 +6,5 @@ export const ROUTES = {
   chat: '/chat', // "CHAT" — coming soon
   orders: '/orders',
   newOrder: '/orders/new',
-  agentHub: '/agent', // reached from Profile, not a tab
-  profile: '/profile', // reached from the home hamburger menu, not a tab
+  profile: '/profile', // reached from the home hamburger menu, not a tab; agency KYC/presentation lives in its "offers"/profile tabs
 } as const

@@ -73,7 +73,10 @@ const inputClass = 'glass-input'
 </script>
 
 <template>
-  <form class="space-y-4" @submit.prevent="handleSave">
+  <form
+    class="space-y-4"
+    @submit.prevent="handleSave"
+  >
     <!-- Logo + about -->
     <GlassCard class="space-y-4">
       <p class="text-sm font-semibold">
@@ -87,13 +90,31 @@ const inputClass = 'glass-input'
       />
 
       <div class="space-y-1.5">
-        <label class="text-sm font-medium" for="bio">{{ locale.t.agent.aboutCompany }}</label>
-        <textarea id="bio" v-model="form.bio" rows="3" :placeholder="locale.t.agent.aboutPlaceholder" :class="cn(inputClass, 'resize-none')" />
+        <label
+          class="text-sm font-medium"
+          for="bio"
+        >{{ locale.t.agent.aboutCompany }}</label>
+        <textarea
+          id="bio"
+          v-model="form.bio"
+          rows="3"
+          :placeholder="locale.t.agent.aboutPlaceholder"
+          :class="cn(inputClass, 'resize-none')"
+        />
       </div>
 
       <div class="space-y-1.5">
-        <label class="text-sm font-medium" for="results_text">{{ locale.t.agent.resultsHighlights }}</label>
-        <textarea id="results_text" v-model="form.results_text" rows="2" :placeholder="locale.t.agent.resultsPlaceholder" :class="cn(inputClass, 'resize-none')" />
+        <label
+          class="text-sm font-medium"
+          for="results_text"
+        >{{ locale.t.agent.resultsHighlights }}</label>
+        <textarea
+          id="results_text"
+          v-model="form.results_text"
+          rows="2"
+          :placeholder="locale.t.agent.resultsPlaceholder"
+          :class="cn(inputClass, 'resize-none')"
+        />
       </div>
     </GlassCard>
 
@@ -121,7 +142,10 @@ const inputClass = 'glass-input'
           )"
           @click="toggleCategory(category.id)"
         >
-          <Check v-if="selectedCategoryIds.includes(category.id)" class="size-3.5" />
+          <Check
+            v-if="selectedCategoryIds.includes(category.id)"
+            class="size-3.5"
+          />
           {{ categoryName(category, locale.locale) }}
         </button>
       </div>
@@ -133,25 +157,65 @@ const inputClass = 'glass-input'
         {{ locale.t.agent.linksLocation }}
       </p>
       <div class="space-y-1.5">
-        <label class="text-sm font-medium" for="website_url">{{ locale.t.agent.website }}</label>
-        <input id="website_url" v-model="form.website_url" type="url" inputmode="url" placeholder="https://example.uz" :class="inputClass">
+        <label
+          class="text-sm font-medium"
+          for="website_url"
+        >{{ locale.t.agent.website }}</label>
+        <input
+          id="website_url"
+          v-model="form.website_url"
+          type="url"
+          inputmode="url"
+          placeholder="https://example.uz"
+          :class="inputClass"
+        >
       </div>
 
       <div class="space-y-1.5">
-        <label class="text-sm font-medium" for="linkedin_url">{{ locale.t.agent.linkedin }}</label>
-        <input id="linkedin_url" v-model="form.linkedin_url" type="url" inputmode="url" placeholder="https://linkedin.com/company/…" :class="inputClass">
+        <label
+          class="text-sm font-medium"
+          for="linkedin_url"
+        >{{ locale.t.agent.linkedin }}</label>
+        <input
+          id="linkedin_url"
+          v-model="form.linkedin_url"
+          type="url"
+          inputmode="url"
+          placeholder="https://linkedin.com/company/…"
+          :class="inputClass"
+        >
       </div>
 
       <div class="space-y-2">
-        <label class="text-sm font-medium" for="location_label">{{ locale.t.agent.location }}</label>
-        <LocationPicker :lat="form.lat" :lng="form.lng" @change="onLocationPicked" />
-        <input id="location_label" v-model="form.location_label" type="text" :placeholder="locale.t.agent.locationPlaceholder" :class="inputClass">
+        <label
+          class="text-sm font-medium"
+          for="location_label"
+        >{{ locale.t.agent.location }}</label>
+        <LocationPicker
+          :lat="form.lat"
+          :lng="form.lng"
+          @change="onLocationPicked"
+        />
+        <input
+          id="location_label"
+          v-model="form.location_label"
+          type="text"
+          :placeholder="locale.t.agent.locationPlaceholder"
+          :class="inputClass"
+        >
       </div>
     </GlassCard>
 
     <StickyActionBar>
-      <Button type="submit" class="h-12 w-full rounded-2xl text-base shadow-lg shadow-primary/20" :disabled="saving">
-        <Loader2 v-if="saving" class="size-4 animate-spin" />
+      <Button
+        type="submit"
+        class="h-12 w-full rounded-2xl text-base shadow-lg shadow-primary/20"
+        :disabled="saving"
+      >
+        <Loader2
+          v-if="saving"
+          class="size-4 animate-spin"
+        />
         {{ saving ? locale.t.agent.saving : locale.t.agent.saveProfile }}
       </Button>
     </StickyActionBar>

@@ -1,18 +1,20 @@
 <script setup lang="ts">
 import { Loader2 } from '@lucide/vue'
-import { reactive } from 'vue'
+import { computed, reactive } from 'vue'
 import GlassCard from '@/core/ui/GlassCard.vue'
 import FileUpload from '@/core/ui/FileUpload.vue'
 import StickyActionBar from '@/core/ui/StickyActionBar.vue'
 import { Button } from '@/core/ui/button'
 import { cn } from '@/core/lib/utils'
 import { useLocaleStore } from '@/core/i18n/locale.store'
+import { useToast } from '@/core/composables/useToast'
 import type {
   AgentApplicationPayload,
   AgentProfile,
 } from '@/modules/agent/types/agent'
 
 const locale = useLocaleStore()
+const toast = useToast()
 
 const props = defineProps<{
   initial?: AgentProfile | null
@@ -38,6 +40,21 @@ const form = reactive({
 })
 
 const fieldErrors = reactive<Record<string, string>>({})
+
+// Field id → human label, so a validation toast can name the exact field.
+const fieldLabels = computed<Record<string, string>>(() => ({
+  company_name: locale.t.agent.companyName,
+  legal_form: locale.t.agent.legalForm,
+  inn: locale.t.agent.innLabel,
+  director_name: locale.t.agent.fullName,
+  director_passport: locale.t.agent.passport,
+  director_passport_file_id: locale.t.agent.passportScan,
+  registration_certificate_file_id: locale.t.agent.registrationCert,
+  bank_name: locale.t.agent.bankName,
+  bank_account: locale.t.agent.accountNumber,
+  mfo: locale.t.agent.mfo,
+  phone: locale.t.agent.contactPhone,
+}))
 
 // Normalize user formatting (spaces, dashes) before validating numeric / passport fields.
 const digits = (value: string) => value.replace(/\D/g, '')
@@ -66,7 +83,16 @@ function validate(): boolean {
 }
 
 function handleSubmit() {
-  if (!validate()) return
+  if (!validate()) {
+    // Surface the exact field that failed at the top, and jump to it.
+    const firstField = Object.keys(fieldErrors)[0]
+    if (firstField) {
+      const label = fieldLabels.value[firstField] ?? firstField
+      toast.error(`${label}: ${fieldErrors[firstField]}`)
+      document.getElementById(firstField)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }
+    return
+  }
 
   emit('submit', {
     company_name: form.company_name.trim(),

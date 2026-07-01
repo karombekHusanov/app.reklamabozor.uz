@@ -10,7 +10,7 @@ const locale = useLocaleStore()
 
 <template>
   <div>
-    <AppHeader :title="locale.t.shell.tabs.chat" :subtitle="locale.t.chat.subtitle" />
+    <AppHeader :title="locale.t.shell.tabs.chat" :subtitle="locale.t.chat.subtitle" show-back />
 
     <section class="px-5">
       <GlassCard padding="none" class="overflow-hidden">

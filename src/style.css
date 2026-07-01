@@ -212,12 +212,21 @@
     @apply dark:bg-white/10 dark:text-muted-foreground;
   }
 
-  /* Segmented control track + active segment. */
+  /* Segmented control track + sliding active pill. The pill's position eases out
+     while its width settles with a slight spring overshoot, so it stretches
+     towards the new tab and then catches up — a "liquid" glide instead of a snap. */
   .glass-segment {
-    @apply bg-muted dark:bg-white/5;
+    @apply relative bg-muted dark:bg-white/5;
   }
   .glass-segment-active {
-    @apply bg-card text-primary shadow-sm dark:bg-white/15 dark:text-foreground;
+    @apply pointer-events-none absolute inset-y-1 left-0 rounded-xl bg-card shadow-sm dark:bg-white/15;
+    transition:
+      transform 420ms cubic-bezier(0.22, 1, 0.36, 1),
+      width 480ms cubic-bezier(0.34, 1.56, 0.64, 1);
+    will-change: transform, width;
+  }
+  .glass-segment-active.no-anim {
+    transition: none;
   }
 
   .tab-bar {

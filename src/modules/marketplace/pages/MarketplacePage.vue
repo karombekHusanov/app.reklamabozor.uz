@@ -55,11 +55,17 @@ function openAgent(id: number) {
 
 <template>
   <div>
-    <AppHeader :title="locale.t.marketplace.title" show-back />
+    <AppHeader
+      :title="locale.t.marketplace.title"
+      show-back
+    />
 
     <section class="space-y-4 px-5">
       <!-- Category tabs -->
-      <div v-if="categories.length" class="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <div
+        v-if="categories.length"
+        class="flex gap-2 overflow-x-auto pb-1 scrollbar-none [&::-webkit-scrollbar]:hidden"
+      >
         <button
           type="button"
           class="shrink-0 rounded-full px-5 py-2.5 text-sm font-semibold transition"
@@ -84,16 +90,27 @@ function openAgent(id: number) {
 
       <!-- Loading -->
       <template v-if="loading">
-        <Skeleton v-for="n in 4" :key="n" class="h-24 w-full rounded-3xl" />
+        <Skeleton
+          v-for="n in 4"
+          :key="n"
+          class="h-24 w-full rounded-3xl"
+        />
       </template>
 
       <!-- Error -->
-      <p v-else-if="error" class="rounded-2xl bg-destructive/10 px-4 py-3 text-sm text-white">
+      <p
+        v-else-if="error"
+        class="rounded-2xl bg-destructive/10 px-4 py-3 text-sm text-white"
+      >
         {{ error }}
       </p>
 
       <!-- Empty -->
-      <GlassCard v-else-if="filtered.length === 0" padding="none" class="overflow-hidden">
+      <GlassCard
+        v-else-if="filtered.length === 0"
+        padding="none"
+        class="overflow-hidden"
+      >
         <EmptyState
           :icon="Store"
           :title="locale.t.marketplace.emptyTitle"
@@ -102,7 +119,10 @@ function openAgent(id: number) {
       </GlassCard>
 
       <!-- List -->
-      <div v-else class="space-y-3">
+      <div
+        v-else
+        class="space-y-3"
+      >
         <AgentCard
           v-for="agent in filtered"
           :key="agent.id"

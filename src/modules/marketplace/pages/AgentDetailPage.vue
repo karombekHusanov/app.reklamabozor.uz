@@ -22,9 +22,8 @@ const { haptic } = useTelegram()
 const agent = ref<PublicAgent | null>(null)
 const loading = ref(true)
 
-// Placeholder metrics — no backend yet.
+// Rating is shown even before we have a real scoring backend — kept intentionally.
 const RATING = '4.7'
-const COMPLETED_ORDERS = 352
 
 const primaryCategory = computed(() =>
   agent.value?.categories[0] ? categoryName(agent.value.categories[0], locale.locale) : null,
@@ -94,9 +93,6 @@ function openChat() {
             <p v-if="agent.location_label" class="mt-1.5 flex items-start gap-1 text-sm text-white/75">
               <MapPin class="mt-0.5 size-3.5 shrink-0" />
               {{ agent.location_label }}
-            </p>
-            <p class="mt-0.5 text-xs text-white/60">
-              {{ locale.t.marketplace.completedOrders }}: {{ COMPLETED_ORDERS }} {{ locale.t.home.unit }}
             </p>
           </div>
         </div>

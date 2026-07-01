@@ -13,14 +13,13 @@ defineEmits<{ open: [] }>()
 
 const locale = useLocaleStore()
 
-// Placeholder metrics — no backend yet (rating, completed-orders).
+// Rating is shown even before we have a real scoring backend — kept intentionally.
 const RATING = '4.7'
-const COMPLETED_ORDERS = 352
 
-/** Real distance when the agent came from the nearby endpoint; otherwise a placeholder. */
+/** Only set when the agent came from the nearby endpoint — never fabricated. */
 const distanceLabel = computed(() => {
   const m = props.agent.distance_m
-  if (m == null) return '1.8km'
+  if (m == null) return null
   return m < 1000 ? `${m}m` : `${(m / 1000).toFixed(1)}km`
 })
 </script>
@@ -50,14 +49,11 @@ const distanceLabel = computed(() => {
           <p v-if="agent.location_label" class="mt-0.5 truncate text-sm text-slate-500">
             {{ agent.location_label }}
           </p>
-          <p class="mt-1 text-xs text-slate-400">
-            {{ locale.t.marketplace.completedOrders }}: <span class="font-semibold text-slate-500">{{ COMPLETED_ORDERS }}</span>
-          </p>
         </div>
       </div>
 
-      <!-- Distance -->
-      <span class="absolute bottom-3 right-4 text-xs font-medium text-slate-400">
+      <!-- Distance (only when we have a real value from the nearby endpoint) -->
+      <span v-if="distanceLabel" class="absolute bottom-3 right-4 text-xs font-medium text-slate-400">
         {{ locale.t.marketplace.distanceFrom }} {{ distanceLabel }}
       </span>
     </div>

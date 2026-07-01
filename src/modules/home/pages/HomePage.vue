@@ -1,23 +1,34 @@
 <script setup lang="ts">
-import { Bell, ChevronRight, Menu, Star, TrendingDown, TrendingUp } from '@lucide/vue'
+import { BadgeCheck, Bell, Clock, Menu, ShieldAlert, Star, TrendingUp } from '@lucide/vue'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import Avatar from '@/core/ui/Avatar.vue'
 import LanguageSwitcher from '@/core/ui/LanguageSwitcher.vue'
+import { Button } from '@/core/ui/button'
 import { useTelegram } from '@/core/composables/useTelegram'
 import { useLocaleStore } from '@/core/i18n/locale.store'
 import { useAuthStore } from '@/modules/auth/stores/auth.store'
+import { useAgentStore } from '@/modules/agent/stores/agent.store'
 import { useOrdersStore } from '@/modules/orders/stores/orders.store'
-import { fetchTopAgents, type PublicAgent } from '@/modules/marketplace/services/agents.service'
 import { type Banner, fetchBanners } from '@/modules/home/services/banners.service'
-import { fullName } from '@/modules/auth/types/user'
+import TopRatedAgents from '@/modules/home/components/TopRatedAgents.vue'
+import { fullName, isBusinessUser } from '@/modules/auth/types/user'
 import { ROUTES } from '@/modules/shell/constants/routes'
 
 const auth = useAuthStore()
+const agent = useAgentStore()
 const orders = useOrdersStore()
 const router = useRouter()
 const locale = useLocaleStore()
 const { user: telegramUser } = useTelegram()
+
+// Verification prompt shown to providers (agent/designer/seller) who aren't yet
+// approved. Clients never see it.
+const isProvider = computed(() => (auth.user ? isBusinessUser(auth.user) : false))
+const verification = computed<'unverified' | 'pending' | null>(() => {
+  if (!isProvider.value || agent.isApproved) return null
+  return agent.isPending ? 'pending' : 'unverified'
+})
 
 const displayName = computed(() => {
   if (auth.user) return fullName(auth.user) || 'Reklama Bozor'
@@ -27,34 +38,14 @@ const displayName = computed(() => {
 
 const ordersCount = computed(() => orders.myOrders.length)
 
-// --- Placeholder data (no backend yet — wire to real endpoints later) ---
-const onlineCount = 460
+// Rating is shown even before we have a real scoring backend — kept intentionally.
 const rating = 88
 const ratingStars = 4
-const placeholderStats = [
-  { name: 'Ziynat', value: 220190, up: true },
-  { name: 'Focus', value: 210890, up: false },
-  { name: 'Delavoy gorod', value: 190690, up: false },
-]
-// ------------------------------------------------------------------------
 
-const topAgents = ref<PublicAgent[]>([])
 const banners = ref<Banner[]>([])
 
 /** Whether real banners are configured; otherwise the branded placeholder shows. */
 const hasBanners = computed(() => banners.value.length > 0)
-
-/** Real agency names when available, otherwise the placeholder demo rows. */
-const stats = computed(() => {
-  if (topAgents.value.length === 0) return placeholderStats
-  return topAgents.value.slice(0, 3).map((agent, i) => ({
-    name: agent.company_name,
-    value: placeholderStats[i]?.value ?? 100000,
-    up: placeholderStats[i]?.up ?? true,
-  }))
-})
-
-const numberFmt = new Intl.NumberFormat('en-US')
 
 // Banner slider active-dot tracking.
 const scroller = ref<HTMLElement | null>(null)
@@ -88,12 +79,10 @@ function openBanner(banner: Banner) {
 }
 
 async function load() {
-  if (auth.isAuthenticated) void orders.loadMyOrders()
-  try {
-    topAgents.value = await fetchTopAgents(3)
-  }
-  catch {
-    // ignore — fall back to placeholder stats
+  if (auth.isAuthenticated) {
+    void orders.loadMyOrders()
+    // Load the provider's verification status so the home banner can react.
+    if (isProvider.value) void agent.loadProfile()
   }
   try {
     banners.value = await fetchBanners()
@@ -132,12 +121,6 @@ watch(() => auth.isAuthenticated, load)
           </button>
         </div>
       </div>
-
-      <!-- Online count -->
-      <p class="mt-3 flex items-center justify-center gap-1.5 text-xs text-white/80">
-        <span class="size-2 rounded-full bg-emerald-400" />
-        {{ locale.t.home.onlineAccounts }}: {{ onlineCount }}
-      </p>
 
       <!-- Identity -->
       <div class="mt-3 flex items-center gap-3">
@@ -236,51 +219,52 @@ watch(() => auth.isAuthenticated, load)
 
     <!-- ===== Body ===== -->
     <section class="space-y-5 px-5 pt-5">
-      <!-- Sold-goods shortcuts (placeholder destinations) -->
-      <div class="grid grid-cols-2 gap-3">
-        <button
-          v-for="n in 2"
-          :key="n"
-          type="button"
-          class="flex min-h-24 items-center justify-center rounded-3xl bg-gradient-to-br from-sky-100 to-sky-200 px-4 py-5 text-center text-base font-bold text-[#02305C] shadow-sm transition active:scale-[0.98] dark:from-sky-900/40 dark:to-sky-800/30 dark:text-sky-100"
-        >
-          {{ locale.t.home.soldGoods }}
-        </button>
-      </div>
-
-      <!-- Statistics -->
-      <div class="rounded-3xl border border-border bg-card p-5 shadow-[0_2px_12px_rgba(2,48,92,0.06)]">
-        <div class="flex items-center justify-between">
-          <h2 class="text-lg font-bold">
-            {{ locale.t.home.statistika }}
-          </h2>
-          <button
-            type="button"
-            class="inline-flex items-center gap-0.5 text-sm text-muted-foreground"
-            @click="router.push(ROUTES.marketplace)"
-          >
-            {{ locale.t.home.viewAll }}
-            <ChevronRight class="size-4" />
-          </button>
+      <!-- Provider verification prompt (action needed) -->
+      <div
+        v-if="verification === 'unverified'"
+        class="space-y-3 rounded-3xl border border-amber-300/70 bg-amber-50 p-4 dark:border-amber-500/30 dark:bg-amber-500/10"
+      >
+        <div class="flex items-start gap-3">
+          <div class="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-amber-400/20 text-amber-600 dark:text-amber-400">
+            <ShieldAlert class="size-5" />
+          </div>
+          <div class="min-w-0 flex-1">
+            <p class="font-semibold text-amber-900 dark:text-amber-200">
+              {{ locale.t.home.verifyTitle }}
+            </p>
+            <p class="text-sm text-amber-800/80 dark:text-amber-200/70">
+              {{ locale.t.home.verifyBody }}
+            </p>
+          </div>
         </div>
-
-        <ul class="mt-4 space-y-4">
-          <li v-for="(row, i) in stats" :key="i" class="flex items-center gap-3">
-            <Avatar :name="row.name" size="md" class="rounded-xl" />
-            <div class="min-w-0 flex-1">
-              <p class="flex items-center gap-1 truncate font-semibold leading-tight">
-                {{ row.name }}
-                <TrendingUp v-if="row.up" class="size-4 shrink-0 text-emerald-500" />
-                <TrendingDown v-else class="size-4 shrink-0 text-red-500" />
-              </p>
-              <p class="text-xs text-muted-foreground">
-                {{ locale.t.home.outdoorAd }}
-              </p>
-            </div>
-            <span class="shrink-0 font-semibold tabular-nums">{{ numberFmt.format(row.value) }}</span>
-          </li>
-        </ul>
+        <Button
+          class="mt-1 h-11 w-full justify-center rounded-2xl"
+          @click="router.push(ROUTES.profile)"
+        >
+          <BadgeCheck class="size-4" />
+          {{ locale.t.home.verifyButton }}
+        </Button>
       </div>
+
+      <!-- Verification pending (awaiting review) -->
+      <div
+        v-else-if="verification === 'pending'"
+        class="flex items-start gap-3 rounded-3xl border border-amber-300/70 bg-amber-50 p-4 dark:border-amber-500/30 dark:bg-amber-500/10"
+      >
+        <div class="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-amber-400/20 text-amber-600 dark:text-amber-400">
+          <Clock class="size-5" />
+        </div>
+        <div class="min-w-0 flex-1">
+          <p class="font-semibold text-amber-900 dark:text-amber-200">
+            {{ locale.t.home.pendingTitle }}
+          </p>
+          <p class="text-sm text-amber-800/80 dark:text-amber-200/70">
+            {{ locale.t.home.pendingBody }}
+          </p>
+        </div>
+      </div>
+
+      <TopRatedAgents />
     </section>
   </div>
 </template>

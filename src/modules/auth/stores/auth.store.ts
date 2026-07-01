@@ -81,6 +81,19 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  /** Edit the user's name (phone is not editable — it comes from Telegram). */
+  async function updateProfile(payload: { first_name?: string, last_name?: string | null }): Promise<boolean> {
+    error.value = null
+    try {
+      user.value = await updateCurrentUser(payload)
+      return true
+    }
+    catch (e) {
+      error.value = getApiErrorMessage(e)
+      return false
+    }
+  }
+
   /** Re-fetch the current user (e.g. to pick up a phone saved by the bot webhook). */
   async function refreshUser(): Promise<User | null> {
     if (!token.value) {
@@ -195,6 +208,7 @@ export const useAuthStore = defineStore('auth', () => {
     restoreSession,
     refreshUser,
     saveAvatar,
+    updateProfile,
     setUser,
     logout,
     clearSession,

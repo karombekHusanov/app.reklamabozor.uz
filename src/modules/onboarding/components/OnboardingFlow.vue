@@ -1,16 +1,19 @@
 <script setup lang="ts">
 import { ArrowRight, Check } from '@lucide/vue'
 import { ref } from 'vue'
+import { useRouter } from 'vue-router'
 import BrandLogo from '@/core/ui/BrandLogo.vue'
 import { useLocaleStore } from '@/core/i18n/locale.store'
 import { LOCALES, type Locale } from '@/core/i18n/messages'
 import { useTelegram } from '@/core/composables/useTelegram'
 import { getApiErrorMessage } from '@/core/api/api-error'
+import { ROUTES } from '@/modules/shell/constants/routes'
 import { useOnboardingStore } from '@/modules/onboarding/stores/onboarding.store'
 import type { SelectableRole } from '@/modules/onboarding/services/onboarding.service'
 
 const locale = useLocaleStore()
 const onboarding = useOnboardingStore()
+const router = useRouter()
 const { haptic } = useTelegram()
 
 const agreed = ref(false)
@@ -44,6 +47,11 @@ async function pickRole(role: SelectableRole) {
 
   try {
     await onboarding.selectRole(role)
+    // Providers (agent/designer/seller) go straight to the verification form
+    // on their profile page; clients land on the normal home.
+    if (role !== 'client') {
+      await router.replace(ROUTES.profile)
+    }
   }
   catch (e) {
     errorMessage.value = getApiErrorMessage(e) || locale.t.onboarding.role.error

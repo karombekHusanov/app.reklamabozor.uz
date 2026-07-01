@@ -13,6 +13,7 @@ const locale = useLocaleStore()
     <AppHeader
       :title="locale.t.designers.title"
       :subtitle="locale.t.designers.subtitle"
+      show-back
     />
 
     <section class="px-5">
