@@ -2,7 +2,7 @@
 import { ROUTES } from '@/modules/shell/constants/routes'
 import { useTelegram } from '@/core/composables/useTelegram'
 import { useLocaleStore } from '@/core/i18n/locale.store'
-import { ClipboardList, Map, MessageCircle, Plus, Users } from '@lucide/vue'
+import { ClipboardList, Home, Map, Plus, Users } from '@lucide/vue'
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
@@ -12,9 +12,9 @@ const { haptic } = useTelegram()
 const locale = useLocaleStore()
 
 const tabs = computed(() => [
+  { to: ROUTES.home, label: locale.t.shell.tabs.home, icon: Home },
   { to: ROUTES.marketplace, label: locale.t.shell.tabs.providers, icon: Users },
   { to: ROUTES.map, label: locale.t.shell.tabs.map, icon: Map },
-  { to: ROUTES.chat, label: locale.t.shell.tabs.chat, icon: MessageCircle, dot: true },
   { to: ROUTES.orders, label: locale.t.shell.tabs.myOrders, icon: ClipboardList },
 ])
 
@@ -73,13 +73,7 @@ function createOrder() {
         :class="activePath === tab.to ? 'text-white' : 'text-white/55'"
         @click="navigate(tab.to)"
       >
-        <span class="relative">
-          <component :is="tab.icon" class="size-5" />
-          <span
-            v-if="tab.dot"
-            class="absolute -right-1 -top-0.5 size-2 rounded-full bg-red-500 ring-2 ring-[#02305C]"
-          />
-        </span>
+        <component :is="tab.icon" class="size-5" />
         <span class="text-[10px] font-medium">{{ tab.label }}</span>
       </button>
     </div>

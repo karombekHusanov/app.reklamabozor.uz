@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ChevronRight, MessageSquareQuote } from '@lucide/vue'
+import { ChevronRight, Eye, MessageSquareQuote } from '@lucide/vue'
 import GlassCard from '@/core/ui/GlassCard.vue'
 import OrderStatusBadge from '@/modules/orders/components/OrderStatusBadge.vue'
 import { useLocaleStore } from '@/core/i18n/locale.store'
@@ -28,10 +28,16 @@ const locale = useLocaleStore()
     </div>
 
     <div class="flex items-center justify-between text-xs text-muted-foreground">
-      <span class="inline-flex items-center gap-1.5">
-        <MessageSquareQuote class="size-3.5" />
-        {{ order.offers_count ?? order.offers?.length ?? 0 }} {{ locale.t.orders.offersSuffix }}
-      </span>
+      <div class="inline-flex items-center gap-4">
+        <span class="inline-flex items-center gap-1.5">
+          <Eye class="size-3.5" />
+          {{ order.views_count ?? 0 }} {{ locale.t.orders.viewsSuffix }}
+        </span>
+        <span class="inline-flex items-center gap-1.5">
+          <MessageSquareQuote class="size-3.5" />
+          {{ order.offers_count ?? order.offers?.length ?? 0 }} {{ locale.t.orders.offersSuffix }}
+        </span>
+      </div>
       <ChevronRight class="size-4" />
     </div>
   </GlassCard>

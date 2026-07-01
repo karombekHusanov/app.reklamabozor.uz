@@ -2,6 +2,7 @@
 import { Bell, ChevronLeft } from '@lucide/vue'
 import { useRouter } from 'vue-router'
 import type { HTMLAttributes } from 'vue'
+import LanguageSwitcher from '@/core/ui/LanguageSwitcher.vue'
 
 withDefaults(defineProps<{
   class?: HTMLAttributes['class']
@@ -30,13 +31,16 @@ const router = useRouter()
       </button>
       <span v-else />
 
-      <button
-        type="button"
-        class="relative flex size-9 items-center justify-center rounded-full bg-white/15 transition active:scale-95"
-      >
-        <Bell class="size-4.5" />
-        <span class="absolute right-1.5 top-1.5 size-2 rounded-full bg-red-500 ring-2 ring-[#02305C]" />
-      </button>
+      <div class="flex items-center gap-2">
+        <LanguageSwitcher />
+        <button
+          type="button"
+          class="relative flex size-9 items-center justify-center rounded-full bg-white/15 transition active:scale-95"
+        >
+          <Bell class="size-4.5" />
+          <span class="absolute right-1.5 top-1.5 size-2 rounded-full bg-red-500 ring-2 ring-[#02305C]" />
+        </button>
+      </div>
     </div>
 
     <!-- Title -->

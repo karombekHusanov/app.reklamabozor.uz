@@ -1,5 +1,6 @@
 import axios from 'axios'
 import { currentToken } from '@/core/lib/token-storage'
+import { absolutizeMediaUrls } from '@/core/lib/media'
 
 export const api = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL ?? '',
@@ -22,7 +23,13 @@ api.interceptors.request.use((config) => {
 })
 
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    // Resolve host-less "/storage/…" file paths to absolute URLs using the API base.
+    if (response.data) {
+      response.data = absolutizeMediaUrls(response.data)
+    }
+    return response
+  },
   (error) => {
     // Session invalidation is owned by the auth store (it clears all token layers on
     // startup-restore failure or explicit logout). We intentionally do NOT wipe the token

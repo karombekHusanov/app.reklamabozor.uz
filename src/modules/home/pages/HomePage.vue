@@ -3,11 +3,13 @@ import { Bell, ChevronRight, Menu, Star, TrendingDown, TrendingUp } from '@lucid
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import Avatar from '@/core/ui/Avatar.vue'
+import LanguageSwitcher from '@/core/ui/LanguageSwitcher.vue'
 import { useTelegram } from '@/core/composables/useTelegram'
 import { useLocaleStore } from '@/core/i18n/locale.store'
 import { useAuthStore } from '@/modules/auth/stores/auth.store'
 import { useOrdersStore } from '@/modules/orders/stores/orders.store'
 import { fetchTopAgents, type PublicAgent } from '@/modules/marketplace/services/agents.service'
+import { type Banner, fetchBanners } from '@/modules/home/services/banners.service'
 import { fullName } from '@/modules/auth/types/user'
 import { ROUTES } from '@/modules/shell/constants/routes'
 
@@ -29,14 +31,6 @@ const ordersCount = computed(() => orders.myOrders.length)
 const onlineCount = 460
 const rating = 88
 const ratingStars = 4
-const banners = [
-  { id: 1, title: 'Banner Reklama' },
-  { id: 2, title: 'Banner Reklama' },
-  { id: 3, title: 'Banner Reklama' },
-  { id: 4, title: 'Banner Reklama' },
-  { id: 5, title: 'Banner Reklama' },
-  { id: 6, title: 'Banner Reklama' },
-]
 const placeholderStats = [
   { name: 'Ziynat', value: 220190, up: true },
   { name: 'Focus', value: 210890, up: false },
@@ -45,6 +39,10 @@ const placeholderStats = [
 // ------------------------------------------------------------------------
 
 const topAgents = ref<PublicAgent[]>([])
+const banners = ref<Banner[]>([])
+
+/** Whether real banners are configured; otherwise the branded placeholder shows. */
+const hasBanners = computed(() => banners.value.length > 0)
 
 /** Real agency names when available, otherwise the placeholder demo rows. */
 const stats = computed(() => {
@@ -67,6 +65,28 @@ function onBannerScroll() {
   activeBanner.value = Math.round(el.scrollLeft / el.clientWidth)
 }
 
+function openBanner(banner: Banner) {
+  // Type-driven redirect: agency → agent profile, product → product detail.
+  if (banner.target_id) {
+    if (banner.type === 'agent') {
+      void router.push(`/agents/${banner.target_id}`)
+      return
+    }
+    if (banner.type === 'product') {
+      void router.push(`/products/${banner.target_id}`)
+      return
+    }
+  }
+
+  // Fallback to an explicit link when no typed target is set.
+  if (!banner.link_url) return
+  if (/^https?:\/\//.test(banner.link_url)) {
+    window.open(banner.link_url, '_blank', 'noopener')
+    return
+  }
+  void router.push(banner.link_url)
+}
+
 async function load() {
   if (auth.isAuthenticated) void orders.loadMyOrders()
   try {
@@ -74,6 +94,12 @@ async function load() {
   }
   catch {
     // ignore — fall back to placeholder stats
+  }
+  try {
+    banners.value = await fetchBanners()
+  }
+  catch {
+    // ignore — fall back to placeholder banner slide
   }
 }
 
@@ -95,13 +121,16 @@ watch(() => auth.isAuthenticated, load)
           <Menu class="size-5" />
         </button>
 
-        <button
-          type="button"
-          class="relative flex size-10 items-center justify-center rounded-full bg-white/10 transition active:scale-95"
-        >
-          <Bell class="size-5" />
-          <span class="absolute right-1.5 top-1.5 size-2 rounded-full bg-red-500 ring-2 ring-[#02305C]" />
-        </button>
+        <div class="flex items-center gap-2">
+          <LanguageSwitcher />
+          <button
+            type="button"
+            class="relative flex size-10 items-center justify-center rounded-full bg-white/10 transition active:scale-95"
+          >
+            <Bell class="size-5" />
+            <span class="absolute right-1.5 top-1.5 size-2 rounded-full bg-red-500 ring-2 ring-[#02305C]" />
+          </button>
+        </div>
       </div>
 
       <!-- Online count -->
@@ -149,9 +178,38 @@ watch(() => auth.isAuthenticated, load)
           class="flex snap-x snap-mandatory gap-3 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
           @scroll="onBannerScroll"
         >
+          <!-- Real image banners -->
+          <template v-if="hasBanners">
+            <button
+              v-for="banner in banners"
+              :key="banner.id"
+              type="button"
+              class="relative min-w-full snap-center overflow-hidden rounded-2xl bg-gradient-to-br from-white to-sky-100 shadow-sm transition active:scale-[0.99]"
+              @click="openBanner(banner)"
+            >
+              <img
+                v-if="banner.image"
+                :src="banner.image"
+                :alt="banner.title ?? 'Banner'"
+                class="aspect-[16/7] w-full object-cover"
+              >
+              <div
+                v-if="banner.title || banner.subtitle"
+                class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent p-4 text-left text-white"
+              >
+                <p v-if="banner.title" class="text-lg font-bold leading-tight">
+                  {{ banner.title }}
+                </p>
+                <p v-if="banner.subtitle" class="mt-0.5 text-xs text-white/85">
+                  {{ banner.subtitle }}
+                </p>
+              </div>
+            </button>
+          </template>
+
+          <!-- Branded placeholder when no banners are configured -->
           <div
-            v-for="banner in banners"
-            :key="banner.id"
+            v-else
             class="flex min-w-full snap-center items-center gap-3 rounded-2xl bg-gradient-to-br from-white to-sky-100 p-4 text-[#02305C] shadow-sm"
           >
             <img src="/images/logo.png" alt="Reklama Bozor" class="size-10 shrink-0 object-contain">
@@ -160,12 +218,12 @@ watch(() => auth.isAuthenticated, load)
                 Reklama <span class="italic">Bozor</span>
               </p>
               <p class="mt-1 text-lg font-bold leading-tight">
-                {{ banner.title }}
+                Banner Reklama
               </p>
             </div>
           </div>
         </div>
-        <div class="mt-3 flex items-center justify-center gap-1.5">
+        <div v-if="hasBanners && banners.length > 1" class="mt-3 flex items-center justify-center gap-1.5">
           <span
             v-for="(banner, i) in banners"
             :key="banner.id"

@@ -14,12 +14,23 @@ export interface PublicAgent {
   website_url: string | null
   completion_percent: number
   categories: Category[]
+  /** Distance from the requested point in metres — only on the nearby endpoint. */
+  distance_m?: number
 }
 
 /** Top approved agents (ranked by profile completeness) for the home slider / marketplace. */
 export async function fetchTopAgents(limit = 10): Promise<PublicAgent[]> {
   const { data } = await api.get<ApiSuccess<PublicAgent[]>>('/api/v1/agents', {
     params: { limit },
+  })
+
+  return data.data
+}
+
+/** Approved agents nearest to a point, ordered by distance (for the new-order form). */
+export async function fetchNearbyAgents(lat: number, lng: number, limit = 5): Promise<PublicAgent[]> {
+  const { data } = await api.get<ApiSuccess<PublicAgent[]>>('/api/v1/agents/nearby', {
+    params: { lat, lng, limit },
   })
 
   return data.data

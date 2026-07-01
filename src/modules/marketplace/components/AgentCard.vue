@@ -1,10 +1,11 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { BadgeCheck, Star } from '@lucide/vue'
 import Avatar from '@/core/ui/Avatar.vue'
 import { useLocaleStore } from '@/core/i18n/locale.store'
 import type { PublicAgent } from '@/modules/marketplace/services/agents.service'
 
-defineProps<{
+const props = defineProps<{
   agent: PublicAgent
 }>()
 
@@ -12,10 +13,16 @@ defineEmits<{ open: [] }>()
 
 const locale = useLocaleStore()
 
-// Placeholder metrics — no backend yet (rating, completed-orders, distance).
+// Placeholder metrics — no backend yet (rating, completed-orders).
 const RATING = '4.7'
 const COMPLETED_ORDERS = 352
-const DISTANCE = '1.8km'
+
+/** Real distance when the agent came from the nearby endpoint; otherwise a placeholder. */
+const distanceLabel = computed(() => {
+  const m = props.agent.distance_m
+  if (m == null) return '1.8km'
+  return m < 1000 ? `${m}m` : `${(m / 1000).toFixed(1)}km`
+})
 </script>
 
 <template>
@@ -51,7 +58,7 @@ const DISTANCE = '1.8km'
 
       <!-- Distance -->
       <span class="absolute bottom-3 right-4 text-xs font-medium text-slate-400">
-        {{ locale.t.marketplace.distanceFrom }} {{ DISTANCE }}
+        {{ locale.t.marketplace.distanceFrom }} {{ distanceLabel }}
       </span>
     </div>
   </button>

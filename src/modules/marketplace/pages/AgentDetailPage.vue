@@ -46,7 +46,9 @@ onMounted(async () => {
 
 function openChat() {
   haptic('light')
-  router.push(ROUTES.chat)
+  // Chat is no longer a footer tab — it's reached contextually from an agent's
+  // profile. Pass the agent id so the conversation targets this agency.
+  router.push({ path: ROUTES.chat, query: { agent: props.id } })
 }
 </script>
 

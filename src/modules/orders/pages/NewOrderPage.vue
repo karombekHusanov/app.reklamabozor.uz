@@ -65,7 +65,7 @@ async function handleSubmit(payload: CreateOrderPayload) {
 
 <template>
   <div>
-    <AppHeader :title="locale.t.orders.newTitle" :subtitle="headerSubtitle" />
+    <AppHeader :title="locale.t.orders.quickOrderTitle" :subtitle="headerSubtitle" show-back />
 
     <section class="space-y-5 px-5">
       <!-- Success -->
