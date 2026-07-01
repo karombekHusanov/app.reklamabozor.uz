@@ -241,3 +241,12 @@
     padding-bottom: max(env(safe-area-inset-bottom), 0.5rem);
   }
 }
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+    }
+  body {
+    @apply bg-background text-foreground;
+    }
+}
