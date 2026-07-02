@@ -1,19 +1,16 @@
 <script setup lang="ts">
-import Autoplay from 'embla-carousel-autoplay'
-import { ChevronRight, Crown, Star } from '@lucide/vue'
-import { onMounted, ref } from 'vue'
+import { ChevronRight, Star } from '@lucide/vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import Avatar from '@/core/ui/Avatar.vue'
 import Skeleton from '@/core/ui/Skeleton.vue'
 import HomeAgentCardSkeleton from '@/modules/home/components/HomeAgentCardSkeleton.vue'
-import {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-} from '@/core/ui/carousel'
+import { categoryName } from '@/core/i18n/category-name'
 import { useLocaleStore } from '@/core/i18n/locale.store'
 import { ROUTES } from '@/modules/shell/constants/routes'
 import { fetchTopAgents, type PublicAgent } from '@/modules/marketplace/services/agents.service'
+
+const LIST_LIMIT = 5
 
 const locale = useLocaleStore()
 const router = useRouter()
@@ -21,13 +18,36 @@ const router = useRouter()
 const agents = ref<PublicAgent[]>([])
 const loading = ref(true)
 
-const RATING = '4.7'
+const visibleAgents = computed(() => agents.value.slice(0, LIST_LIMIT))
 
-const autoplay = Autoplay({ delay: 4000, stopOnInteraction: true })
+/** Medal-style rank badge classes for the podium (1-3); the rest stay neutral. */
+function rankClasses(rank: number): string {
+  switch (rank) {
+    case 1:
+      return 'bg-gradient-to-br from-amber-300 to-amber-500 text-amber-950 ring-amber-200'
+    case 2:
+      return 'bg-gradient-to-br from-slate-200 to-slate-400 text-slate-800 ring-slate-100'
+    case 3:
+      return 'bg-gradient-to-br from-orange-300 to-orange-600 text-orange-950 ring-orange-200'
+    default:
+      return 'bg-[#0386D9]/12 text-[#02305C] ring-white/60'
+  }
+}
+
+function agentCategory(agent: PublicAgent): string | null {
+  const first = agent.categories[0]
+  if (first) return categoryName(first, locale.locale)
+  return agent.bio
+}
+
+/** Placeholder rating derived from profile completeness (no scoring backend yet). */
+function agentRating(agent: PublicAgent): string {
+  return (4.5 + (agent.completion_percent / 100) * 0.5).toFixed(1)
+}
 
 onMounted(async () => {
   try {
-    agents.value = await fetchTopAgents(10)
+    agents.value = await fetchTopAgents(LIST_LIMIT)
   }
   finally {
     loading.value = false
@@ -40,19 +60,19 @@ function openAgent(id: number) {
 </script>
 
 <template>
-  <div v-if="loading || agents.length" class="space-y-3">
-    <div class="flex items-center justify-between">
+  <div v-if="loading || agents.length" class="home-card overflow-hidden p-4">
+    <div class="flex items-center justify-between pb-1">
       <template v-if="loading">
-        <Skeleton class="h-6 w-36 rounded-lg bg-white/20" />
-        <Skeleton class="h-4 w-24 rounded-md bg-white/15" />
+        <Skeleton class="h-5 w-32 rounded-md bg-[#0386D9]/15" />
+        <Skeleton class="h-4 w-20 rounded-md bg-[#0386D9]/10" />
       </template>
       <template v-else>
-        <h2 class="text-lg font-bold text-white">
+        <h2 class="text-base font-bold text-[#0b1f33]">
           {{ locale.t.home.topAgencies }}
         </h2>
         <button
           type="button"
-          class="inline-flex items-center gap-0.5 text-sm text-white/70 transition active:text-white"
+          class="inline-flex items-center gap-0.5 text-sm font-medium text-[#5b6b7e] transition active:text-[#0b1f33]"
           @click="router.push(ROUTES.marketplace)"
         >
           {{ locale.t.home.viewAllAgents }}
@@ -61,55 +81,51 @@ function openAgent(id: number) {
       </template>
     </div>
 
-    <div v-if="loading" class="flex gap-3 overflow-hidden">
-      <HomeAgentCardSkeleton class="w-[85%] shrink-0 sm:w-[72%]" />
-      <HomeAgentCardSkeleton class="w-[85%] shrink-0 opacity-70 sm:w-[72%]" />
+    <div v-if="loading" class="divide-y divide-[#0386D9]/10">
+      <HomeAgentCardSkeleton v-for="n in 4" :key="n" />
     </div>
 
-    <Carousel
-      v-else
-      class="w-full"
-      :opts="{ align: 'start', loop: agents.length > 1, dragFree: true }"
-      :plugins="[autoplay]"
-    >
-      <CarouselContent class="-ml-3">
-        <CarouselItem
-          v-for="(agent, index) in agents"
-          :key="agent.id"
-          class="basis-[85%] pl-3 sm:basis-[72%]"
+    <div v-else class="divide-y divide-[#0386D9]/10">
+      <button
+        v-for="(agent, index) in visibleAgents"
+        :key="agent.id"
+        type="button"
+        class="flex w-full items-center gap-3 py-3 text-left transition active:opacity-80"
+        @click="openAgent(agent.id)"
+      >
+        <span
+          class="flex size-6 shrink-0 items-center justify-center rounded-full text-xs font-extrabold shadow-sm ring-2"
+          :class="rankClasses(index + 1)"
         >
-          <button
-            type="button"
-            class="w-full rounded-2xl border border-white/30 bg-white p-4 text-left shadow-md transition active:scale-[0.98]"
-            :class="index === 0 && 'ring-2 ring-amber-400/40'"
-            @click="openAgent(agent.id)"
-          >
-            <div class="flex items-start gap-3">
-              <div class="relative shrink-0">
-                <Avatar :src="agent.company_logo" :name="agent.company_name" size="lg" class="rounded-2xl" />
-                <span
-                  class="absolute -bottom-1.5 -right-1.5 flex size-6 items-center justify-center rounded-full bg-gradient-to-br from-amber-300 to-amber-500 text-[11px] font-bold text-amber-950 ring-2 ring-white"
-                >
-                  <Crown v-if="index === 0" class="size-3.5" />
-                  <template v-else>{{ index + 1 }}</template>
-                </span>
-              </div>
-              <div class="min-w-0 flex-1">
-                <p class="truncate text-base font-bold leading-tight text-[#0b1f33]">
-                  {{ agent.company_name }}
-                </p>
-                <p v-if="agent.location_label" class="mt-0.5 truncate text-xs text-[#5b6b7e]">
-                  {{ agent.location_label }}
-                </p>
-                <span class="mt-2 inline-flex items-center gap-1 rounded-full bg-amber-400/90 px-2.5 py-1 text-xs font-bold text-amber-950">
-                  <Star class="size-3 fill-amber-950" />
-                  {{ RATING }}
-                </span>
-              </div>
-            </div>
-          </button>
-        </CarouselItem>
-      </CarouselContent>
-    </Carousel>
+          {{ index + 1 }}
+        </span>
+
+        <Avatar
+          :src="agent.company_logo"
+          :name="agent.company_name"
+          size="md"
+          class="shrink-0 rounded-full"
+        />
+
+        <div class="min-w-0 flex-1">
+          <p class="truncate text-sm font-bold text-[#0b1f33]">
+            {{ agent.company_name }}
+          </p>
+          <p v-if="agentCategory(agent)" class="truncate text-xs text-[#5b6b7e]">
+            {{ agentCategory(agent) }}
+          </p>
+        </div>
+
+        <div class="flex shrink-0 flex-col items-end gap-1">
+          <span class="inline-flex items-center gap-1 text-sm font-bold text-[#0b1f33]">
+            <Star class="size-3.5 fill-amber-400 text-amber-400" />
+            {{ agentRating(agent) }}
+          </span>
+          <span class="text-[11px] font-medium text-[#5b6b7e]">
+            {{ locale.t.home.ordersDone.replace('{count}', String(agent.completed_orders_count)) }}
+          </span>
+        </div>
+      </button>
+    </div>
   </div>
 </template>

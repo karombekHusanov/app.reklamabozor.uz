@@ -250,7 +250,7 @@ watch(
 
         <div
           v-else
-          class="flex min-w-full snap-center items-center gap-3 rounded-2xl border border-white/30 bg-gradient-to-br from-white to-sky-100 p-4 shadow-lg"
+          class="home-card flex min-w-full snap-center items-center gap-3 p-4"
         >
           <img src="/images/logo.png" alt="Reklama Bozor" class="size-10 shrink-0 object-contain">
           <div>
@@ -279,19 +279,19 @@ watch(
       <button
         v-if="!auth.isAuthenticated"
         type="button"
-        class="w-full overflow-hidden rounded-2xl bg-gradient-to-br from-[#7c3aed] to-[#4f46e5] p-5 text-left text-white shadow-lg transition active:scale-[0.98]"
+        class="home-card w-full overflow-hidden p-5 text-left text-[#0b1f33] transition active:scale-[0.98]"
         @click="navigate(ROUTES.profile)"
       >
-        <div class="flex size-14 items-center justify-center rounded-2xl bg-white/20 shadow-md ring-1 ring-white/30">
+        <div class="flex size-14 items-center justify-center rounded-2xl bg-[#0386D9]/15 text-[#0386D9] shadow-sm ring-1 ring-[#0386D9]/20">
           <Sparkles class="size-7" />
         </div>
         <h2 class="mt-4 text-lg font-bold">
           {{ locale.t.home.signInTitle }}
         </h2>
-        <p class="mt-1.5 text-sm leading-relaxed text-white/80">
+        <p class="mt-1.5 text-sm leading-relaxed text-[#5b6b7e]">
           {{ locale.t.home.signInBody }}
         </p>
-        <span class="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold">
+        <span class="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-[#0386D9]">
           {{ locale.t.home.signInCta }}
           <ArrowRight class="size-4" />
         </span>
@@ -301,19 +301,19 @@ watch(
       <button
         v-else-if="verification === 'unverified'"
         type="button"
-        class="w-full overflow-hidden rounded-2xl bg-gradient-to-br from-[#f59e0b] to-[#d97706] p-5 text-left text-white shadow-lg transition active:scale-[0.98]"
+        class="home-card w-full overflow-hidden p-5 text-left text-[#0b1f33] transition active:scale-[0.98]"
         @click="navigate(ROUTES.profile)"
       >
-        <div class="flex size-14 items-center justify-center rounded-2xl bg-white/20 shadow-md ring-1 ring-white/30">
+        <div class="flex size-14 items-center justify-center rounded-2xl bg-amber-500/15 text-amber-700 shadow-sm ring-1 ring-amber-500/25">
           <ShieldAlert class="size-7" />
         </div>
         <h2 class="mt-4 text-lg font-bold">
           {{ locale.t.home.verifyTitle }}
         </h2>
-        <p class="mt-1.5 text-sm leading-relaxed text-white/85">
+        <p class="mt-1.5 text-sm leading-relaxed text-[#5b6b7e]">
           {{ locale.t.home.verifyBody }}
         </p>
-        <span class="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold">
+        <span class="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-[#0386D9]">
           {{ locale.t.home.verifyButton }}
           <ArrowRight class="size-4" />
         </span>
@@ -322,15 +322,15 @@ watch(
       <!-- Verification pending -->
       <div
         v-else-if="verification === 'pending'"
-        class="overflow-hidden rounded-2xl bg-gradient-to-br from-[#64748b] to-[#475569] p-5 text-white shadow-lg"
+        class="home-card overflow-hidden p-5 text-[#0b1f33]"
       >
-        <div class="flex size-14 items-center justify-center rounded-2xl bg-white/20 shadow-md ring-1 ring-white/30">
+        <div class="flex size-14 items-center justify-center rounded-2xl bg-slate-500/15 text-slate-600 shadow-sm ring-1 ring-slate-500/20">
           <Clock class="size-7" />
         </div>
         <h2 class="mt-4 text-lg font-bold">
           {{ locale.t.home.pendingTitle }}
         </h2>
-        <p class="mt-1.5 text-sm leading-relaxed text-white/80">
+        <p class="mt-1.5 text-sm leading-relaxed text-[#5b6b7e]">
           {{ locale.t.home.pendingBody }}
         </p>
       </div>
@@ -339,19 +339,19 @@ watch(
       <button
         v-else-if="showPrimaryAdvertise"
         type="button"
-        class="w-full overflow-hidden rounded-2xl bg-gradient-to-br from-[#0386D9] to-[#02305C] p-5 text-left text-white shadow-lg transition active:scale-[0.98]"
+        class="home-card w-full overflow-hidden p-5 text-left text-[#0b1f33] transition active:scale-[0.98]"
         @click="navigate(ROUTES.newOrder)"
       >
-        <div class="flex size-14 items-center justify-center rounded-2xl bg-white/20 shadow-md ring-1 ring-white/30">
+        <div class="flex size-14 items-center justify-center rounded-2xl bg-[#0386D9]/15 text-[#0386D9] shadow-sm ring-1 ring-[#0386D9]/20">
           <ClipboardList class="size-7" />
         </div>
         <h2 class="mt-4 text-lg font-bold">
           {{ locale.t.home.advertiseTitle }}
         </h2>
-        <p class="mt-1.5 text-sm leading-relaxed text-white/80">
+        <p class="mt-1.5 text-sm leading-relaxed text-[#5b6b7e]">
           {{ locale.t.home.advertiseBody }}
         </p>
-        <span class="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold">
+        <span class="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-[#0386D9]">
           {{ locale.t.home.advertiseCta }}
           <ArrowRight class="size-4" />
         </span>
@@ -361,19 +361,19 @@ watch(
       <button
         v-else-if="showPrimaryOpenOrders"
         type="button"
-        class="w-full overflow-hidden rounded-2xl bg-gradient-to-br from-[#0386D9] to-[#02305C] p-5 text-left text-white shadow-lg transition active:scale-[0.98]"
+        class="home-card w-full overflow-hidden p-5 text-left text-[#0b1f33] transition active:scale-[0.98]"
         @click="navigate({ path: ROUTES.profile, query: { tab: 'offers' } })"
       >
-        <div class="flex size-14 items-center justify-center rounded-2xl bg-white/20 shadow-md ring-1 ring-white/30">
+        <div class="flex size-14 items-center justify-center rounded-2xl bg-[#0386D9]/15 text-[#0386D9] shadow-sm ring-1 ring-[#0386D9]/20">
           <ClipboardList class="size-7" />
         </div>
         <h2 class="mt-4 text-lg font-bold">
           {{ locale.t.home.viewOpenOrders }}
         </h2>
-        <p class="mt-1.5 text-sm leading-relaxed text-white/80">
+        <p class="mt-1.5 text-sm leading-relaxed text-[#5b6b7e]">
           {{ locale.t.home.openOrdersBody }}
         </p>
-        <span class="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold">
+        <span class="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-[#0386D9]">
           {{ locale.t.home.viewOpenOrders }}
           <ArrowRight class="size-4" />
         </span>
@@ -383,31 +383,31 @@ watch(
       <div class="grid grid-cols-2 gap-3">
         <button
           type="button"
-          class="overflow-hidden rounded-2xl bg-gradient-to-br from-[#137AA6] to-[#014BA4] p-4 text-left text-white shadow-lg transition active:scale-[0.98]"
+          class="home-card overflow-hidden p-4 text-left text-[#0b1f33] transition active:scale-[0.98]"
           @click="navigate(ROUTES.marketplace)"
         >
-          <div class="flex size-12 items-center justify-center rounded-xl bg-white/25 shadow-md ring-1 ring-white/30">
+          <div class="flex size-12 items-center justify-center rounded-xl bg-[#0386D9]/15 text-[#0386D9] shadow-sm ring-1 ring-[#0386D9]/20">
             <Users class="size-6" />
           </div>
           <p class="mt-3 text-sm font-bold">
             {{ locale.t.home.browseProviders }}
           </p>
-          <p class="mt-1 text-xs leading-snug text-white/75">
+          <p class="mt-1 text-xs leading-snug text-[#5b6b7e]">
             {{ locale.t.home.browseProvidersHint }}
           </p>
         </button>
         <button
           type="button"
-          class="overflow-hidden rounded-2xl bg-gradient-to-br from-[#65EDE8] to-[#0386D9] p-4 text-left text-white shadow-lg transition active:scale-[0.98]"
+          class="home-card overflow-hidden p-4 text-left text-[#0b1f33] transition active:scale-[0.98]"
           @click="navigate(ROUTES.map)"
         >
-          <div class="flex size-12 items-center justify-center rounded-xl bg-white/25 shadow-md ring-1 ring-white/30">
+          <div class="flex size-12 items-center justify-center rounded-xl bg-[#0386D9]/15 text-[#0386D9] shadow-sm ring-1 ring-[#0386D9]/20">
             <MapPin class="size-6" />
           </div>
           <p class="mt-3 text-sm font-bold">
             {{ locale.t.home.viewMap }}
           </p>
-          <p class="mt-1 text-xs leading-snug text-white/75">
+          <p class="mt-1 text-xs leading-snug text-[#5b6b7e]">
             {{ locale.t.home.viewMapHint }}
           </p>
         </button>

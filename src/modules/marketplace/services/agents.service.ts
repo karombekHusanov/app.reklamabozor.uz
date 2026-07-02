@@ -13,6 +13,8 @@ export interface PublicAgent {
   lng: string | null
   website_url: string | null
   completion_percent: number
+  /** Number of accepted offers that ended in a completed order (successful jobs). */
+  completed_orders_count: number
   categories: Category[]
   /** Distance from the requested point in metres — only on the nearby endpoint. */
   distance_m?: number

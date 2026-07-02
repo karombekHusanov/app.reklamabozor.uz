@@ -65,6 +65,7 @@
     --brand-teal: #137AA6;
     --brand-cyan: #65EDE8;
     --brand-gradient: linear-gradient(135deg, #0386D9 0%, #014BA4 100%);
+    --home-card-gradient: linear-gradient(135deg, #D8F0FF 52%, #8ECFFA 100%);
 
     --background: #ffffff;
     --foreground: #0b1f33;
@@ -185,6 +186,12 @@
   }
   .btn-brand:disabled {
     @apply opacity-50;
+  }
+
+  /* Home page content cards — Figma light blue gradient. */
+  .home-card {
+    background: var(--home-card-gradient);
+    @apply rounded-[13px] shadow-lg;
   }
 
   /* Flat surface card. */
