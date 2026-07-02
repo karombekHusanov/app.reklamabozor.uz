@@ -6,7 +6,7 @@ import {
 } from '@/modules/auth/services/auth.service'
 import { getApiErrorMessage } from '@/core/api/api-error'
 import { clearToken, hydrateToken, persistToken, readToken } from '@/core/lib/token-storage'
-import { resolveTelegramUser, type TelegramAuthPayload } from '@/core/lib/telegram-init'
+import { isInsideTelegram, resolveTelegramUser, type TelegramAuthPayload } from '@/core/lib/telegram-init'
 import type { User } from '@/modules/auth/types/user'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
@@ -149,18 +149,23 @@ export const useAuthStore = defineStore('auth', () => {
         return true
       }
 
-      // localStorage can be wiped between Telegram mini app opens; recover the token
-      // from durable CloudStorage before deciding whether to restore or re-login.
-      if (!token.value) {
-        token.value = await hydrateToken()
+      // Outside Telegram (e.g. local browser dev with a manually injected token) there is no
+      // Telegram account to authenticate against — restore the session from the stored token.
+      if (!isInsideTelegram()) {
+        if (!token.value) {
+          token.value = await hydrateToken()
+        }
+
+        return token.value ? await restoreSession() : false
       }
 
+      // Inside Telegram we authenticate straight from the current launch's initData every time.
+      // The token is always derived from the active Telegram account, so there is no need to
+      // persist / restore it or reconcile account identity. This also removes the multi-account
+      // hazard where a token cached in the shared WebView storage leaks into another account.
+      // Drop any device-shared token first so a stale one can't be sent before login resolves.
       if (token.value) {
-        const restored = await restoreSession()
-
-        if (restored) {
-          return true
-        }
+        clearSession()
       }
 
       const telegramUser = await resolveTelegramUser()
