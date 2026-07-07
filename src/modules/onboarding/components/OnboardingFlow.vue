@@ -47,8 +47,7 @@ async function pickRole(role: SelectableRole) {
 
   try {
     await onboarding.selectRole(role)
-    // Providers (agent/designer/seller) go straight to the verification form
-    // on their profile page; clients land on the normal home.
+    // Providers land on profile after role selection.
     if (role !== 'client') {
       await router.replace(ROUTES.profile)
     }
@@ -65,7 +64,7 @@ async function pickRole(role: SelectableRole) {
     <div class="mx-auto flex w-full max-w-md flex-1 flex-col px-6 pb-10 pt-16">
       <!-- Brand -->
       <div class="flex justify-center">
-        <BrandLogo size="lg" on-dark />
+        <BrandLogo size="lg" />
       </div>
 
       <!-- ============ LANGUAGE ============ -->
@@ -85,10 +84,10 @@ async function pickRole(role: SelectableRole) {
 
       <!-- ============ TERMS ============ -->
       <div v-else-if="onboarding.step === 'terms'" class="mt-12 flex flex-1 flex-col">
-        <h2 class="text-center text-lg font-bold text-white">
+        <h2 class="text-center text-lg font-bold text-foreground">
           {{ locale.t.onboarding.terms.title }}
         </h2>
-        <p class="mx-auto mt-4 max-w-sm text-center text-sm leading-relaxed text-white/70">
+        <p class="mx-auto mt-4 max-w-sm text-center text-sm leading-relaxed text-muted-foreground">
           {{ locale.t.onboarding.terms.body }}
         </p>
 
@@ -99,11 +98,11 @@ async function pickRole(role: SelectableRole) {
         >
           <span
             class="flex size-5 items-center justify-center rounded-md border transition"
-            :class="agreed ? 'border-primary bg-primary text-white' : 'border-white/40 bg-white/10'"
+            :class="agreed ? 'border-primary bg-primary text-white' : 'border-border bg-card'"
           >
             <Check v-if="agreed" class="size-3.5" />
           </span>
-          <span class="text-sm font-medium text-white">{{ locale.t.onboarding.terms.agree }}</span>
+          <span class="text-sm font-medium text-foreground">{{ locale.t.onboarding.terms.agree }}</span>
         </button>
 
         <div class="mt-auto pt-10">
@@ -120,7 +119,7 @@ async function pickRole(role: SelectableRole) {
 
       <!-- ============ ROLE ============ -->
       <div v-else class="mt-12 flex flex-1 flex-col">
-        <p class="text-center text-sm text-white/70">
+        <p class="text-center text-sm text-muted-foreground">
           {{ locale.t.onboarding.role.title }}
         </p>
 
@@ -137,7 +136,7 @@ async function pickRole(role: SelectableRole) {
           </button>
         </div>
 
-        <p v-if="submitting" class="mt-4 text-center text-sm text-white/70">
+        <p v-if="submitting" class="mt-4 text-center text-sm text-muted-foreground">
           {{ locale.t.onboarding.role.saving }}
         </p>
         <p

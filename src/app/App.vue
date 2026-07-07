@@ -1,32 +1,39 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { RouterView, useRouter } from 'vue-router'
 import { useAuthBootstrap } from '@/modules/auth'
+import { useAuthStore } from '@/modules/auth/stores/auth.store'
 import Toaster from '@/core/ui/Toaster.vue'
 import { parseOrderStartParam, readTelegramStartParam } from '@/core/lib/telegram-init'
-import { ROUTES } from '@/modules/shell/constants/routes'
 import { SplashScreen, OnboardingFlow, useOnboardingStore } from '@/modules/onboarding'
 
 useAuthBootstrap()
 
 const router = useRouter()
+const auth = useAuthStore()
 const onboarding = useOnboardingStore()
 
-// Brief launch splash while Telegram auth + durable prefs hydrate in the background.
-const showSplash = ref(true)
+// Launch splash: hold for a minimum beat, and until Telegram auth settles so the
+// onboarding decision (from the /me response) is made before the app is revealed.
+const splashDelayDone = ref(false)
+const authSettled = ref(false)
+const showSplash = computed(() => !splashDelayDone.value || !authSettled.value)
 
 onMounted(() => {
-  void onboarding.hydrate()
+  // Returns the same in-flight promise started by useAuthBootstrap.
+  void auth.bootstrapTelegramAuth().finally(() => {
+    authSettled.value = true
+  })
 
   setTimeout(() => {
-    showSplash.value = false
+    splashDelayDone.value = true
   }, 1500)
 
   // Honour `t.me/<bot>/<app>?startapp=order_123` deep links by routing the agent
-  // straight to the relevant order, on the profile page's "My offers" tab.
+  // straight to the relevant order detail page.
   const orderId = parseOrderStartParam(readTelegramStartParam())
   if (orderId !== null) {
-    void router.replace({ path: ROUTES.profile, query: { tab: 'offers', order: String(orderId) } })
+    void router.replace(`/orders/${orderId}`)
   }
 })
 </script>

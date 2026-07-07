@@ -2,79 +2,113 @@
 import { ROUTES } from '@/modules/shell/constants/routes'
 import { useTelegram } from '@/core/composables/useTelegram'
 import { useLocaleStore } from '@/core/i18n/locale.store'
-import { ClipboardList, Home, Map, Plus, Users } from '@lucide/vue'
-import { computed } from 'vue'
+import { useAuthStore } from '@/modules/auth/stores/auth.store'
+import { useChatStore } from '@/modules/chat/stores/chat.store'
+import { ClipboardList, Home, MessageCircle, Package, Plus } from '@lucide/vue'
+import { computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 const route = useRoute()
 const router = useRouter()
 const { haptic } = useTelegram()
 const locale = useLocaleStore()
+const auth = useAuthStore()
+const chat = useChatStore()
 
 const tabs = computed(() => [
-  { to: ROUTES.home, label: locale.t.shell.tabs.home, icon: Home },
-  { to: ROUTES.marketplace, label: locale.t.shell.tabs.providers, icon: Users },
-  { to: ROUTES.map, label: locale.t.shell.tabs.map, icon: Map },
-  { to: ROUTES.orders, label: locale.t.shell.tabs.myOrders, icon: ClipboardList },
+  { key: 'home', to: ROUTES.home, label: locale.t.shell.tabs.home, icon: Home },
+  { key: 'products', to: ROUTES.products, label: locale.t.shell.tabs.myProducts, icon: Package },
+  { key: 'create', to: ROUTES.newOrder, label: locale.t.shell.tabs.create, icon: Plus },
+  { key: 'chat', to: ROUTES.chat, label: locale.t.shell.tabs.chat, icon: MessageCircle, badge: true },
+  { key: 'orders', to: ROUTES.orders, label: locale.t.shell.tabs.myOrders, icon: ClipboardList },
 ])
 
-// Left pair / right pair flank the central FAB.
-const leftTabs = computed(() => tabs.value.slice(0, 2))
-const rightTabs = computed(() => tabs.value.slice(2))
+const hasChatBadge = computed(() =>
+  chat.chats.some(item => item.unread_count > 0),
+)
 
-const activePath = computed(() => route.path)
+const activeIndex = computed(() => tabs.value.findIndex(tab => isActive(tab.to)))
+
+const hasActiveTab = computed(() => activeIndex.value >= 0)
+
+function isActive(to: string): boolean {
+  const path = route.path
+  if (to === ROUTES.home) return path === ROUTES.home
+  if (to === ROUTES.newOrder) return path === ROUTES.newOrder
+  if (to === ROUTES.orders) return path === ROUTES.orders || (path.startsWith('/orders/') && path !== ROUTES.newOrder)
+  return path === to || path.startsWith(`${to}/`)
+}
 
 function navigate(to: string) {
-  if (activePath.value === to) return
-  haptic('light')
-  router.push(to)
+  if (isActive(to)) return
+  haptic(to === ROUTES.newOrder ? 'medium' : 'light')
+  void router.push(to)
 }
 
-function createOrder() {
-  haptic('medium')
-  router.push(ROUTES.newOrder)
+function loadChatBadge() {
+  if (auth.isAuthenticated) void chat.loadChats()
 }
+
+onMounted(loadChatBadge)
+watch(() => auth.isAuthenticated, loadChatBadge)
 </script>
 
 <template>
-  <nav class="brand-hero safe-bottom fixed inset-x-0 bottom-0 z-50 rounded-t-3xl shadow-[0_-6px_24px_rgba(2,48,92,0.25)]">
-    <div class="relative mx-auto flex max-w-lg items-end justify-between gap-1 px-4 pb-2 pt-3">
-      <!-- Left pair -->
-      <button
-        v-for="tab in leftTabs"
-        :key="tab.to"
-        type="button"
-        class="relative flex flex-1 flex-col items-center gap-1 py-1 transition-colors"
-        :class="activePath === tab.to ? 'text-white' : 'text-white/55'"
-        @click="navigate(tab.to)"
-      >
-        <component :is="tab.icon" class="size-5" />
-        <span class="text-[10px] font-medium">{{ tab.label }}</span>
-      </button>
+  <!-- Gradient stroke for the raised active icon -->
+  <svg width="0" height="0" class="absolute" aria-hidden="true">
+    <defs>
+      <!-- userSpaceOnUse: objectBoundingBox gradients vanish on zero-height
+           paths (e.g. the Plus icon's straight lines). Lucide icons share a
+           24x24 viewBox, so user-space coords cover every icon. -->
+      <linearGradient id="tab-bar-gradient" gradientUnits="userSpaceOnUse" x1="12" y1="0" x2="12" y2="24">
+        <stop offset="0%" stop-color="#2b7fff" />
+        <stop offset="100%" stop-color="#2dd4bf" />
+      </linearGradient>
+    </defs>
+  </svg>
 
-      <!-- Center FAB (new order) -->
-      <div class="flex shrink-0 justify-center" style="flex-basis: 4.5rem">
-        <button
-          type="button"
-          class="btn-brand -mt-9 flex size-16 items-center justify-center rounded-full ring-4 ring-[#0a1a2f]/0 ring-offset-0 shadow-lg"
-          style="box-shadow: 0 8px 24px rgba(3,134,217,0.5); border: 4px solid rgba(255,255,255,0.18)"
-          @click="createOrder"
-        >
-          <Plus class="size-7 text-white" />
-        </button>
+  <nav class="tab-bar-dock" aria-label="Main navigation">
+    <div class="tab-bar-float">
+      <!-- Sliding raised circle with gradient border, poking out of the bar top & bottom -->
+      <div
+        v-if="hasActiveTab"
+        class="tab-bar-knob"
+        :style="{ '--tab-active': activeIndex }"
+        aria-hidden="true"
+      >
+        <div class="tab-bar-knob-circle" />
       </div>
 
-      <!-- Right pair -->
       <button
-        v-for="tab in rightTabs"
-        :key="tab.to"
+        v-for="tab in tabs"
+        :key="tab.key"
         type="button"
-        class="relative flex flex-1 flex-col items-center gap-1 py-1 transition-colors"
-        :class="activePath === tab.to ? 'text-white' : 'text-white/55'"
+        class="tab-bar-item"
+        :class="{ 'tab-bar-item--active': isActive(tab.to) }"
+        :aria-current="isActive(tab.to) ? 'page' : undefined"
         @click="navigate(tab.to)"
       >
-        <component :is="tab.icon" class="size-5" />
-        <span class="text-[10px] font-medium">{{ tab.label }}</span>
+        <span class="tab-bar-icon-slot">
+          <!-- Gradient stroke is applied via CSS (`stroke: url(...)`): lucide
+               overwrites a stroke attribute with its color prop, CSS wins. -->
+          <component
+            :is="tab.icon"
+            class="tab-bar-icon"
+            :stroke-width="isActive(tab.to) ? 2 : 1.75"
+          />
+          <span
+            v-if="tab.badge && hasChatBadge"
+            class="tab-bar-badge"
+            :class="{ 'tab-bar-badge--active': isActive(tab.to) }"
+            aria-hidden="true"
+          />
+        </span>
+        <span
+          class="tab-bar-label"
+          :class="{ 'tab-bar-label--hidden': isActive(tab.to) }"
+        >
+          {{ tab.label }}
+        </span>
       </button>
     </div>
   </nav>
