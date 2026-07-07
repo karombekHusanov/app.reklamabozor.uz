@@ -57,7 +57,9 @@ async function saveProfile(payload: { first_name: string, last_name: string | nu
 
 async function load() {
   if (!auth.isAuthenticated) return
-  if (isProvider.value) await agent.loadProfile()
+  if (isProvider.value) {
+    await agent.loadProfile()
+  }
 }
 
 onMounted(() => void load())
@@ -77,12 +79,12 @@ async function handleLogout() {
 <template>
   <div>
     <AppHeader
-      v-if="!user || !isProvider"
+      v-if="!user"
       :title="profileTitle"
       :subtitle="profileSubtitle"
     />
 
-    <section :class="isProvider ? '' : 'space-y-4 px-5'">
+    <section>
       <template v-if="auth.isAuthenticated && user">
         <ProfileAgentView
           v-if="isProvider"

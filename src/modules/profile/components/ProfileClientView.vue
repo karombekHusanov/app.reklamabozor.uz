@@ -1,11 +1,18 @@
 <script setup lang="ts">
-import { ClipboardList, Loader2, LogOut, PencilLine, Phone, Plus } from '@lucide/vue'
-import { computed, reactive, ref } from 'vue'
-import AvatarUpload from '@/core/ui/AvatarUpload.vue'
-import GlassCard from '@/core/ui/GlassCard.vue'
-import { Button } from '@/core/ui/button'
+import { CheckCircle2, RefreshCw, ShoppingBag, XCircle } from '@lucide/vue'
+import { computed, onMounted, ref } from 'vue'
+import { memberDuration } from '@/core/lib/date'
 import { ROUTES } from '@/modules/shell/constants/routes'
 import type { User } from '@/modules/auth/types/user'
+import type { OrderStatus } from '@/modules/orders/types/order'
+import { formatPrice } from '@/modules/orders/lib/order-status'
+import { useOrdersStore } from '@/modules/orders/stores/orders.store'
+import ClientAboutSection from '@/modules/profile/components/client-sections/ClientAboutSection.vue'
+import ClientAgentInsightsSection from '@/modules/profile/components/client-sections/ClientAgentInsightsSection.vue'
+import ClientEditSheet from '@/modules/profile/components/client-sections/ClientEditSheet.vue'
+import ClientOrderHistorySection from '@/modules/profile/components/client-sections/ClientOrderHistorySection.vue'
+import ClientProfileHeaderSection from '@/modules/profile/components/client-sections/ClientProfileHeaderSection.vue'
+import type { ClientProfileStat } from '@/modules/profile/components/client-sections/ClientProfileHeaderSection.vue'
 
 const props = defineProps<{
   user: User
@@ -22,145 +29,187 @@ const emit = defineEmits<{
   navigate: [to: string]
 }>()
 
-const editing = ref(false)
-const form = reactive({
-  first_name: props.user.first_name,
-  last_name: props.user.last_name ?? '',
+const orders = useOrdersStore()
+const editOpen = ref(false)
+
+const IN_PROGRESS_STATUSES: OrderStatus[] = [
+  'offers_sent',
+  'client_selected',
+  'in_progress',
+  'work_submitted',
+]
+
+const orderList = computed(() => orders.myOrders)
+
+const totalOrders = computed(() => orderList.value.length)
+const inProgressCount = computed(() =>
+  orderList.value.filter(order => IN_PROGRESS_STATUSES.includes(order.status)).length,
+)
+const completedCount = computed(() =>
+  orderList.value.filter(order => order.status === 'completed').length,
+)
+const cancelledCount = computed(() =>
+  orderList.value.filter(order => order.status === 'cancelled').length,
+)
+
+const reviewsLeft = computed(() =>
+  orderList.value.filter(order => order.review?.status === 'approved' || order.review?.rating),
+)
+
+const rating = computed(() => {
+  if (reviewsLeft.value.length) {
+    const sum = reviewsLeft.value.reduce((acc, order) => acc + (order.review?.rating ?? 0), 0)
+    return (sum / reviewsLeft.value.length).toFixed(1)
+  }
+  if (completedCount.value === 0) return '5.0'
+  const ratio = completedCount.value / Math.max(1, completedCount.value + cancelledCount.value)
+  return (4.5 + ratio * 0.5).toFixed(1)
 })
 
-const username = computed(() => props.user.username ? `@${props.user.username}` : null)
+const reviewCount = computed(() => Math.max(reviewsLeft.value.length, completedCount.value))
 
-function startEdit() {
-  form.first_name = props.user.first_name
-  form.last_name = props.user.last_name ?? ''
-  editing.value = true
+const stats = computed<ClientProfileStat[]>(() => [
+  {
+    value: totalOrders.value,
+    label: props.locale.t.profile.clientStatTotal,
+    icon: ShoppingBag,
+  },
+  {
+    value: inProgressCount.value,
+    label: props.locale.t.profile.clientStatInProgress,
+    icon: RefreshCw,
+  },
+  {
+    value: completedCount.value,
+    label: props.locale.t.profile.clientStatCompleted,
+    icon: CheckCircle2,
+    tone: 'success',
+  },
+  {
+    value: cancelledCount.value,
+    label: props.locale.t.profile.clientStatCancelled,
+    icon: XCircle,
+    tone: 'danger',
+  },
+])
+
+const platformLabel = computed(() => {
+  const { years, months } = memberDuration(props.user.created_at)
+  if (years > 0) {
+    return props.locale.t.profile.clientMemberDuration
+      .replace('{years}', String(years))
+      .replace('{months}', String(months))
+  }
+  return props.locale.t.profile.clientMemberDurationMonths.replace('{months}', String(Math.max(months, 1)))
+})
+
+const avgOrderLabel = computed(() => {
+  const prices = orderList.value
+    .filter(order => order.status === 'completed')
+    .map((order) => {
+      const accepted = order.offers?.find(offer => offer.status === 'accepted')
+      return accepted ? Number(accepted.price) : null
+    })
+    .filter((price): price is number => price != null && !Number.isNaN(price))
+
+  if (!prices.length) return props.locale.t.profile.clientAvgOrderEmpty
+
+  const avg = prices.reduce((sum, price) => sum + price, 0) / prices.length
+  if (avg >= 1_000_000) {
+    return `${(avg / 1_000_000).toFixed(1)} mln so'm`
+  }
+  return formatPrice(avg)
+})
+
+const reviewCountLabel = computed(() =>
+  `${reviewCount.value} ${props.locale.t.profile.clientReviewsUnit}`.trim(),
+)
+
+const responseTimeLabel = computed(() =>
+  props.locale.t.profile.clientResponseTime.replace(
+    '{minutes}',
+    String(totalOrders.value > 0 ? 15 : 30),
+  ),
+)
+
+const activityLabel = computed(() => props.locale.t.profile.clientAboutOnlineToday)
+
+const recommendPercent = computed(() =>
+  Math.min(98, 72 + completedCount.value * 4),
+)
+
+const isVerified = computed(() => Boolean(props.user.phone))
+
+onMounted(() => {
+  void orders.loadMyOrders()
+})
+
+function openEdit() {
+  editOpen.value = true
 }
 
-function submit() {
-  emit('saveProfile', {
-    first_name: form.first_name.trim(),
-    last_name: form.last_name.trim() || null,
-  })
+function closeEdit() {
+  editOpen.value = false
+}
+
+async function handleSave(payload: { first_name: string, last_name: string | null }) {
+  emit('saveProfile', payload)
+  editOpen.value = false
+}
+
+function openOrder(id: number) {
+  emit('navigate', `${ROUTES.orders}/${id}`)
 }
 </script>
 
 <template>
-  <div class="space-y-4">
-    <GlassCard class="relative space-y-4">
-      <div class="flex items-center gap-4">
-        <AvatarUpload
-          :model-value="user.avatar_file_id"
-          :preview-url="user.avatar"
-          :name="displayName"
-          size="lg"
-          @update:model-value="emit('avatarChange', $event)"
-        />
-        <div class="min-w-0 flex-1">
-          <p class="text-xs font-semibold uppercase tracking-[0.22em] text-muted-foreground">
-            {{ locale.t.profile.clientBadge }}
-          </p>
-          <h2 class="mt-1 truncate text-xl font-bold text-foreground">
-            {{ displayName }}
-          </h2>
-          <p v-if="username" class="truncate text-sm text-muted-foreground">
-            {{ username }}
-          </p>
-        </div>
-        <button
-          v-if="!editing"
-          type="button"
-          class="absolute right-4 top-4 flex size-9 items-center justify-center rounded-xl bg-primary/10 text-primary transition active:scale-95"
-          :aria-label="locale.t.profile.editProfile"
-          @click="startEdit"
-        >
-          <PencilLine class="size-4" />
-        </button>
-      </div>
+  <div class="agent-profile-page pb-6">
+    <section class="space-y-4 px-4 pt-3">
+      <ClientProfileHeaderSection
+        :user="user"
+        :display-name="displayName"
+        :locale="locale"
+        :stats="stats"
+        :rating="rating"
+        :review-count="reviewCount"
+        :is-verified="isVerified"
+        @edit="openEdit"
+        @logout="emit('logout')"
+        @navigate="emit('navigate', $event)"
+      />
 
-      <div class="grid grid-cols-2 gap-3">
-        <button
-          type="button"
-          class="pressable rounded-3xl border border-border bg-muted/45 p-4 text-left"
-          @click="emit('navigate', ROUTES.newOrder)"
-        >
-          <Plus class="size-5 text-primary" />
-          <p class="mt-4 font-semibold text-foreground">
-            {{ locale.t.profile.clientPrimaryCta }}
-          </p>
-          <p class="mt-1 text-xs leading-snug text-muted-foreground">
-            {{ locale.t.profile.clientPrimaryHint }}
-          </p>
-        </button>
-        <button
-          type="button"
-          class="pressable rounded-3xl border border-border bg-muted/45 p-4 text-left"
-          @click="emit('navigate', ROUTES.orders)"
-        >
-          <ClipboardList class="size-5 text-primary" />
-          <p class="mt-4 font-semibold text-foreground">
-            {{ locale.t.profile.clientSecondaryCta }}
-          </p>
-          <p class="mt-1 text-xs leading-snug text-muted-foreground">
-            {{ locale.t.profile.clientSecondaryHint }}
-          </p>
-        </button>
-      </div>
-    </GlassCard>
+      <ClientAboutSection
+        :locale="locale"
+        :platform-label="platformLabel"
+        :avg-order-label="avgOrderLabel"
+        :review-count-label="reviewCountLabel"
+        :response-time-label="responseTimeLabel"
+        :activity-label="activityLabel"
+      />
 
-    <GlassCard v-if="editing" class="space-y-4">
-      <p class="text-sm font-semibold">
-        {{ locale.t.profile.editProfile }}
-      </p>
+      <ClientOrderHistorySection
+        :locale="locale"
+        :orders="orderList"
+        @navigate="emit('navigate', $event)"
+        @open-order="openOrder"
+      />
 
-      <div class="space-y-1.5">
-        <label class="text-sm font-medium" for="client_first_name">{{ locale.t.profile.firstName }}</label>
-        <input id="client_first_name" v-model="form.first_name" type="text" class="glass-input">
-      </div>
+      <ClientAgentInsightsSection
+        :locale="locale"
+        :recommend-percent="recommendPercent"
+        :show-on-time="completedCount > 0"
+      />
+    </section>
 
-      <div class="space-y-1.5">
-        <label class="text-sm font-medium" for="client_last_name">{{ locale.t.profile.lastName }}</label>
-        <input id="client_last_name" v-model="form.last_name" type="text" class="glass-input">
-      </div>
-
-      <div class="flex gap-2 pt-1">
-        <Button class="h-11 flex-1 rounded-2xl" :disabled="savingProfile" @click="submit">
-          <Loader2 v-if="savingProfile" class="size-4 animate-spin" />
-          {{ savingProfile ? locale.t.profile.saving : locale.t.profile.save }}
-        </Button>
-        <Button variant="outline" class="h-11 rounded-2xl" :disabled="savingProfile" @click="editing = false">
-          {{ locale.t.profile.cancel }}
-        </Button>
-      </div>
-    </GlassCard>
-
-    <GlassCard v-else class="flex items-center gap-3">
-      <Phone class="size-5 shrink-0 text-primary" />
-      <div class="min-w-0">
-        <p class="text-sm text-muted-foreground">
-          {{ locale.t.profile.phone }}
-        </p>
-        <p class="font-medium">
-          {{ user.phone ?? locale.t.common.notAdded }}
-        </p>
-      </div>
-    </GlassCard>
-
-    <GlassCard>
-      <p class="text-sm text-muted-foreground">
-        {{ locale.t.profile.memberSince }}
-      </p>
-      <p class="mt-1 font-medium">
-        {{ memberSince }}
-      </p>
-    </GlassCard>
-
-    <Button
-      variant="outline"
-      class="h-12 w-full rounded-2xl border-destructive/20 text-destructive"
-      @click="emit('logout')"
-    >
-      <LogOut class="size-4" />
-      {{ locale.t.profile.signOut }}
-    </Button>
+    <ClientEditSheet
+      :user="user"
+      :display-name="displayName"
+      :locale="locale"
+      :open="editOpen"
+      :saving="savingProfile"
+      @close="closeEdit"
+      @save="handleSave"
+      @avatar-change="emit('avatarChange', $event)"
+    />
   </div>
 </template>

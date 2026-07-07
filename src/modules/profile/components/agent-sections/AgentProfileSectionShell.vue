@@ -7,6 +7,10 @@ defineProps<{
   showViewAll?: boolean
 }>()
 
+defineEmits<{
+  viewAll: []
+}>()
+
 const locale = useLocaleStore()
 </script>
 
@@ -20,6 +24,7 @@ const locale = useLocaleStore()
         v-if="showViewAll"
         type="button"
         class="pressable inline-flex shrink-0 items-center gap-0.5 text-[11px] font-semibold text-primary"
+        @click="$emit('viewAll')"
       >
         {{ locale.t.profile.agentViewAll }}
         <ChevronRight class="size-3.5" />

@@ -290,6 +290,157 @@
       inset 0 -8px 14px rgba(148, 163, 184, 0.14);
   }
 
+  .client-insight-card {
+    @apply relative flex items-center gap-3 overflow-hidden rounded-2xl border p-3.5;
+    box-shadow:
+      0 14px 28px -18px rgba(15, 23, 42, 0.22),
+      0 4px 10px -6px rgba(15, 23, 42, 0.1),
+      inset 0 1.5px 0 rgba(255, 255, 255, 0.95),
+      inset 0 10px 18px rgba(255, 255, 255, 0.28),
+      inset 0 -10px 16px rgba(15, 23, 42, 0.06);
+  }
+
+  .client-insight-card::before {
+    content: '';
+    position: absolute;
+    inset: 1px 1px auto;
+    height: 42%;
+    border-radius: 0.85rem 0.85rem 1.25rem 1.25rem;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.72) 0%, rgba(255, 255, 255, 0.12) 100%);
+    pointer-events: none;
+  }
+
+  .client-insight-card--payments {
+    border-color: rgba(16, 185, 129, 0.42);
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.42) 0%, rgba(255, 255, 255, 0.08) 100%),
+      linear-gradient(135deg, #6ee7b7 0%, #a7f3d0 32%, #d1fae5 62%, #f0fdf4 100%);
+  }
+
+  .client-insight-card--recommend {
+    border-color: rgba(99, 102, 241, 0.42);
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.42) 0%, rgba(255, 255, 255, 0.08) 100%),
+      linear-gradient(135deg, #a5b4fc 0%, #c4b5fd 34%, #ddd6fe 64%, #f5f3ff 100%);
+  }
+
+  .client-insight-card--activity {
+    border-color: rgba(249, 115, 22, 0.42);
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.42) 0%, rgba(255, 255, 255, 0.08) 100%),
+      linear-gradient(135deg, #fdba74 0%, #fed7aa 34%, #ffedd5 64%, #fff7ed 100%);
+  }
+
+  .client-insight-card--on-time {
+    border-color: rgba(245, 158, 11, 0.42);
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.42) 0%, rgba(255, 255, 255, 0.08) 100%),
+      linear-gradient(135deg, #fcd34d 0%, #fde68a 34%, #fef3c7 64%, #fffbeb 100%);
+  }
+
+  .client-insight-card__icon {
+    @apply relative z-[1] flex size-10 shrink-0 items-center justify-center rounded-full;
+    background:
+      radial-gradient(circle at 30% 24%, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.45) 28%, rgba(255, 255, 255, 0) 52%),
+      linear-gradient(180deg, #ffffff 0%, #f8fafc 58%, #eef2f7 100%);
+    box-shadow:
+      0 10px 18px -10px rgba(15, 23, 42, 0.28),
+      0 3px 6px rgba(255, 255, 255, 0.65),
+      inset 0 2px 1px rgba(255, 255, 255, 0.95),
+      inset 0 -6px 10px rgba(148, 163, 184, 0.18);
+  }
+
+  .client-insight-card__icon::after {
+    content: '';
+    position: absolute;
+    inset: 2px 2px auto;
+    height: 46%;
+    border-radius: 9999px;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.88) 0%, rgba(255, 255, 255, 0) 100%);
+    pointer-events: none;
+  }
+
+  .client-insight-card__icon--payments {
+    border: 1.5px solid rgba(16, 185, 129, 0.55);
+    color: #059669;
+    box-shadow:
+      0 12px 20px -10px rgba(16, 185, 129, 0.45),
+      0 3px 6px rgba(255, 255, 255, 0.65),
+      inset 0 2px 1px rgba(255, 255, 255, 0.95),
+      inset 0 -6px 10px rgba(16, 185, 129, 0.14);
+  }
+
+  .client-insight-card__icon--recommend {
+    border: 1.5px solid rgba(99, 102, 241, 0.55);
+    color: #4f46e5;
+    box-shadow:
+      0 12px 20px -10px rgba(99, 102, 241, 0.45),
+      0 3px 6px rgba(255, 255, 255, 0.65),
+      inset 0 2px 1px rgba(255, 255, 255, 0.95),
+      inset 0 -6px 10px rgba(99, 102, 241, 0.14);
+  }
+
+  .client-insight-card__icon--activity {
+    border: 1.5px solid rgba(249, 115, 22, 0.55);
+    color: #ea580c;
+    box-shadow:
+      0 12px 20px -10px rgba(249, 115, 22, 0.45),
+      0 3px 6px rgba(255, 255, 255, 0.65),
+      inset 0 2px 1px rgba(255, 255, 255, 0.95),
+      inset 0 -6px 10px rgba(249, 115, 22, 0.14);
+  }
+
+  .client-insight-card__icon--on-time {
+    border: 1.5px solid rgba(245, 158, 11, 0.55);
+    color: #d97706;
+    box-shadow:
+      0 12px 20px -10px rgba(245, 158, 11, 0.45),
+      0 3px 6px rgba(255, 255, 255, 0.65),
+      inset 0 2px 1px rgba(255, 255, 255, 0.95),
+      inset 0 -6px 10px rgba(245, 158, 11, 0.14);
+  }
+
+  .client-insight-card__text {
+    @apply relative z-[1] min-w-0 text-[11px] font-bold leading-snug text-foreground;
+  }
+
+  .dark .client-insight-card {
+    box-shadow:
+      0 12px 22px -14px rgba(2, 8, 23, 0.55),
+      inset 0 1px 0 rgba(255, 255, 255, 0.08),
+      inset 0 -10px 16px rgba(2, 8, 23, 0.28);
+  }
+
+  .dark .client-insight-card--payments {
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.02) 100%),
+      linear-gradient(135deg, rgba(16, 185, 129, 0.42) 0%, rgba(5, 150, 105, 0.28) 55%, rgba(2, 8, 23, 0.2) 100%);
+  }
+
+  .dark .client-insight-card--recommend {
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.02) 100%),
+      linear-gradient(135deg, rgba(99, 102, 241, 0.42) 0%, rgba(79, 70, 229, 0.28) 55%, rgba(2, 8, 23, 0.2) 100%);
+  }
+
+  .dark .client-insight-card--activity {
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.02) 100%),
+      linear-gradient(135deg, rgba(249, 115, 22, 0.42) 0%, rgba(234, 88, 12, 0.28) 55%, rgba(2, 8, 23, 0.2) 100%);
+  }
+
+  .dark .client-insight-card--on-time {
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.02) 100%),
+      linear-gradient(135deg, rgba(245, 158, 11, 0.42) 0%, rgba(217, 119, 6, 0.28) 55%, rgba(2, 8, 23, 0.2) 100%);
+  }
+
+  .dark .client-insight-card__icon {
+    background:
+      radial-gradient(circle at 30% 24%, rgba(255, 255, 255, 0.22) 0%, rgba(255, 255, 255, 0.08) 28%, rgba(255, 255, 255, 0) 52%),
+      linear-gradient(180deg, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0.06) 58%, rgba(2, 8, 23, 0.35) 100%);
+  }
+
   .agent-profile-testimonial {
     @apply rounded-[14px] border border-border/40 bg-card;
     box-shadow:
@@ -522,7 +673,7 @@
   /* Raised "button" bar: soft drop shadows outside + top highlight / bottom
      shade inside so the whole block looks embossed. */
   .tab-bar-float {
-    --tab-bar-height: 3.25rem;
+    --tab-bar-height: 4rem;
     --tab-bar-knob-overhang: 5px;
     @apply pointer-events-auto relative flex w-full max-w-[30rem] items-stretch overflow-visible rounded-full px-4;
     height: var(--tab-bar-height);
