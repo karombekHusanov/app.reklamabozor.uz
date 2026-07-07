@@ -7,7 +7,9 @@ import WebApp from '@twa-dev/sdk'
  *   2. `localStorage` hot cache (fast, synchronous),
  *   3. Telegram `CloudStorage` (durable, per-user; rehydrated on startup).
  *
- * Used for small, non-secret settings such as the chosen locale and the onboarding flag.
+ * Used for small, non-secret settings such as the chosen locale. NOTE: all three layers
+ * are shared between Telegram accounts on the same device — never store per-account
+ * state here (e.g. onboarding progress); derive that from the backend instead.
  */
 
 interface TelegramCloudStorage {

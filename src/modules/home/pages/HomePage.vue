@@ -1,27 +1,25 @@
 <script setup lang="ts">
 import {
   ArrowRight,
-  BadgeCheck,
   Bell,
-  ClipboardList,
-  Clock,
-  MapPin,
-  ShieldAlert,
-  Sparkles,
+  Building2,
+  Map,
+  Menu,
+  MessagesSquare,
+  Palette,
   Star,
-  TrendingUp,
-  Users,
 } from '@lucide/vue'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import Avatar from '@/core/ui/Avatar.vue'
+import BrandLogo from '@/core/ui/BrandLogo.vue'
 import { useTelegram } from '@/core/composables/useTelegram'
 import { useLocaleStore } from '@/core/i18n/locale.store'
 import { useAuthStore } from '@/modules/auth/stores/auth.store'
 import { useAgentStore } from '@/modules/agent/stores/agent.store'
+import { useChatStore } from '@/modules/chat/stores/chat.store'
 import { useOrdersStore } from '@/modules/orders/stores/orders.store'
 import { type Banner, fetchBanners } from '@/modules/home/services/banners.service'
-import HomeHeroMenu from '@/modules/home/components/HomeHeroMenu.vue'
 import HomePageSkeleton from '@/modules/home/components/HomePageSkeleton.vue'
 import TopRatedAgents from '@/modules/home/components/TopRatedAgents.vue'
 import { fullName, isBusinessUser } from '@/modules/auth/types/user'
@@ -29,6 +27,7 @@ import { ROUTES } from '@/modules/shell/constants/routes'
 
 const auth = useAuthStore()
 const agent = useAgentStore()
+const chat = useChatStore()
 const orders = useOrdersStore()
 const router = useRouter()
 const locale = useLocaleStore()
@@ -37,34 +36,58 @@ const { user: telegramUser, haptic } = useTelegram()
 const isProvider = computed(() => (auth.user ? isBusinessUser(auth.user) : false))
 const isApprovedProvider = computed(() => isProvider.value && agent.isApproved)
 
-const verification = computed<'unverified' | 'pending' | null>(() => {
-  if (!isProvider.value || agent.isApproved) return null
-  return agent.isPending ? 'pending' : 'unverified'
-})
-
 const displayName = computed(() => {
   if (auth.user) return fullName(auth.user) || 'Reklama Bozor'
   if (telegramUser.value?.first_name) return telegramUser.value.first_name
-  return 'Reklama Bozor'
+  return locale.t.home.guest
 })
 
-const rating = 88
-const ratingStars = 5
-const onlineAccountsCount = 460
-
-const showVerifiedBadge = computed(() =>
-  auth.isAuthenticated && (isApprovedProvider.value || !isProvider.value),
-)
-
 const ordersCount = computed(() => orders.myOrders.length)
-
-const showPrimaryAdvertise = computed(() =>
-  !auth.isAuthenticated || (!isProvider.value && auth.isAuthenticated),
+const activeOrdersCount = computed(() =>
+  orders.myOrders.filter(o => !['completed', 'cancelled'].includes(o.status)).length,
 )
 
-const showPrimaryOpenOrders = computed(() =>
-  auth.isAuthenticated && isApprovedProvider.value,
-)
+const completion = computed(() => agent.profile?.completion_percent ?? 0)
+
+/** Placeholder rating derived from profile completeness (no scoring backend yet). */
+const ratingDisplay = computed(() => (4.5 + (completion.value / 100) * 0.5).toFixed(1))
+
+const hasUnread = computed(() => chat.chats.some(item => item.unread_count > 0))
+
+const quickLinks = computed(() => [
+  {
+    key: 'chat',
+    to: ROUTES.chat,
+    label: locale.t.home.globalChat,
+    hint: locale.t.chat.subtitle,
+    icon: MessagesSquare,
+    tone: 'quick-link-tile--sky',
+  },
+  {
+    key: 'map',
+    to: ROUTES.map,
+    label: locale.t.home.viewMap,
+    hint: locale.t.home.viewMapHint,
+    icon: Map,
+    tone: 'quick-link-tile--indigo',
+  },
+  {
+    key: 'designers',
+    to: ROUTES.designers,
+    label: locale.t.designers.title,
+    hint: locale.t.designers.subtitle,
+    icon: Palette,
+    tone: 'quick-link-tile--violet',
+  },
+  {
+    key: 'agencies',
+    to: ROUTES.marketplace,
+    label: locale.t.home.agencies,
+    hint: locale.t.home.browseProvidersHint,
+    icon: Building2,
+    tone: 'quick-link-tile--teal',
+  },
+])
 
 const banners = ref<Banner[]>([])
 const hasBanners = computed(() => banners.value.length > 0)
@@ -79,7 +102,7 @@ function onBannerScroll() {
   activeBanner.value = Math.round(el.scrollLeft / el.clientWidth)
 }
 
-function navigate(to: string | { path: string, query?: Record<string, string> }) {
+function navigate(to: string) {
   haptic('light')
   void router.push(to)
 }
@@ -96,7 +119,6 @@ function openBanner(banner: Banner) {
       return
     }
   }
-
   if (!banner.link_url) return
   if (/^https?:\/\//.test(banner.link_url)) {
     window.open(banner.link_url, '_blank', 'noopener')
@@ -109,6 +131,7 @@ async function load() {
   try {
     if (auth.isAuthenticated) {
       await orders.loadMyOrders()
+      void chat.loadChats()
       if (isProvider.value) {
         await agent.loadProfile()
         if (agent.isApproved) await orders.loadAgentWorkspace()
@@ -117,7 +140,7 @@ async function load() {
     banners.value = await fetchBanners()
   }
   catch {
-    // fall back to placeholder banner
+    // banners are optional
   }
   finally {
     pageLoading.value = false
@@ -136,283 +159,210 @@ watch(
 
 <template>
   <HomePageSkeleton v-if="pageLoading || auth.isLoading" />
-  <div v-else class="relative">
-    <!-- Hero -->
-    <header
-      class="rounded-b-[2rem] bg-gradient-to-br from-[#02305C] via-[#014BA4] to-[#0386D9] px-5 pb-8 pt-[max(env(safe-area-inset-top),0.75rem)] text-white"
-    >
-      <div class="flex items-center justify-between">
-        <HomeHeroMenu @navigate="navigate" />
-        <button
-          type="button"
-          class="relative flex items-center gap-2 rounded-full bg-gradient-to-r from-[#65EDE8] to-[#0386D9] px-4 py-2 text-sm font-semibold text-[#02305C] shadow-md transition active:scale-95"
-          @click="navigate(ROUTES.chat)"
-        >
-          <Bell class="size-4" />
-          {{ locale.t.home.notificationsButton }}
-          <span class="absolute -right-0.5 -top-0.5 size-2.5 rounded-full bg-red-500 ring-2 ring-[#02305C]" />
-        </button>
-      </div>
 
-      <p class="mt-4 flex items-center justify-center gap-2 text-sm text-white/90">
-        <span class="size-2 shrink-0 rounded-full bg-emerald-400" />
-        {{ locale.t.home.onlineAccounts.replace('{count}', String(onlineAccountsCount)) }}
-      </p>
+  <div v-else class="overflow-x-hidden pb-2">
+    <!-- Top bar: menu · brand · notifications -->
+    <header class="safe-top flex items-center justify-between gap-3 px-5 pt-3">
+      <button
+        type="button"
+        class="pressable home-icon-btn"
+        :aria-label="locale.t.home.menuProfile"
+        @click="navigate(ROUTES.profile)"
+      >
+        <Menu class="size-5" />
+      </button>
 
-      <div class="mt-5 flex items-start gap-4">
-        <div class="flex shrink-0 flex-col items-center gap-2.5">
-          <button
-            type="button"
-            class="relative"
-            @click="navigate(ROUTES.profile)"
-          >
+      <BrandLogo size="sm" />
+
+      <button
+        type="button"
+        class="pressable home-icon-btn relative"
+        :aria-label="locale.t.home.notificationsButton"
+        @click="navigate(ROUTES.chat)"
+      >
+        <Bell class="size-5" />
+        <span
+          v-if="hasUnread"
+          class="absolute right-2.5 top-2.5 size-2 rounded-full bg-destructive"
+          aria-hidden="true"
+        />
+      </button>
+    </header>
+
+    <!-- Profile card -->
+    <section class="px-5 pt-4">
+      <div class="home-card p-4">
+        <div class="flex items-start gap-3.5">
+          <button type="button" class="pressable shrink-0" @click="navigate(ROUTES.profile)">
             <Avatar
               :src="auth.user?.avatar"
               :name="displayName"
               size="lg"
-              class="rounded-2xl ring-2 ring-white"
+              class="ring-4 ring-background"
             />
-            <span
-              v-if="showVerifiedBadge"
-              class="absolute -right-1 -top-1 flex size-5 items-center justify-center rounded-full bg-[#0386D9] ring-2 ring-[#02305C]"
-            >
-              <BadgeCheck class="size-3 text-white" />
-            </span>
           </button>
-          <div class="flex flex-col items-center gap-1">
-            <div class="flex gap-0.5">
-              <Star
-                v-for="n in 5"
-                :key="n"
-                class="size-3.5"
-                :class="n <= ratingStars ? 'fill-amber-400 text-amber-400' : 'text-white/25'"
-              />
-            </div>
-            <span class="flex items-center gap-1 text-xs font-medium text-emerald-300">
-              <TrendingUp class="size-3.5" />
-              {{ locale.t.home.rating }}: {{ rating }}
-            </span>
+          <div class="min-w-0 flex-1">
+            <p class="text-xs font-medium text-muted-foreground">
+              {{ locale.t.home.welcome }}!
+            </p>
+            <h1 class="mt-1 line-clamp-2 text-lg font-extrabold leading-tight tracking-tight text-foreground">
+              {{ auth.isAuthenticated ? displayName : locale.t.home.guest }}
+            </h1>
+            <p v-if="auth.user?.phone" class="mt-1 truncate text-xs text-muted-foreground">
+              {{ auth.user.phone }}
+            </p>
           </div>
         </div>
 
-        <button
-          type="button"
-          class="min-w-0 flex-1 pt-1 text-left transition active:opacity-90"
-          @click="navigate(ROUTES.profile)"
-        >
-          <p class="text-sm text-white/80">
-            {{ locale.t.home.welcome }}
-          </p>
-          <h1 class="mt-1 text-xl font-bold leading-tight">
-            {{ displayName }}
-          </h1>
-          <p class="mt-1.5 text-xs text-white/70">
-            {{ locale.t.home.ordersCountLabel }}: {{ ordersCount }} {{ locale.t.home.unit }}
-          </p>
-        </button>
-      </div>
-    </header>
+        <div class="mt-4 space-y-3">
+          <div class="min-w-0 rounded-2xl bg-muted/55 p-3">
+            <!-- Approved provider: rating & profile completeness -->
+            <template v-if="isApprovedProvider">
+              <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+                {{ locale.t.home.ratingPortfolio }}
+              </p>
+              <div class="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1">
+                <span class="flex items-center gap-0.5 rounded-full bg-card px-2.5 py-1 shadow-sm">
+                  <Star
+                    v-for="n in 5"
+                    :key="n"
+                    class="size-3 fill-amber-400 text-amber-400"
+                  />
+                  <span class="ml-1 text-sm font-bold text-foreground">{{ ratingDisplay }}</span>
+                </span>
+                <span class="rounded-full bg-card px-2.5 py-1 text-xs font-semibold text-muted-foreground shadow-sm">
+                  {{ completion }}% {{ locale.t.home.profileComplete }}
+                </span>
+              </div>
+            </template>
 
-    <!-- Banner — directly below hero -->
-    <div class="relative z-10 -mt-3 px-5">
+            <!-- Client: orders summary -->
+            <template v-else-if="auth.isAuthenticated">
+              <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+                {{ locale.t.home.ordersCountLabel }}
+              </p>
+              <p class="mt-2 text-sm leading-relaxed text-foreground">
+                <template v-if="ordersCount > 0">
+                  {{ locale.t.home.clientStatusLine.replace('{count}', String(ordersCount)) }}
+                  <template v-if="activeOrdersCount > 0">
+                    · {{ locale.t.home.clientStatusActive.replace('{count}', String(activeOrdersCount)) }}
+                  </template>
+                </template>
+                <template v-else>
+                  {{ locale.t.home.noOrdersYet }}
+                </template>
+              </p>
+            </template>
+
+            <!-- Guest -->
+            <template v-else>
+              <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+                {{ locale.t.home.signInTitle }}
+              </p>
+              <p class="mt-2 text-sm leading-relaxed text-foreground">
+                {{ locale.t.home.signInBody }}
+              </p>
+            </template>
+          </div>
+
+          <button
+            type="button"
+            class="btn-accent inline-flex h-11 w-full items-center justify-center gap-1.5 rounded-full px-4 text-sm font-semibold"
+            @click="navigate(ROUTES.profile)"
+          >
+            {{ auth.isAuthenticated ? locale.t.home.goToProfile : locale.t.home.signInCta }}
+            <ArrowRight class="size-4" />
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Banner slider -->
+    <div v-if="hasBanners" class="overflow-x-hidden pt-4">
       <div
         ref="scroller"
-        class="flex snap-x snap-mandatory gap-3 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        class="flex snap-x snap-mandatory gap-3.5 overflow-x-auto px-5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         @scroll="onBannerScroll"
       >
-        <template v-if="hasBanners">
-          <button
-            v-for="banner in banners"
-            :key="banner.id"
-            type="button"
-            class="relative min-w-full snap-center overflow-hidden rounded-2xl border border-white/30 shadow-lg transition active:scale-[0.99]"
-            @click="openBanner(banner)"
-          >
-            <img
-              v-if="banner.image"
-              :src="banner.image"
-              :alt="banner.title ?? 'Banner'"
-              class="aspect-[16/7] w-full object-cover"
-            >
-            <div
-              v-if="banner.title || banner.subtitle"
-              class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent p-4 text-left text-white"
-            >
-              <p v-if="banner.title" class="text-lg font-bold leading-tight">
-                {{ banner.title }}
-              </p>
-              <p v-if="banner.subtitle" class="mt-0.5 text-xs text-white/85">
-                {{ banner.subtitle }}
-              </p>
-            </div>
-          </button>
-        </template>
-
         <div
-          v-else
-          class="home-card flex min-w-full snap-center items-center gap-3 p-4"
+          v-for="banner in banners"
+          :key="banner.id"
+          class="relative min-w-[calc(100%-4.5rem)] snap-center overflow-hidden rounded-[28px] bg-slate-900 shadow-sm"
+          :style="banner.image ? { backgroundImage: `url(${banner.image})`, backgroundSize: 'cover', backgroundPosition: 'center' } : undefined"
         >
-          <img src="/images/logo.png" alt="Reklama Bozor" class="size-10 shrink-0 object-contain">
-          <div>
-            <p class="text-[11px] font-semibold leading-none text-[#0386D9]">
-              Reklama <span class="italic">Bozor</span>
-            </p>
-            <p class="mt-1 text-lg font-bold leading-tight text-[#0b1f33]">
-              {{ locale.t.home.bannerAd }}
-            </p>
+          <div
+            class="absolute inset-0"
+            :class="banner.image ? 'bg-gradient-to-r from-slate-950/82 via-slate-950/52 to-slate-900/20' : 'bg-gradient-to-br from-brand-600 to-brand-teal'"
+          />
+          <div class="relative flex min-h-[154px] flex-col gap-3 p-3.5">
+            <div class="flex items-start gap-2.5">
+              <div class="flex min-w-0 flex-1 flex-col">
+                <h3 class="line-clamp-2 max-w-[11ch] text-[1.08rem] font-extrabold leading-[1.02] tracking-tight text-white">
+                  {{ banner.title ?? locale.t.home.bannerAd }}
+                </h3>
+                <p v-if="banner.subtitle" class="mt-1.5 line-clamp-2 max-w-[18ch] text-[11px] leading-snug text-white/80">
+                  {{ banner.subtitle }}
+                </p>
+              </div>
+            </div>
+            <div class="mt-auto">
+              <button
+                type="button"
+                class="btn-accent inline-flex h-9 items-center gap-1.5 rounded-full px-3.5 text-xs font-semibold"
+                @click="openBanner(banner)"
+              >
+                {{ locale.t.home.details }}
+                <ArrowRight class="size-3.5" />
+              </button>
+            </div>
+            <div
+              v-if="banner.image && !banner.subtitle"
+              class="sr-only"
+            >
+              {{ banner.title ?? locale.t.home.bannerAd }}
+            </div>
           </div>
         </div>
       </div>
-      <div v-if="hasBanners && banners.length > 1" class="mt-2.5 flex items-center justify-center gap-1.5">
+      <div v-if="banners.length > 1" class="mt-2.5 flex items-center justify-center gap-1.5">
         <span
           v-for="(banner, i) in banners"
           :key="banner.id"
           class="h-1.5 rounded-full transition-all"
-          :class="i === activeBanner ? 'w-4 bg-white' : 'w-1.5 bg-white/40'"
+          :class="i === activeBanner ? 'w-4 bg-primary' : 'w-1.5 bg-muted-foreground/30'"
         />
       </div>
     </div>
 
-    <!-- Main content -->
-    <section class="space-y-3 px-5 pb-2 pt-4">
-      <!-- Guest sign-in CTA -->
+    <!-- Quick links grid -->
+    <section class="grid grid-cols-2 gap-4 px-5 pt-4">
       <button
-        v-if="!auth.isAuthenticated"
+        v-for="link in quickLinks"
+        :key="link.key"
         type="button"
-        class="home-card w-full overflow-hidden p-5 text-left text-[#0b1f33] transition active:scale-[0.98]"
-        @click="navigate(ROUTES.profile)"
+        class="pressable quick-link-tile relative min-h-[148px] overflow-hidden rounded-[28px] p-4 text-left"
+        :class="link.tone"
+        @click="navigate(link.to)"
       >
-        <div class="flex size-14 items-center justify-center rounded-2xl bg-[#0386D9]/15 text-[#0386D9] shadow-sm ring-1 ring-[#0386D9]/20">
-          <Sparkles class="size-7" />
-        </div>
-        <h2 class="mt-4 text-lg font-bold">
-          {{ locale.t.home.signInTitle }}
-        </h2>
-        <p class="mt-1.5 text-sm leading-relaxed text-[#5b6b7e]">
-          {{ locale.t.home.signInBody }}
-        </p>
-        <span class="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-[#0386D9]">
-          {{ locale.t.home.signInCta }}
-          <ArrowRight class="size-4" />
-        </span>
-      </button>
-
-      <!-- Provider verification -->
-      <button
-        v-else-if="verification === 'unverified'"
-        type="button"
-        class="home-card w-full overflow-hidden p-5 text-left text-[#0b1f33] transition active:scale-[0.98]"
-        @click="navigate(ROUTES.profile)"
-      >
-        <div class="flex size-14 items-center justify-center rounded-2xl bg-amber-500/15 text-amber-700 shadow-sm ring-1 ring-amber-500/25">
-          <ShieldAlert class="size-7" />
-        </div>
-        <h2 class="mt-4 text-lg font-bold">
-          {{ locale.t.home.verifyTitle }}
-        </h2>
-        <p class="mt-1.5 text-sm leading-relaxed text-[#5b6b7e]">
-          {{ locale.t.home.verifyBody }}
-        </p>
-        <span class="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-[#0386D9]">
-          {{ locale.t.home.verifyButton }}
-          <ArrowRight class="size-4" />
-        </span>
-      </button>
-
-      <!-- Verification pending -->
-      <div
-        v-else-if="verification === 'pending'"
-        class="home-card overflow-hidden p-5 text-[#0b1f33]"
-      >
-        <div class="flex size-14 items-center justify-center rounded-2xl bg-slate-500/15 text-slate-600 shadow-sm ring-1 ring-slate-500/20">
-          <Clock class="size-7" />
-        </div>
-        <h2 class="mt-4 text-lg font-bold">
-          {{ locale.t.home.pendingTitle }}
-        </h2>
-        <p class="mt-1.5 text-sm leading-relaxed text-[#5b6b7e]">
-          {{ locale.t.home.pendingBody }}
-        </p>
-      </div>
-
-      <!-- Client primary CTA -->
-      <button
-        v-else-if="showPrimaryAdvertise"
-        type="button"
-        class="home-card w-full overflow-hidden p-5 text-left text-[#0b1f33] transition active:scale-[0.98]"
-        @click="navigate(ROUTES.newOrder)"
-      >
-        <div class="flex size-14 items-center justify-center rounded-2xl bg-[#0386D9]/15 text-[#0386D9] shadow-sm ring-1 ring-[#0386D9]/20">
-          <ClipboardList class="size-7" />
-        </div>
-        <h2 class="mt-4 text-lg font-bold">
-          {{ locale.t.home.advertiseTitle }}
-        </h2>
-        <p class="mt-1.5 text-sm leading-relaxed text-[#5b6b7e]">
-          {{ locale.t.home.advertiseBody }}
-        </p>
-        <span class="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-[#0386D9]">
-          {{ locale.t.home.advertiseCta }}
-          <ArrowRight class="size-4" />
-        </span>
-      </button>
-
-      <!-- Approved provider primary CTA -->
-      <button
-        v-else-if="showPrimaryOpenOrders"
-        type="button"
-        class="home-card w-full overflow-hidden p-5 text-left text-[#0b1f33] transition active:scale-[0.98]"
-        @click="navigate({ path: ROUTES.profile, query: { tab: 'offers' } })"
-      >
-        <div class="flex size-14 items-center justify-center rounded-2xl bg-[#0386D9]/15 text-[#0386D9] shadow-sm ring-1 ring-[#0386D9]/20">
-          <ClipboardList class="size-7" />
-        </div>
-        <h2 class="mt-4 text-lg font-bold">
-          {{ locale.t.home.viewOpenOrders }}
-        </h2>
-        <p class="mt-1.5 text-sm leading-relaxed text-[#5b6b7e]">
-          {{ locale.t.home.openOrdersBody }}
-        </p>
-        <span class="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-[#0386D9]">
-          {{ locale.t.home.viewOpenOrders }}
-          <ArrowRight class="size-4" />
-        </span>
-      </button>
-
-      <!-- Secondary quick links -->
-      <div class="grid grid-cols-2 gap-3">
-        <button
-          type="button"
-          class="home-card overflow-hidden p-4 text-left text-[#0b1f33] transition active:scale-[0.98]"
-          @click="navigate(ROUTES.marketplace)"
-        >
-          <div class="flex size-12 items-center justify-center rounded-xl bg-[#0386D9]/15 text-[#0386D9] shadow-sm ring-1 ring-[#0386D9]/20">
-            <Users class="size-6" />
+        <span class="quick-link-tile__glow" aria-hidden="true" />
+        <span class="quick-link-tile__orb" aria-hidden="true" />
+        <div class="relative flex h-full flex-col items-start justify-between">
+          <span class="quick-link-tile__icon-wrap">
+            <component :is="link.icon" class="size-7" />
+          </span>
+          <div class="w-full">
+            <p class="text-[1.02rem] font-bold leading-tight text-slate-900 dark:text-white">
+              {{ link.label }}
+            </p>
+            <p class="mt-1.5 line-clamp-2 max-w-[13ch] text-[11px] leading-snug text-slate-700/90 dark:text-white/72">
+              {{ link.hint }}
+            </p>
           </div>
-          <p class="mt-3 text-sm font-bold">
-            {{ locale.t.home.browseProviders }}
-          </p>
-          <p class="mt-1 text-xs leading-snug text-[#5b6b7e]">
-            {{ locale.t.home.browseProvidersHint }}
-          </p>
-        </button>
-        <button
-          type="button"
-          class="home-card overflow-hidden p-4 text-left text-[#0b1f33] transition active:scale-[0.98]"
-          @click="navigate(ROUTES.map)"
-        >
-          <div class="flex size-12 items-center justify-center rounded-xl bg-[#0386D9]/15 text-[#0386D9] shadow-sm ring-1 ring-[#0386D9]/20">
-            <MapPin class="size-6" />
-          </div>
-          <p class="mt-3 text-sm font-bold">
-            {{ locale.t.home.viewMap }}
-          </p>
-          <p class="mt-1 text-xs leading-snug text-[#5b6b7e]">
-            {{ locale.t.home.viewMapHint }}
-          </p>
-        </button>
-      </div>
+        </div>
+      </button>
+    </section>
 
+    <section class="px-5 pt-4">
       <TopRatedAgents />
     </section>
   </div>

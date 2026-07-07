@@ -10,6 +10,7 @@ const ORDER_VARIANTS: Record<OrderStatus, BadgeVariant> = {
   offers_sent: 'primary',
   client_selected: 'warning',
   in_progress: 'success',
+  work_submitted: 'warning',
   completed: 'success',
   cancelled: 'default',
 }

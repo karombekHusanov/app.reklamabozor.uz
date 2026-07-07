@@ -5,6 +5,8 @@ export type OrderStatus
     | 'offers_sent'
     | 'client_selected'
     | 'in_progress'
+    // Agent delivered the work — waiting for the client to confirm.
+    | 'work_submitted'
     | 'completed'
     | 'cancelled'
 
@@ -30,6 +32,15 @@ export interface Offer {
 
 export type OrderDeadline = 'today_tomorrow' | 'this_week'
 
+export interface OrderReview {
+  id: number
+  order_id: number
+  rating: number
+  comment: string | null
+  status: 'pending' | 'approved' | 'rejected'
+  created_at: string
+}
+
 export interface Order {
   id: number
   title: string
@@ -42,6 +53,11 @@ export interface Order {
   budget_min: string | null
   budget_max: string | null
   status: OrderStatus
+  work_submitted_at: string | null
+  completed_at: string | null
+  auto_completed: boolean
+  /** The client's review of the winning agency (absent until submitted). */
+  review?: OrderReview | null
   offers?: Offer[]
   offers_count?: number
   views_count?: number

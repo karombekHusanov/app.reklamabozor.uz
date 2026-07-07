@@ -15,3 +15,10 @@ export function formatDate(value: string | Date | null | undefined, locale: Loca
   if (!value) return ''
   return dayjs(value).locale(DAYJS_LOCALE[locale]).format('D MMMM YYYY')
 }
+
+/** Compact chat timestamp: time only for today, date + time otherwise. */
+export function formatMessageTime(value: string | Date | null | undefined, locale: Locale): string {
+  if (!value) return ''
+  const d = dayjs(value).locale(DAYJS_LOCALE[locale])
+  return d.isSame(dayjs(), 'day') ? d.format('HH:mm') : d.format('D MMM, HH:mm')
+}

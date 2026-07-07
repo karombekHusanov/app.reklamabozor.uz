@@ -1,28 +1,30 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
-import { hydratePref, readPref, writePref } from '@/core/lib/cloud-prefs'
 import { useAuthStore } from '@/modules/auth/stores/auth.store'
 import { setUserRole, type SelectableRole } from '@/modules/onboarding/services/onboarding.service'
-
-export const ONBOARDED_STORAGE_KEY = 'adspace_onboarded'
 
 export type OnboardingStep = 'language' | 'terms' | 'role'
 
 export const useOnboardingStore = defineStore('onboarding', () => {
   const auth = useAuthStore()
 
-  const onboarded = ref(readPref(ONBOARDED_STORAGE_KEY) === '1')
+  // Session-only completion flag. Nothing is persisted to device storage: the WebView
+  // (localStorage / CloudStorage on older clients) is shared between Telegram accounts
+  // on the same device, so a stored flag would leak across accounts and hide
+  // onboarding from users who never completed it.
+  const completed = ref(false)
   const step = ref<OnboardingStep>('language')
   const termsAccepted = ref(false)
 
   /**
-   * Onboarding is required until the local flag is set. A returning user who already
-   * selected a role on another device (durable `role_selected_at`) is treated as done.
+   * Onboarding is driven purely by the backend: a user whose /me response has no
+   * `role_selected_at` has never picked a role and must onboard. Each Telegram
+   * account is therefore evaluated independently, regardless of the device.
    */
   const needsOnboarding = computed(() => {
-    if (onboarded.value) return false
-    if (auth.user?.role_selected_at) return false
-    return true
+    if (completed.value) return false
+    if (!auth.isAuthenticated || !auth.user) return false
+    return auth.user.role_selected_at === null
   })
 
   function goTo(next: OnboardingStep) {
@@ -47,20 +49,10 @@ export const useOnboardingStore = defineStore('onboarding', () => {
   }
 
   function complete() {
-    onboarded.value = true
-    writePref(ONBOARDED_STORAGE_KEY, '1')
-  }
-
-  /** Rehydrate the flag from durable CloudStorage on startup. */
-  async function hydrate() {
-    const stored = await hydratePref(ONBOARDED_STORAGE_KEY)
-    if (stored === '1') {
-      onboarded.value = true
-    }
+    completed.value = true
   }
 
   return {
-    onboarded,
     step,
     termsAccepted,
     needsOnboarding,
@@ -68,6 +60,5 @@ export const useOnboardingStore = defineStore('onboarding', () => {
     acceptTerms,
     selectRole,
     complete,
-    hydrate,
   }
 })

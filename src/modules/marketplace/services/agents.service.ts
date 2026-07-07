@@ -15,6 +15,9 @@ export interface PublicAgent {
   completion_percent: number
   /** Number of accepted offers that ended in a completed order (successful jobs). */
   completed_orders_count: number
+  /** Average of approved (moderated) client ratings — null until the first one. */
+  rating_avg: number | null
+  rating_count: number
   categories: Category[]
   /** Distance from the requested point in metres — only on the nearby endpoint. */
   distance_m?: number

@@ -3,12 +3,16 @@ import { ref } from 'vue'
 import { getApiErrorMessage } from '@/core/api/api-error'
 import {
   acceptOffer as acceptOfferRequest,
+  confirmCompletion as confirmCompletionRequest,
   createOrder as createOrderRequest,
+  disputeCompletion as disputeCompletionRequest,
   fetchAgentOffers,
   fetchAgentOrders,
   fetchMyOrders,
   fetchOrder,
   submitOffer as submitOfferRequest,
+  submitReview as submitReviewRequest,
+  submitWork as submitWorkRequest,
 } from '@/modules/orders/services/orders.service'
 import type {
   AgentOffer,
@@ -94,6 +98,60 @@ export const useOrdersStore = defineStore('orders', () => {
     }
   }
 
+  /** Client accepts the delivered work — the order completes. */
+  async function confirmCompletion(orderId: number) {
+    isSubmitting.value = true
+    error.value = null
+    try {
+      currentOrder.value = await confirmCompletionRequest(orderId)
+      return true
+    }
+    catch (e) {
+      error.value = getApiErrorMessage(e)
+      return false
+    }
+    finally {
+      isSubmitting.value = false
+    }
+  }
+
+  /** Client rejects the delivered work — the ops team is notified. */
+  async function disputeCompletion(orderId: number) {
+    isSubmitting.value = true
+    error.value = null
+    try {
+      currentOrder.value = await disputeCompletionRequest(orderId)
+      return true
+    }
+    catch (e) {
+      error.value = getApiErrorMessage(e)
+      return false
+    }
+    finally {
+      isSubmitting.value = false
+    }
+  }
+
+  /** Client rates the winning agency on a completed order. */
+  async function submitReview(orderId: number, rating: number, comment: string | null) {
+    isSubmitting.value = true
+    error.value = null
+    try {
+      const review = await submitReviewRequest(orderId, rating, comment)
+      if (currentOrder.value?.id === orderId) {
+        currentOrder.value = { ...currentOrder.value, review }
+      }
+      return true
+    }
+    catch (e) {
+      error.value = getApiErrorMessage(e)
+      return false
+    }
+    finally {
+      isSubmitting.value = false
+    }
+  }
+
   async function loadAgentWorkspace() {
     isLoadingAgent.value = true
     error.value = null
@@ -127,6 +185,24 @@ export const useOrdersStore = defineStore('orders', () => {
     }
   }
 
+  /** Winning agent marks the work as delivered. */
+  async function submitWork(orderId: number) {
+    isSubmitting.value = true
+    error.value = null
+    try {
+      await submitWorkRequest(orderId)
+      await loadAgentWorkspace()
+      return true
+    }
+    catch (e) {
+      error.value = getApiErrorMessage(e)
+      return false
+    }
+    finally {
+      isSubmitting.value = false
+    }
+  }
+
   function reset() {
     myOrders.value = []
     currentOrder.value = null
@@ -148,8 +224,12 @@ export const useOrdersStore = defineStore('orders', () => {
     loadOrder,
     create,
     accept,
+    confirmCompletion,
+    disputeCompletion,
+    submitReview,
     loadAgentWorkspace,
     sendOffer,
+    submitWork,
     reset,
   }
 })

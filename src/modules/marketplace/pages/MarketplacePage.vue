@@ -55,10 +55,7 @@ function openAgent(id: number) {
 
 <template>
   <div>
-    <AppHeader
-      :title="locale.t.marketplace.title"
-      show-back
-    />
+    <AppHeader :title="locale.t.marketplace.title" />
 
     <section class="space-y-4 px-5">
       <!-- Category tabs -->
@@ -68,8 +65,8 @@ function openAgent(id: number) {
       >
         <button
           type="button"
-          class="shrink-0 rounded-full px-5 py-2.5 text-sm font-semibold transition"
-          :class="activeCategory === 'all' ? 'bg-primary text-white shadow-sm' : 'bg-white/15 text-white/85'"
+          class="pressable shrink-0 rounded-full px-5 py-2.5 text-sm font-semibold transition"
+          :class="activeCategory === 'all' ? 'bg-primary text-primary-foreground' : 'glass-chip'"
           @click="activeCategory = 'all'"
         >
           {{ locale.t.marketplace.all }}
@@ -79,8 +76,8 @@ function openAgent(id: number) {
           :key="category.id"
           type="button"
           :class="cn(
-            'shrink-0 rounded-full px-5 py-2.5 text-sm font-semibold transition',
-            activeCategory === category.id ? 'bg-primary text-white shadow-sm' : 'bg-white/15 text-white/85',
+            'pressable shrink-0 rounded-full px-5 py-2.5 text-sm font-semibold transition',
+            activeCategory === category.id ? 'bg-primary text-primary-foreground' : 'glass-chip',
           )"
           @click="activeCategory = category.id"
         >
@@ -100,7 +97,7 @@ function openAgent(id: number) {
       <!-- Error -->
       <p
         v-else-if="error"
-        class="rounded-2xl bg-destructive/10 px-4 py-3 text-sm text-white"
+        class="rounded-2xl bg-destructive/10 px-4 py-3 text-sm text-destructive"
       >
         {{ error }}
       </p>

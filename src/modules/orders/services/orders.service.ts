@@ -8,6 +8,7 @@ import type {
   CreateOrderPayload,
   Offer,
   Order,
+  OrderReview,
 } from '@/modules/orders/types/order'
 
 /** Active categories, optionally filtered by service type. */
@@ -45,6 +46,30 @@ export async function acceptOffer(offerId: number): Promise<Offer> {
   return data.data
 }
 
+/** Client accepts the delivered work — the order completes. */
+export async function confirmCompletion(orderId: number): Promise<Order> {
+  const { data } = await api.post<ApiSuccess<Order>>(`/api/v1/orders/${orderId}/complete`)
+
+  return data.data
+}
+
+/** Client rejects the delivered work — the ops team steps in. */
+export async function disputeCompletion(orderId: number): Promise<Order> {
+  const { data } = await api.post<ApiSuccess<Order>>(`/api/v1/orders/${orderId}/dispute`)
+
+  return data.data
+}
+
+/** Client rates the winning agency on a completed order (moderated). */
+export async function submitReview(orderId: number, rating: number, comment: string | null): Promise<OrderReview> {
+  const { data } = await api.post<ApiSuccess<OrderReview>>(`/api/v1/orders/${orderId}/review`, {
+    rating,
+    comment,
+  })
+
+  return data.data
+}
+
 // --- Agent ------------------------------------------------------------------
 
 export async function fetchAgentOrders(): Promise<AgentOrder[]> {
@@ -64,6 +89,13 @@ export async function submitOffer(orderId: number, payload: CreateOfferPayload):
 
 export async function fetchAgentOffers(): Promise<AgentOffer[]> {
   const { data } = await api.get<ApiSuccess<AgentOffer[]>>('/api/v1/agent/offers')
+
+  return data.data
+}
+
+/** Winning agent marks the work as delivered (awaits client confirmation). */
+export async function submitWork(orderId: number): Promise<Order> {
+  const { data } = await api.post<ApiSuccess<Order>>(`/api/v1/agent/orders/${orderId}/submit-work`)
 
   return data.data
 }

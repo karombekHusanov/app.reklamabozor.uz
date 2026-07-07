@@ -4,6 +4,6 @@ import BrandLogo from '@/core/ui/BrandLogo.vue'
 
 <template>
   <div class="tahoe-bg fixed inset-0 z-[100] flex items-center justify-center">
-    <BrandLogo size="xl" on-dark class="animate-in fade-in zoom-in-95 duration-700" />
+    <BrandLogo size="xl" class="animate-in fade-in zoom-in-95 duration-700" />
   </div>
 </template>

@@ -7,4 +7,11 @@ export const chatRoutes: RouteRecordRaw[] = [
     name: 'chat',
     component: () => import('@/modules/chat/pages/ChatPage.vue'),
   },
+  {
+    // One thread per order — deep-linked from bot pings (`/chat/{orderId}`).
+    path: 'chat/:orderId',
+    name: 'chat-thread',
+    component: () => import('@/modules/chat/pages/ChatThreadPage.vue'),
+    props: true,
+  },
 ]

@@ -4,79 +4,93 @@ import HomeAgentCardSkeleton from '@/modules/home/components/HomeAgentCardSkelet
 </script>
 
 <template>
-  <div class="relative" aria-busy="true" aria-label="Loading home">
-    <!-- Hero -->
-    <header
-      class="rounded-b-[2rem] bg-gradient-to-br from-[#02305C] via-[#014BA4] to-[#0386D9] px-5 pb-8 pt-[max(env(safe-area-inset-top),0.75rem)]"
-    >
-      <div class="flex items-center justify-between">
-        <Skeleton class="size-10 rounded-xl bg-white/20" />
-        <Skeleton class="h-9 w-28 rounded-full bg-white/20" />
-      </div>
-
-      <div class="mt-4 flex items-center justify-center gap-2">
-        <Skeleton class="size-2 rounded-full bg-white/20" />
-        <Skeleton class="h-4 w-48 rounded-md bg-white/20" />
-      </div>
-
-      <div class="mt-5 flex items-start gap-4">
-        <div class="flex shrink-0 flex-col items-center gap-2.5">
-          <Skeleton class="size-16 rounded-2xl bg-white/20" />
-          <Skeleton class="h-3 w-16 rounded-md bg-white/15" />
-          <Skeleton class="h-3 w-14 rounded-md bg-white/15" />
-        </div>
-        <div class="min-w-0 flex-1 space-y-2 pt-1">
-          <Skeleton class="h-4 w-24 rounded-md bg-white/15" />
-          <Skeleton class="h-6 w-44 max-w-full rounded-lg bg-white/20" />
-          <Skeleton class="h-3.5 w-36 rounded-md bg-white/15" />
-        </div>
-      </div>
+  <div class="pb-2" aria-busy="true" aria-label="Loading home">
+    <!-- Top bar -->
+    <header class="safe-top flex items-center justify-between gap-3 px-5 pt-3">
+      <Skeleton class="size-11 rounded-2xl" />
+      <Skeleton class="h-9 w-32 rounded-xl" />
+      <Skeleton class="size-11 rounded-2xl" />
     </header>
 
+    <!-- Profile card -->
+    <section class="px-5 pt-4">
+      <div class="home-card p-4">
+        <div class="flex items-start gap-3.5">
+          <Skeleton class="size-16 shrink-0 rounded-2xl" />
+          <div class="min-w-0 flex-1 space-y-2">
+            <Skeleton class="h-3 w-20 rounded-md" />
+            <Skeleton class="h-5 w-32 max-w-full rounded-lg" />
+            <Skeleton class="h-3 w-24 rounded-md" />
+          </div>
+        </div>
+        <div class="mt-4 space-y-3">
+          <div class="rounded-2xl bg-muted/55 p-3">
+            <Skeleton class="h-3 w-28 rounded-md" />
+            <div class="mt-2 flex gap-2">
+              <Skeleton class="h-7 w-24 rounded-full" />
+              <Skeleton class="h-7 w-28 rounded-full" />
+            </div>
+          </div>
+          <Skeleton class="h-11 w-full rounded-full" />
+        </div>
+      </div>
+    </section>
+
     <!-- Banner -->
-    <div class="relative z-10 -mt-3 px-5">
-      <Skeleton class="home-card aspect-[16/7] w-full" />
-      <div class="mt-2.5 flex items-center justify-center gap-1.5">
-        <Skeleton class="h-1.5 w-4 rounded-full bg-white/30" />
-        <Skeleton class="h-1.5 w-1.5 rounded-full bg-white/20" />
-        <Skeleton class="h-1.5 w-1.5 rounded-full bg-white/20" />
+    <div class="overflow-x-hidden pt-4">
+      <div class="flex gap-3.5 overflow-hidden px-5">
+        <div class="min-w-[calc(100%-4.5rem)] rounded-[28px] bg-slate-300/70 p-3.5 dark:bg-slate-800/70">
+          <div class="flex min-h-[154px] flex-col gap-3">
+            <div class="flex items-start gap-2.5">
+              <div class="flex min-w-0 flex-1 flex-col">
+                <Skeleton class="h-6 w-[54%] rounded-lg bg-white/60 dark:bg-white/18" />
+                <Skeleton class="mt-2 h-3 w-[62%] rounded-md bg-white/45 dark:bg-white/14" />
+                <Skeleton class="mt-1 h-3 w-[42%] rounded-md bg-white/45 dark:bg-white/14" />
+              </div>
+            </div>
+            <Skeleton class="mt-auto h-9 w-24 rounded-full bg-white/60 dark:bg-white/18" />
+          </div>
+        </div>
+        <div class="min-w-[calc(100%-4.5rem)] rounded-[28px] bg-slate-300/45 p-3.5 opacity-60 dark:bg-slate-800/45">
+          <div class="flex min-h-[154px] flex-col gap-3">
+            <div class="flex items-start gap-2.5">
+              <div class="flex min-w-0 flex-1 flex-col">
+                <Skeleton class="h-6 w-[48%] rounded-lg bg-white/60 dark:bg-white/18" />
+                <Skeleton class="mt-2 h-3 w-[58%] rounded-md bg-white/45 dark:bg-white/14" />
+              </div>
+            </div>
+            <Skeleton class="mt-auto h-9 w-24 rounded-full bg-white/60 dark:bg-white/18" />
+          </div>
+        </div>
       </div>
     </div>
 
-    <!-- Cards -->
-    <section class="space-y-3 px-5 pb-2 pt-4">
-      <!-- Primary CTA card -->
-      <div class="home-card space-y-4 p-5">
-        <Skeleton class="size-14 rounded-2xl bg-[#0386D9]/15" />
-        <Skeleton class="h-5 w-[60%] max-w-full rounded-lg bg-[#0386D9]/20" />
-        <div class="space-y-2">
-          <Skeleton class="h-3.5 w-full rounded-md bg-[#0386D9]/15" />
-          <Skeleton class="h-3.5 w-[92%] rounded-md bg-[#0386D9]/15" />
-        </div>
-        <Skeleton class="h-4 w-32 rounded-md bg-[#0386D9]/20" />
-      </div>
-
-      <!-- Secondary tiles -->
-      <div class="grid grid-cols-2 gap-3">
-        <div class="home-card space-y-3 p-4">
-          <Skeleton class="size-12 rounded-xl bg-[#0386D9]/15" />
-          <Skeleton class="h-4 w-[80%] rounded-md bg-[#0386D9]/20" />
-          <Skeleton class="h-3 w-full rounded-md bg-[#0386D9]/15" />
-        </div>
-        <div class="home-card space-y-3 p-4">
-          <Skeleton class="size-12 rounded-xl bg-[#0386D9]/15" />
-          <Skeleton class="h-4 w-[60%] rounded-md bg-[#0386D9]/20" />
-          <Skeleton class="h-3 w-full rounded-md bg-[#0386D9]/15" />
+    <!-- Quick links grid -->
+    <section class="grid grid-cols-2 gap-4 px-5 pt-4">
+      <div
+        v-for="n in 4"
+        :key="n"
+        class="relative min-h-[148px] overflow-hidden rounded-[28px] border border-white/65 bg-gradient-to-br from-sky-100 via-cyan-50 to-teal-100 p-4 shadow-[0_18px_40px_-24px_rgba(15,23,42,0.35)] dark:border-white/10 dark:from-slate-800 dark:via-slate-900 dark:to-slate-800"
+      >
+        <div class="flex h-full flex-col items-start justify-between">
+          <Skeleton class="size-13 rounded-[22px]" />
+          <div class="w-full">
+            <Skeleton class="h-4 w-24 rounded-md" />
+            <Skeleton class="mt-2 h-3 w-22 rounded-md" />
+            <Skeleton class="mt-1.5 h-3 w-16 rounded-md" />
+          </div>
         </div>
       </div>
+    </section>
 
-      <!-- Top agents list -->
+    <!-- Top agents list -->
+    <section class="px-5 pt-4">
       <div class="home-card overflow-hidden p-4">
         <div class="flex items-center justify-between pb-2">
-          <Skeleton class="h-5 w-32 rounded-md bg-[#0386D9]/15" />
-          <Skeleton class="h-4 w-20 rounded-md bg-[#0386D9]/10" />
+          <Skeleton class="h-5 w-32 rounded-md" />
+          <Skeleton class="h-4 w-20 rounded-md" />
         </div>
-        <div class="divide-y divide-[#0386D9]/10">
+        <div class="divide-y divide-border">
           <HomeAgentCardSkeleton v-for="n in 4" :key="n" />
         </div>
       </div>
