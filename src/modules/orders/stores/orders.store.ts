@@ -34,12 +34,17 @@ export const useOrdersStore = defineStore('orders', () => {
   const availableOrders = ref<AgentOrder[]>([])
   const myOffers = ref<AgentOffer[]>([])
   const isLoadingAgent = ref(false)
+  const myOrdersLoaded = ref(false)
+  const workspaceLoaded = ref(false)
 
-  async function loadMyOrders() {
+  async function loadMyOrders(force = false) {
+    if (myOrdersLoaded.value && !force) return
+
     isLoading.value = true
     error.value = null
     try {
       myOrders.value = await fetchMyOrders()
+      myOrdersLoaded.value = true
     }
     catch (e) {
       error.value = getApiErrorMessage(e)
@@ -152,13 +157,16 @@ export const useOrdersStore = defineStore('orders', () => {
     }
   }
 
-  async function loadAgentWorkspace() {
+  async function loadAgentWorkspace(force = false) {
+    if (workspaceLoaded.value && !force) return
+
     isLoadingAgent.value = true
     error.value = null
     try {
       const [orders, offers] = await Promise.all([fetchAgentOrders(), fetchAgentOffers()])
       availableOrders.value = orders
       myOffers.value = offers
+      workspaceLoaded.value = true
     }
     catch (e) {
       error.value = getApiErrorMessage(e)
@@ -173,7 +181,7 @@ export const useOrdersStore = defineStore('orders', () => {
     error.value = null
     try {
       await submitOfferRequest(orderId, payload)
-      await loadAgentWorkspace()
+      await loadAgentWorkspace(true)
       return true
     }
     catch (e) {
@@ -191,7 +199,7 @@ export const useOrdersStore = defineStore('orders', () => {
     error.value = null
     try {
       await submitWorkRequest(orderId)
-      await loadAgentWorkspace()
+      await loadAgentWorkspace(true)
       return true
     }
     catch (e) {
@@ -208,6 +216,8 @@ export const useOrdersStore = defineStore('orders', () => {
     currentOrder.value = null
     availableOrders.value = []
     myOffers.value = []
+    myOrdersLoaded.value = false
+    workspaceLoaded.value = false
     error.value = null
   }
 

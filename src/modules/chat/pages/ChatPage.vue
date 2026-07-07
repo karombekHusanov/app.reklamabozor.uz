@@ -22,7 +22,7 @@ const router = useRouter()
 const locale = useLocaleStore()
 
 function load() {
-  if (auth.isAuthenticated) chat.loadChats()
+  if (auth.isAuthenticated) chat.loadChats(true)
 }
 
 onMounted(load)

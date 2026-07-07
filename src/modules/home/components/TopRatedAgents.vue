@@ -1,37 +1,29 @@
 <script setup lang="ts">
 import { ChevronRight, Star } from '@lucide/vue'
-import { computed, onMounted, ref } from 'vue'
+import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import Avatar from '@/core/ui/Avatar.vue'
 import Skeleton from '@/core/ui/Skeleton.vue'
 import HomeAgentCardSkeleton from '@/modules/home/components/HomeAgentCardSkeleton.vue'
 import { categoryName } from '@/core/i18n/category-name'
 import { useLocaleStore } from '@/core/i18n/locale.store'
+import { useHomeStore } from '@/modules/home/stores/home.store'
 import { ROUTES } from '@/modules/shell/constants/routes'
-import { fetchTopAgents, type PublicAgent } from '@/modules/marketplace/services/agents.service'
-
-const LIST_LIMIT = 5
+import type { PublicAgent } from '@/modules/marketplace/services/agents.service'
 
 const locale = useLocaleStore()
 const router = useRouter()
+const home = useHomeStore()
 
-const agents = ref<PublicAgent[]>([])
-const loading = ref(true)
+const loading = computed(() => !home.hasLoaded && home.isLoading)
+const visibleAgents = computed(() => home.topAgents)
 
-const visibleAgents = computed(() => agents.value.slice(0, LIST_LIMIT))
-
-/** Medal-style rank badge classes for the podium (1-3); the rest stay neutral. */
-function rankClasses(rank: number): string {
-  switch (rank) {
-    case 1:
-      return 'bg-gradient-to-br from-amber-300 to-amber-500 text-amber-950 ring-amber-200'
-    case 2:
-      return 'bg-gradient-to-br from-slate-200 to-slate-400 text-slate-800 ring-slate-100'
-    case 3:
-      return 'bg-gradient-to-br from-orange-300 to-orange-600 text-orange-950 ring-orange-200'
-    default:
-      return 'bg-[#0386D9]/12 text-[#02305C] ring-white/60'
-  }
+function rankClass(rank: number): string {
+  const base = 'top-agents-rank'
+  if (rank === 1) return `${base} top-agents-rank--1`
+  if (rank === 2) return `${base} top-agents-rank--2`
+  if (rank === 3) return `${base} top-agents-rank--3`
+  return `${base} top-agents-rank--default`
 }
 
 function agentCategory(agent: PublicAgent): string | null {
@@ -40,19 +32,10 @@ function agentCategory(agent: PublicAgent): string | null {
   return agent.bio
 }
 
-/** Placeholder rating derived from profile completeness (no scoring backend yet). */
 function agentRating(agent: PublicAgent): string {
+  if (agent.rating_avg !== null) return agent.rating_avg.toFixed(1)
   return (4.5 + (agent.completion_percent / 100) * 0.5).toFixed(1)
 }
-
-onMounted(async () => {
-  try {
-    agents.value = await fetchTopAgents(LIST_LIMIT)
-  }
-  finally {
-    loading.value = false
-  }
-})
 
 function openAgent(id: number) {
   router.push(`/agents/${id}`)
@@ -60,19 +43,19 @@ function openAgent(id: number) {
 </script>
 
 <template>
-  <div v-if="loading || agents.length" class="home-card overflow-hidden p-4">
+  <div v-if="loading || visibleAgents.length" class="home-card overflow-hidden p-4">
     <div class="flex items-center justify-between pb-1">
       <template v-if="loading">
-        <Skeleton class="h-5 w-32 rounded-md bg-[#0386D9]/15" />
-        <Skeleton class="h-4 w-20 rounded-md bg-[#0386D9]/10" />
+        <Skeleton class="top-agents-skeleton--strong h-5 w-32 rounded-md" />
+        <Skeleton class="top-agents-skeleton h-4 w-20 rounded-md" />
       </template>
       <template v-else>
-        <h2 class="text-base font-bold text-[#0b1f33]">
+        <h2 class="text-base font-bold text-foreground">
           {{ locale.t.home.topAgencies }}
         </h2>
         <button
           type="button"
-          class="inline-flex items-center gap-0.5 text-sm font-medium text-[#5b6b7e] transition active:text-[#0b1f33]"
+          class="pressable inline-flex items-center gap-0.5 text-sm font-medium text-muted-foreground transition active:text-foreground"
           @click="router.push(ROUTES.marketplace)"
         >
           {{ locale.t.home.viewAllAgents }}
@@ -81,22 +64,19 @@ function openAgent(id: number) {
       </template>
     </div>
 
-    <div v-if="loading" class="divide-y divide-[#0386D9]/10">
+    <div v-if="loading" class="top-agents-list">
       <HomeAgentCardSkeleton v-for="n in 4" :key="n" />
     </div>
 
-    <div v-else class="divide-y divide-[#0386D9]/10">
+    <div v-else class="top-agents-list">
       <button
         v-for="(agent, index) in visibleAgents"
         :key="agent.id"
         type="button"
-        class="flex w-full items-center gap-3 py-3 text-left transition active:opacity-80"
+        class="top-agents-row"
         @click="openAgent(agent.id)"
       >
-        <span
-          class="flex size-6 shrink-0 items-center justify-center rounded-full text-xs font-extrabold shadow-sm ring-2"
-          :class="rankClasses(index + 1)"
-        >
+        <span :class="rankClass(index + 1)">
           {{ index + 1 }}
         </span>
 
@@ -104,24 +84,24 @@ function openAgent(id: number) {
           :src="agent.company_logo"
           :name="agent.company_name"
           size="md"
-          class="shrink-0 rounded-full"
+          class="top-agents-avatar"
         />
 
         <div class="min-w-0 flex-1">
-          <p class="truncate text-sm font-bold text-[#0b1f33]">
+          <p class="truncate text-sm font-bold text-foreground">
             {{ agent.company_name }}
           </p>
-          <p v-if="agentCategory(agent)" class="truncate text-xs text-[#5b6b7e]">
+          <p v-if="agentCategory(agent)" class="truncate text-xs text-muted-foreground">
             {{ agentCategory(agent) }}
           </p>
         </div>
 
         <div class="flex shrink-0 flex-col items-end gap-1">
-          <span class="inline-flex items-center gap-1 text-sm font-bold text-[#0b1f33]">
-            <Star class="size-3.5 fill-amber-400 text-amber-400" />
+          <span class="inline-flex items-center gap-1 text-sm font-bold text-foreground">
+            <Star class="size-3.5 fill-amber-400 text-amber-400 dark:fill-amber-300 dark:text-amber-300" />
             {{ agentRating(agent) }}
           </span>
-          <span class="text-[11px] font-medium text-[#5b6b7e]">
+          <span class="text-[11px] font-medium text-muted-foreground">
             {{ locale.t.home.ordersDone.replace('{count}', String(agent.completed_orders_count)) }}
           </span>
         </div>

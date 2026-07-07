@@ -120,6 +120,8 @@ const uz = {
     menuSettings: 'Sozlamalar',
     menuAdvertise: 'Reklama',
     menuOperator: 'Operator',
+    pullToRefresh: 'Yangilash uchun torting',
+    refreshing: 'Yangilanmoqda…',
   },
   marketplace: {
     title: 'Reklama sexlari',
@@ -616,6 +618,8 @@ const ru: typeof uz = {
     menuSettings: 'Настройки',
     menuAdvertise: 'Реклама',
     menuOperator: 'Оператор',
+    pullToRefresh: 'Потяните для обновления',
+    refreshing: 'Обновление…',
   },
   marketplace: {
     title: 'Исполнители',
@@ -1112,6 +1116,8 @@ const en: typeof uz = {
     menuSettings: 'Settings',
     menuAdvertise: 'Advertising',
     menuOperator: 'Operator',
+    pullToRefresh: 'Pull to refresh',
+    refreshing: 'Refreshing…',
   },
   marketplace: {
     title: 'Providers',

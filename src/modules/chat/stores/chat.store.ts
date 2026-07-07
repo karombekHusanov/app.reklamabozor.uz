@@ -14,6 +14,7 @@ export const useChatStore = defineStore('chat', () => {
   const chats = ref<Chat[]>([])
   const isLoading = ref(false)
   const error = ref<string | null>(null)
+  const inboxLoaded = ref(false)
 
   // Open thread.
   const currentChat = ref<Chat | null>(null)
@@ -25,11 +26,14 @@ export const useChatStore = defineStore('chat', () => {
     messages.value.length > 0 ? messages.value[messages.value.length - 1]!.id : undefined,
   )
 
-  async function loadChats() {
+  async function loadChats(force = false) {
+    if (inboxLoaded.value && !force) return
+
     isLoading.value = true
     error.value = null
     try {
       chats.value = await fetchChats()
+      inboxLoaded.value = true
     }
     catch (e) {
       error.value = getApiErrorMessage(e)
@@ -94,6 +98,7 @@ export const useChatStore = defineStore('chat', () => {
     chats.value = []
     currentChat.value = null
     messages.value = []
+    inboxLoaded.value = false
     error.value = null
   }
 

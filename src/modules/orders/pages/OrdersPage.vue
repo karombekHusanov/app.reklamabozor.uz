@@ -19,7 +19,7 @@ const router = useRouter()
 const locale = useLocaleStore()
 
 function load() {
-  if (auth.isAuthenticated) orders.loadMyOrders()
+  if (auth.isAuthenticated) orders.loadMyOrders(true)
 }
 
 onMounted(load)

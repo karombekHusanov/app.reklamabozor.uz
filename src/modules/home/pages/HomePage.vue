@@ -3,6 +3,7 @@ import {
   ArrowRight,
   Bell,
   Building2,
+  Loader2,
   Map,
   Menu,
   MessagesSquare,
@@ -13,13 +14,15 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import Avatar from '@/core/ui/Avatar.vue'
 import BrandLogo from '@/core/ui/BrandLogo.vue'
+import { usePullToRefresh } from '@/core/composables/usePullToRefresh'
 import { useTelegram } from '@/core/composables/useTelegram'
 import { useLocaleStore } from '@/core/i18n/locale.store'
 import { useAuthStore } from '@/modules/auth/stores/auth.store'
 import { useAgentStore } from '@/modules/agent/stores/agent.store'
 import { useChatStore } from '@/modules/chat/stores/chat.store'
 import { useOrdersStore } from '@/modules/orders/stores/orders.store'
-import { type Banner, fetchBanners } from '@/modules/home/services/banners.service'
+import { useHomeStore } from '@/modules/home/stores/home.store'
+import type { Banner } from '@/modules/home/services/banners.service'
 import HomePageSkeleton from '@/modules/home/components/HomePageSkeleton.vue'
 import TopRatedAgents from '@/modules/home/components/TopRatedAgents.vue'
 import { fullName, isBusinessUser } from '@/modules/auth/types/user'
@@ -29,6 +32,7 @@ const auth = useAuthStore()
 const agent = useAgentStore()
 const chat = useChatStore()
 const orders = useOrdersStore()
+const home = useHomeStore()
 const router = useRouter()
 const locale = useLocaleStore()
 const { user: telegramUser, haptic } = useTelegram()
@@ -53,6 +57,8 @@ const completion = computed(() => agent.profile?.completion_percent ?? 0)
 const ratingDisplay = computed(() => (4.5 + (completion.value / 100) * 0.5).toFixed(1))
 
 const hasUnread = computed(() => chat.chats.some(item => item.unread_count > 0))
+const hasBanners = computed(() => home.banners.length > 0)
+const showSkeleton = computed(() => !home.hasLoaded && (home.isLoading || auth.isLoading))
 
 const quickLinks = computed(() => [
   {
@@ -89,12 +95,21 @@ const quickLinks = computed(() => [
   },
 ])
 
-const banners = ref<Banner[]>([])
-const hasBanners = computed(() => banners.value.length > 0)
-const pageLoading = ref(true)
-
 const scroller = ref<HTMLElement | null>(null)
 const activeBanner = ref(0)
+
+const { pullDistance, isPulling } = usePullToRefresh({
+  onRefresh: async () => {
+    haptic('light')
+    await home.refresh()
+  },
+})
+
+const refreshLabel = computed(() =>
+  isPulling.value || home.isRefreshing
+    ? locale.t.home.refreshing
+    : locale.t.home.pullToRefresh,
+)
 
 function onBannerScroll() {
   const el = scroller.value
@@ -127,40 +142,42 @@ function openBanner(banner: Banner) {
   void router.push(banner.link_url)
 }
 
-async function load() {
-  try {
-    if (auth.isAuthenticated) {
-      await orders.loadMyOrders()
-      void chat.loadChats()
-      if (isProvider.value) {
-        await agent.loadProfile()
-        if (agent.isApproved) await orders.loadAgentWorkspace()
-      }
-    }
-    banners.value = await fetchBanners()
-  }
-  catch {
-    // banners are optional
-  }
-  finally {
-    pageLoading.value = false
-  }
-}
+onMounted(() => {
+  void home.load()
+})
 
-onMounted(load)
-watch(() => auth.isAuthenticated, load)
+watch(() => auth.isAuthenticated, (authed, wasAuthed) => {
+  if (authed === wasAuthed) return
+  home.reset()
+  void home.load()
+})
+
 watch(
   () => agent.isApproved,
   (approved) => {
-    if (approved && auth.isAuthenticated) void orders.loadAgentWorkspace()
+    if (approved && auth.isAuthenticated) {
+      void orders.loadAgentWorkspace(true)
+    }
   },
 )
 </script>
 
 <template>
-  <HomePageSkeleton v-if="pageLoading || auth.isLoading" />
+  <HomePageSkeleton v-if="showSkeleton" />
 
   <div v-else class="overflow-x-hidden pb-2">
+    <div
+      class="flex items-center justify-center gap-2 overflow-hidden text-xs font-medium text-muted-foreground transition-[height,opacity] duration-200"
+      :class="pullDistance > 0 || isPulling || home.isRefreshing ? 'opacity-100' : 'h-0 opacity-0'"
+      :style="{ height: pullDistance > 0 || isPulling || home.isRefreshing ? `${Math.max(pullDistance, isPulling || home.isRefreshing ? 40 : 0)}px` : '0px' }"
+    >
+      <Loader2
+        v-if="isPulling || home.isRefreshing"
+        class="size-4 animate-spin text-primary"
+      />
+      <span>{{ refreshLabel }}</span>
+    </div>
+
     <!-- Top bar: menu · brand · notifications -->
     <header class="safe-top flex items-center justify-between gap-3 px-5 pt-3">
       <button
@@ -285,7 +302,7 @@ watch(
         @scroll="onBannerScroll"
       >
         <div
-          v-for="banner in banners"
+          v-for="banner in home.banners"
           :key="banner.id"
           class="relative min-w-[calc(100%-4.5rem)] snap-center overflow-hidden rounded-[28px] bg-slate-900 shadow-sm"
           :style="banner.image ? { backgroundImage: `url(${banner.image})`, backgroundSize: 'cover', backgroundPosition: 'center' } : undefined"
@@ -324,9 +341,9 @@ watch(
           </div>
         </div>
       </div>
-      <div v-if="banners.length > 1" class="mt-2.5 flex items-center justify-center gap-1.5">
+      <div v-if="home.banners.length > 1" class="mt-2.5 flex items-center justify-center gap-1.5">
         <span
-          v-for="(banner, i) in banners"
+          v-for="(banner, i) in home.banners"
           :key="banner.id"
           class="h-1.5 rounded-full transition-all"
           :class="i === activeBanner ? 'w-4 bg-primary' : 'w-1.5 bg-muted-foreground/30'"
