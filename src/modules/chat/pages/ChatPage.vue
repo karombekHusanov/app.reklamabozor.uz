@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { LogIn, MessageCircle } from '@lucide/vue'
+import { Globe, LogIn, MessageCircle } from '@lucide/vue'
 import { onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import AppHeader from '@/modules/shell/components/AppHeader.vue'
@@ -49,6 +49,26 @@ function openThread(item: Chat) {
     <AppHeader :title="locale.t.shell.tabs.chat" :subtitle="locale.t.chat.subtitle" show-back />
 
     <section class="space-y-3 px-5">
+      <!-- Global community chat — always pinned above the order threads -->
+      <GlassCard
+        v-if="auth.isAuthenticated"
+        interactive
+        class="flex items-center gap-3 border-primary/25"
+        @click="router.push('/chat/global')"
+      >
+        <div class="flex size-11 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+          <Globe class="size-5" />
+        </div>
+        <div class="min-w-0 flex-1">
+          <p class="truncate font-semibold leading-tight">
+            {{ locale.t.chat.global.title }}
+          </p>
+          <p class="truncate text-xs text-muted-foreground">
+            {{ locale.t.chat.global.entryBody }}
+          </p>
+        </div>
+      </GlassCard>
+
       <template v-if="!auth.isAuthenticated">
         <GlassCard padding="none" class="overflow-hidden">
           <EmptyState

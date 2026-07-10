@@ -1,6 +1,6 @@
 import { api } from '@/core/api/client'
 import type { ApiSuccess } from '@/core/types/api'
-import type { Chat, ChatMessage, ChatThread } from '@/modules/chat/types/chat'
+import type { Chat, ChatMessage, ChatThread, GlobalChatMessage, GlobalChatMeta } from '@/modules/chat/types/chat'
 
 export async function fetchChats(): Promise<Chat[]> {
   const { data } = await api.get<ApiSuccess<Chat[]>>('/api/v1/chats')
@@ -29,6 +29,26 @@ export async function sendMessage(orderId: number, body: string): Promise<ChatMe
     `/api/v1/orders/${orderId}/chat/messages`,
     { body },
   )
+
+  return data.data
+}
+
+// ---- Global (community-wide) chat ----
+
+export async function fetchGlobalMeta(): Promise<GlobalChatMeta> {
+  const { data } = await api.get<ApiSuccess<GlobalChatMeta>>('/api/v1/chat/global')
+
+  return data.data
+}
+
+export async function fetchGlobalMessages(params?: { after_id?: number, before_id?: number }): Promise<GlobalChatMessage[]> {
+  const { data } = await api.get<ApiSuccess<GlobalChatMessage[]>>('/api/v1/chat/global/messages', { params })
+
+  return data.data
+}
+
+export async function sendGlobalMessage(body: string): Promise<GlobalChatMessage> {
+  const { data } = await api.post<ApiSuccess<GlobalChatMessage>>('/api/v1/chat/global/messages', { body })
 
   return data.data
 }

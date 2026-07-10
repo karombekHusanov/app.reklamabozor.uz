@@ -34,3 +34,34 @@ export interface ChatThread {
   chat: Chat
   messages: ChatMessage[]
 }
+
+// ---- Global (community-wide) chat ----
+
+export interface GlobalChatSender {
+  id: number
+  name: string
+  username: string | null
+  role: string
+  company_name: string | null
+}
+
+export interface GlobalChatMessage {
+  id: number
+  body: string
+  created_at: string
+  sender: GlobalChatSender
+}
+
+/** GET /chat/global payload — composer state for the current user. */
+export interface GlobalChatMeta {
+  enabled: boolean
+  max_message_length: number
+  pinned_message: string | null
+  pinned_at: string | null
+  me: {
+    banned: boolean
+    ban_expires_at: string | null
+    cooldown_seconds: number
+    next_allowed_at: string | null
+  }
+}

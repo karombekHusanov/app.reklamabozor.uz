@@ -8,6 +8,13 @@ export const chatRoutes: RouteRecordRaw[] = [
     component: () => import('@/modules/chat/pages/ChatPage.vue'),
   },
   {
+    // Community-wide chat — static segment, declared before the :orderId thread.
+    path: 'chat/global',
+    name: 'chat-global',
+    component: () => import('@/modules/chat/pages/GlobalChatPage.vue'),
+    meta: { hideTabBar: true },
+  },
+  {
     // One thread per order — deep-linked from bot pings (`/chat/{orderId}`).
     path: 'chat/:orderId',
     name: 'chat-thread',

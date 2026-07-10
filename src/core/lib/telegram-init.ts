@@ -2,6 +2,9 @@ import WebApp from '@twa-dev/sdk'
 
 /** Payload sent to the backend's POST /api/v1/auth/telegram endpoint. */
 export interface TelegramAuthPayload {
+  /** Raw signed initData — the backend verifies its HMAC and derives identity from it. */
+  init_data: string
+  // Plain fields are dev/test fallbacks; the backend ignores them when verification is on.
   telegram_id: number
   first_name: string
   last_name: string | null
@@ -86,6 +89,7 @@ export function readTelegramUser(): TelegramAuthPayload | null {
   }
 
   return {
+    init_data: readTelegramInitData(),
     telegram_id: tgUser.id,
     first_name: tgUser.first_name?.trim() || tgUser.username || 'Telegram User',
     last_name: tgUser.last_name?.trim() || null,
