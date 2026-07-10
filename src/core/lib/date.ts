@@ -10,6 +10,11 @@ const DAYJS_LOCALE: Record<Locale, string> = {
   en: 'en',
 }
 
+/** A dayjs instance bound to the app locale — for building localized calendars. */
+export function localizedDayjs(locale: Locale, value?: string | Date) {
+  return dayjs(value).locale(DAYJS_LOCALE[locale])
+}
+
 /** Human-readable date, e.g. "1 iyul 2026" — localized via dayjs. */
 export function formatDate(value: string | Date | null | undefined, locale: Locale): string {
   if (!value) return ''

@@ -11,6 +11,8 @@ export const ordersRoutes: RouteRecordRaw[] = [
     path: 'orders/new',
     name: 'order-new',
     component: () => import('@/modules/orders/pages/NewOrderPage.vue'),
+    // The wizard has its own bottom Back/Continue bar — hide the global tab bar.
+    meta: { hideTabBar: true },
   },
   {
     path: 'orders/:id',

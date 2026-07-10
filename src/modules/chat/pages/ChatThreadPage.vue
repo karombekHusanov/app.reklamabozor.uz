@@ -2,6 +2,7 @@
 import { Loader2, MessageCircle, Send } from '@lucide/vue'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import AppHeader from '@/modules/shell/components/AppHeader.vue'
+import Avatar from '@/core/ui/Avatar.vue'
 import GlassCard from '@/core/ui/GlassCard.vue'
 import EmptyState from '@/core/ui/EmptyState.vue'
 import Skeleton from '@/core/ui/Skeleton.vue'
@@ -34,6 +35,12 @@ const headerTitle = computed(() =>
     ? (chat.currentChat.other_participant.company_name || chat.currentChat.other_participant.name)
     : locale.t.shell.tabs.chat,
 )
+
+const headerSubtitle = computed(() => {
+  const status = chat.currentChat?.order.status
+  const label = status ? locale.t.orders.status[status] : ''
+  return label ? `#${orderId.value} · ${label}` : `#${orderId.value}`
+})
 
 function scrollToBottom(smooth = true) {
   void nextTick(() => {
@@ -73,16 +80,37 @@ async function submit() {
 
 <template>
   <div class="flex min-h-[calc(100vh-6rem)] flex-col">
-    <AppHeader :title="headerTitle" :subtitle="`#${orderId}`" show-back />
+    <AppHeader show-back>
+      <template #heading>
+        <div class="flex items-center gap-3">
+          <Avatar
+            :name="headerTitle"
+            size="md"
+          />
+          <div class="min-w-0">
+            <p class="truncate text-lg font-bold leading-tight text-foreground">
+              {{ headerTitle }}
+            </p>
+            <p class="truncate text-xs text-muted-foreground">
+              {{ headerSubtitle }}
+            </p>
+          </div>
+        </div>
+      </template>
+    </AppHeader>
 
-    <section class="flex flex-1 flex-col gap-3 px-5 pb-28">
+    <section class="flex flex-1 flex-col gap-3 px-5 pb-24">
       <template v-if="chat.isLoadingThread">
         <Skeleton class="h-12 w-2/3 rounded-2xl" />
         <Skeleton class="ml-auto h-12 w-2/3 rounded-2xl" />
         <Skeleton class="h-12 w-1/2 rounded-2xl" />
       </template>
 
-      <GlassCard v-else-if="!chat.currentChat" padding="none" class="overflow-hidden">
+      <GlassCard
+        v-else-if="!chat.currentChat"
+        padding="none"
+        class="overflow-hidden"
+      >
         <EmptyState
           :icon="MessageCircle"
           :title="locale.t.chat.notFoundTitle"
@@ -91,7 +119,10 @@ async function submit() {
       </GlassCard>
 
       <template v-else>
-        <p v-if="chat.messages.length === 0" class="py-8 text-center text-sm text-muted-foreground">
+        <p
+          v-if="chat.messages.length === 0"
+          class="py-8 text-center text-sm text-muted-foreground"
+        >
           {{ locale.t.chat.threadEmpty }}
         </p>
 
@@ -122,17 +153,23 @@ async function submit() {
         <div ref="bottomAnchor" />
       </template>
 
-      <p v-if="chat.error && chat.currentChat" class="rounded-2xl bg-destructive/10 px-4 py-3 text-sm text-destructive">
+      <p
+        v-if="chat.error && chat.currentChat"
+        class="rounded-2xl bg-destructive/10 px-4 py-3 text-sm text-destructive"
+      >
         {{ chat.error }}
       </p>
     </section>
 
-    <!-- Composer -->
+    <!-- Composer (docks at the bottom — the tab bar is hidden on this page) -->
     <div
       v-if="chat.currentChat"
-      class="fixed inset-x-0 bottom-20 z-20 px-5"
+      class="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-background px-5 pb-[max(env(safe-area-inset-bottom),0.75rem)] pt-2.5"
     >
-      <div v-if="writable" class="flex items-end gap-2">
+      <div
+        v-if="writable"
+        class="flex items-end gap-2"
+      >
         <textarea
           v-model="draft"
           rows="1"
@@ -145,8 +182,14 @@ async function submit() {
           :disabled="draft.trim() === '' || chat.isSending"
           @click="submit"
         >
-          <Loader2 v-if="chat.isSending" class="size-4 animate-spin" />
-          <Send v-else class="size-4" />
+          <Loader2
+            v-if="chat.isSending"
+            class="size-4 animate-spin"
+          />
+          <Send
+            v-else
+            class="size-4"
+          />
         </Button>
       </div>
       <p

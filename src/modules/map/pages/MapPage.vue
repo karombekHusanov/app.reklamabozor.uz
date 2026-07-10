@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import 'leaflet/dist/leaflet.css'
 import L from 'leaflet'
-import { Bell, ChevronLeft, List, LocateFixed, Search } from '@lucide/vue'
+import { BadgeCheck, Bell, ChevronLeft, ChevronRight, List, LocateFixed, MapPin, Search, Star, X } from '@lucide/vue'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import Avatar from '@/core/ui/Avatar.vue'
+import { useTelegram } from '@/core/composables/useTelegram'
 import { useLocaleStore } from '@/core/i18n/locale.store'
 import { categoryName } from '@/core/i18n/category-name'
 import { ROUTES } from '@/modules/shell/constants/routes'
@@ -11,6 +13,28 @@ import { fetchTopAgents, type PublicAgent } from '@/modules/marketplace/services
 
 const locale = useLocaleStore()
 const router = useRouter()
+const { haptic } = useTelegram()
+
+// The agent whose card is shown after tapping a marker (null = no selection).
+const selectedAgent = ref<PublicAgent | null>(null)
+
+const selectedRating = computed(() =>
+  selectedAgent.value ? (4.5 + (selectedAgent.value.completion_percent / 100) * 0.5).toFixed(1) : '',
+)
+const selectedCategory = computed(() =>
+  selectedAgent.value?.categories[0] ? categoryName(selectedAgent.value.categories[0], locale.locale) : '',
+)
+
+function selectAgent(agent: PublicAgent) {
+  haptic('light')
+  selectedAgent.value = agent
+  map?.panTo([Number(agent.lat), Number(agent.lng)], { animate: true })
+}
+
+function openAgent(agent: PublicAgent) {
+  haptic('medium')
+  router.push(`/agents/${agent.id}`)
+}
 
 /** Default centre — Tashkent. */
 const DEFAULT_CENTER: L.LatLngTuple = [41.311081, 69.279716]
@@ -64,7 +88,7 @@ function renderMarkers() {
   markerLayer.clearLayers()
   for (const a of filteredAgents.value) {
     L.marker([Number(a.lat), Number(a.lng)], { icon: PIN })
-      .bindPopup(`<strong>${a.company_name}</strong>`)
+      .on('click', () => selectAgent(a))
       .addTo(markerLayer)
   }
 }
@@ -119,6 +143,9 @@ onMounted(async () => {
 
   markerLayer = L.layerGroup().addTo(map)
 
+  // Tapping the map (away from a marker) dismisses the agent card.
+  map.on('click', () => { selectedAgent.value = null })
+
   await nextTick()
   map.invalidateSize()
 
@@ -127,9 +154,13 @@ onMounted(async () => {
   maybeFit()
 })
 
-watch(filteredAgents, () => {
+watch(filteredAgents, (list) => {
   renderMarkers()
   maybeFit()
+  // Drop the card if its agent is no longer in the filtered set.
+  if (selectedAgent.value && !list.some(a => a.id === selectedAgent.value!.id)) {
+    selectedAgent.value = null
+  }
 })
 
 onBeforeUnmount(() => {
@@ -142,7 +173,10 @@ onBeforeUnmount(() => {
 <template>
   <div class="fixed inset-0 z-[60] bg-slate-200">
     <!-- z-0 confines Leaflet's internal panes to their own stacking context so the overlays sit above the map. -->
-    <div ref="mapEl" class="absolute inset-0 z-0" />
+    <div
+      ref="mapEl"
+      class="absolute inset-0 z-0"
+    />
 
     <!-- Top overlay: search + circular controls -->
     <div class="safe-top absolute inset-x-0 top-0 z-[70] px-4 pt-3">
@@ -192,17 +226,24 @@ onBeforeUnmount(() => {
       </div>
     </div>
 
-    <!-- Locate FAB -->
+    <!-- Locate FAB (lifts above the agent card when one is open) -->
     <button
       type="button"
-      class="absolute bottom-28 right-4 z-[70] flex size-13 items-center justify-center rounded-full bg-primary text-white shadow-xl shadow-[#02305C]/40 transition active:scale-95"
+      class="absolute right-4 z-[70] flex size-13 items-center justify-center rounded-full bg-primary text-white shadow-xl shadow-[#02305C]/40 transition-all active:scale-95"
+      :class="selectedAgent ? 'bottom-44' : 'bottom-28'"
       @click="locate"
     >
-      <LocateFixed class="size-5" :class="locating && 'animate-pulse'" />
+      <LocateFixed
+        class="size-5"
+        :class="locating && 'animate-pulse'"
+      />
     </button>
 
-    <!-- List view pill -->
-    <div class="safe-bottom absolute inset-x-0 bottom-0 z-[70] flex justify-center px-6 pb-4">
+    <!-- List view pill (hidden while an agent card is open) -->
+    <div
+      v-if="!selectedAgent"
+      class="safe-bottom absolute inset-x-0 bottom-0 z-[70] flex justify-center px-6 pb-4"
+    >
       <button
         type="button"
         class="btn-brand flex h-12 w-full max-w-xs items-center justify-center gap-2 rounded-full text-sm font-semibold"
@@ -212,5 +253,80 @@ onBeforeUnmount(() => {
         {{ locale.t.map.listView }}
       </button>
     </div>
+
+    <!-- Selected agent card — tap to open the full profile -->
+    <Transition name="agent-card">
+      <div
+        v-if="selectedAgent"
+        class="safe-bottom absolute inset-x-0 bottom-0 z-[75] px-4 pb-4"
+      >
+        <div class="relative rounded-3xl bg-white p-3 shadow-2xl shadow-[#02305C]/35">
+          <button
+            type="button"
+            class="absolute right-2.5 top-2.5 z-10 flex size-7 items-center justify-center rounded-full bg-slate-100 text-slate-500 transition active:scale-90"
+            :aria-label="locale.t.common.cancel"
+            @click.stop="selectedAgent = null"
+          >
+            <X class="size-4" />
+          </button>
+
+          <button
+            type="button"
+            class="flex w-full items-center gap-3 pr-7 text-left"
+            @click="openAgent(selectedAgent)"
+          >
+            <Avatar
+              :src="selectedAgent.company_logo"
+              :name="selectedAgent.company_name"
+              size="lg"
+              class="!size-[3.75rem] shrink-0 !rounded-2xl"
+            />
+            <div class="min-w-0 flex-1">
+              <div class="flex items-center gap-1">
+                <p class="truncate font-bold text-slate-900">
+                  {{ selectedAgent.company_name }}
+                </p>
+                <BadgeCheck class="size-4 shrink-0 fill-primary/15 text-primary" />
+              </div>
+              <div class="mt-0.5 flex items-center gap-1.5 text-xs font-semibold text-slate-700">
+                <Star class="size-3.5 fill-amber-400 text-amber-400" />
+                <span>{{ selectedRating }}</span>
+                <span
+                  v-if="selectedCategory"
+                  class="truncate font-medium text-slate-500"
+                >
+                  · {{ selectedCategory }}
+                </span>
+              </div>
+              <p
+                v-if="selectedAgent.location_label"
+                class="mt-1 flex items-center gap-1 text-xs text-slate-500"
+              >
+                <MapPin class="size-3.5 shrink-0" />
+                <span class="truncate">{{ selectedAgent.location_label }}</span>
+              </p>
+            </div>
+
+            <span class="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+              <ChevronRight class="size-5" />
+            </span>
+          </button>
+        </div>
+      </div>
+    </Transition>
   </div>
 </template>
+
+<style scoped>
+.agent-card-enter-active {
+  transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.32s ease;
+}
+.agent-card-leave-active {
+  transition: transform 0.2s ease-in, opacity 0.2s ease;
+}
+.agent-card-enter-from,
+.agent-card-leave-to {
+  transform: translateY(130%);
+  opacity: 0;
+}
+</style>

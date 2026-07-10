@@ -9,12 +9,15 @@ import { isInsideTelegram, supportsVersion } from '@/core/lib/telegram-init'
 
 const props = withDefaults(defineProps<{
   class?: HTMLAttributes['class']
-  title: string
+  /** Optional when a custom `#heading` slot is provided. */
+  title?: string
   subtitle?: string
   /** Show a back affordance (sub-pages). Uses Telegram's native BackButton when available. */
   showBack?: boolean
 }>(), {
   showBack: false,
+  title: undefined,
+  subtitle: undefined,
 })
 
 const router = useRouter()
@@ -68,14 +71,21 @@ onBeforeUnmount(() => {
       <LanguageSwitcher />
     </div>
 
-    <!-- Title -->
-    <div class="mt-2 space-y-0.5">
-      <p v-if="subtitle" class="text-sm text-muted-foreground">
-        {{ subtitle }}
-      </p>
-      <h1 class="text-2xl font-bold tracking-tight text-foreground">
-        {{ title }}
-      </h1>
+    <!-- Title (or a custom heading, e.g. an avatar + name for chat) -->
+    <div class="mt-2">
+      <slot name="heading">
+        <div class="space-y-0.5">
+          <p
+            v-if="subtitle"
+            class="text-sm text-muted-foreground"
+          >
+            {{ subtitle }}
+          </p>
+          <h1 class="text-2xl font-bold tracking-tight text-foreground">
+            {{ title }}
+          </h1>
+        </div>
+      </slot>
     </div>
   </header>
 </template>

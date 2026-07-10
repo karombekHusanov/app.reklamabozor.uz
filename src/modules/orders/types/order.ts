@@ -53,6 +53,8 @@ export interface Order {
   budget_min: string | null
   budget_max: string | null
   status: OrderStatus
+  /** Set when the order was sent directly to one agency (null for a broadcast order). */
+  target_agent?: { id: number, company_name: string | null } | null
   work_submitted_at: string | null
   completed_at: string | null
   auto_completed: boolean
@@ -65,6 +67,9 @@ export interface Order {
   updated_at: string
 }
 
+/** Preset budget bands (canonical values; labels resolved via i18n). */
+export type OrderBudget = 'lt_1m' | 'from_1_3m' | 'from_3_5m' | 'from_5_10m' | 'gt_10m'
+
 /** Payload for POST /api/v1/orders. */
 export interface CreateOrderPayload {
   category_id: number
@@ -73,6 +78,35 @@ export interface CreateOrderPayload {
   deadline?: OrderDeadline | null
   /** Extra reference files (slots 2-4). */
   attachment_file_ids?: number[]
+  /** Direct the order to a single agency (its public profile id). Omit for a broadcast order. */
+  agent_profile_id?: number
+  // --- Brief fields (UI-only for now — the backend drops these until wired). ---
+  /** Project name, e.g. "Coffee House banner". */
+  title?: string
+  /** Concrete deadline as an ISO date string, e.g. "2026-07-15". */
+  deadline_date?: string | null
+  /** Preset budget band. */
+  budget?: OrderBudget | null
+}
+
+/** A file the client has uploaded into the order draft. */
+export interface DraftFile {
+  id: number
+  url: string
+  name: string
+  mime: string | null
+  size: number
+}
+
+/** Working state for the multi-step order wizard. */
+export interface OrderDraft {
+  category_id: number | null
+  title: string
+  description: string
+  /** Concrete deadline as an ISO date string, e.g. "2026-07-15". */
+  deadline_date: string | null
+  budget: OrderBudget | null
+  files: DraftFile[]
 }
 
 // --- Agent side -------------------------------------------------------------

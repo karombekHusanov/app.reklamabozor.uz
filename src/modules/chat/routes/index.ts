@@ -13,5 +13,7 @@ export const chatRoutes: RouteRecordRaw[] = [
     name: 'chat-thread',
     component: () => import('@/modules/chat/pages/ChatThreadPage.vue'),
     props: true,
+    // The composer docks at the bottom — hide the global tab bar to avoid a clash.
+    meta: { hideTabBar: true },
   },
 ]

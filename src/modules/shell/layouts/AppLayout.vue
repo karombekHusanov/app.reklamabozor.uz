@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import TabBar from '@/modules/shell/components/TabBar.vue'
 import PhoneGate from '@/modules/auth/components/PhoneGate.vue'
 import { useAuthStore } from '@/modules/auth/stores/auth.store'
@@ -8,6 +8,11 @@ import { ROUTES } from '@/modules/shell/constants/routes'
 
 const auth = useAuthStore()
 const router = useRouter()
+const route = useRoute()
+
+// Some pages (e.g. the order wizard) provide their own bottom action bar and
+// hide the global tab bar via `meta.hideTabBar`.
+const hideTabBar = computed(() => route.meta.hideTabBar === true)
 
 // Native-feel navigation: deeper routes push in from the right, going back pops
 // out, and switching between tab roots cross-fades.
@@ -36,14 +41,23 @@ router.afterEach((to, from) => {
   <!-- Authenticated users must share their phone before reaching the app. -->
   <PhoneGate v-if="auth.needsPhone" />
 
-  <div v-else class="flex min-h-svh flex-col bg-background">
-    <main class="mx-auto flex w-full max-w-lg flex-1 flex-col pb-28">
+  <div
+    v-else
+    class="flex min-h-svh flex-col bg-background"
+  >
+    <main
+      class="mx-auto flex w-full max-w-lg flex-1 flex-col"
+      :class="hideTabBar ? 'pb-6' : 'pb-28'"
+    >
       <RouterView v-slot="{ Component }">
-        <Transition :name="transitionName" mode="out-in">
+        <Transition
+          :name="transitionName"
+          mode="out-in"
+        >
           <component :is="Component" />
         </Transition>
       </RouterView>
     </main>
-    <TabBar />
+    <TabBar v-if="!hideTabBar" />
   </div>
 </template>
