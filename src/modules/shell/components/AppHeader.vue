@@ -28,24 +28,25 @@ function goBack() {
   router.back()
 }
 
-// Prefer Telegram's native BackButton (rendered in the Telegram header itself) over
-// an in-page chevron — the strongest "real app" affordance available to a mini app.
-const usingNativeBack = ref(false)
+// Also wire Telegram's native BackButton when available — but keep the in-page
+// chevron visible. After expand(), many clients hide or relocate the native
+// control, so relying on it alone leaves prod users with no back affordance.
+const nativeBackActive = ref(false)
 
 onMounted(() => {
   if (!props.showBack || !isInsideTelegram() || !supportsVersion('6.1')) return
   try {
     WebApp.BackButton.onClick(goBack)
     WebApp.BackButton.show()
-    usingNativeBack.value = true
+    nativeBackActive.value = true
   }
   catch {
-    usingNativeBack.value = false
+    nativeBackActive.value = false
   }
 })
 
 onBeforeUnmount(() => {
-  if (!usingNativeBack.value) return
+  if (!nativeBackActive.value) return
   try {
     WebApp.BackButton.offClick(goBack)
     WebApp.BackButton.hide()
@@ -66,7 +67,7 @@ onBeforeUnmount(() => {
       >
         <div class="flex items-center gap-2.5">
           <button
-            v-if="showBack && !usingNativeBack"
+            v-if="showBack"
             type="button"
             class="app-header-back pressable"
             :aria-label="locale.t.common.back"
