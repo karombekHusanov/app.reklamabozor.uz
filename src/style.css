@@ -730,6 +730,16 @@
     @apply dark:bg-white/5 dark:hover:bg-white/10;
   }
 
+  /* Telegram-like chat canvas: a soft tinted backdrop that sets the message
+     bubbles apart from the page, plus a centered day-separator pill. */
+  .chat-surface {
+    @apply bg-secondary/40 dark:bg-black/25;
+  }
+  .chat-day-pill {
+    @apply mx-auto w-fit rounded-full bg-background/80 px-3 py-1 text-xs font-medium text-muted-foreground shadow-sm backdrop-blur;
+    @apply dark:bg-white/10 dark:text-white/70;
+  }
+
   /* Unselected pill / chip. */
   .glass-chip {
     @apply border border-border bg-secondary text-secondary-foreground;

@@ -77,11 +77,11 @@ export const useChatStore = defineStore('chat', () => {
     }
   }
 
-  async function send(orderId: number, body: string) {
+  async function send(orderId: number, body: string, fileIds: number[] = []) {
     isSending.value = true
     error.value = null
     try {
-      const message = await sendMessageRequest(orderId, body)
+      const message = await sendMessageRequest(orderId, body, fileIds)
       messages.value.push(message)
       return true
     }

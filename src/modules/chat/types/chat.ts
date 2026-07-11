@@ -1,10 +1,21 @@
 import type { Category } from '@/modules/agent/types/agent'
 import type { OrderStatus } from '@/modules/orders/types/order'
 
+/** A file attached to a chat message (image or document). */
+export interface ChatAttachment {
+  id: number
+  url: string
+  original_name: string
+  mime_type: string | null
+  size: number
+  created_at?: string
+}
+
 export interface ChatMessage {
   id: number
   sender_id: number
   body: string
+  attachments?: ChatAttachment[]
   read_at: string | null
   created_at: string
 }
@@ -48,6 +59,7 @@ export interface GlobalChatSender {
 export interface GlobalChatMessage {
   id: number
   body: string
+  attachments?: ChatAttachment[]
   created_at: string
   sender: GlobalChatSender
 }

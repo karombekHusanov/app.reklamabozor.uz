@@ -3,15 +3,17 @@ import { ROUTES } from '@/modules/shell/constants/routes'
 
 export const chatRoutes: RouteRecordRaw[] = [
   {
+    // The Chat tab IS the community-wide chat — open it directly, no intermediate list.
     path: ROUTES.chat,
     name: 'chat',
-    component: () => import('@/modules/chat/pages/ChatPage.vue'),
+    component: () => import('@/modules/chat/pages/GlobalChatPage.vue'),
+    meta: { hideTabBar: true },
   },
   {
-    // Community-wide chat — static segment, declared before the :orderId thread.
-    path: 'chat/global',
-    name: 'chat-global',
-    component: () => import('@/modules/chat/pages/GlobalChatPage.vue'),
+    // Order-thread inbox — static segment, declared before the :orderId thread.
+    path: 'chat/threads',
+    name: 'chat-threads',
+    component: () => import('@/modules/chat/pages/ChatPage.vue'),
     meta: { hideTabBar: true },
   },
   {

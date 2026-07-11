@@ -24,10 +24,10 @@ export async function fetchMessages(orderId: number, afterId?: number): Promise<
   return data.data
 }
 
-export async function sendMessage(orderId: number, body: string): Promise<ChatMessage> {
+export async function sendMessage(orderId: number, body: string, fileIds: number[] = []): Promise<ChatMessage> {
   const { data } = await api.post<ApiSuccess<ChatMessage>>(
     `/api/v1/orders/${orderId}/chat/messages`,
-    { body },
+    { body: body || undefined, file_ids: fileIds.length > 0 ? fileIds : undefined },
   )
 
   return data.data
@@ -47,8 +47,11 @@ export async function fetchGlobalMessages(params?: { after_id?: number, before_i
   return data.data
 }
 
-export async function sendGlobalMessage(body: string): Promise<GlobalChatMessage> {
-  const { data } = await api.post<ApiSuccess<GlobalChatMessage>>('/api/v1/chat/global/messages', { body })
+export async function sendGlobalMessage(body: string, fileIds: number[] = []): Promise<GlobalChatMessage> {
+  const { data } = await api.post<ApiSuccess<GlobalChatMessage>>(
+    '/api/v1/chat/global/messages',
+    { body: body || undefined, file_ids: fileIds.length > 0 ? fileIds : undefined },
+  )
 
   return data.data
 }

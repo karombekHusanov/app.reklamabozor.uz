@@ -1,17 +1,20 @@
 <script setup lang="ts">
-import { Loader2, MessageCircle, Send } from '@lucide/vue'
+import { MessageCircle } from '@lucide/vue'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import AppHeader from '@/modules/shell/components/AppHeader.vue'
 import Avatar from '@/core/ui/Avatar.vue'
 import GlassCard from '@/core/ui/GlassCard.vue'
 import EmptyState from '@/core/ui/EmptyState.vue'
 import Skeleton from '@/core/ui/Skeleton.vue'
-import { Button } from '@/core/ui/button'
 import { useTelegram } from '@/core/composables/useTelegram'
 import { useAuthStore } from '@/modules/auth/stores/auth.store'
 import { useLocaleStore } from '@/core/i18n/locale.store'
-import { formatMessageTime } from '@/core/lib/date'
+import { formatDaySeparator } from '@/core/lib/date'
 import { useChatStore } from '@/modules/chat/stores/chat.store'
+import ChatComposer from '@/modules/chat/components/ChatComposer.vue'
+import MessageBubble from '@/modules/chat/components/MessageBubble.vue'
+import { buildChatFeed } from '@/modules/chat/lib/chat-feed'
+import type { ChatMessage } from '@/modules/chat/types/chat'
 
 const props = defineProps<{ orderId: string }>()
 
@@ -21,7 +24,6 @@ const locale = useLocaleStore()
 const { haptic } = useTelegram()
 
 const orderId = computed(() => Number(props.orderId))
-const draft = ref('')
 const bottomAnchor = ref<HTMLElement | null>(null)
 
 // The conversation stays writable while the deal is active.
@@ -29,6 +31,18 @@ const writable = computed(() => {
   const status = chat.currentChat?.order.status
   return status === 'in_progress' || status === 'work_submitted'
 })
+
+const feed = computed(() =>
+  buildChatFeed(chat.messages, m => ({ senderId: m.sender_id, createdAt: m.created_at })),
+)
+
+function daySeparatorLabel(iso: string): string {
+  return formatDaySeparator(iso, locale.locale, locale.t.chat.today, locale.t.chat.yesterday)
+}
+
+function isMine(message: ChatMessage): boolean {
+  return message.sender_id === auth.user?.id
+}
 
 const headerTitle = computed(() =>
   chat.currentChat
@@ -66,15 +80,14 @@ onBeforeUnmount(() => {
 
 watch(() => chat.messages.length, () => scrollToBottom())
 
-async function submit() {
-  const body = draft.value.trim()
-  if (body === '' || chat.isSending) return
+async function handleSend(body: string, fileIds: number[]): Promise<boolean> {
+  if ((body === '' && fileIds.length === 0) || chat.isSending) return false
   haptic('light')
-  const ok = await chat.send(orderId.value, body)
-  if (ok) {
-    draft.value = ''
-    haptic('medium')
-  }
+
+  // The whole batch (text + files) is one message.
+  const ok = await chat.send(orderId.value, body, fileIds)
+  if (ok) haptic('medium')
+  return ok
 }
 </script>
 
@@ -99,7 +112,7 @@ async function submit() {
       </template>
     </AppHeader>
 
-    <section class="flex flex-1 flex-col gap-3 px-5 pb-24">
+    <section class="chat-surface flex flex-1 flex-col gap-1 px-4 pb-24 pt-3">
       <template v-if="chat.isLoadingThread">
         <Skeleton class="h-12 w-2/3 rounded-2xl" />
         <Skeleton class="ml-auto h-12 w-2/3 rounded-2xl" />
@@ -126,29 +139,30 @@ async function submit() {
           {{ locale.t.chat.threadEmpty }}
         </p>
 
-        <div
-          v-for="message in chat.messages"
-          :key="message.id"
-          class="flex"
-          :class="message.sender_id === auth.user?.id ? 'justify-end' : 'justify-start'"
-        >
-          <div
-            class="max-w-[80%] rounded-2xl px-4 py-2.5"
-            :class="message.sender_id === auth.user?.id
-              ? 'rounded-br-md bg-primary text-primary-foreground'
-              : 'rounded-bl-md bg-secondary text-foreground dark:bg-white/10'"
-          >
-            <p class="whitespace-pre-line break-words text-sm leading-relaxed">
-              {{ message.body }}
-            </p>
-            <p
-              class="mt-1 text-right text-[10px]"
-              :class="message.sender_id === auth.user?.id ? 'text-primary-foreground/70' : 'text-muted-foreground'"
-            >
-              {{ formatMessageTime(message.created_at, locale.locale) }}
-            </p>
+        <template v-for="item in feed" :key="item.key">
+          <div v-if="item.kind === 'date'" class="chat-day-pill my-1">
+            {{ daySeparatorLabel(item.date) }}
           </div>
-        </div>
+
+          <div
+            v-else
+            class="flex"
+            :class="[
+              isMine(item.message) ? 'justify-end' : 'justify-start',
+              item.first ? 'mt-2' : 'mt-0.5',
+            ]"
+          >
+            <MessageBubble
+              :mine="isMine(item.message)"
+              :body="item.message.body"
+              :attachments="item.message.attachments"
+              :created-at="item.message.created_at"
+              :show-tail="item.last"
+              show-status
+              :read="!!item.message.read_at"
+            />
+          </div>
+        </template>
 
         <div ref="bottomAnchor" />
       </template>
@@ -166,32 +180,12 @@ async function submit() {
       v-if="chat.currentChat"
       class="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-background px-5 pb-[max(env(safe-area-inset-bottom),0.75rem)] pt-2.5"
     >
-      <div
+      <ChatComposer
         v-if="writable"
-        class="flex items-end gap-2"
-      >
-        <textarea
-          v-model="draft"
-          rows="1"
-          :placeholder="locale.t.chat.inputPlaceholder"
-          class="glass-input max-h-28 flex-1 resize-none"
-          @keydown.enter.exact.prevent="submit"
-        />
-        <Button
-          class="size-11 shrink-0 rounded-2xl p-0"
-          :disabled="draft.trim() === '' || chat.isSending"
-          @click="submit"
-        >
-          <Loader2
-            v-if="chat.isSending"
-            class="size-4 animate-spin"
-          />
-          <Send
-            v-else
-            class="size-4"
-          />
-        </Button>
-      </div>
+        :send="handleSend"
+        :sending="chat.isSending"
+        :max-length="2000"
+      />
       <p
         v-else
         class="rounded-2xl bg-secondary px-4 py-3 text-center text-sm text-muted-foreground dark:bg-white/5"

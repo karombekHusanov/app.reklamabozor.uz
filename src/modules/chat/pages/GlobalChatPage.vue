@@ -1,24 +1,28 @@
 <script setup lang="ts">
-import { Globe, Loader2, Megaphone, Send, ShieldBan, Timer } from '@lucide/vue'
+import { Globe, Inbox, Loader2, Megaphone, ShieldBan, Timer } from '@lucide/vue'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import AppHeader from '@/modules/shell/components/AppHeader.vue'
 import GlassCard from '@/core/ui/GlassCard.vue'
 import Skeleton from '@/core/ui/Skeleton.vue'
-import { Button } from '@/core/ui/button'
 import { useTelegram } from '@/core/composables/useTelegram'
 import { getApiErrorMessage } from '@/core/api/api-error'
 import { useAuthStore } from '@/modules/auth/stores/auth.store'
 import { useLocaleStore } from '@/core/i18n/locale.store'
-import { formatMessageTime } from '@/core/lib/date'
+import { formatDaySeparator, formatMessageTime } from '@/core/lib/date'
 import {
   fetchGlobalMessages,
   fetchGlobalMeta,
   sendGlobalMessage,
 } from '@/modules/chat/services/chat.service'
+import ChatComposer from '@/modules/chat/components/ChatComposer.vue'
+import MessageBubble from '@/modules/chat/components/MessageBubble.vue'
+import { buildChatFeed } from '@/modules/chat/lib/chat-feed'
 import type { GlobalChatMessage, GlobalChatMeta, GlobalChatSender } from '@/modules/chat/types/chat'
 
 const auth = useAuthStore()
 const locale = useLocaleStore()
+const router = useRouter()
 const { haptic } = useTelegram()
 
 const t = computed(() => locale.t.chat.global)
@@ -30,7 +34,6 @@ const isSending = ref(false)
 const isLoadingOlder = ref(false)
 const hasOlder = ref(false)
 const error = ref<string | null>(null)
-const draft = ref('')
 const bottomAnchor = ref<HTMLElement | null>(null)
 
 // Live countdown until the user's cooldown lets them write again.
@@ -61,6 +64,14 @@ const canWrite = computed(() =>
   && !meta.value.me.banned
   && cooldownLeftMs.value === 0,
 )
+
+const feed = computed(() =>
+  buildChatFeed(messages.value, m => ({ senderId: m.sender.id, createdAt: m.created_at })),
+)
+
+function daySeparatorLabel(iso: string): string {
+  return formatDaySeparator(iso, locale.locale, locale.t.chat.today, locale.t.chat.yesterday)
+}
 
 function senderName(sender: GlobalChatSender): string {
   return sender.company_name || sender.name
@@ -125,21 +136,20 @@ async function loadOlder() {
   }
 }
 
-async function submit() {
-  const body = draft.value.trim()
-  if (body === '' || isSending.value || !canWrite.value) return
+async function handleSend(body: string, fileIds: number[]): Promise<boolean> {
+  if ((body === '' && fileIds.length === 0) || isSending.value || !canWrite.value) return false
   isSending.value = true
   error.value = null
   haptic('light')
 
   try {
-    const message = await sendGlobalMessage(body)
-    messages.value = [...messages.value, message]
-    draft.value = ''
+    // The whole batch (text + files) is one message.
+    messages.value = [...messages.value, await sendGlobalMessage(body, fileIds)]
     haptic('medium')
     scrollToBottom()
     // Refresh cooldown/ban state from the server after each send.
     meta.value = await fetchGlobalMeta()
+    return true
   }
   catch (err) {
     error.value = getApiErrorMessage(err)
@@ -148,6 +158,7 @@ async function submit() {
       meta.value = await fetchGlobalMeta()
     }
     catch { /* keep the previous meta */ }
+    return false
   }
   finally {
     isSending.value = false
@@ -174,7 +185,7 @@ onBeforeUnmount(() => {
           <div class="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
             <Globe class="size-5" />
           </div>
-          <div class="min-w-0">
+          <div class="min-w-0 flex-1">
             <p class="truncate text-lg font-bold leading-tight text-foreground">
               {{ t.title }}
             </p>
@@ -182,11 +193,21 @@ onBeforeUnmount(() => {
               {{ t.subtitle }}
             </p>
           </div>
+          <!-- Escape hatch to the per-order chat inbox (the tab bar is hidden here). -->
+          <button
+            v-if="auth.isAuthenticated"
+            type="button"
+            class="flex size-10 shrink-0 items-center justify-center rounded-full text-muted-foreground transition active:scale-95"
+            :aria-label="locale.t.chat.inbox"
+            @click="router.push('/chat/threads')"
+          >
+            <Inbox class="size-5" />
+          </button>
         </div>
       </template>
     </AppHeader>
 
-    <section class="flex flex-1 flex-col gap-3 px-5 pb-28">
+    <section class="chat-surface flex flex-1 flex-col gap-1 px-4 pb-28 pt-3">
       <!-- Pinned announcement -->
       <GlassCard
         v-if="meta?.pinned_message"
@@ -221,36 +242,31 @@ onBeforeUnmount(() => {
           {{ t.empty }}
         </p>
 
-        <div
-          v-for="message in messages"
-          :key="message.id"
-          class="flex"
-          :class="isMine(message) ? 'justify-end' : 'justify-start'"
-        >
-          <div
-            class="max-w-[80%] rounded-2xl px-4 py-2.5"
-            :class="isMine(message)
-              ? 'rounded-br-md bg-primary text-primary-foreground'
-              : 'rounded-bl-md bg-secondary text-foreground dark:bg-white/10'"
-          >
-            <p
-              v-if="!isMine(message)"
-              class="text-xs font-semibold"
-              :class="message.sender.role === 'agent' ? 'text-primary' : 'text-muted-foreground'"
-            >
-              {{ senderName(message.sender) }}
-            </p>
-            <p class="whitespace-pre-line break-words text-sm leading-relaxed">
-              {{ message.body }}
-            </p>
-            <p
-              class="mt-1 text-right text-[10px]"
-              :class="isMine(message) ? 'text-primary-foreground/70' : 'text-muted-foreground'"
-            >
-              {{ formatMessageTime(message.created_at, locale.locale) }}
-            </p>
+        <template v-for="item in feed" :key="item.key">
+          <div v-if="item.kind === 'date'" class="chat-day-pill my-1">
+            {{ daySeparatorLabel(item.date) }}
           </div>
-        </div>
+
+          <div
+            v-else
+            class="flex"
+            :class="[
+              isMine(item.message) ? 'justify-end' : 'justify-start',
+              item.first ? 'mt-2' : 'mt-0.5',
+            ]"
+          >
+            <MessageBubble
+              :mine="isMine(item.message)"
+              :body="item.message.body"
+              :attachments="item.message.attachments"
+              :created-at="item.message.created_at"
+              :show-tail="item.last"
+              :show-name="item.first"
+              :sender-name="senderName(item.message.sender)"
+              :sender-role="item.message.sender.role"
+            />
+          </div>
+        </template>
 
         <div ref="bottomAnchor" />
       </template>
@@ -288,24 +304,12 @@ onBeforeUnmount(() => {
         {{ t.cooldownNote }} <span class="font-semibold tabular-nums">{{ cooldownLabel }}</span>
       </p>
 
-      <div v-else class="flex items-end gap-2">
-        <textarea
-          v-model="draft"
-          rows="1"
-          :maxlength="meta?.max_message_length ?? 500"
-          :placeholder="locale.t.chat.inputPlaceholder"
-          class="glass-input max-h-28 flex-1 resize-none"
-          @keydown.enter.exact.prevent="submit"
-        />
-        <Button
-          class="size-11 shrink-0 rounded-2xl p-0"
-          :disabled="draft.trim() === '' || isSending"
-          @click="submit"
-        >
-          <Loader2 v-if="isSending" class="size-4 animate-spin" />
-          <Send v-else class="size-4" />
-        </Button>
-      </div>
+      <ChatComposer
+        v-else
+        :send="handleSend"
+        :sending="isSending"
+        :max-length="meta?.max_message_length ?? 500"
+      />
     </div>
   </div>
 </template>

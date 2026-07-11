@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Globe, LogIn, MessageCircle } from '@lucide/vue'
+import { LogIn, MessageCircle, Paperclip } from '@lucide/vue'
 import { onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import AppHeader from '@/modules/shell/components/AppHeader.vue'
@@ -46,29 +46,9 @@ function openThread(item: Chat) {
 
 <template>
   <div>
-    <AppHeader :title="locale.t.shell.tabs.chat" :subtitle="locale.t.chat.subtitle" show-back />
+    <AppHeader :title="locale.t.chat.inbox" :subtitle="locale.t.chat.subtitle" show-back />
 
     <section class="space-y-3 px-5">
-      <!-- Global community chat — always pinned above the order threads -->
-      <GlassCard
-        v-if="auth.isAuthenticated"
-        interactive
-        class="flex items-center gap-3 border-primary/25"
-        @click="router.push('/chat/global')"
-      >
-        <div class="flex size-11 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
-          <Globe class="size-5" />
-        </div>
-        <div class="min-w-0 flex-1">
-          <p class="truncate font-semibold leading-tight">
-            {{ locale.t.chat.global.title }}
-          </p>
-          <p class="truncate text-xs text-muted-foreground">
-            {{ locale.t.chat.global.entryBody }}
-          </p>
-        </div>
-      </GlassCard>
-
       <template v-if="!auth.isAuthenticated">
         <GlassCard padding="none" class="overflow-hidden">
           <EmptyState
@@ -117,8 +97,14 @@ function openThread(item: Chat) {
             <p class="truncate text-xs text-muted-foreground">
               {{ orderLabel(item) }}
             </p>
-            <p v-if="item.last_message" class="truncate text-sm text-muted-foreground">
-              {{ item.last_message.body }}
+            <p v-if="item.last_message" class="flex items-center gap-1 truncate text-sm text-muted-foreground">
+              <Paperclip
+                v-if="item.last_message.attachments?.length"
+                class="size-3.5 shrink-0"
+              />
+              <span class="truncate">
+                {{ item.last_message.body || (item.last_message.attachments?.length ? locale.t.chat.attachmentLabel : '') }}
+              </span>
             </p>
           </div>
 

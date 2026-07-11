@@ -28,6 +28,23 @@ export function formatMessageTime(value: string | Date | null | undefined, local
   return d.isSame(dayjs(), 'day') ? d.format('HH:mm') : d.format('D MMM, HH:mm')
 }
 
+/**
+ * Chat day-separator label: "Today" / "Yesterday" (callers pass the localized
+ * words) or a full localized date for older days.
+ */
+export function formatDaySeparator(
+  value: string | Date | null | undefined,
+  locale: Locale,
+  todayLabel: string,
+  yesterdayLabel: string,
+): string {
+  if (!value) return ''
+  const d = dayjs(value)
+  if (d.isSame(dayjs(), 'day')) return todayLabel
+  if (d.isSame(dayjs().subtract(1, 'day'), 'day')) return yesterdayLabel
+  return formatDate(value, locale)
+}
+
 /** Short numeric date, e.g. 10.05.2024 */
 export function formatShortDate(value: string | Date | null | undefined): string {
   if (!value) return ''
