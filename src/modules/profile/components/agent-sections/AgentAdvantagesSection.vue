@@ -4,6 +4,8 @@ import { useLocaleStore } from '@/core/i18n/locale.store'
 import AgentProfileSectionShell from '@/modules/profile/components/agent-sections/AgentProfileSectionShell.vue'
 
 const locale = useLocaleStore()
+
+// TODO(backend): replace with agent advantages from API.
 </script>
 
 <template>

@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { LogIn, MessageCircle, Paperclip } from '@lucide/vue'
-import { onMounted, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { LogIn, MessageCircle, Paperclip, Send } from '@lucide/vue'
+import { computed, onMounted, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import AppHeader from '@/modules/shell/components/AppHeader.vue'
 import GlassCard from '@/core/ui/GlassCard.vue'
 import EmptyState from '@/core/ui/EmptyState.vue'
@@ -13,20 +13,64 @@ import { useLocaleStore } from '@/core/i18n/locale.store'
 import { categoryName } from '@/core/i18n/category-name'
 import { formatMessageTime } from '@/core/lib/date'
 import { ROUTES } from '@/modules/shell/constants/routes'
+import { fetchChats } from '@/modules/chat/services/chat.service'
 import { useChatStore } from '@/modules/chat/stores/chat.store'
 import type { Chat } from '@/modules/chat/types/chat'
 
 const auth = useAuthStore()
 const chat = useChatStore()
+const route = useRoute()
 const router = useRouter()
 const locale = useLocaleStore()
 
-function load() {
-  if (auth.isAuthenticated) chat.loadChats(true)
+const agentProfileId = computed(() => {
+  const id = Number(route.query.agent)
+  return Number.isInteger(id) && id > 0 ? id : null
+})
+
+const showAgentEmpty = computed(() => route.query.noChat === '1')
+
+const filteredChats = ref<Chat[]>([])
+const filtering = ref(false)
+
+const displayChats = computed(() =>
+  agentProfileId.value != null ? filteredChats.value : chat.chats,
+)
+
+const pageTitle = computed(() =>
+  agentProfileId.value != null
+    ? locale.t.chat.agentInboxTitle
+    : locale.t.chat.inbox,
+)
+
+const pageSubtitle = computed(() => {
+  if (agentProfileId.value != null) {
+    return locale.t.chat.agentInboxSubtitle
+  }
+  return locale.t.chat.subtitle
+})
+
+async function load() {
+  if (!auth.isAuthenticated) {
+    return
+  }
+
+  if (agentProfileId.value != null) {
+    filtering.value = true
+    try {
+      filteredChats.value = await fetchChats(agentProfileId.value)
+    }
+    finally {
+      filtering.value = false
+    }
+    return
+  }
+
+  await chat.loadChats(true)
 }
 
 onMounted(load)
-watch(() => auth.isAuthenticated, load)
+watch(() => [auth.isAuthenticated, agentProfileId.value], load)
 
 function chatTitle(item: Chat) {
   return item.other_participant.company_name || item.other_participant.name
@@ -42,32 +86,78 @@ function orderLabel(item: Chat) {
 function openThread(item: Chat) {
   router.push(`/chat/${item.order_id}`)
 }
+
+function placeOrderWithAgent() {
+  if (!agentProfileId.value) {
+    return
+  }
+  router.push({ path: ROUTES.newOrder, query: { agent: String(agentProfileId.value) } })
+}
 </script>
 
 <template>
   <div>
-    <AppHeader :title="locale.t.chat.inbox" :subtitle="locale.t.chat.subtitle" show-back />
+    <AppHeader
+      :title="pageTitle"
+      :subtitle="pageSubtitle"
+      show-back
+    />
 
     <section class="space-y-3 px-5">
       <template v-if="!auth.isAuthenticated">
-        <GlassCard padding="none" class="overflow-hidden">
+        <GlassCard
+          padding="none"
+          class="overflow-hidden"
+        >
           <EmptyState
             :icon="LogIn"
             :title="locale.t.orders.signInTitle"
             :description="locale.t.orders.signInBody"
           >
-            <Button class="mt-1 rounded-2xl" @click="router.push(ROUTES.profile)">
+            <Button
+              class="mt-1 rounded-2xl"
+              @click="router.push(ROUTES.profile)"
+            >
               {{ locale.t.orders.goToProfile }}
             </Button>
           </EmptyState>
         </GlassCard>
       </template>
 
-      <template v-else-if="chat.isLoading && chat.chats.length === 0">
-        <Skeleton v-for="n in 3" :key="n" class="h-20 w-full rounded-3xl" />
+      <template v-else-if="(filtering || chat.isLoading) && displayChats.length === 0">
+        <Skeleton
+          v-for="n in 3"
+          :key="n"
+          class="h-20 w-full rounded-3xl"
+        />
       </template>
 
-      <GlassCard v-else-if="chat.chats.length === 0" padding="none" class="overflow-hidden">
+      <GlassCard
+        v-else-if="showAgentEmpty || (agentProfileId && displayChats.length === 0)"
+        padding="none"
+        class="overflow-hidden"
+      >
+        <EmptyState
+          :icon="MessageCircle"
+          :title="locale.t.chat.agentEmptyTitle"
+          :description="locale.t.chat.agentEmptyBody"
+        >
+          <Button
+            v-if="agentProfileId"
+            class="mt-1 rounded-2xl"
+            @click="placeOrderWithAgent"
+          >
+            <Send class="size-4" />
+            {{ locale.t.marketplace.orderFromAgency }}
+          </Button>
+        </EmptyState>
+      </GlassCard>
+
+      <GlassCard
+        v-else-if="displayChats.length === 0"
+        padding="none"
+        class="overflow-hidden"
+      >
         <EmptyState
           :icon="MessageCircle"
           :title="locale.t.chat.emptyTitle"
@@ -77,27 +167,37 @@ function openThread(item: Chat) {
 
       <template v-else>
         <GlassCard
-          v-for="item in chat.chats"
+          v-for="item in displayChats"
           :key="item.id"
           interactive
           class="flex items-center gap-3"
           @click="openThread(item)"
         >
-          <Avatar :name="chatTitle(item)" size="md" class="shrink-0" />
+          <Avatar
+            :name="chatTitle(item)"
+            size="md"
+            class="shrink-0"
+          />
 
           <div class="min-w-0 flex-1">
             <div class="flex items-center justify-between gap-2">
               <p class="truncate font-semibold leading-tight">
                 {{ chatTitle(item) }}
               </p>
-              <span v-if="item.last_message" class="shrink-0 text-xs text-muted-foreground">
+              <span
+                v-if="item.last_message"
+                class="shrink-0 text-xs text-muted-foreground"
+              >
                 {{ formatMessageTime(item.last_message.created_at, locale.locale) }}
               </span>
             </div>
             <p class="truncate text-xs text-muted-foreground">
               {{ orderLabel(item) }}
             </p>
-            <p v-if="item.last_message" class="flex items-center gap-1 truncate text-sm text-muted-foreground">
+            <p
+              v-if="item.last_message"
+              class="flex items-center gap-1 truncate text-sm text-muted-foreground"
+            >
               <Paperclip
                 v-if="item.last_message.attachments?.length"
                 class="size-3.5 shrink-0"
@@ -117,7 +217,10 @@ function openThread(item: Chat) {
         </GlassCard>
       </template>
 
-      <p v-if="chat.error" class="rounded-2xl bg-destructive/10 px-4 py-3 text-sm text-destructive">
+      <p
+        v-if="chat.error"
+        class="rounded-2xl bg-destructive/10 px-4 py-3 text-sm text-destructive"
+      >
         {{ chat.error }}
       </p>
     </section>

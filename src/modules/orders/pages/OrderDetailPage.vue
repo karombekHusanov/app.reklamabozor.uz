@@ -14,7 +14,6 @@ import { categoryName } from '@/core/i18n/category-name'
 import { formatDate } from '@/core/lib/date'
 import OrderStatusBadge from '@/modules/orders/components/OrderStatusBadge.vue'
 import OfferCard from '@/modules/orders/components/OfferCard.vue'
-import { categoryIcon } from '@/modules/orders/lib/category-icon'
 import { useOrdersStore } from '@/modules/orders/stores/orders.store'
 
 const props = defineProps<{ id: string }>()
@@ -45,6 +44,7 @@ const hasChat = computed(() =>
 // Rating: offered once the order completes, until a review is stored.
 const hasReview = computed(() => Boolean(order.value?.review?.rating))
 const canRate = computed(() => order.value?.status === 'completed' && !hasReview.value)
+const attachmentFiles = computed(() => order.value?.attachment_files ?? [])
 const ratingDraft = ref(0)
 const ratingComment = ref('')
 
@@ -111,34 +111,26 @@ async function sendReview() {
       <template v-else-if="order">
         <!-- Summary -->
         <GlassCard class="space-y-4">
-          <div class="flex items-start gap-3">
-            <span class="flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-              <component
-                :is="categoryIcon(order.category)"
-                class="size-5"
+          <div class="min-w-0">
+            <div class="flex items-start justify-between gap-2">
+              <h2 class="text-lg font-semibold leading-tight text-foreground">
+                {{ title }}
+              </h2>
+              <OrderStatusBadge
+                :status="order.status"
+                class="shrink-0"
               />
-            </span>
-            <div class="min-w-0 flex-1">
-              <div class="flex items-start justify-between gap-2">
-                <h2 class="text-lg font-semibold leading-tight text-foreground">
-                  {{ title }}
-                </h2>
-                <OrderStatusBadge
-                  :status="order.status"
-                  class="shrink-0"
-                />
-              </div>
-              <p class="mt-1 text-xs text-muted-foreground">
-                {{ formatDate(order.created_at, locale.locale) }}
-              </p>
-              <p
-                v-if="order.target_agent"
-                class="mt-1.5 inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary"
-              >
-                <Store class="size-3.5" />
-                {{ order.target_agent.company_name }}
-              </p>
             </div>
+            <p class="mt-1 text-xs text-muted-foreground">
+              {{ formatDate(order.created_at, locale.locale) }}
+            </p>
+            <p
+              v-if="order.target_agent"
+              class="mt-1.5 inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary"
+            >
+              <Store class="size-3.5" />
+              {{ order.target_agent.company_name }}
+            </p>
           </div>
 
           <p class="text-sm leading-relaxed text-muted-foreground">
@@ -156,16 +148,25 @@ async function sendReview() {
             </span>
           </div>
 
-          <a
-            v-if="order.tz_file"
-            :href="order.tz_file"
-            target="_blank"
-            rel="noopener"
-            class="glass-field flex items-center gap-2 rounded-2xl px-4 py-3 text-sm font-medium text-primary"
+          <div
+            v-if="attachmentFiles.length > 0"
+            class="space-y-2"
           >
-            <FileText class="size-4" />
-            {{ locale.t.orders.viewBrief }}
-          </a>
+            <p class="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              {{ locale.t.orders.attachedFiles }}
+            </p>
+            <a
+              v-for="file in attachmentFiles"
+              :key="file.id"
+              :href="file.url"
+              target="_blank"
+              rel="noopener"
+              class="glass-field flex items-center gap-2 rounded-2xl px-4 py-3 text-sm font-medium text-primary"
+            >
+              <FileText class="size-4 shrink-0" />
+              <span class="truncate">{{ file.original_name }}</span>
+            </a>
+          </div>
 
           <Button
             v-if="hasChat"

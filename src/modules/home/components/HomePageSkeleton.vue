@@ -8,14 +8,15 @@ import HomeAgentCardSkeleton from '@/modules/home/components/HomeAgentCardSkelet
     <!-- Top bar -->
     <header class="safe-top flex items-center justify-between gap-3 px-5 pt-3">
       <Skeleton class="size-11 rounded-2xl" />
-      <Skeleton class="h-9 w-32 rounded-xl" />
+      <Skeleton class="size-9 rounded-xl" />
       <Skeleton class="size-11 rounded-2xl" />
     </header>
 
     <!-- Profile card -->
     <section class="px-5 pt-4">
-      <div class="home-card p-4">
-        <div class="flex items-start gap-3.5">
+      <div class="home-card relative p-4">
+        <Skeleton class="absolute right-4 top-4 h-5 w-16 rounded-full" />
+        <div class="flex items-center gap-3.5">
           <Skeleton class="size-16 shrink-0 rounded-2xl" />
           <div class="min-w-0 flex-1 space-y-2">
             <Skeleton class="h-3 w-20 rounded-md" />
@@ -37,31 +38,11 @@ import HomeAgentCardSkeleton from '@/modules/home/components/HomeAgentCardSkelet
     </section>
 
     <!-- Banner -->
-    <div class="overflow-x-hidden pt-4">
-      <div class="flex gap-3.5 overflow-hidden px-5">
-        <div class="min-w-[calc(100%-4.5rem)] rounded-[28px] bg-slate-300/70 p-3.5 dark:bg-slate-800/70">
-          <div class="flex min-h-[154px] flex-col gap-3">
-            <div class="flex items-start gap-2.5">
-              <div class="flex min-w-0 flex-1 flex-col">
-                <Skeleton class="h-6 w-[54%] rounded-lg bg-white/60 dark:bg-white/18" />
-                <Skeleton class="mt-2 h-3 w-[62%] rounded-md bg-white/45 dark:bg-white/14" />
-                <Skeleton class="mt-1 h-3 w-[42%] rounded-md bg-white/45 dark:bg-white/14" />
-              </div>
-            </div>
-            <Skeleton class="mt-auto h-9 w-24 rounded-full bg-white/60 dark:bg-white/18" />
-          </div>
-        </div>
-        <div class="min-w-[calc(100%-4.5rem)] rounded-[28px] bg-slate-300/45 p-3.5 opacity-60 dark:bg-slate-800/45">
-          <div class="flex min-h-[154px] flex-col gap-3">
-            <div class="flex items-start gap-2.5">
-              <div class="flex min-w-0 flex-1 flex-col">
-                <Skeleton class="h-6 w-[48%] rounded-lg bg-white/60 dark:bg-white/18" />
-                <Skeleton class="mt-2 h-3 w-[58%] rounded-md bg-white/45 dark:bg-white/14" />
-              </div>
-            </div>
-            <Skeleton class="mt-auto h-9 w-24 rounded-full bg-white/60 dark:bg-white/18" />
-          </div>
-        </div>
+    <div class="home-banner-carousel overflow-x-hidden pt-4">
+      <div class="flex items-center justify-center gap-3.5 overflow-hidden">
+        <Skeleton class="h-[154px] w-9 shrink-0 rounded-[28px] opacity-40" />
+        <Skeleton class="h-[154px] w-[calc(100%-4.5rem)] shrink-0 rounded-[28px]" />
+        <Skeleton class="h-[154px] w-9 shrink-0 rounded-[28px] opacity-40" />
       </div>
     </div>
 
@@ -70,7 +51,7 @@ import HomeAgentCardSkeleton from '@/modules/home/components/HomeAgentCardSkelet
       <div
         v-for="n in 4"
         :key="n"
-        class="relative min-h-[148px] overflow-hidden rounded-[28px] border border-white/65 bg-gradient-to-br from-sky-100 via-cyan-50 to-teal-100 p-4 shadow-[0_18px_40px_-24px_rgba(15,23,42,0.35)] dark:border-white/10 dark:from-slate-800 dark:via-slate-900 dark:to-slate-800"
+        class="min-h-[148px] rounded-[28px] border border-border bg-card p-4 shadow-sm"
       >
         <div class="flex h-full flex-col items-start justify-between">
           <Skeleton class="size-13 rounded-[22px]" />

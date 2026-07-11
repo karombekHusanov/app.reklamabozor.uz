@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Globe, Inbox, Loader2, Megaphone, ShieldBan, Timer } from '@lucide/vue'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import AppHeader from '@/modules/shell/components/AppHeader.vue'
 import GlassCard from '@/core/ui/GlassCard.vue'
 import Skeleton from '@/core/ui/Skeleton.vue'
@@ -18,12 +18,15 @@ import {
 import ChatComposer from '@/modules/chat/components/ChatComposer.vue'
 import MessageBubble from '@/modules/chat/components/MessageBubble.vue'
 import { buildChatFeed } from '@/modules/chat/lib/chat-feed'
+import { resolveAgentChat } from '@/modules/chat/lib/open-agent-chat'
+import { ROUTES } from '@/modules/shell/constants/routes'
 import type { GlobalChatMessage, GlobalChatMeta, GlobalChatSender } from '@/modules/chat/types/chat'
 
 const auth = useAuthStore()
 const locale = useLocaleStore()
+const route = useRoute()
 const router = useRouter()
-const { haptic } = useTelegram()
+const { haptic, WebApp } = useTelegram()
 
 const t = computed(() => locale.t.chat.global)
 
@@ -77,6 +80,35 @@ function senderName(sender: GlobalChatSender): string {
   return sender.company_name || sender.name
 }
 
+/** A sender is tappable when there is a profile to land on. */
+function canOpenSenderProfile(sender: GlobalChatSender): boolean {
+  return sender.agent_profile_id !== null || !!sender.username
+}
+
+/**
+ * Agencies open their in-app marketplace profile; everyone else with a
+ * public @username opens their Telegram profile.
+ */
+function openSenderProfile(sender: GlobalChatSender) {
+  haptic('light')
+
+  if (sender.agent_profile_id !== null) {
+    void router.push(`/agents/${sender.agent_profile_id}`)
+    return
+  }
+
+  if (sender.username) {
+    const link = `https://t.me/${sender.username}`
+    try {
+      WebApp.openTelegramLink(link)
+    }
+    catch {
+      // Outside Telegram (or an old client) — open in a normal tab.
+      window.open(link, '_blank', 'noopener')
+    }
+  }
+}
+
 function isMine(message: GlobalChatMessage): boolean {
   return message.sender.id === auth.user?.id
 }
@@ -85,6 +117,42 @@ function scrollToBottom(smooth = true) {
   void nextTick(() => {
     bottomAnchor.value?.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto', block: 'end' })
   })
+}
+
+async function redirectAgentDeepLink(): Promise<boolean> {
+  const id = Number(route.query.agent)
+  if (!Number.isInteger(id) || id <= 0) {
+    return false
+  }
+
+  if (!auth.isAuthenticated) {
+    await router.replace(ROUTES.profile)
+    return true
+  }
+
+  try {
+    const result = await resolveAgentChat(id)
+
+    if (result.kind === 'thread') {
+      await router.replace(`/chat/${result.orderId}`)
+      return true
+    }
+
+    if (result.kind === 'picker') {
+      await router.replace({ path: ROUTES.chatThreads, query: { agent: String(id) } })
+      return true
+    }
+
+    await router.replace({
+      path: ROUTES.chatThreads,
+      query: { agent: String(id), noChat: '1' },
+    })
+    return true
+  }
+  catch {
+    await router.replace({ path: ROUTES.chatThreads, query: { agent: String(id) } })
+    return true
+  }
 }
 
 async function load() {
@@ -166,8 +234,13 @@ async function handleSend(body: string, fileIds: number[]): Promise<boolean> {
 }
 
 onMounted(() => {
-  void load()
-  pollTimer = setInterval(() => void poll(), 5000)
+  void (async () => {
+    if (await redirectAgentDeepLink()) {
+      return
+    }
+    await load()
+    pollTimer = setInterval(() => void poll(), 5000)
+  })()
   tickTimer = setInterval(() => (now.value = Date.now()), 1000)
 })
 
@@ -264,6 +337,8 @@ onBeforeUnmount(() => {
               :show-name="item.first"
               :sender-name="senderName(item.message.sender)"
               :sender-role="item.message.sender.role"
+              :sender-clickable="canOpenSenderProfile(item.message.sender)"
+              @sender-click="openSenderProfile(item.message.sender)"
             />
           </div>
         </template>

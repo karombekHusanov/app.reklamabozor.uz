@@ -14,6 +14,7 @@ export type OfferStatus = 'pending' | 'accepted' | 'rejected'
 
 export interface OfferAgent {
   id: number
+  profile_id: number | null
   company_name: string | null
   company_logo: string | null
   location_label: string | null
@@ -41,15 +42,23 @@ export interface OrderReview {
   created_at: string
 }
 
+export interface OrderAttachment {
+  id: number
+  url: string
+  original_name: string
+  mime_type: string | null
+  size: number
+  created_at: string
+}
+
 export interface Order {
   id: number
   title: string
   description: string
   deadline: OrderDeadline | null
   category: Category | null
-  tz_file_id: number | null
-  tz_file: string | null
   attachment_file_ids: number[]
+  attachment_files: OrderAttachment[]
   budget_min: string | null
   budget_max: string | null
   status: OrderStatus
@@ -74,10 +83,8 @@ export type OrderBudget = 'lt_1m' | 'from_1_3m' | 'from_3_5m' | 'from_5_10m' | '
 export interface CreateOrderPayload {
   category_id: number
   description: string
-  tz_file_id: number
+  attachment_file_ids: number[]
   deadline?: OrderDeadline | null
-  /** Extra reference files (slots 2-4). */
-  attachment_file_ids?: number[]
   /** Direct the order to a single agency (its public profile id). Omit for a broadcast order. */
   agent_profile_id?: number
   // --- Brief fields (UI-only for now — the backend drops these until wired). ---
@@ -117,7 +124,7 @@ export interface AgentOrder {
   description: string
   deadline: OrderDeadline | null
   category: Category | null
-  tz_file: string | null
+  attachment_files: OrderAttachment[]
   budget_min: string | null
   budget_max: string | null
   status: OrderStatus

@@ -32,7 +32,11 @@ function openOrder(id: number) {
 
 <template>
   <div>
-    <AppHeader :title="locale.t.orders.myOrdersTitle" :subtitle="locale.t.orders.myOrdersSubtitle" />
+    <AppHeader
+      :title="locale.t.orders.myOrdersTitle"
+      :subtitle="locale.t.orders.myOrdersSubtitle"
+      show-back
+    />
 
     <section class="space-y-4 px-5">
       <template v-if="!auth.isAuthenticated">

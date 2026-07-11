@@ -3,65 +3,39 @@ import { Star } from '@lucide/vue'
 import Avatar from '@/core/ui/Avatar.vue'
 import { Carousel, CarouselContent, CarouselItem } from '@/core/ui/carousel'
 import { useLocaleStore } from '@/core/i18n/locale.store'
+import type { PublicReview } from '@/modules/marketplace/services/agents.service'
 import AgentProfileSectionShell from '@/modules/profile/components/agent-sections/AgentProfileSectionShell.vue'
 
-const locale = useLocaleStore()
+defineProps<{
+  reviews: PublicReview[]
+}>()
 
-const items = [
-  {
-    id: 1,
-    nameKey: 'agentTestimonial1Name',
-    roleKey: 'agentTestimonial1Role',
-    quoteKey: 'agentTestimonial1Quote',
-  },
-  {
-    id: 2,
-    nameKey: 'agentTestimonial2Name',
-    roleKey: 'agentTestimonial2Role',
-    quoteKey: 'agentTestimonial2Quote',
-  },
-  {
-    id: 3,
-    nameKey: 'agentTestimonial3Name',
-    roleKey: 'agentTestimonial3Role',
-    quoteKey: 'agentTestimonial3Quote',
-  },
-] as const
+const locale = useLocaleStore()
 </script>
 
 <template>
-  <AgentProfileSectionShell
-    :title="locale.t.profile.agentTestimonialsTitle"
-    show-view-all
-  >
+  <AgentProfileSectionShell :title="locale.t.profile.agentTestimonialsTitle">
     <Carousel
       class="agent-profile-carousel"
       :opts="{ align: 'start', dragFree: true, containScroll: 'trimSnaps' }"
     >
       <CarouselContent class="-ml-2.5 pl-2 pr-2">
         <CarouselItem
-          v-for="item in items"
-          :key="item.id"
+          v-for="review in reviews"
+          :key="review.id"
           class="w-[11.5rem] shrink-0 grow-0 basis-[11.5rem] pl-2.5"
         >
           <article class="agent-profile-testimonial h-full p-2.5 text-left">
             <div class="flex items-center gap-2">
               <Avatar
-                :name="locale.t.profile[item.nameKey]"
+                :src="review.client_avatar"
+                :name="review.client_name"
                 size="sm"
-                class="!size-8 bg-gradient-to-br text-[10px]"
-                :class="{
-                  'from-sky-100 to-blue-200': item.id === 1,
-                  'from-rose-100 to-orange-200': item.id === 2,
-                  'from-emerald-100 to-teal-200': item.id === 3,
-                }"
+                class="!size-8 !text-[10px]"
               />
               <div class="min-w-0">
                 <p class="truncate text-[11px] font-bold text-foreground">
-                  {{ locale.t.profile[item.nameKey] }}
-                </p>
-                <p class="truncate text-[9px] text-muted-foreground">
-                  {{ locale.t.profile[item.roleKey] }}
+                  {{ review.client_name }}
                 </p>
               </div>
             </div>
@@ -70,12 +44,16 @@ const items = [
               <Star
                 v-for="n in 5"
                 :key="n"
-                class="size-3 fill-amber-400 text-amber-400"
+                class="size-3"
+                :class="n <= review.rating ? 'fill-amber-400 text-amber-400' : 'fill-muted/30 text-muted/30'"
               />
             </div>
 
-            <p class="mt-2 line-clamp-4 text-[10px] leading-snug text-muted-foreground">
-              {{ locale.t.profile[item.quoteKey] }}
+            <p
+              v-if="review.comment"
+              class="mt-2 line-clamp-4 text-[10px] leading-snug text-muted-foreground"
+            >
+              {{ review.comment }}
             </p>
           </article>
         </CarouselItem>

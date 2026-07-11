@@ -1,31 +1,29 @@
 <script setup lang="ts">
 import {
   BadgeCheck,
-  ChevronLeft,
+  LayoutGrid,
   MessageCircle,
-  Monitor,
-  Palette,
-  Printer,
-  RefreshCw,
   Shield,
-  ShieldCheck,
   Star,
-  Users,
 } from '@lucide/vue'
 import { computed } from 'vue'
-import { useRouter } from 'vue-router'
 import type { useLocaleStore } from '@/core/i18n/locale.store'
+import type { Category } from '@/modules/agent/types/agent'
+import type { PublicReview } from '@/modules/marketplace/services/agents.service'
+import AppHeader from '@/modules/shell/components/AppHeader.vue'
 import Avatar from '@/core/ui/Avatar.vue'
-import { Carousel, CarouselContent, CarouselItem } from '@/core/ui/carousel'
 import AgentAdvantagesSection from '@/modules/profile/components/agent-sections/AgentAdvantagesSection.vue'
+import AgentContactSection from '@/modules/profile/components/agent-sections/AgentContactSection.vue'
 import AgentPortfolioSection from '@/modules/profile/components/agent-sections/AgentPortfolioSection.vue'
+import AgentResultsSection from '@/modules/profile/components/agent-sections/AgentResultsSection.vue'
+import AgentServicesSection from '@/modules/profile/components/agent-sections/AgentServicesSection.vue'
 import AgentTestimonialsSection from '@/modules/profile/components/agent-sections/AgentTestimonialsSection.vue'
 import AgentWorkflowSection from '@/modules/profile/components/agent-sections/AgentWorkflowSection.vue'
 
 /**
  * Shared agency presentation — used both by the owner's profile view and the
- * public marketplace detail page, so the two look almost identical. Everything
- * owner- or client-specific (the CTA buttons) is injected via the `actions` slot.
+ * public marketplace detail page. Everything owner- or client-specific (CTAs)
+ * is injected via the `actions` slot.
  */
 const props = defineProps<{
   headerTitle: string
@@ -33,98 +31,73 @@ const props = defineProps<{
   logo: string | null
   subtitle: string
   isApproved: boolean
-  /** Profile completeness (0-100) — drives the presentational stats + rating. */
+  bio: string | null
+  locationLabel: string | null
+  websiteUrl: string | null
+  linkedinUrl: string | null
+  resultsText: string | null
   completion: number
+  completedOrdersCount: number
+  ratingAvg: number | null
+  ratingCount: number
+  categories: Category[]
+  reviews: PublicReview[]
   locale: ReturnType<typeof useLocaleStore>
 }>()
 
-const router = useRouter()
+const ratingValue = computed(() =>
+  props.ratingAvg !== null ? props.ratingAvg.toFixed(1) : null,
+)
 
-const ratingValue = computed(() => (4.5 + (props.completion / 100) * 0.5).toFixed(1))
-const reviewCount = computed(() => Math.max(12, Math.round(props.completion * 1.28)))
-const filledStars = computed(() => Math.floor(Number(ratingValue.value)))
-const hasHalfStar = computed(() => Number(ratingValue.value) % 1 >= 0.25)
+const filledStars = computed(() => (ratingValue.value ? Math.floor(Number(ratingValue.value)) : 0))
+const hasHalfStar = computed(() =>
+  ratingValue.value ? Number(ratingValue.value) % 1 >= 0.25 : false,
+)
 
 const reviewCountLabel = computed(() =>
-  props.locale.t.profile.agentReviewCount.replace('{count}', String(reviewCount.value)),
+  props.ratingCount > 0
+    ? props.locale.t.profile.agentReviewCount.replace('{count}', String(props.ratingCount))
+    : null,
 )
 
 const stats = computed(() => [
   {
-    value: `${Math.max(1, Math.round(props.completion * 6.5))}+`,
+    value: String(props.completedOrdersCount),
     label: props.locale.t.profile.agentStatProjects,
     icon: Shield,
   },
   {
-    value: `${Math.max(1, Math.round(props.completion * 3.2))}+`,
-    label: props.locale.t.profile.agentStatClients,
-    icon: Users,
+    value: String(props.categories.length),
+    label: props.locale.t.profile.agentStatsServices,
+    icon: LayoutGrid,
   },
   {
-    value: `${Math.min(99, Math.max(72, Math.round(72 + props.completion * 0.26)))}%`,
-    label: props.locale.t.profile.agentStatReturn,
-    icon: RefreshCw,
+    value: `${props.completion}%`,
+    label: props.locale.t.profile.agentStatsProfile,
+    icon: BadgeCheck,
   },
   {
-    value: `${ratingValue.value}/5`,
+    value: ratingValue.value ? `${ratingValue.value}/5` : '—',
     label: props.locale.t.profile.agentStatRating,
     icon: MessageCircle,
   },
 ])
 
-const services = computed(() => [
-  {
-    key: 'outdoor',
-    title: props.locale.t.profile.agentServiceOutdoorTitle,
-    hint: props.locale.t.profile.agentServiceOutdoorHint,
-    icon: Monitor,
-  },
-  {
-    key: 'print',
-    title: props.locale.t.profile.agentServicePrintTitle,
-    hint: props.locale.t.profile.agentServicePrintHint,
-    icon: Printer,
-  },
-  {
-    key: 'branding',
-    title: props.locale.t.profile.agentServiceBrandingTitle,
-    hint: props.locale.t.profile.agentServiceBrandingHint,
-    icon: Palette,
-  },
-  {
-    key: 'quality',
-    title: props.locale.t.profile.agentServiceQualityTitle,
-    hint: props.locale.t.profile.agentServiceQualityHint,
-    icon: ShieldCheck,
-  },
-])
+const hasContactInfo = computed(() =>
+  Boolean(props.locationLabel || props.websiteUrl || props.linkedinUrl),
+)
 
-function goBack() {
-  router.back()
-}
+const showAboutSection = computed(() =>
+  Boolean(props.bio && props.bio !== props.subtitle),
+)
 </script>
 
 <template>
   <div class="agent-profile-page pb-6">
-    <header class="safe-top flex items-center justify-between gap-3 px-4 pt-2">
-      <button
-        type="button"
-        class="pressable agent-profile-toolbar-btn"
-        :aria-label="locale.t.common.back"
-        @click="goBack"
-      >
-        <ChevronLeft class="size-5" />
-      </button>
-
-      <h1 class="truncate text-[1.05rem] font-semibold text-foreground">
-        {{ headerTitle }}
-      </h1>
-
-      <span
-        class="size-11 shrink-0"
-        aria-hidden="true"
-      />
-    </header>
+    <AppHeader
+      :title="headerTitle"
+      show-back
+    />
 
     <section class="space-y-4 px-4 pt-3">
       <div class="agent-profile-card overflow-hidden p-3 sm:p-4">
@@ -158,7 +131,10 @@ function goBack() {
               {{ subtitle }}
             </p>
 
-            <div class="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] font-semibold text-foreground">
+            <div
+              v-if="ratingValue"
+              class="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] font-semibold text-foreground"
+            >
               <span class="inline-flex items-center gap-1">
                 <span class="flex items-center">
                   <Star
@@ -175,7 +151,10 @@ function goBack() {
                   />
                 </span>
                 <span>{{ ratingValue }}</span>
-                <span class="font-medium text-muted-foreground">{{ reviewCountLabel }}</span>
+                <span
+                  v-if="reviewCountLabel"
+                  class="font-medium text-muted-foreground"
+                >{{ reviewCountLabel }}</span>
               </span>
 
               <span
@@ -216,50 +195,42 @@ function goBack() {
           </div>
         </div>
 
-        <!-- Owner vs. client CTAs -->
         <div class="mt-3 flex items-stretch gap-2">
           <slot name="actions" />
         </div>
       </div>
 
-      <div class="agent-profile-services-card px-3 pb-3 pt-4 sm:px-4 sm:pb-4 sm:pt-5">
+      <div
+        v-if="showAboutSection"
+        class="agent-profile-services-card px-3 pb-3 pt-4 sm:px-4 sm:pb-4 sm:pt-5"
+      >
         <h3 class="pt-0.5 text-[0.9rem] font-bold text-foreground">
-          {{ locale.t.profile.agentServicesTitle }}
+          {{ locale.t.profile.agentAboutTitle }}
         </h3>
-
-        <Carousel
-          class="agent-profile-carousel mt-3"
-          :opts="{ align: 'start', dragFree: true, containScroll: 'trimSnaps' }"
-        >
-          <CarouselContent class="-ml-2.5 pl-2 pr-2">
-            <CarouselItem
-              v-for="service in services"
-              :key="service.key"
-              class="w-[8.75rem] shrink-0 grow-0 basis-[8.75rem] pl-2.5"
-            >
-              <div class="agent-profile-service">
-                <span class="agent-profile-service__icon">
-                  <component
-                    :is="service.icon"
-                    class="size-[1.15rem]"
-                  />
-                </span>
-                <p class="mt-2 text-[12px] font-bold leading-tight text-foreground">
-                  {{ service.title }}
-                </p>
-                <p class="mt-1 text-[9px] leading-snug text-muted-foreground">
-                  {{ service.hint }}
-                </p>
-              </div>
-            </CarouselItem>
-          </CarouselContent>
-        </Carousel>
+        <p class="mt-3 whitespace-pre-line text-[12px] leading-relaxed text-muted-foreground">
+          {{ bio }}
+        </p>
       </div>
 
+      <AgentServicesSection :categories="categories" />
+
+      <AgentResultsSection
+        v-if="resultsText"
+        :text="resultsText"
+      />
       <AgentPortfolioSection />
       <AgentAdvantagesSection />
-      <AgentTestimonialsSection />
+      <AgentTestimonialsSection
+        v-if="reviews.length"
+        :reviews="reviews"
+      />
       <AgentWorkflowSection />
+      <AgentContactSection
+        v-if="hasContactInfo"
+        :location-label="locationLabel"
+        :website-url="websiteUrl"
+        :linkedin-url="linkedinUrl"
+      />
     </section>
   </div>
 </template>

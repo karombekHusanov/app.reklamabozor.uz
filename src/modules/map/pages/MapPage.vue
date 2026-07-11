@@ -1,21 +1,21 @@
 <script setup lang="ts">
 import 'leaflet/dist/leaflet.css'
 import L from 'leaflet'
-import { BadgeCheck, Bell, ChevronLeft, ChevronRight, List, LocateFixed, MapPin, Search, Star, X } from '@lucide/vue'
+import { BadgeCheck, Check, ChevronRight, List, LocateFixed, MapPin, Search, Star, X } from '@lucide/vue'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import Avatar from '@/core/ui/Avatar.vue'
+import Drawer from '@/core/ui/Drawer.vue'
+import AppHeader from '@/modules/shell/components/AppHeader.vue'
 import { useTelegram } from '@/core/composables/useTelegram'
 import { useLocaleStore } from '@/core/i18n/locale.store'
 import { categoryName } from '@/core/i18n/category-name'
-import { ROUTES } from '@/modules/shell/constants/routes'
 import { fetchTopAgents, type PublicAgent } from '@/modules/marketplace/services/agents.service'
 
 const locale = useLocaleStore()
 const router = useRouter()
 const { haptic } = useTelegram()
 
-// The agent whose card is shown after tapping a marker (null = no selection).
 const selectedAgent = ref<PublicAgent | null>(null)
 
 const selectedRating = computed(() =>
@@ -36,20 +36,21 @@ function openAgent(agent: PublicAgent) {
   router.push(`/agents/${agent.id}`)
 }
 
-/** Default centre — Tashkent. */
 const DEFAULT_CENTER: L.LatLngTuple = [41.311081, 69.279716]
+const USER_ZOOM = 16
+const FALLBACK_ZOOM = 14
 
 const mapEl = ref<HTMLElement | null>(null)
 let map: L.Map | null = null
 let markerLayer: L.LayerGroup | null = null
-let fitted = false
+let userLocationLayer: L.LayerGroup | null = null
 
 const agents = ref<PublicAgent[]>([])
 const query = ref('')
 const activeCategory = ref<number | null>(null)
 const locating = ref(false)
+const categoryDrawerOpen = ref(false)
 
-/** Brand "B" teardrop pin (logo head + blue pointer) as a div icon. */
 const PIN = L.divIcon({
   className: 'rb-pin',
   html: `<div style="display:flex;flex-direction:column;align-items:center">
@@ -61,11 +62,25 @@ const PIN = L.divIcon({
   popupAnchor: [0, -44],
 })
 
-// Category chips built from the categories the fetched agents serve.
+const USER_PIN = L.divIcon({
+  className: 'rb-user-location',
+  html: `<div class="rb-user-location__wrap">
+    <span class="rb-user-location__pulse"></span>
+    <span class="rb-user-location__dot"></span>
+  </div>`,
+  iconSize: [28, 28],
+  iconAnchor: [14, 14],
+})
+
 const categories = computed(() => {
   const map2 = new Map<number, string>()
   agents.value.forEach(a => a.categories.forEach(c => map2.set(c.id, categoryName(c, locale.locale))))
   return [...map2.entries()].map(([id, name]) => ({ id, name }))
+})
+
+const activeCategoryLabel = computed(() => {
+  if (activeCategory.value === null) return locale.t.map.allCategories
+  return categories.value.find(category => category.id === activeCategory.value)?.name ?? locale.t.map.allCategories
 })
 
 const filteredAgents = computed(() => {
@@ -93,32 +108,53 @@ function renderMarkers() {
   }
 }
 
-/** Frame all markers once after the first load. */
-function maybeFit() {
-  if (!map || fitted) return
-  const list = filteredAgents.value
-  if (list.length === 0) return
-  const latlngs = list.map(a => [Number(a.lat), Number(a.lng)] as L.LatLngTuple)
-  if (latlngs.length === 1) map.setView(latlngs[0], 14)
-  else map.fitBounds(L.latLngBounds(latlngs).pad(0.25))
-  fitted = true
+function renderUserLocation(lat: number, lng: number, accuracy?: number) {
+  if (!map || !userLocationLayer) return
+  userLocationLayer.clearLayers()
+
+  if (accuracy && accuracy > 0) {
+    L.circle([lat, lng], {
+      radius: accuracy,
+      color: '#0b6bcb',
+      fillColor: '#0b6bcb',
+      fillOpacity: 0.1,
+      weight: 1,
+    }).addTo(userLocationLayer)
+  }
+
+  L.marker([lat, lng], { icon: USER_PIN, zIndexOffset: 1000 }).addTo(userLocationLayer)
 }
 
-function toggleCategory(id: number) {
-  activeCategory.value = activeCategory.value === id ? null : id
+function getCurrentPosition(): Promise<GeolocationPosition | null> {
+  if (!navigator.geolocation) return Promise.resolve(null)
+
+  return new Promise((resolve) => {
+    navigator.geolocation.getCurrentPosition(
+      resolve,
+      () => resolve(null),
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 },
+    )
+  })
 }
 
-function locate() {
-  if (!navigator.geolocation || locating.value) return
+async function centerOnUser() {
+  if (!map || locating.value) return
   locating.value = true
-  navigator.geolocation.getCurrentPosition(
-    (pos) => {
-      map?.setView([pos.coords.latitude, pos.coords.longitude], 15)
-      locating.value = false
-    },
-    () => { locating.value = false },
-    { enableHighAccuracy: true, timeout: 10000 },
-  )
+
+  const pos = await getCurrentPosition()
+  locating.value = false
+
+  if (!pos || !map) return
+
+  const { latitude, longitude, accuracy } = pos.coords
+  map.setView([latitude, longitude], USER_ZOOM, { animate: true })
+  renderUserLocation(latitude, longitude, accuracy)
+}
+
+function pickCategory(id: number | null) {
+  haptic('light')
+  activeCategory.value = id
+  categoryDrawerOpen.value = false
 }
 
 async function load() {
@@ -134,7 +170,7 @@ onMounted(async () => {
   if (!mapEl.value) return
 
   map = L.map(mapEl.value, { zoomControl: false, attributionControl: true })
-    .setView(DEFAULT_CENTER, 13)
+    .setView(DEFAULT_CENTER, FALLBACK_ZOOM)
 
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '© OpenStreetMap',
@@ -142,8 +178,8 @@ onMounted(async () => {
   }).addTo(map)
 
   markerLayer = L.layerGroup().addTo(map)
+  userLocationLayer = L.layerGroup().addTo(map)
 
-  // Tapping the map (away from a marker) dismisses the agent card.
   map.on('click', () => { selectedAgent.value = null })
 
   await nextTick()
@@ -151,13 +187,11 @@ onMounted(async () => {
 
   await load()
   renderMarkers()
-  maybeFit()
+  await centerOnUser()
 })
 
 watch(filteredAgents, (list) => {
   renderMarkers()
-  maybeFit()
-  // Drop the card if its agent is no longer in the filtered set.
   if (selectedAgent.value && !list.some(a => a.id === selectedAgent.value!.id)) {
     selectedAgent.value = null
   }
@@ -167,71 +201,40 @@ onBeforeUnmount(() => {
   map?.remove()
   map = null
   markerLayer = null
+  userLocationLayer = null
 })
 </script>
 
 <template>
   <div class="fixed inset-0 z-[60] bg-slate-200">
-    <!-- z-0 confines Leaflet's internal panes to their own stacking context so the overlays sit above the map. -->
     <div
       ref="mapEl"
       class="absolute inset-0 z-0"
     />
 
-    <!-- Top overlay: search + circular controls -->
-    <div class="safe-top absolute inset-x-0 top-0 z-[70] px-4 pt-3">
-      <div class="flex items-center gap-2">
-        <button
-          type="button"
-          class="flex size-11 shrink-0 items-center justify-center rounded-full bg-primary text-white shadow-lg shadow-[#02305C]/30 transition active:scale-95"
-          @click="router.back()"
-        >
-          <ChevronLeft class="size-5" />
-        </button>
+    <AppHeader
+      :title="locale.t.shell.tabs.map"
+      :subtitle="locale.t.map.subtitle"
+      show-back
+    />
 
-        <div class="flex h-11 flex-1 items-center gap-2 rounded-full bg-white px-4 shadow-lg shadow-[#02305C]/20">
-          <Search class="size-4 shrink-0 text-slate-400" />
-          <input
-            v-model="query"
-            type="search"
-            :placeholder="locale.t.map.searchPlaceholder"
-            class="w-full bg-transparent text-sm text-slate-700 outline-none placeholder:text-slate-400"
-          >
-        </div>
-
-        <button
-          type="button"
-          class="relative flex size-11 shrink-0 items-center justify-center rounded-full bg-primary text-white shadow-lg shadow-[#02305C]/30 transition active:scale-95"
+    <div class="map-page-search pointer-events-none fixed inset-x-0 z-[45] px-4">
+      <div class="pointer-events-auto flex h-11 items-center gap-2.5 rounded-2xl border border-border/60 bg-card/95 px-3.5 shadow-sm backdrop-blur-md">
+        <Search class="size-4 shrink-0 text-muted-foreground" />
+        <input
+          v-model="query"
+          type="search"
+          :placeholder="locale.t.map.searchPlaceholder"
+          class="w-full bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
         >
-          <Bell class="size-5" />
-          <span class="absolute right-2.5 top-2.5 size-2 rounded-full bg-red-500 ring-2 ring-primary" />
-        </button>
-      </div>
-
-      <!-- Category filter chips -->
-      <div
-        v-if="categories.length"
-        class="mt-3 flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-      >
-        <button
-          v-for="category in categories"
-          :key="category.id"
-          type="button"
-          class="flex max-w-32 shrink-0 items-center rounded-2xl px-4 py-2 text-xs font-bold uppercase leading-tight shadow-md transition"
-          :class="activeCategory === category.id ? 'bg-white text-primary' : 'bg-primary text-white'"
-          @click="toggleCategory(category.id)"
-        >
-          {{ category.name }}
-        </button>
       </div>
     </div>
 
-    <!-- Locate FAB (lifts above the agent card when one is open) -->
     <button
       type="button"
       class="absolute right-4 z-[70] flex size-13 items-center justify-center rounded-full bg-primary text-white shadow-xl shadow-[#02305C]/40 transition-all active:scale-95"
       :class="selectedAgent ? 'bottom-44' : 'bottom-28'"
-      @click="locate"
+      @click="centerOnUser"
     >
       <LocateFixed
         class="size-5"
@@ -239,22 +242,65 @@ onBeforeUnmount(() => {
       />
     </button>
 
-    <!-- List view pill (hidden while an agent card is open) -->
     <div
       v-if="!selectedAgent"
-      class="safe-bottom absolute inset-x-0 bottom-0 z-[70] flex justify-center px-6 pb-4"
+      class="safe-bottom absolute inset-x-0 bottom-0 z-[70] flex flex-col items-center gap-2 px-6 pb-4"
     >
+      <p
+        v-if="activeCategory !== null"
+        class="rounded-full bg-white/95 px-3 py-1 text-xs font-semibold text-primary shadow-md"
+      >
+        {{ activeCategoryLabel }}
+      </p>
       <button
         type="button"
         class="btn-brand flex h-12 w-full max-w-xs items-center justify-center gap-2 rounded-full text-sm font-semibold"
-        @click="router.push(ROUTES.marketplace)"
+        @click="categoryDrawerOpen = true"
       >
         <List class="size-5" />
         {{ locale.t.map.listView }}
       </button>
     </div>
 
-    <!-- Selected agent card — tap to open the full profile -->
+    <Drawer
+      v-model:open="categoryDrawerOpen"
+      :title="locale.t.map.categoriesTitle"
+    >
+      <div class="space-y-2 pb-2">
+        <button
+          type="button"
+          class="map-category-option pressable"
+          :class="activeCategory === null && 'map-category-option--active'"
+          @click="pickCategory(null)"
+        >
+          <span class="min-w-0 flex-1 text-left text-sm font-semibold">
+            {{ locale.t.map.allCategories }}
+          </span>
+          <Check
+            v-if="activeCategory === null"
+            class="size-4 shrink-0 text-primary"
+          />
+        </button>
+
+        <button
+          v-for="category in categories"
+          :key="category.id"
+          type="button"
+          class="map-category-option pressable"
+          :class="activeCategory === category.id && 'map-category-option--active'"
+          @click="pickCategory(category.id)"
+        >
+          <span class="min-w-0 flex-1 text-left text-sm font-semibold">
+            {{ category.name }}
+          </span>
+          <Check
+            v-if="activeCategory === category.id"
+            class="size-4 shrink-0 text-primary"
+          />
+        </button>
+      </div>
+    </Drawer>
+
     <Transition name="agent-card">
       <div
         v-if="selectedAgent"
@@ -317,7 +363,79 @@ onBeforeUnmount(() => {
   </div>
 </template>
 
+<style>
+.rb-user-location {
+  background: transparent;
+  border: none;
+}
+
+.rb-user-location__wrap {
+  position: relative;
+  width: 28px;
+  height: 28px;
+}
+
+.rb-user-location__pulse {
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  background: rgba(11, 107, 203, 0.22);
+  animation: rb-user-location-pulse 2s ease-out infinite;
+}
+
+.rb-user-location__dot {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 14px;
+  height: 14px;
+  transform: translate(-50%, -50%);
+  border-radius: 9999px;
+  border: 3px solid #ffffff;
+  background: #0b6bcb;
+  box-shadow: 0 2px 8px rgba(2, 48, 92, 0.35);
+}
+
+@keyframes rb-user-location-pulse {
+  0% {
+    transform: scale(0.55);
+    opacity: 0.9;
+  }
+  70% {
+    transform: scale(1.35);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1.35);
+    opacity: 0;
+  }
+}
+</style>
+
 <style scoped>
+.map-page-search {
+  top: calc(var(--app-header-offset) + 0.5rem);
+}
+
+.map-category-option {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 0.75rem;
+  border-radius: 1rem;
+  border: 1px solid transparent;
+  background: var(--secondary);
+  padding: 0.875rem 1rem;
+  text-align: left;
+  color: var(--foreground);
+}
+
+.map-category-option--active {
+  border-color: color-mix(in oklab, var(--primary) 25%, transparent);
+  background: color-mix(in oklab, var(--primary) 8%, var(--card));
+  color: var(--primary);
+}
+
 .agent-card-enter-active {
   transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.32s ease;
 }

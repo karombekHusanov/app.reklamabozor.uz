@@ -5,32 +5,35 @@ import {
   Building2,
   Loader2,
   Map,
-  Menu,
   MessagesSquare,
   Palette,
   Star,
 } from '@lucide/vue'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import Autoplay from 'embla-carousel-autoplay'
 import Avatar from '@/core/ui/Avatar.vue'
+import Badge from '@/core/ui/Badge.vue'
 import BrandLogo from '@/core/ui/BrandLogo.vue'
+import { Carousel, CarouselContent, CarouselItem, type CarouselApi } from '@/core/ui/carousel'
 import { usePullToRefresh } from '@/core/composables/usePullToRefresh'
 import { useTelegram } from '@/core/composables/useTelegram'
 import { useLocaleStore } from '@/core/i18n/locale.store'
 import { useAuthStore } from '@/modules/auth/stores/auth.store'
 import { useAgentStore } from '@/modules/agent/stores/agent.store'
-import { useChatStore } from '@/modules/chat/stores/chat.store'
+import { useNotificationsStore } from '@/modules/notifications/stores/notifications.store'
 import { useOrdersStore } from '@/modules/orders/stores/orders.store'
 import { useHomeStore } from '@/modules/home/stores/home.store'
 import type { Banner } from '@/modules/home/services/banners.service'
 import HomePageSkeleton from '@/modules/home/components/HomePageSkeleton.vue'
+import HomeMenuDropdown from '@/modules/home/components/HomeMenuDropdown.vue'
 import TopRatedAgents from '@/modules/home/components/TopRatedAgents.vue'
 import { fullName, isBusinessUser } from '@/modules/auth/types/user'
 import { ROUTES } from '@/modules/shell/constants/routes'
 
 const auth = useAuthStore()
 const agent = useAgentStore()
-const chat = useChatStore()
+const notifications = useNotificationsStore()
 const orders = useOrdersStore()
 const home = useHomeStore()
 const router = useRouter()
@@ -46,6 +49,12 @@ const displayName = computed(() => {
   return locale.t.home.guest
 })
 
+const userRoleLabel = computed(() => {
+  const role = auth.user?.role
+  if (!role) return null
+  return locale.t.roles[role]
+})
+
 const ordersCount = computed(() => orders.myOrders.length)
 const activeOrdersCount = computed(() =>
   orders.myOrders.filter(o => !['completed', 'cancelled'].includes(o.status)).length,
@@ -56,7 +65,7 @@ const completion = computed(() => agent.profile?.completion_percent ?? 0)
 /** Placeholder rating derived from profile completeness (no scoring backend yet). */
 const ratingDisplay = computed(() => (4.5 + (completion.value / 100) * 0.5).toFixed(1))
 
-const hasUnread = computed(() => chat.chats.some(item => item.unread_count > 0))
+const hasUnread = computed(() => notifications.hasUnread)
 const hasBanners = computed(() => home.banners.length > 0)
 const showSkeleton = computed(() => !home.hasLoaded && (home.isLoading || auth.isLoading))
 
@@ -87,7 +96,7 @@ const quickLinks = computed(() => [
   },
   {
     key: 'agencies',
-    to: ROUTES.marketplace,
+    to: ROUTES.agencies,
     label: locale.t.home.agencies,
     hint: locale.t.home.browseProvidersHint,
     icon: Building2,
@@ -95,8 +104,32 @@ const quickLinks = computed(() => [
   },
 ])
 
-const scroller = ref<HTMLElement | null>(null)
 const activeBanner = ref(0)
+
+const BANNER_AUTOPLAY_MS = 4500
+const bannerAutoplay = Autoplay({ delay: BANNER_AUTOPLAY_MS, stopOnInteraction: true })
+
+const bannerCarouselOpts = computed(() => ({
+  loop: false,
+  align: 'center' as const,
+  containScroll: false as const,
+}))
+
+const bannerCarouselPlugins = computed(() =>
+  home.banners.length > 1 ? [bannerAutoplay] : [],
+)
+
+function onBannerCarouselInit(api: CarouselApi) {
+  if (!api) return
+
+  const syncActive = () => {
+    activeBanner.value = api.selectedScrollSnap()
+  }
+
+  api.on('select', syncActive)
+  api.on('reInit', syncActive)
+  syncActive()
+}
 
 const { pullDistance, isPulling } = usePullToRefresh({
   onRefresh: async () => {
@@ -110,12 +143,6 @@ const refreshLabel = computed(() =>
     ? locale.t.home.refreshing
     : locale.t.home.pullToRefresh,
 )
-
-function onBannerScroll() {
-  const el = scroller.value
-  if (!el) return
-  activeBanner.value = Math.round(el.scrollLeft / el.clientWidth)
-}
 
 function navigate(to: string) {
   haptic('light')
@@ -165,7 +192,7 @@ watch(
 <template>
   <HomePageSkeleton v-if="showSkeleton" />
 
-  <div v-else class="overflow-x-hidden pb-2">
+  <div v-else class="pb-2">
     <div
       class="flex items-center justify-center gap-2 overflow-hidden text-xs font-medium text-muted-foreground transition-[height,opacity] duration-200"
       :class="pullDistance > 0 || isPulling || home.isRefreshing ? 'opacity-100' : 'h-0 opacity-0'"
@@ -179,23 +206,19 @@ watch(
     </div>
 
     <!-- Top bar: menu · brand · notifications -->
-    <header class="safe-top flex items-center justify-between gap-3 px-5 pt-3">
-      <button
-        type="button"
-        class="pressable home-icon-btn"
-        :aria-label="locale.t.home.menuProfile"
-        @click="navigate(ROUTES.profile)"
-      >
-        <Menu class="size-5" />
-      </button>
+    <header class="safe-top relative z-20 flex items-center justify-between gap-3 px-5 pt-3">
+      <HomeMenuDropdown
+        :is-provider="isProvider"
+        @navigate="navigate"
+      />
 
-      <BrandLogo size="sm" />
+      <BrandLogo size="sm" :wordmark="false" />
 
       <button
         type="button"
         class="pressable home-icon-btn relative"
         :aria-label="locale.t.home.notificationsButton"
-        @click="navigate(ROUTES.chat)"
+        @click="navigate(ROUTES.notifications)"
       >
         <Bell class="size-5" />
         <span
@@ -208,8 +231,16 @@ watch(
 
     <!-- Profile card -->
     <section class="px-5 pt-4">
-      <div class="home-card p-4">
-        <div class="flex items-start gap-3.5">
+      <div class="home-card relative p-4">
+        <Badge
+          v-if="userRoleLabel"
+          variant="primary"
+          class="absolute right-4 top-4 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.14em]"
+        >
+          {{ userRoleLabel }}
+        </Badge>
+
+        <div class="flex items-center gap-3.5">
           <button type="button" class="pressable shrink-0" @click="navigate(ROUTES.profile)">
             <Avatar
               :src="auth.user?.avatar"
@@ -295,52 +326,30 @@ watch(
     </section>
 
     <!-- Banner slider -->
-    <div v-if="hasBanners" class="overflow-x-hidden pt-4">
-      <div
-        ref="scroller"
-        class="flex snap-x snap-mandatory gap-3.5 overflow-x-auto px-5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-        @scroll="onBannerScroll"
+    <div v-if="hasBanners" class="home-banner-carousel overflow-x-hidden pt-4">
+      <Carousel
+        :opts="bannerCarouselOpts"
+        :plugins="bannerCarouselPlugins"
+        @init-api="onBannerCarouselInit"
       >
-        <div
-          v-for="banner in home.banners"
-          :key="banner.id"
-          class="relative min-w-[calc(100%-4.5rem)] snap-center overflow-hidden rounded-[28px] bg-slate-900 shadow-sm"
-          :style="banner.image ? { backgroundImage: `url(${banner.image})`, backgroundSize: 'cover', backgroundPosition: 'center' } : undefined"
-        >
-          <div
-            class="absolute inset-0"
-            :class="banner.image ? 'bg-gradient-to-r from-slate-950/82 via-slate-950/52 to-slate-900/20' : 'bg-gradient-to-br from-brand-600 to-brand-teal'"
-          />
-          <div class="relative flex min-h-[154px] flex-col gap-3 p-3.5">
-            <div class="flex items-start gap-2.5">
-              <div class="flex min-w-0 flex-1 flex-col">
-                <h3 class="line-clamp-2 max-w-[11ch] text-[1.08rem] font-extrabold leading-[1.02] tracking-tight text-white">
-                  {{ banner.title ?? locale.t.home.bannerAd }}
-                </h3>
-                <p v-if="banner.subtitle" class="mt-1.5 line-clamp-2 max-w-[18ch] text-[11px] leading-snug text-white/80">
-                  {{ banner.subtitle }}
-                </p>
-              </div>
-            </div>
-            <div class="mt-auto">
-              <button
-                type="button"
-                class="btn-accent inline-flex h-9 items-center gap-1.5 rounded-full px-3.5 text-xs font-semibold"
-                @click="openBanner(banner)"
-              >
-                {{ locale.t.home.details }}
-                <ArrowRight class="size-3.5" />
-              </button>
-            </div>
-            <div
-              v-if="banner.image && !banner.subtitle"
-              class="sr-only"
+        <CarouselContent class="-ml-3.5">
+          <CarouselItem
+            v-for="banner in home.banners"
+            :key="banner.id"
+          >
+            <button
+              type="button"
+              class="pressable relative w-full overflow-hidden rounded-[28px] shadow-sm"
+              :class="!banner.image && 'bg-muted'"
+              :style="banner.image ? { backgroundImage: `url(${banner.image})`, backgroundSize: 'cover', backgroundPosition: 'center' } : undefined"
+              :aria-label="banner.title ?? locale.t.home.bannerAd"
+              @click="openBanner(banner)"
             >
-              {{ banner.title ?? locale.t.home.bannerAd }}
-            </div>
-          </div>
-        </div>
-      </div>
+              <div class="min-h-[154px]" aria-hidden="true" />
+            </button>
+          </CarouselItem>
+        </CarouselContent>
+      </Carousel>
       <div v-if="home.banners.length > 1" class="mt-2.5 flex items-center justify-center gap-1.5">
         <span
           v-for="(banner, i) in home.banners"
@@ -357,21 +366,19 @@ watch(
         v-for="link in quickLinks"
         :key="link.key"
         type="button"
-        class="pressable quick-link-tile relative min-h-[148px] overflow-hidden rounded-[28px] p-4 text-left"
+        class="pressable quick-link-tile min-h-[148px] rounded-[28px] p-4 text-left"
         :class="link.tone"
         @click="navigate(link.to)"
       >
-        <span class="quick-link-tile__glow" aria-hidden="true" />
-        <span class="quick-link-tile__orb" aria-hidden="true" />
-        <div class="relative flex h-full flex-col items-start justify-between">
+        <div class="flex h-full flex-col items-start justify-between">
           <span class="quick-link-tile__icon-wrap">
             <component :is="link.icon" class="size-7" />
           </span>
           <div class="w-full">
-            <p class="text-[1.02rem] font-bold leading-tight text-slate-900 dark:text-white">
+            <p class="text-[1.02rem] font-bold leading-tight text-foreground">
               {{ link.label }}
             </p>
-            <p class="mt-1.5 line-clamp-2 max-w-[13ch] text-[11px] leading-snug text-slate-700/90 dark:text-white/72">
+            <p class="mt-1.5 line-clamp-2 text-[11px] leading-snug text-muted-foreground">
               {{ link.hint }}
             </p>
           </div>

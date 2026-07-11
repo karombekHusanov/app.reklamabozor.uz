@@ -10,19 +10,22 @@ import { useTelegram } from '@/core/composables/useTelegram'
 import { useLocaleStore } from '@/core/i18n/locale.store'
 import { categoryName } from '@/core/i18n/category-name'
 import { ROUTES } from '@/modules/shell/constants/routes'
+import { useAuthStore } from '@/modules/auth/stores/auth.store'
+import { resolveAgentChat } from '@/modules/chat/lib/open-agent-chat'
 import AgentShowcase from '@/modules/profile/components/AgentShowcase.vue'
 import { fetchPublicAgent, type PublicAgent } from '@/modules/marketplace/services/agents.service'
 
 const props = defineProps<{ id: string }>()
 
 const router = useRouter()
+const auth = useAuthStore()
 const locale = useLocaleStore()
 const { haptic } = useTelegram()
 
 const agent = ref<PublicAgent | null>(null)
 const loading = ref(true)
+const openingChat = ref(false)
 
-// Only approved agencies are ever returned publicly, so a loaded agent is approved.
 const subtitle = computed(() => {
   if (!agent.value) return ''
   if (agent.value.bio) return agent.value.bio
@@ -43,24 +46,49 @@ onMounted(async () => {
   }
 })
 
-function openChat() {
+async function openChat() {
   haptic('light')
-  // Contextual chat — pass the agent id so the conversation targets this agency.
-  router.push({ path: ROUTES.chat, query: { agent: props.id } })
+
+  if (!auth.isAuthenticated) {
+    await router.push(ROUTES.profile)
+    return
+  }
+
+  openingChat.value = true
+  try {
+    const result = await resolveAgentChat(Number(props.id))
+
+    if (result.kind === 'thread') {
+      await router.push(`/chat/${result.orderId}`)
+      return
+    }
+
+    if (result.kind === 'picker') {
+      await router.push({ path: ROUTES.chatThreads, query: { agent: props.id } })
+      return
+    }
+
+    await router.push({
+      path: ROUTES.chatThreads,
+      query: { agent: props.id, noChat: '1' },
+    })
+  }
+  catch {
+    await router.push({ path: ROUTES.chatThreads, query: { agent: props.id } })
+  }
+  finally {
+    openingChat.value = false
+  }
 }
 
 function orderFromAgency() {
   haptic('light')
-  // Direct order — the wizard limits categories to this agency and only it is notified.
   router.push({ path: ROUTES.newOrder, query: { agent: props.id } })
 }
 </script>
 
 <template>
-  <!-- Single stable root so AppLayout's <Transition> doesn't get stuck when the
-       loading branch swaps to the showcase (a changing root breaks the animation). -->
   <div>
-    <!-- Loading -->
     <div v-if="loading">
       <AppHeader
         :title="locale.t.marketplace.title"
@@ -73,7 +101,6 @@ function orderFromAgency() {
       </section>
     </div>
 
-    <!-- Loaded — same presentation as the owner's profile, minus owner-only CTAs -->
     <AgentShowcase
       v-else-if="agent"
       :header-title="agent.company_name"
@@ -81,40 +108,50 @@ function orderFromAgency() {
       :logo="agent.company_logo"
       :subtitle="subtitle"
       :is-approved="true"
+      :bio="agent.bio"
+      :location-label="agent.location_label"
+      :website-url="agent.website_url"
+      :linkedin-url="agent.linkedin_url"
+      :results-text="agent.results_text"
       :completion="agent.completion_percent"
+      :completed-orders-count="agent.completed_orders_count"
+      :rating-avg="agent.rating_avg"
+      :rating-count="agent.rating_count"
+      :categories="agent.categories"
+      :reviews="agent.reviews ?? []"
       :locale="locale"
     >
       <template #actions>
         <button
           type="button"
-          class="agent-profile-order-btn pressable flex flex-1 flex-col items-start justify-center gap-0.5 rounded-[14px] px-2.5 py-1.5 text-left"
+          class="agent-profile-order-btn pressable flex-1"
           @click="orderFromAgency"
         >
-          <span class="inline-flex items-center gap-1.5 text-[13px] font-bold leading-none text-white">
-            <Send class="size-3.5 shrink-0" />
-            {{ locale.t.marketplace.orderFromAgency }}
-          </span>
-          <span class="text-[9px] font-medium leading-snug text-white/88">
-            {{ locale.t.profile.agentOrderHint }}
+          <Send class="size-3.5 shrink-0" />
+          <span class="min-w-0 text-left">
+            <span class="agent-profile-order-btn__title">
+              {{ locale.t.marketplace.orderFromAgency }}
+            </span>
+            <span class="agent-profile-order-btn__hint">
+              {{ locale.t.profile.agentOrderHint }}
+            </span>
           </span>
         </button>
 
         <button
           type="button"
-          class="agent-profile-chat-btn pressable flex shrink-0 items-center gap-2 px-2.5 py-1.5"
+          class="agent-profile-chat-btn pressable"
+          :disabled="openingChat"
           @click="openChat"
         >
-          <span class="agent-profile-stat__icon !size-7 shrink-0">
-            <MessageCircle class="size-3.5" />
-          </span>
-          <span class="max-w-[4.5rem] text-left text-[9px] font-semibold leading-tight text-foreground">
+          <MessageCircle class="agent-profile-chat-btn__icon" />
+          <span class="agent-profile-chat-btn__label">
             {{ locale.t.profile.agentChatCta }}
           </span>
         </button>
       </template>
     </AgentShowcase>
 
-    <!-- Not found -->
     <div v-else>
       <AppHeader
         :title="locale.t.marketplace.title"

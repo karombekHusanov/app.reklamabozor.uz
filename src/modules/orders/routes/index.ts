@@ -15,6 +15,12 @@ export const ordersRoutes: RouteRecordRaw[] = [
     meta: { hideTabBar: true },
   },
   {
+    path: 'offers',
+    name: 'offers',
+    component: () => import('@/modules/orders/pages/OffersPage.vue'),
+    meta: { hideTabBar: true },
+  },
+  {
     path: 'orders/:id',
     name: 'order-detail',
     component: () => import('@/modules/orders/pages/OrderDetailPage.vue'),

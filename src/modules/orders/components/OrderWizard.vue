@@ -3,7 +3,7 @@ import { ChevronLeft, ChevronRight, Loader2, Send, Store } from '@lucide/vue'
 import { computed, provide, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { Button } from '@/core/ui/button'
-import StickyActionBar from '@/core/ui/StickyActionBar.vue'
+import GlassCard from '@/core/ui/GlassCard.vue'
 import { useTelegram } from '@/core/composables/useTelegram'
 import { useToast } from '@/core/composables/useToast'
 import { useLocaleStore } from '@/core/i18n/locale.store'
@@ -100,12 +100,10 @@ function goNext() {
 }
 
 function submit() {
-  const [tz, ...rest] = draft.files
   emit('submit', {
     category_id: draft.category_id!,
     description: draft.description.trim(),
-    tz_file_id: tz.id,
-    attachment_file_ids: rest.map(f => f.id),
+    attachment_file_ids: draft.files.map(f => f.id),
     agent_profile_id: props.targetAgent?.id,
     title: draft.title.trim() || undefined,
     deadline_date: draft.deadline_date,
@@ -115,7 +113,7 @@ function submit() {
 </script>
 
 <template>
-  <div class="space-y-6">
+  <div class="space-y-6 pb-[calc(5rem+max(env(safe-area-inset-bottom),1rem))]">
     <!-- Directed order: this order reaches only the chosen agency. -->
     <div
       v-if="targetAgent"
@@ -135,42 +133,48 @@ function submit() {
 
     <component :is="steps[step]" />
 
-    <StickyActionBar class="bottom-[max(env(safe-area-inset-bottom),1rem)]">
-      <div class="flex gap-3">
-        <Button
-          type="button"
-          variant="outline"
-          class="h-12 rounded-2xl px-4"
-          :disabled="submitting"
-          @click="goBack"
-        >
-          <ChevronLeft class="size-5" />
-          {{ locale.t.orders.back }}
-        </Button>
+    <div class="wizard-action-dock">
+      <GlassCard
+        frosted
+        padding="none"
+        class="wizard-action-shell pointer-events-auto w-full"
+      >
+        <div class="wizard-action-shell__row">
+          <Button
+            type="button"
+            variant="outline"
+            class="wizard-action-btn wizard-action-btn--icon"
+            :disabled="submitting"
+            :aria-label="locale.t.orders.back"
+            @click="goBack"
+          >
+            <ChevronLeft class="size-5" />
+          </Button>
 
-        <Button
-          type="button"
-          class="h-12 grow rounded-2xl text-base shadow-lg shadow-primary/20"
-          :disabled="submitting"
-          @click="goNext"
-        >
-          <Loader2
-            v-if="submitting"
-            class="size-4 animate-spin"
-          />
-          <template v-else>
-            {{ isLast ? locale.t.orders.wizard.submit : locale.t.common.next }}
-            <Send
-              v-if="isLast"
-              class="size-4"
+          <Button
+            type="button"
+            class="wizard-action-btn grow text-base shadow-lg shadow-primary/20"
+            :disabled="submitting"
+            @click="goNext"
+          >
+            <Loader2
+              v-if="submitting"
+              class="size-4 animate-spin"
             />
-            <ChevronRight
-              v-else
-              class="size-5"
-            />
-          </template>
-        </Button>
-      </div>
-    </StickyActionBar>
+            <template v-else>
+              {{ isLast ? locale.t.orders.wizard.submit : locale.t.common.next }}
+              <Send
+                v-if="isLast"
+                class="size-4"
+              />
+              <ChevronRight
+                v-else
+                class="size-5"
+              />
+            </template>
+          </Button>
+        </div>
+      </GlassCard>
+    </div>
   </div>
 </template>

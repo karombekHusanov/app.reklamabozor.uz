@@ -125,16 +125,25 @@ const inputClass = 'glass-input'
         </span>
       </div>
 
-      <a
-        v-if="order.tz_file"
-        :href="order.tz_file"
-        target="_blank"
-        rel="noopener"
-        class="inline-flex items-center gap-2 text-sm font-medium text-primary"
+      <div
+        v-if="order.attachment_files?.length"
+        class="space-y-2"
       >
-        <FileText class="size-4" />
-        {{ locale.t.orders.viewBrief }}
-      </a>
+        <p class="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+          {{ locale.t.orders.attachedFiles }}
+        </p>
+        <a
+          v-for="file in order.attachment_files"
+          :key="file.id"
+          :href="file.url"
+          target="_blank"
+          rel="noopener"
+          class="inline-flex w-full items-center gap-2 text-sm font-medium text-primary"
+        >
+          <FileText class="size-4 shrink-0" />
+          <span class="truncate">{{ file.original_name }}</span>
+        </a>
+      </div>
 
       <!-- Already offered -->
       <div

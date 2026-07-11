@@ -61,6 +61,7 @@ async function submit() {
   if (ok) {
     draft.value = ''
     attachments.value = []
+    error.value = null // a stale upload error shouldn't outlive a successful send
   }
 }
 </script>

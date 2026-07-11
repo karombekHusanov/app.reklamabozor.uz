@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { CheckCircle2, RefreshCw, ShoppingBag, XCircle } from '@lucide/vue'
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted } from 'vue'
 import { memberDuration } from '@/core/lib/date'
 import { ROUTES } from '@/modules/shell/constants/routes'
 import type { User } from '@/modules/auth/types/user'
@@ -9,9 +9,9 @@ import { formatPrice } from '@/modules/orders/lib/order-status'
 import { useOrdersStore } from '@/modules/orders/stores/orders.store'
 import ClientAboutSection from '@/modules/profile/components/client-sections/ClientAboutSection.vue'
 import ClientAgentInsightsSection from '@/modules/profile/components/client-sections/ClientAgentInsightsSection.vue'
-import ClientEditSheet from '@/modules/profile/components/client-sections/ClientEditSheet.vue'
 import ClientOrderHistorySection from '@/modules/profile/components/client-sections/ClientOrderHistorySection.vue'
 import ClientProfileHeaderSection from '@/modules/profile/components/client-sections/ClientProfileHeaderSection.vue'
+import ClientProfileShortcuts from '@/modules/profile/components/client-sections/ClientProfileShortcuts.vue'
 import type { ClientProfileStat } from '@/modules/profile/components/client-sections/ClientProfileHeaderSection.vue'
 
 const props = defineProps<{
@@ -19,18 +19,13 @@ const props = defineProps<{
   displayName: string
   memberSince: string
   locale: any
-  savingProfile: boolean
 }>()
 
 const emit = defineEmits<{
-  avatarChange: [fileId: number | null]
-  saveProfile: [payload: { first_name: string, last_name: string | null }]
-  logout: []
   navigate: [to: string]
 }>()
 
 const orders = useOrdersStore()
-const editOpen = ref(false)
 
 const IN_PROGRESS_STATUSES: OrderStatus[] = [
   'offers_sent',
@@ -57,16 +52,12 @@ const reviewsLeft = computed(() =>
 )
 
 const rating = computed(() => {
-  if (reviewsLeft.value.length) {
-    const sum = reviewsLeft.value.reduce((acc, order) => acc + (order.review?.rating ?? 0), 0)
-    return (sum / reviewsLeft.value.length).toFixed(1)
-  }
-  if (completedCount.value === 0) return '5.0'
-  const ratio = completedCount.value / Math.max(1, completedCount.value + cancelledCount.value)
-  return (4.5 + ratio * 0.5).toFixed(1)
+  if (!reviewsLeft.value.length) return '0'
+  const sum = reviewsLeft.value.reduce((acc, order) => acc + (order.review?.rating ?? 0), 0)
+  return (sum / reviewsLeft.value.length).toFixed(1)
 })
 
-const reviewCount = computed(() => Math.max(reviewsLeft.value.length, completedCount.value))
+const reviewCount = computed(() => reviewsLeft.value.length)
 
 const stats = computed<ClientProfileStat[]>(() => [
   {
@@ -144,27 +135,14 @@ onMounted(() => {
   void orders.loadMyOrders()
 })
 
-function openEdit() {
-  editOpen.value = true
-}
-
-function closeEdit() {
-  editOpen.value = false
-}
-
-async function handleSave(payload: { first_name: string, last_name: string | null }) {
-  emit('saveProfile', payload)
-  editOpen.value = false
-}
-
 function openOrder(id: number) {
   emit('navigate', `${ROUTES.orders}/${id}`)
 }
 </script>
 
 <template>
-  <div class="agent-profile-page pb-6">
-    <section class="space-y-4 px-4 pt-3">
+  <div class="client-profile-page pb-6">
+    <section class="space-y-4 px-4">
       <ClientProfileHeaderSection
         :user="user"
         :display-name="displayName"
@@ -173,8 +151,10 @@ function openOrder(id: number) {
         :rating="rating"
         :review-count="reviewCount"
         :is-verified="isVerified"
-        @edit="openEdit"
-        @logout="emit('logout')"
+      />
+
+      <ClientProfileShortcuts
+        :locale="locale"
         @navigate="emit('navigate', $event)"
       />
 
@@ -200,16 +180,5 @@ function openOrder(id: number) {
         :show-on-time="completedCount > 0"
       />
     </section>
-
-    <ClientEditSheet
-      :user="user"
-      :display-name="displayName"
-      :locale="locale"
-      :open="editOpen"
-      :saving="savingProfile"
-      @close="closeEdit"
-      @save="handleSave"
-      @avatar-change="emit('avatarChange', $event)"
-    />
   </div>
 </template>

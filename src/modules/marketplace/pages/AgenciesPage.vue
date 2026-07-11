@@ -34,7 +34,6 @@ onMounted(async () => {
   }
 })
 
-// Category tabs built from the categories the fetched agents actually serve.
 const categories = computed(() => {
   const map = new Map<number, string>()
   agents.value.forEach(agent => agent.categories.forEach(c => map.set(c.id, categoryName(c, locale.locale))))
@@ -54,14 +53,17 @@ function openAgent(id: number) {
 </script>
 
 <template>
-  <div>
-    <AppHeader :title="locale.t.marketplace.title" />
+  <div class="pb-6">
+    <AppHeader
+      :title="locale.t.agencies.title"
+      :subtitle="locale.t.agencies.subtitle"
+      show-back
+    />
 
-    <section class="space-y-4 px-5">
-      <!-- Category tabs -->
+    <section class="space-y-4 px-4">
       <div
         v-if="categories.length"
-        class="flex gap-2 overflow-x-auto pb-1 scrollbar-none [&::-webkit-scrollbar]:hidden"
+        class="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
         <button
           type="button"
@@ -69,7 +71,7 @@ function openAgent(id: number) {
           :class="activeCategory === 'all' ? 'bg-primary text-primary-foreground' : 'glass-chip'"
           @click="activeCategory = 'all'"
         >
-          {{ locale.t.marketplace.all }}
+          {{ locale.t.agencies.all }}
         </button>
         <button
           v-for="category in categories"
@@ -85,7 +87,6 @@ function openAgent(id: number) {
         </button>
       </div>
 
-      <!-- Loading -->
       <template v-if="loading">
         <Skeleton
           v-for="n in 4"
@@ -94,7 +95,6 @@ function openAgent(id: number) {
         />
       </template>
 
-      <!-- Error -->
       <p
         v-else-if="error"
         class="rounded-2xl bg-destructive/10 px-4 py-3 text-sm text-destructive"
@@ -102,7 +102,6 @@ function openAgent(id: number) {
         {{ error }}
       </p>
 
-      <!-- Empty -->
       <GlassCard
         v-else-if="filtered.length === 0"
         padding="none"
@@ -110,12 +109,11 @@ function openAgent(id: number) {
       >
         <EmptyState
           :icon="Store"
-          :title="locale.t.marketplace.emptyTitle"
-          :description="agents.length === 0 ? locale.t.marketplace.emptyApproved : locale.t.marketplace.emptyTry"
+          :title="locale.t.agencies.emptyTitle"
+          :description="agents.length === 0 ? locale.t.agencies.emptyApproved : locale.t.agencies.emptyTry"
         />
       </GlassCard>
 
-      <!-- List -->
       <div
         v-else
         class="space-y-3"

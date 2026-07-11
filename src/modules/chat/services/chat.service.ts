@@ -2,8 +2,10 @@ import { api } from '@/core/api/client'
 import type { ApiSuccess } from '@/core/types/api'
 import type { Chat, ChatMessage, ChatThread, GlobalChatMessage, GlobalChatMeta } from '@/modules/chat/types/chat'
 
-export async function fetchChats(): Promise<Chat[]> {
-  const { data } = await api.get<ApiSuccess<Chat[]>>('/api/v1/chats')
+export async function fetchChats(agentProfileId?: number): Promise<Chat[]> {
+  const { data } = await api.get<ApiSuccess<Chat[]>>('/api/v1/chats', {
+    params: agentProfileId ? { agent_profile_id: agentProfileId } : undefined,
+  })
 
   return data.data
 }

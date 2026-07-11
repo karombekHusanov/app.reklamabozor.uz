@@ -16,6 +16,8 @@ const props = withDefaults(defineProps<{
   showName?: boolean
   senderName?: string
   senderRole?: string
+  /** Makes the sender name a tap target (emits `sender-click`). */
+  senderClickable?: boolean
   /** Order chats show sent/read ticks on outgoing bubbles; the global chat doesn't. */
   showStatus?: boolean
   read?: boolean
@@ -25,9 +27,15 @@ const props = withDefaults(defineProps<{
   showName: false,
   senderName: '',
   senderRole: '',
+  senderClickable: false,
   showStatus: false,
   read: false,
 })
+
+const emit = defineEmits<{
+  /** The sender name was tapped — open their profile. */
+  'sender-click': []
+}>()
 
 const locale = useLocaleStore()
 
@@ -64,14 +72,21 @@ function formatSize(bytes: number): string {
         : ['bg-card text-foreground shadow-sm dark:bg-white/10', showTail ? 'rounded-2xl rounded-bl-md' : 'rounded-2xl'],
     ]"
   >
-    <!-- Sender name (incoming, first of a run) -->
-    <p
+    <!-- Sender name (incoming, first of a run) — taps through to the profile -->
+    <component
+      :is="senderClickable ? 'button' : 'p'"
       v-if="showName && !mine && senderName"
-      class="mb-0.5 text-xs font-semibold"
-      :class="[hasAttachments ? 'px-1.5 pt-0.5' : '', senderRole === 'agent' ? 'text-primary' : 'text-muted-foreground']"
+      :type="senderClickable ? 'button' : undefined"
+      class="mb-0.5 block text-left text-xs font-semibold"
+      :class="[
+        hasAttachments ? 'px-1.5 pt-0.5' : '',
+        senderRole === 'agent' ? 'text-primary' : 'text-muted-foreground',
+        senderClickable ? 'transition active:opacity-60' : '',
+      ]"
+      @click="senderClickable && emit('sender-click')"
     >
       {{ senderName }}
-    </p>
+    </component>
 
     <!-- Image album: single image full-width, several in a tight grid -->
     <div

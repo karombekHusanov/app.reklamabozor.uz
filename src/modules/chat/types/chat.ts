@@ -33,6 +33,7 @@ export interface Chat {
     id: number
     name: string
     company_name: string | null
+    agent_profile_id: number | null
   }
   last_message?: ChatMessage | null
   unread_count: number
@@ -54,6 +55,8 @@ export interface GlobalChatSender {
   username: string | null
   role: string
   company_name: string | null
+  /** Set only for approved agencies — the public in-app profile target. */
+  agent_profile_id: number | null
 }
 
 export interface GlobalChatMessage {

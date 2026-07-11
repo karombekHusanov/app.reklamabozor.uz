@@ -4,7 +4,8 @@ import { onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import type { HTMLAttributes } from 'vue'
 import WebApp from '@twa-dev/sdk'
-import LanguageSwitcher from '@/core/ui/LanguageSwitcher.vue'
+import GlassCard from '@/core/ui/GlassCard.vue'
+import { useLocaleStore } from '@/core/i18n/locale.store'
 import { isInsideTelegram, supportsVersion } from '@/core/lib/telegram-init'
 
 const props = withDefaults(defineProps<{
@@ -20,6 +21,7 @@ const props = withDefaults(defineProps<{
   subtitle: undefined,
 })
 
+const locale = useLocaleStore()
 const router = useRouter()
 
 function goBack() {
@@ -55,37 +57,55 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <header class="safe-top px-5 pb-4 pt-3">
-    <!-- Top control row -->
-    <div class="flex items-center justify-between">
-      <button
-        v-if="showBack && !usingNativeBack"
-        type="button"
-        class="-ml-1 flex size-9 items-center justify-center rounded-xl text-foreground transition active:scale-95"
-        @click="goBack"
+  <div class="app-header-wrap" :class="props.class">
+    <div class="app-header-dock">
+      <GlassCard
+        frosted
+        padding="xs"
+        class="app-header-card"
       >
-        <ChevronLeft class="size-6" />
-      </button>
-      <span v-else />
-
-      <LanguageSwitcher />
-    </div>
-
-    <!-- Title (or a custom heading, e.g. an avatar + name for chat) -->
-    <div class="mt-2">
-      <slot name="heading">
-        <div class="space-y-0.5">
-          <p
-            v-if="subtitle"
-            class="text-sm text-muted-foreground"
+        <div class="flex items-center gap-2.5">
+          <button
+            v-if="showBack && !usingNativeBack"
+            type="button"
+            class="app-header-back pressable"
+            :aria-label="locale.t.common.back"
+            @click="goBack"
           >
-            {{ subtitle }}
-          </p>
-          <h1 class="text-2xl font-bold tracking-tight text-foreground">
-            {{ title }}
-          </h1>
+            <ChevronLeft class="size-5" />
+          </button>
+
+          <div class="min-w-0 flex-1">
+            <slot name="heading">
+              <div class="min-w-0">
+                <p
+                  v-if="subtitle"
+                  class="truncate text-xs font-medium text-muted-foreground"
+                >
+                  {{ subtitle }}
+                </p>
+                <h1
+                  class="truncate text-lg font-bold leading-tight tracking-tight text-foreground"
+                  :class="subtitle && 'mt-0.5'"
+                >
+                  {{ title }}
+                </h1>
+              </div>
+            </slot>
+          </div>
+
+          <div
+            v-if="$slots.trailing"
+            class="shrink-0"
+          >
+            <slot name="trailing" />
+          </div>
         </div>
-      </slot>
+      </GlassCard>
     </div>
-  </header>
+    <div
+      class="app-header-spacer"
+      aria-hidden="true"
+    />
+  </div>
 </template>

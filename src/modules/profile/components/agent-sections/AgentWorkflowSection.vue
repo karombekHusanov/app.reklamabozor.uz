@@ -5,6 +5,7 @@ import AgentProfileSectionShell from '@/modules/profile/components/agent-section
 
 const locale = useLocaleStore()
 
+// TODO(backend): replace with agent workflow steps from API.
 const steps = [
   {
     id: 1,

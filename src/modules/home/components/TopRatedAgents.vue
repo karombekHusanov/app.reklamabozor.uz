@@ -56,7 +56,7 @@ function openAgent(id: number) {
         <button
           type="button"
           class="pressable inline-flex items-center gap-0.5 text-sm font-medium text-muted-foreground transition active:text-foreground"
-          @click="router.push(ROUTES.marketplace)"
+          @click="router.push(ROUTES.agencies)"
         >
           {{ locale.t.home.viewAllAgents }}
           <ChevronRight class="size-4" />

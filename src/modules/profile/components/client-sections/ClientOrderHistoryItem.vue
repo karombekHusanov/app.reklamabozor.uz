@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import Badge from '@/core/ui/Badge.vue'
 import { useLocaleStore } from '@/core/i18n/locale.store'
 import { formatShortDate } from '@/core/lib/date'
@@ -14,17 +15,22 @@ defineEmits<{ open: [] }>()
 
 const locale = useLocaleStore()
 
-const thumbnail = props.order.tz_file
+const thumbnail = computed(() => {
+  const image = props.order.attachment_files?.find(
+    file => (file.mime_type ?? '').startsWith('image/'),
+  )
+  return image?.url ?? props.order.attachment_files?.[0]?.url ?? null
+})
 </script>
 
 <template>
   <button
     type="button"
-    class="pressable agent-profile-advantage flex w-full items-center gap-3 p-2.5 text-left"
+    class="pressable client-profile-tile flex w-full items-center gap-3 p-2.5 text-left"
     @click="$emit('open')"
   >
     <div
-      class="agent-profile-portfolio-card size-12 shrink-0 overflow-hidden rounded-xl bg-muted/40"
+      class="client-profile-thumb size-12 shrink-0 overflow-hidden rounded-xl bg-muted/40"
     >
       <img
         v-if="thumbnail"
@@ -34,7 +40,7 @@ const thumbnail = props.order.tz_file
       >
       <div
         v-else
-        class="flex size-full items-center justify-center bg-gradient-to-br from-primary/15 to-primary/5 text-xs font-bold text-primary"
+        class="flex size-full items-center justify-center bg-primary/10 text-xs font-bold text-primary"
       >
         {{ order.title.slice(0, 2).toUpperCase() }}
       </div>

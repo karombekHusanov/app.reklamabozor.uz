@@ -3,6 +3,7 @@ import { chatRoutes } from '@/modules/chat/routes'
 import { designersRoutes } from '@/modules/designers'
 import { homeRoutes } from '@/modules/home/routes'
 import { mapRoutes } from '@/modules/map/routes'
+import { notificationsRoutes } from '@/modules/notifications'
 import { marketplaceRoutes } from '@/modules/marketplace/routes'
 import { ordersRoutes } from '@/modules/orders'
 import { productsRoutes } from '@/modules/products/routes'
@@ -18,6 +19,7 @@ export const shellRoutes: RouteRecordRaw[] = [
       ...designersRoutes,
       ...mapRoutes,
       ...chatRoutes,
+      ...notificationsRoutes,
       ...ordersRoutes,
       ...productsRoutes,
       ...profileRoutes,

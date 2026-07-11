@@ -19,7 +19,7 @@ onClickOutside(wrapRef, () => {
 
 const items = computed(() => [
   { label: locale.t.home.menuProfile, to: ROUTES.profile },
-  { label: locale.t.home.menuSettings, to: ROUTES.profile },
+  { label: locale.t.home.menuSettings, to: ROUTES.settings },
   { label: locale.t.home.menuAdvertise, to: ROUTES.newOrder },
   { label: locale.t.home.menuOperator, to: ROUTES.chat },
 ])

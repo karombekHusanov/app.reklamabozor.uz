@@ -3,7 +3,7 @@ import { ref } from 'vue'
 import { getApiErrorMessage } from '@/core/api/api-error'
 import { useAgentStore } from '@/modules/agent/stores/agent.store'
 import { useAuthStore } from '@/modules/auth/stores/auth.store'
-import { useChatStore } from '@/modules/chat/stores/chat.store'
+import { useNotificationsStore } from '@/modules/notifications/stores/notifications.store'
 import { type Banner, fetchBanners } from '@/modules/home/services/banners.service'
 import { isBusinessUser } from '@/modules/auth/types/user'
 import { fetchTopAgents, type PublicAgent } from '@/modules/marketplace/services/agents.service'
@@ -25,12 +25,12 @@ export const useHomeStore = defineStore('home', () => {
 
     const agent = useAgentStore()
     const orders = useOrdersStore()
-    const chat = useChatStore()
+    const notifications = useNotificationsStore()
     const isProvider = auth.user ? isBusinessUser(auth.user) : false
 
     await Promise.all([
       orders.loadMyOrders(force),
-      chat.loadChats(force),
+      notifications.load(force),
       isProvider ? agent.loadProfile(force) : Promise.resolve(),
     ])
 
