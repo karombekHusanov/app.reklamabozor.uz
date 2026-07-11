@@ -5,6 +5,7 @@ export const mapRoutes: RouteRecordRaw[] = [
   {
     path: ROUTES.map,
     name: 'map',
+    meta: { hideTabBar: true },
     component: () => import('@/modules/map/pages/MapPage.vue'),
   },
 ]

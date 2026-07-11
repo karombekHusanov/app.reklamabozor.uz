@@ -16,7 +16,7 @@ const hideTabBar = computed(() => route.meta.hideTabBar === true)
 
 // Native-feel navigation: deeper routes push in from the right, going back pops
 // out, and switching between tab roots cross-fades.
-const TAB_ROOTS = new Set<string>([ROUTES.home, ROUTES.products, ROUTES.chat, ROUTES.orders])
+const TAB_ROOTS = new Set<string>([ROUTES.home, ROUTES.products, ROUTES.orders, ROUTES.profile])
 
 function depthOf(path: string): number {
   // Tab roots share depth 1 so "/" vs "/orders" is a tab switch, not a push.

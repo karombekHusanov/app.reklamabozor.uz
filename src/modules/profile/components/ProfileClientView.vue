@@ -14,12 +14,33 @@ import ClientProfileHeaderSection from '@/modules/profile/components/client-sect
 import ClientProfileShortcuts from '@/modules/profile/components/client-sections/ClientProfileShortcuts.vue'
 import type { ClientProfileStat } from '@/modules/profile/components/client-sections/ClientProfileHeaderSection.vue'
 
-const props = defineProps<{
+/** Precomputed display fields for viewing someone else's client profile. */
+export interface PublicClientProfileData {
+  stats: ClientProfileStat[]
+  rating: string
+  reviewCount: number
+  platformLabel: string
+  avgOrderLabel: string
+  reviewCountLabel: string
+  responseTimeLabel: string
+  activityLabel: string
+  recommendPercent: number
+  showOnTime: boolean
+  isVerified: boolean
+}
+
+const props = withDefaults(defineProps<{
   user: User
   displayName: string
   memberSince: string
   locale: any
-}>()
+  /** Own account tab — show shortcuts and order history. Public view hides them. */
+  isOwnProfile?: boolean
+  /** Required when `isOwnProfile` is false — stats from the public client API. */
+  publicProfile?: PublicClientProfileData
+}>(), {
+  isOwnProfile: true,
+})
 
 const emit = defineEmits<{
   navigate: [to: string]
@@ -131,8 +152,44 @@ const recommendPercent = computed(() =>
 
 const isVerified = computed(() => Boolean(props.user.phone))
 
+const displayStats = computed(() =>
+  !props.isOwnProfile && props.publicProfile ? props.publicProfile.stats : stats.value,
+)
+const displayRating = computed(() =>
+  !props.isOwnProfile && props.publicProfile ? props.publicProfile.rating : rating.value,
+)
+const displayReviewCount = computed(() =>
+  !props.isOwnProfile && props.publicProfile ? props.publicProfile.reviewCount : reviewCount.value,
+)
+const displayPlatformLabel = computed(() =>
+  !props.isOwnProfile && props.publicProfile ? props.publicProfile.platformLabel : platformLabel.value,
+)
+const displayAvgOrderLabel = computed(() =>
+  !props.isOwnProfile && props.publicProfile ? props.publicProfile.avgOrderLabel : avgOrderLabel.value,
+)
+const displayReviewCountLabel = computed(() =>
+  !props.isOwnProfile && props.publicProfile ? props.publicProfile.reviewCountLabel : reviewCountLabel.value,
+)
+const displayResponseTimeLabel = computed(() =>
+  !props.isOwnProfile && props.publicProfile ? props.publicProfile.responseTimeLabel : responseTimeLabel.value,
+)
+const displayActivityLabel = computed(() =>
+  !props.isOwnProfile && props.publicProfile ? props.publicProfile.activityLabel : activityLabel.value,
+)
+const displayRecommendPercent = computed(() =>
+  !props.isOwnProfile && props.publicProfile ? props.publicProfile.recommendPercent : recommendPercent.value,
+)
+const displayShowOnTime = computed(() =>
+  !props.isOwnProfile && props.publicProfile ? props.publicProfile.showOnTime : completedCount.value > 0,
+)
+const displayIsVerified = computed(() =>
+  !props.isOwnProfile && props.publicProfile ? props.publicProfile.isVerified : isVerified.value,
+)
+
 onMounted(() => {
-  void orders.loadMyOrders()
+  if (props.isOwnProfile) {
+    void orders.loadMyOrders()
+  }
 })
 
 function openOrder(id: number) {
@@ -147,27 +204,29 @@ function openOrder(id: number) {
         :user="user"
         :display-name="displayName"
         :locale="locale"
-        :stats="stats"
-        :rating="rating"
-        :review-count="reviewCount"
-        :is-verified="isVerified"
+        :stats="displayStats"
+        :rating="displayRating"
+        :review-count="displayReviewCount"
+        :is-verified="displayIsVerified"
       />
 
       <ClientProfileShortcuts
+        v-if="isOwnProfile"
         :locale="locale"
         @navigate="emit('navigate', $event)"
       />
 
       <ClientAboutSection
         :locale="locale"
-        :platform-label="platformLabel"
-        :avg-order-label="avgOrderLabel"
-        :review-count-label="reviewCountLabel"
-        :response-time-label="responseTimeLabel"
-        :activity-label="activityLabel"
+        :platform-label="displayPlatformLabel"
+        :avg-order-label="displayAvgOrderLabel"
+        :review-count-label="displayReviewCountLabel"
+        :response-time-label="displayResponseTimeLabel"
+        :activity-label="displayActivityLabel"
       />
 
       <ClientOrderHistorySection
+        v-if="isOwnProfile"
         :locale="locale"
         :orders="orderList"
         @navigate="emit('navigate', $event)"
@@ -176,8 +235,8 @@ function openOrder(id: number) {
 
       <ClientAgentInsightsSection
         :locale="locale"
-        :recommend-percent="recommendPercent"
-        :show-on-time="completedCount > 0"
+        :recommend-percent="displayRecommendPercent"
+        :show-on-time="displayShowOnTime"
       />
     </section>
   </div>

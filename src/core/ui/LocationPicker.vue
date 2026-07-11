@@ -4,6 +4,7 @@ import L from 'leaflet'
 import { Loader2, LocateFixed, MapPin } from '@lucide/vue'
 import { onBeforeUnmount, onMounted, ref } from 'vue'
 import { useLocaleStore } from '@/core/i18n/locale.store'
+import { getUserLocation } from '@/core/lib/user-location'
 
 const locale = useLocaleStore()
 
@@ -66,30 +67,23 @@ function placeMarker(lat: number, lng: number, pan = true) {
   if (pan) map.panTo([lat, lng])
 }
 
-function detectLocation() {
-  if (!navigator.geolocation) {
-    errorMsg.value = locale.t.ui.errGeolocation
-    return
-  }
-
+async function detectLocation() {
   locating.value = true
   errorMsg.value = null
 
-  navigator.geolocation.getCurrentPosition(
-    (position) => {
-      const lat = Number(position.coords.latitude.toFixed(7))
-      const lng = Number(position.coords.longitude.toFixed(7))
-      map?.setView([lat, lng], 16)
-      placeMarker(lat, lng, false)
-      reverseGeocode(lat, lng)
-      locating.value = false
-    },
-    () => {
-      errorMsg.value = locale.t.ui.errLocation
-      locating.value = false
-    },
-    { enableHighAccuracy: true, timeout: 10000 },
-  )
+  const coords = await getUserLocation()
+  locating.value = false
+
+  if (!coords) {
+    errorMsg.value = locale.t.ui.errLocation
+    return
+  }
+
+  const lat = Number(coords.lat.toFixed(7))
+  const lng = Number(coords.lng.toFixed(7))
+  map?.setView([lat, lng], 16)
+  placeMarker(lat, lng, false)
+  reverseGeocode(lat, lng)
 }
 
 onMounted(() => {

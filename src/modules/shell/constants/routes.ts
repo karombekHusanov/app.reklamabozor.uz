@@ -13,5 +13,6 @@ export const ROUTES = {
   newOrder: '/orders/new',
   profile: '/profile', // personal account only (tab)
   profileEdit: '/profile/edit',
+  clientDetail: (id: number | string) => `/clients/${id}`,
   settings: '/settings',
 } as const

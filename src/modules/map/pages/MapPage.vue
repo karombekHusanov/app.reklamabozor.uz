@@ -10,11 +10,15 @@ import AppHeader from '@/modules/shell/components/AppHeader.vue'
 import { useTelegram } from '@/core/composables/useTelegram'
 import { useLocaleStore } from '@/core/i18n/locale.store'
 import { categoryName } from '@/core/i18n/category-name'
+import { useToast } from '@/core/composables/useToast'
+import { getUserLocation, hasLocationAccess, warmupLocationManager } from '@/core/lib/user-location'
+import { isInsideTelegram, supportsVersion } from '@/core/lib/telegram-init'
 import { fetchTopAgents, type PublicAgent } from '@/modules/marketplace/services/agents.service'
 
 const locale = useLocaleStore()
 const router = useRouter()
-const { haptic } = useTelegram()
+const toast = useToast()
+const { haptic, WebApp } = useTelegram()
 
 const selectedAgent = ref<PublicAgent | null>(null)
 
@@ -125,30 +129,32 @@ function renderUserLocation(lat: number, lng: number, accuracy?: number) {
   L.marker([lat, lng], { icon: USER_PIN, zIndexOffset: 1000 }).addTo(userLocationLayer)
 }
 
-function getCurrentPosition(): Promise<GeolocationPosition | null> {
-  if (!navigator.geolocation) return Promise.resolve(null)
-
-  return new Promise((resolve) => {
-    navigator.geolocation.getCurrentPosition(
-      resolve,
-      () => resolve(null),
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 },
-    )
-  })
-}
-
 async function centerOnUser() {
   if (!map || locating.value) return
   locating.value = true
+  haptic('light')
 
-  const pos = await getCurrentPosition()
+  const coords = await getUserLocation()
   locating.value = false
 
-  if (!pos || !map) return
+  if (!coords || !map) {
+    toast.error(locale.t.ui.errLocation)
 
-  const { latitude, longitude, accuracy } = pos.coords
-  map.setView([latitude, longitude], USER_ZOOM, { animate: true })
-  renderUserLocation(latitude, longitude, accuracy)
+    // Permission denied in Telegram — offer to open location settings (user gesture).
+    try {
+      if (isInsideTelegram() && supportsVersion('8.0')) {
+        const manager = WebApp.LocationManager
+        if (manager?.isInited && manager.isAccessRequested && !manager.isAccessGranted) {
+          manager.openSettings()
+        }
+      }
+    }
+    catch { /* unsupported client */ }
+    return
+  }
+
+  map.setView([coords.lat, coords.lng], USER_ZOOM, { animate: true })
+  renderUserLocation(coords.lat, coords.lng, coords.accuracy)
 }
 
 function pickCategory(id: number | null) {
@@ -182,12 +188,20 @@ onMounted(async () => {
 
   map.on('click', () => { selectedAgent.value = null })
 
+  await warmupLocationManager()
+
   await nextTick()
   map.invalidateSize()
+  // Leaflet often needs a second pass after the page transition settles.
+  requestAnimationFrame(() => map?.invalidateSize())
 
   await load()
   renderMarkers()
-  await centerOnUser()
+
+  // Only auto-center when permission was already granted — first-time prompts need a tap.
+  if (hasLocationAccess()) {
+    await centerOnUser()
+  }
 })
 
 watch(filteredAgents, (list) => {

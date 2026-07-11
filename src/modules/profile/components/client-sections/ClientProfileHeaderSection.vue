@@ -17,7 +17,7 @@ export interface ClientProfileStat {
 }
 
 const props = defineProps<{
-  user: User
+  user: Pick<User, 'avatar'>
   displayName: string
   locale: any
   stats: ClientProfileStat[]

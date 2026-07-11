@@ -82,18 +82,28 @@ function senderName(sender: GlobalChatSender): string {
 
 /** A sender is tappable when there is a profile to land on. */
 function canOpenSenderProfile(sender: GlobalChatSender): boolean {
-  return sender.agent_profile_id !== null || !!sender.username
+  return sender.agent_profile_id !== null || sender.role === 'client' || !!sender.username
 }
 
 /**
- * Agencies open their in-app marketplace profile; everyone else with a
- * public @username opens their Telegram profile.
+ * Agencies open their marketplace profile; clients open their public profile;
+ * everyone else with a public @username opens their Telegram profile.
  */
 function openSenderProfile(sender: GlobalChatSender) {
   haptic('light')
 
   if (sender.agent_profile_id !== null) {
     void router.push(`/agents/${sender.agent_profile_id}`)
+    return
+  }
+
+  if (sender.role === 'client') {
+    if (sender.id === auth.user?.id) {
+      void router.push(ROUTES.profile)
+      return
+    }
+
+    void router.push(ROUTES.clientDetail(sender.id))
     return
   }
 

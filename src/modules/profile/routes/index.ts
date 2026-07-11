@@ -2,6 +2,12 @@ import type { RouteRecordRaw } from 'vue-router'
 
 export const profileRoutes: RouteRecordRaw[] = [
   {
+    path: 'clients/:id',
+    name: 'client-detail',
+    component: () => import('@/modules/profile/pages/ClientDetailPage.vue'),
+    props: true,
+  },
+  {
     path: 'profile/edit',
     name: 'profile-edit',
     component: () => import('@/modules/profile/pages/ProfileEditPage.vue'),
