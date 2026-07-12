@@ -8,7 +8,7 @@ import {
 } from '@lucide/vue'
 import { computed } from 'vue'
 import type { useLocaleStore } from '@/core/i18n/locale.store'
-import type { Category } from '@/modules/agent/types/agent'
+import type { Advantage, Category, PortfolioItem, WorkflowStep } from '@/modules/agent/types/agent'
 import type { PublicReview } from '@/modules/marketplace/services/agents.service'
 import AppHeader from '@/modules/shell/components/AppHeader.vue'
 import Avatar from '@/core/ui/Avatar.vue'
@@ -19,6 +19,7 @@ import AgentResultsSection from '@/modules/profile/components/agent-sections/Age
 import AgentServicesSection from '@/modules/profile/components/agent-sections/AgentServicesSection.vue'
 import AgentTestimonialsSection from '@/modules/profile/components/agent-sections/AgentTestimonialsSection.vue'
 import AgentWorkflowSection from '@/modules/profile/components/agent-sections/AgentWorkflowSection.vue'
+import AgentProfileSectionShell from '@/modules/profile/components/agent-sections/AgentProfileSectionShell.vue'
 
 /**
  * Shared agency presentation — used both by the owner's profile view and the
@@ -42,6 +43,9 @@ const props = defineProps<{
   ratingCount: number
   categories: Category[]
   reviews: PublicReview[]
+  advantages: Advantage[]
+  portfolio: PortfolioItem[]
+  workflowSteps: WorkflowStep[]
   locale: ReturnType<typeof useLocaleStore>
 }>()
 
@@ -100,7 +104,7 @@ const showAboutSection = computed(() =>
     />
 
     <section class="space-y-4 px-4 pt-3">
-      <div class="agent-profile-card overflow-hidden p-3 sm:p-4">
+      <div class="agent-profile-card overflow-hidden p-4">
         <div class="flex items-start gap-3">
           <div class="relative shrink-0">
             <Avatar
@@ -195,22 +199,24 @@ const showAboutSection = computed(() =>
           </div>
         </div>
 
-        <div class="mt-3 flex items-stretch gap-2">
+        <div
+          v-if="$slots.actions"
+          class="mt-3 flex items-stretch gap-2"
+        >
           <slot name="actions" />
         </div>
       </div>
 
-      <div
+      <slot name="shortcuts" />
+
+      <AgentProfileSectionShell
         v-if="showAboutSection"
-        class="agent-profile-services-card px-3 pb-3 pt-4 sm:px-4 sm:pb-4 sm:pt-5"
+        :title="locale.t.profile.agentAboutTitle"
       >
-        <h3 class="pt-0.5 text-[0.9rem] font-bold text-foreground">
-          {{ locale.t.profile.agentAboutTitle }}
-        </h3>
-        <p class="mt-3 whitespace-pre-line text-[12px] leading-relaxed text-muted-foreground">
+        <p class="whitespace-pre-line text-[12px] leading-relaxed text-muted-foreground">
           {{ bio }}
         </p>
-      </div>
+      </AgentProfileSectionShell>
 
       <AgentServicesSection :categories="categories" />
 
@@ -218,13 +224,22 @@ const showAboutSection = computed(() =>
         v-if="resultsText"
         :text="resultsText"
       />
-      <AgentPortfolioSection />
-      <AgentAdvantagesSection />
+      <AgentPortfolioSection
+        v-if="portfolio.length"
+        :items="portfolio"
+      />
+      <AgentAdvantagesSection
+        v-if="advantages.length"
+        :advantages="advantages"
+      />
       <AgentTestimonialsSection
         v-if="reviews.length"
         :reviews="reviews"
       />
-      <AgentWorkflowSection />
+      <AgentWorkflowSection
+        v-if="workflowSteps.length"
+        :steps="workflowSteps"
+      />
       <AgentContactSection
         v-if="hasContactInfo"
         :location-label="locationLabel"

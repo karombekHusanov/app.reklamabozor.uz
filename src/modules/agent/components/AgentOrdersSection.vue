@@ -21,6 +21,8 @@ const locale = useLocaleStore()
 const props = defineProps<{
   /** Deep-link target — scroll to and highlight this order once loaded. */
   focusOrderId?: number | null
+  /** Hide the opportunities sub-header (page supplies its own hero). */
+  hideOpportunitiesHeader?: boolean
 }>()
 
 const orders = useOrdersStore()
@@ -129,7 +131,10 @@ async function handleSubmitWork(orderId: number) {
       </GlassCard>
     </template>
 
-    <div class="flex items-center justify-between px-1">
+    <div
+      v-if="!hideOpportunitiesHeader"
+      class="flex items-center justify-between px-1"
+    >
       <h3 class="text-base font-semibold text-foreground">
         {{ locale.t.agent.orderOpportunities }}
       </h3>

@@ -26,7 +26,7 @@ const auth = useAuthStore()
 const locale = useLocaleStore()
 const route = useRoute()
 const router = useRouter()
-const { haptic, WebApp } = useTelegram()
+const { haptic } = useTelegram()
 
 const t = computed(() => locale.t.chat.global)
 
@@ -80,42 +80,33 @@ function senderName(sender: GlobalChatSender): string {
   return sender.company_name || sender.name
 }
 
-/** A sender is tappable when there is a profile to land on. */
+/** Roles that have an in-app public profile card (not Telegram deep link). */
+const IN_APP_PROFILE_ROLES = new Set(['client'])
+
+/** A sender is tappable when there is an in-app profile to land on. */
 function canOpenSenderProfile(sender: GlobalChatSender): boolean {
-  return sender.agent_profile_id !== null || sender.role === 'client' || !!sender.username
+  return sender.agent_profile_id != null || IN_APP_PROFILE_ROLES.has(sender.role)
 }
 
 /**
- * Agencies open their marketplace profile; clients open their public profile;
- * everyone else with a public @username opens their Telegram profile.
+ * Agencies open their marketplace profile; clients/sellers open their public
+ * in-app profile. Never auto-open t.me links on name tap — that closes the mini app.
  */
 function openSenderProfile(sender: GlobalChatSender) {
   haptic('light')
 
-  if (sender.agent_profile_id !== null) {
+  if (sender.agent_profile_id != null) {
     void router.push(`/agents/${sender.agent_profile_id}`)
     return
   }
 
-  if (sender.role === 'client') {
+  if (IN_APP_PROFILE_ROLES.has(sender.role)) {
     if (sender.id === auth.user?.id) {
       void router.push(ROUTES.profile)
       return
     }
 
-    void router.push(ROUTES.clientDetail(sender.id))
-    return
-  }
-
-  if (sender.username) {
-    const link = `https://t.me/${sender.username}`
-    try {
-      WebApp.openTelegramLink(link)
-    }
-    catch {
-      // Outside Telegram (or an old client) — open in a normal tab.
-      window.open(link, '_blank', 'noopener')
-    }
+    void router.push({ name: 'client-detail', params: { id: String(sender.id) } })
   }
 }
 
@@ -143,8 +134,13 @@ async function redirectAgentDeepLink(): Promise<boolean> {
   try {
     const result = await resolveAgentChat(id)
 
-    if (result.kind === 'thread') {
-      await router.replace(`/chat/${result.orderId}`)
+    if (result.kind === 'direct') {
+      await router.replace(ROUTES.chatDirect(result.chatId))
+      return true
+    }
+
+    if (result.kind === 'order') {
+      await router.replace(ROUTES.chatOrder(result.orderId))
       return true
     }
 
@@ -153,11 +149,7 @@ async function redirectAgentDeepLink(): Promise<boolean> {
       return true
     }
 
-    await router.replace({
-      path: ROUTES.chatThreads,
-      query: { agent: String(id), noChat: '1' },
-    })
-    return true
+    return false
   }
   catch {
     await router.replace({ path: ROUTES.chatThreads, query: { agent: String(id) } })

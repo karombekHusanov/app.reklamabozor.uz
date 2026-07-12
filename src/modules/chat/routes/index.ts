@@ -17,6 +17,14 @@ export const chatRoutes: RouteRecordRaw[] = [
     meta: { hideTabBar: true },
   },
   {
+    // Direct client ↔ agency thread — must precede the order :orderId route.
+    path: 'chat/direct/:chatId',
+    name: 'chat-direct',
+    component: () => import('@/modules/chat/pages/DirectChatThreadPage.vue'),
+    props: true,
+    meta: { hideTabBar: true },
+  },
+  {
     // One thread per order — deep-linked from bot pings (`/chat/{orderId}`).
     path: 'chat/:orderId',
     name: 'chat-thread',

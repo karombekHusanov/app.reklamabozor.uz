@@ -17,16 +17,16 @@ const locale = useLocaleStore()
     <div class="space-y-2.5">
       <div
         v-if="locationLabel"
-        class="agent-profile-advantage flex items-start gap-2.5"
+        class="agent-profile-info-card"
       >
-        <span class="agent-profile-stat__icon !mx-0 shrink-0 !size-8">
-          <MapPin class="size-3.5" />
+        <span class="agent-profile-info-card__icon">
+          <MapPin class="size-4" />
         </span>
         <div class="min-w-0 pt-0.5">
-          <p class="text-[11px] font-bold leading-tight text-foreground">
+          <p class="agent-profile-info-card__title">
             {{ locale.t.profile.location }}
           </p>
-          <p class="mt-0.5 text-[11px] leading-snug text-muted-foreground">
+          <p class="agent-profile-info-card__text">
             {{ locationLabel }}
           </p>
         </div>
@@ -37,16 +37,16 @@ const locale = useLocaleStore()
         :href="websiteUrl"
         target="_blank"
         rel="noopener noreferrer"
-        class="agent-profile-advantage pressable flex items-start gap-2.5"
+        class="agent-profile-info-card pressable"
       >
-        <span class="agent-profile-stat__icon !mx-0 shrink-0 !size-8">
-          <ExternalLink class="size-3.5" />
+        <span class="agent-profile-info-card__icon">
+          <ExternalLink class="size-4" />
         </span>
         <div class="min-w-0 pt-0.5">
-          <p class="text-[11px] font-bold leading-tight text-foreground">
+          <p class="agent-profile-info-card__title">
             {{ locale.t.profile.website }}
           </p>
-          <p class="mt-0.5 truncate text-[11px] leading-snug text-primary">
+          <p class="agent-profile-info-card__link">
             {{ websiteUrl }}
           </p>
         </div>
@@ -57,16 +57,16 @@ const locale = useLocaleStore()
         :href="linkedinUrl"
         target="_blank"
         rel="noopener noreferrer"
-        class="agent-profile-advantage pressable flex items-start gap-2.5"
+        class="agent-profile-info-card pressable"
       >
-        <span class="agent-profile-stat__icon !mx-0 shrink-0 !size-8">
-          <Share2 class="size-3.5" />
+        <span class="agent-profile-info-card__icon">
+          <Share2 class="size-4" />
         </span>
         <div class="min-w-0 pt-0.5">
-          <p class="text-[11px] font-bold leading-tight text-foreground">
+          <p class="agent-profile-info-card__title">
             {{ locale.t.agent.linkedin }}
           </p>
-          <p class="mt-0.5 truncate text-[11px] leading-snug text-primary">
+          <p class="agent-profile-info-card__link">
             {{ linkedinUrl }}
           </p>
         </div>

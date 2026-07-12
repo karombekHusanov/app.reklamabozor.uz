@@ -7,6 +7,7 @@ import { useToast } from '@/core/composables/useToast'
 import { useLocaleStore } from '@/core/i18n/locale.store'
 import AgentApplicationForm from '@/modules/agent/components/AgentApplicationForm.vue'
 import AgentDetailsForm from '@/modules/agent/components/AgentDetailsForm.vue'
+import AgentProfileCompletionBar from '@/modules/profile/components/edit/AgentProfileCompletionBar.vue'
 import AgentStatusCard from '@/modules/agent/components/AgentStatusCard.vue'
 import { useAgentStore } from '@/modules/agent/stores/agent.store'
 import type { AgentApplicationPayload, AgentDetailsPayload } from '@/modules/agent/types/agent'
@@ -66,25 +67,24 @@ async function handleSaveDetails(payload: AgentDetailsPayload) {
         </p>
       </GlassCard>
 
-      <AgentStatusCard
-        v-if="profile"
-        :profile="profile"
-      />
+      <template v-if="showApplication && profile">
+        <AgentStatusCard :profile="profile" />
+        <AgentApplicationForm
+          :initial="profile"
+          :submitting="agent.isSubmitting"
+          @submit="handleSubmit"
+        />
+      </template>
 
-      <AgentApplicationForm
-        v-if="showApplication"
-        :initial="profile"
-        :submitting="agent.isSubmitting"
-        @submit="handleSubmit"
-      />
-
-      <AgentDetailsForm
-        v-if="showDetails && profile"
-        :profile="profile"
-        :categories="agentCategories"
-        :saving="agent.isSavingDetails"
-        @save="handleSaveDetails"
-      />
+      <template v-else-if="showDetails && profile">
+        <AgentProfileCompletionBar :percent="profile.completion_percent" />
+        <AgentDetailsForm
+          :profile="profile"
+          :categories="agentCategories"
+          :saving="agent.isSavingDetails"
+          @save="handleSaveDetails"
+        />
+      </template>
     </template>
   </div>
 </template>

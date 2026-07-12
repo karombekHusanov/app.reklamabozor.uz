@@ -20,15 +20,18 @@ export interface ChatMessage {
   created_at: string
 }
 
+export type ChatType = 'order' | 'direct'
+
 export interface Chat {
   id: number
-  order_id: number
+  type: ChatType
+  order_id: number | null
   order: {
     id: number | null
     title: string | null
     status: OrderStatus | null
     category: Category | null
-  }
+  } | null
   other_participant: {
     id: number
     name: string
@@ -41,7 +44,7 @@ export interface Chat {
   updated_at: string
 }
 
-/** GET /orders/{order}/chat payload. */
+/** GET /orders/{order}/chat or /direct-chats/{id} payload. */
 export interface ChatThread {
   chat: Chat
   messages: ChatMessage[]

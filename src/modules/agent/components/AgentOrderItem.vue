@@ -9,6 +9,7 @@ import { cn } from '@/core/lib/utils'
 import { useLocaleStore } from '@/core/i18n/locale.store'
 import { categoryName } from '@/core/i18n/category-name'
 import { formatPrice, offerStatusVariant } from '@/modules/orders/lib/order-status'
+import { maskMoneyInput } from '@/core/lib/money'
 import type { AgentOrder, CreateOfferPayload } from '@/modules/orders/types/order'
 
 const locale = useLocaleStore()
@@ -38,16 +39,24 @@ const emit = defineEmits<{
 const drawerOpen = ref(Boolean(props.highlight))
 // Inside the drawer, the offer form auto-opens too when deep-linked (and not already offered).
 const showForm = ref(Boolean(props.highlight) && !props.order.my_offer)
-const form = reactive({ price: '', comment: '' })
+const form = reactive({ priceDisplay: '', priceAmount: 0, comment: '' })
 
 const canSubmit = computed(() =>
-  Number(form.price) > 0 && form.comment.trim() !== '',
+  form.priceAmount > 0 && form.comment.trim() !== '',
 )
+
+function onPriceInput(event: Event) {
+  const input = event.target as HTMLInputElement
+  const { amount, display } = maskMoneyInput(input.value)
+  form.priceAmount = amount
+  form.priceDisplay = display
+  input.value = display
+}
 
 function send() {
   if (!canSubmit.value) return
   emit('submit', props.order.id, {
-    price: Number(form.price),
+    price: form.priceAmount,
     comment: form.comment.trim(),
   })
   showForm.value = false
@@ -157,7 +166,15 @@ const inputClass = 'glass-input'
       <!-- Offer form -->
       <template v-else>
         <div v-if="showForm" class="space-y-2.5">
-          <input v-model="form.price" type="number" inputmode="numeric" min="0" :placeholder="locale.t.agent.pricePlaceholder" :class="inputClass">
+          <input
+            :value="form.priceDisplay"
+            type="text"
+            inputmode="numeric"
+            autocomplete="off"
+            :placeholder="locale.t.agent.pricePlaceholder"
+            :class="inputClass"
+            @input="onPriceInput"
+          >
           <textarea v-model="form.comment" rows="3" :placeholder="locale.t.agent.pitchPlaceholder" :class="cn(inputClass, 'resize-none')" />
           <div class="flex gap-2">
             <Button class="h-11 flex-1 rounded-2xl" :disabled="!canSubmit || submitting" @click="send">

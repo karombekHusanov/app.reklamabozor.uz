@@ -7,6 +7,7 @@ import { useToast } from '@/core/composables/useToast'
 import { useLocaleStore } from '@/core/i18n/locale.store'
 import AgentApplicationForm from '@/modules/agent/components/AgentApplicationForm.vue'
 import AgentStatusCard from '@/modules/agent/components/AgentStatusCard.vue'
+import PortfolioManager from '@/modules/profile/components/edit/PortfolioManager.vue'
 import DesignerDetailsForm from '@/modules/profile/components/edit/DesignerDetailsForm.vue'
 import { useAgentStore } from '@/modules/agent/stores/agent.store'
 import type { AgentApplicationPayload, AgentDetailsPayload } from '@/modules/agent/types/agent'
@@ -77,6 +78,9 @@ async function handleSaveDetails(payload: AgentDetailsPayload) {
         :submitting="agent.isSubmitting"
         @submit="handleSubmit"
       />
+
+      <!-- Portfolio publishes immediately (own CRUD) — separate from the PATCH form. -->
+      <PortfolioManager v-if="showDetails && profile" />
 
       <DesignerDetailsForm
         v-if="showDetails && profile"

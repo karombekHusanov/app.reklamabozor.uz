@@ -35,7 +35,7 @@ const cloudCategories = computed(() => sortedCategories.value)
     />
 
     <template v-else>
-      <p class="mb-3 text-[11px] leading-snug text-muted-foreground">
+      <p class="agent-profile-section__subtitle">
         {{ sortedCategories.length }} {{ locale.t.profile.agentServicesCount }}
       </p>
 

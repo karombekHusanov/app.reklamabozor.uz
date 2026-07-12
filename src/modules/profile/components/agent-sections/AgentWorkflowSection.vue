@@ -2,32 +2,16 @@
 import { ChevronRight } from '@lucide/vue'
 import { useLocaleStore } from '@/core/i18n/locale.store'
 import AgentProfileSectionShell from '@/modules/profile/components/agent-sections/AgentProfileSectionShell.vue'
+import type { WorkflowStep } from '@/modules/agent/types/agent'
+
+defineProps<{
+  steps: WorkflowStep[]
+}>()
 
 const locale = useLocaleStore()
 
-// TODO(backend): replace with agent workflow steps from API.
-const steps = [
-  {
-    id: 1,
-    titleKey: 'agentWorkflowStep1Title',
-    hintKey: 'agentWorkflowStep1Hint',
-  },
-  {
-    id: 2,
-    titleKey: 'agentWorkflowStep2Title',
-    hintKey: 'agentWorkflowStep2Hint',
-  },
-  {
-    id: 3,
-    titleKey: 'agentWorkflowStep3Title',
-    hintKey: 'agentWorkflowStep3Hint',
-  },
-  {
-    id: 4,
-    titleKey: 'agentWorkflowStep4Title',
-    hintKey: 'agentWorkflowStep4Hint',
-  },
-] as const
+// Step badges cycle through the brand accents, matching the old fixed design.
+const STEP_COLORS = ['bg-blue-500', 'bg-emerald-500', 'bg-violet-500', 'bg-orange-500', 'bg-rose-500', 'bg-teal-500']
 </script>
 
 <template>
@@ -35,25 +19,23 @@ const steps = [
     <div class="flex items-start gap-1 overflow-x-auto pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
       <template
         v-for="(step, index) in steps"
-        :key="step.id"
+        :key="index"
       >
         <div class="flex min-w-[4.75rem] shrink-0 flex-col items-center text-center">
           <span
             class="flex size-8 items-center justify-center rounded-full text-xs font-bold text-white shadow-sm"
-            :class="{
-              'bg-blue-500': step.id === 1,
-              'bg-emerald-500': step.id === 2,
-              'bg-violet-500': step.id === 3,
-              'bg-orange-500': step.id === 4,
-            }"
+            :class="STEP_COLORS[index % STEP_COLORS.length]"
           >
-            {{ step.id }}
+            {{ index + 1 }}
           </span>
-          <p class="mt-1.5 text-[10px] font-bold leading-tight text-foreground">
-            {{ locale.t.profile[step.titleKey] }}
+          <p class="mt-1.5 text-[10px] font-semibold leading-tight text-foreground">
+            {{ step.title }}
           </p>
-          <p class="mt-0.5 text-[8px] leading-snug text-muted-foreground">
-            {{ locale.t.profile[step.hintKey] }}
+          <p
+            v-if="step.description"
+            class="agent-profile-info-card__text mt-0.5 text-center"
+          >
+            {{ step.description }}
           </p>
         </div>
 

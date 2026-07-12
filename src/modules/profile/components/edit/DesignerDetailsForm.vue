@@ -1,18 +1,23 @@
 <script setup lang="ts">
 import { Check, Loader2 } from '@lucide/vue'
-import { reactive, ref } from 'vue'
+import { onMounted, reactive, ref } from 'vue'
 import GlassCard from '@/core/ui/GlassCard.vue'
 import ImageUpload from '@/core/ui/ImageUpload.vue'
 import StickyActionBar from '@/core/ui/StickyActionBar.vue'
 import LocationPicker from '@/core/ui/LocationPicker.vue'
 import { Button } from '@/core/ui/button'
 import { cn } from '@/core/lib/utils'
+import AdvantagesPicker from '@/modules/profile/components/edit/AdvantagesPicker.vue'
+import WorkflowStepsEditor from '@/modules/profile/components/edit/WorkflowStepsEditor.vue'
+import { fetchAdvantagesCatalog } from '@/modules/agent/services/agent.service'
 import { useLocaleStore } from '@/core/i18n/locale.store'
 import { categoryName } from '@/core/i18n/category-name'
 import type {
+  Advantage,
   AgentDetailsPayload,
   AgentProfile,
   Category,
+  WorkflowStep,
 } from '@/modules/agent/types/agent'
 
 const locale = useLocaleStore()
@@ -54,6 +59,22 @@ function onLocationPicked(value: { lat: number; lng: number; address: string | n
   }
 }
 
+// Advantages catalog (admin-managed) + the provider's current picks.
+const advantagesCatalog = ref<Advantage[]>([])
+const selectedAdvantageIds = ref<number[]>((props.profile.advantages ?? []).map(a => a.id))
+const workflowSteps = ref<WorkflowStep[]>(
+  (props.profile.workflow_steps ?? []).map(step => ({ ...step })),
+)
+
+onMounted(async () => {
+  try {
+    advantagesCatalog.value = await fetchAdvantagesCatalog()
+  }
+  catch {
+    // Catalog is additive UI — the rest of the form still works without it.
+  }
+})
+
 function handleSave() {
   emit('save', {
     company_logo_file_id: form.company_logo_file_id,
@@ -65,6 +86,10 @@ function handleSave() {
     lng: form.lng,
     results_text: form.results_text.trim() || null,
     category_ids: [...selectedCategoryIds.value],
+    advantage_ids: [...selectedAdvantageIds.value],
+    workflow_steps: workflowSteps.value
+      .map(step => ({ title: step.title.trim(), description: step.description?.trim() || null }))
+      .filter(step => step.title !== ''),
   })
 }
 
@@ -200,6 +225,19 @@ const inputClass = 'glass-input'
           :class="inputClass"
         >
       </div>
+    </GlassCard>
+
+    <!-- Advantages (picked from the admin-managed catalog) -->
+    <GlassCard v-if="advantagesCatalog.length > 0">
+      <AdvantagesPicker
+        v-model="selectedAdvantageIds"
+        :catalog="advantagesCatalog"
+      />
+    </GlassCard>
+
+    <!-- "Ish jarayoni" steps shown on the public profile -->
+    <GlassCard>
+      <WorkflowStepsEditor v-model="workflowSteps" />
     </GlassCard>
 
     <StickyActionBar>

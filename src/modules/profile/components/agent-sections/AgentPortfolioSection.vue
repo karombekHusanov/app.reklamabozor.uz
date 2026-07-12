@@ -1,101 +1,79 @@
 <script setup lang="ts">
-import { Eye, Star } from '@lucide/vue'
+import { ExternalLink } from '@lucide/vue'
 import { computed } from 'vue'
 import { useLocaleStore } from '@/core/i18n/locale.store'
 import AgentProfileSectionShell from '@/modules/profile/components/agent-sections/AgentProfileSectionShell.vue'
 import { portfolioBentoClass } from '@/modules/profile/lib/category-accent'
+import type { PortfolioItem } from '@/modules/agent/types/agent'
+
+const props = defineProps<{
+  items: PortfolioItem[]
+}>()
 
 const locale = useLocaleStore()
 
-// TODO(backend): replace with agent portfolio items from API.
-const items = [
-  {
-    id: 1,
-    rating: '4.9',
-    views: 128,
-    image: 'https://images.unsplash.com/photo-1560179707-f14e90ef3623?auto=format&fit=crop&w=640&h=480&q=80',
-    alt: 'Billboard mockup',
-    label: 'Billboard',
-  },
-  {
-    id: 2,
-    rating: '4.8',
-    views: 96,
-    image: 'https://images.unsplash.com/photo-1586281380349-632531db7ed4?auto=format&fit=crop&w=480&h=640&q=80',
-    alt: 'Print design',
-    label: 'Poligrafiya',
-  },
-  {
-    id: 3,
-    rating: '5.0',
-    views: 214,
-    image: 'https://images.unsplash.com/photo-1626785774573-4b799315345d?auto=format&fit=crop&w=480&h=480&q=80',
-    alt: 'Branding mockup',
-    label: 'Brending',
-  },
-  {
-    id: 4,
-    rating: '4.7',
-    views: 87,
-    image: 'https://images.unsplash.com/photo-1542744173-8e7e53415bb0?auto=format&fit=crop&w=640&h=360&q=80',
-    alt: 'Outdoor advertising',
-    label: 'Tashqi reklama',
-  },
-  {
-    id: 5,
-    rating: '4.9',
-    views: 64,
-    image: 'https://images.unsplash.com/photo-1611162617474-5b21e939e988?auto=format&fit=crop&w=480&h=480&q=80',
-    alt: 'Business cards',
-    label: 'Vizitka',
-  },
-  {
-    id: 6,
-    rating: '4.8',
-    views: 53,
-    image: 'https://images.unsplash.com/photo-1558618666-fcd25c85f82e?auto=format&fit=crop&w=480&h=640&q=80',
-    alt: 'Roll-up banner',
-    label: 'Roll-up',
-  },
-] as const
+const total = computed(() => props.items.length)
 
-const total = computed(() => items.length)
+function coverImage(item: PortfolioItem): string | null {
+  if (item.images.length > 0) return item.images[0].url
+  return item.image
+}
+
+function extraImageCount(item: PortfolioItem): number {
+  const count = item.images.length > 0 ? item.images.length : (item.image ? 1 : 0)
+  return Math.max(0, count - 1)
+}
 </script>
 
 <template>
-  <AgentProfileSectionShell
-    :title="locale.t.profile.agentPortfolioTitle"
-    show-view-all
-  >
+  <AgentProfileSectionShell :title="locale.t.profile.agentPortfolioTitle">
     <div class="agent-portfolio-bento">
-      <article
+      <component
+        :is="item.link_url ? 'a' : 'article'"
         v-for="(item, index) in items"
         :key="item.id"
+        :href="item.link_url ?? undefined"
+        :target="item.link_url ? '_blank' : undefined"
+        :rel="item.link_url ? 'noopener' : undefined"
         class="agent-portfolio-bento__item"
         :class="portfolioBentoClass(index, total)"
       >
-        <img
-          :src="item.image"
-          :alt="item.alt"
-          class="agent-portfolio-bento__image"
-          loading="lazy"
+        <div
+          v-if="coverImage(item)"
+          class="agent-portfolio-bento__media"
         >
+          <img
+            :src="coverImage(item)!"
+            :alt="item.title"
+            class="agent-portfolio-bento__image"
+            loading="lazy"
+          >
+          <span
+            v-if="extraImageCount(item) > 0"
+            class="agent-portfolio-bento__more"
+          >
+            {{ locale.t.profile.agentPortfolioMoreImages.replace('{n}', String(extraImageCount(item))) }}
+          </span>
+        </div>
         <div class="agent-portfolio-bento__overlay">
           <p class="truncate text-[11px] font-bold text-white">
-            {{ item.label }}
+            {{ item.title }}
           </p>
-          <div class="mt-1 flex items-center gap-2 text-[10px] font-medium text-white/90">
-            <span class="inline-flex items-center gap-0.5">
-              <Star class="size-3 fill-amber-300 text-amber-300" />
-              {{ item.rating }}
-            </span>
-            <span class="inline-flex items-center gap-0.5">
-              <Eye class="size-3" />
-              {{ item.views }}
-            </span>
-          </div>
+          <p
+            v-if="item.description"
+            class="mt-0.5 line-clamp-2 text-[10px] font-medium leading-snug text-white/90"
+          >
+            {{ item.description }}
+          </p>
+          <span
+            v-if="item.link_url"
+            class="mt-1 inline-flex items-center gap-0.5 text-[10px] font-medium text-white/90"
+          >
+            <ExternalLink class="size-3" />
+            {{ locale.t.profile.agentPortfolioOpenLink }}
+          </span>
         </div>
-      </article>
+      </component>
     </div>
   </AgentProfileSectionShell>
 </template>

@@ -37,6 +37,11 @@ const emit = defineEmits<{
   'sender-click': []
 }>()
 
+function handleSenderClick() {
+  if (!props.senderClickable) return
+  emit('sender-click')
+}
+
 const locale = useLocaleStore()
 
 // One message can mix media: images render as an album, documents as rows.
@@ -83,7 +88,7 @@ function formatSize(bytes: number): string {
         senderRole === 'agent' ? 'text-primary' : 'text-muted-foreground',
         senderClickable ? 'transition active:opacity-60' : '',
       ]"
-      @click="senderClickable && emit('sender-click')"
+      @click.stop="handleSenderClick"
     >
       {{ senderName }}
     </component>

@@ -1,68 +1,47 @@
 <script setup lang="ts">
-import { PenTool, ShieldCheck, Timer, Truck } from '@lucide/vue'
 import { useLocaleStore } from '@/core/i18n/locale.store'
 import AgentProfileSectionShell from '@/modules/profile/components/agent-sections/AgentProfileSectionShell.vue'
+import { advantageIcon } from '@/modules/profile/lib/advantage-icons'
+import type { Advantage } from '@/modules/agent/types/agent'
+
+defineProps<{
+  advantages: Advantage[]
+}>()
 
 const locale = useLocaleStore()
 
-// TODO(backend): replace with agent advantages from API.
+function name(advantage: Advantage): string {
+  return locale.locale === 'ru' ? advantage.name_ru : advantage.name_uz
+}
+
+function hint(advantage: Advantage): string | null {
+  return locale.locale === 'ru' ? advantage.hint_ru : advantage.hint_uz
+}
 </script>
 
 <template>
   <AgentProfileSectionShell :title="locale.t.profile.agentAdvantagesTitle">
     <div class="grid grid-cols-2 gap-2.5">
-      <div class="agent-profile-advantage flex items-start gap-2.5">
-        <span class="agent-profile-stat__icon !mx-0 shrink-0 !size-8">
-          <Timer class="size-3.5" />
+      <div
+        v-for="advantage in advantages"
+        :key="advantage.id"
+        class="agent-profile-info-card"
+      >
+        <span class="agent-profile-info-card__icon">
+          <component
+            :is="advantageIcon(advantage.icon)"
+            class="size-4"
+          />
         </span>
         <div class="min-w-0 pt-0.5">
-          <p class="text-[11px] font-bold leading-tight text-foreground">
-            {{ locale.t.profile.agentAdvantageFastTitle }}
+          <p class="agent-profile-info-card__title">
+            {{ name(advantage) }}
           </p>
-          <p class="mt-0.5 text-[9px] leading-snug text-muted-foreground">
-            {{ locale.t.profile.agentAdvantageFastHint }}
-          </p>
-        </div>
-      </div>
-
-      <div class="agent-profile-advantage flex items-start gap-2.5">
-        <span class="agent-profile-stat__icon !mx-0 shrink-0 !size-8">
-          <ShieldCheck class="size-3.5" />
-        </span>
-        <div class="min-w-0 pt-0.5">
-          <p class="text-[11px] font-bold leading-tight text-foreground">
-            {{ locale.t.profile.agentAdvantageQualityTitle }}
-          </p>
-          <p class="mt-0.5 text-[9px] leading-snug text-muted-foreground">
-            {{ locale.t.profile.agentAdvantageQualityHint }}
-          </p>
-        </div>
-      </div>
-
-      <div class="agent-profile-advantage flex items-start gap-2.5">
-        <span class="agent-profile-stat__icon !mx-0 shrink-0 !size-8">
-          <PenTool class="size-3.5" />
-        </span>
-        <div class="min-w-0 pt-0.5">
-          <p class="text-[11px] font-bold leading-tight text-foreground">
-            {{ locale.t.profile.agentAdvantageDesignTitle }}
-          </p>
-          <p class="mt-0.5 text-[9px] leading-snug text-muted-foreground">
-            {{ locale.t.profile.agentAdvantageDesignHint }}
-          </p>
-        </div>
-      </div>
-
-      <div class="agent-profile-advantage flex items-start gap-2.5">
-        <span class="agent-profile-stat__icon !mx-0 shrink-0 !size-8">
-          <Truck class="size-3.5" />
-        </span>
-        <div class="min-w-0 pt-0.5">
-          <p class="text-[11px] font-bold leading-tight text-foreground">
-            {{ locale.t.profile.agentAdvantageDeliveryTitle }}
-          </p>
-          <p class="mt-0.5 text-[9px] leading-snug text-muted-foreground">
-            {{ locale.t.profile.agentAdvantageDeliveryHint }}
+          <p
+            v-if="hint(advantage)"
+            class="agent-profile-info-card__text"
+          >
+            {{ hint(advantage) }}
           </p>
         </div>
       </div>

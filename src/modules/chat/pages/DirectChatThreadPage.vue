@@ -16,21 +16,15 @@ import MessageBubble from '@/modules/chat/components/MessageBubble.vue'
 import { buildChatFeed } from '@/modules/chat/lib/chat-feed'
 import type { ChatMessage } from '@/modules/chat/types/chat'
 
-const props = defineProps<{ orderId: string }>()
+const props = defineProps<{ chatId: string }>()
 
 const auth = useAuthStore()
 const chat = useChatStore()
 const locale = useLocaleStore()
 const { haptic } = useTelegram()
 
-const orderId = computed(() => Number(props.orderId))
+const directChatId = computed(() => Number(props.chatId))
 const bottomAnchor = ref<HTMLElement | null>(null)
-
-// The conversation stays writable while the deal is active.
-const writable = computed(() => {
-  const status = chat.currentChat?.order?.status
-  return status === 'in_progress' || status === 'work_submitted'
-})
 
 const feed = computed(() =>
   buildChatFeed(chat.messages, m => ({ senderId: m.sender_id, createdAt: m.created_at })),
@@ -47,14 +41,10 @@ function isMine(message: ChatMessage): boolean {
 const headerTitle = computed(() =>
   chat.currentChat
     ? (chat.currentChat.other_participant.company_name || chat.currentChat.other_participant.name)
-    : locale.t.shell.tabs.chat,
+    : locale.t.chat.directTitle,
 )
 
-const headerSubtitle = computed(() => {
-  const status = chat.currentChat?.order?.status
-  const label = status ? locale.t.orders.status[status] : ''
-  return label ? `#${orderId.value} · ${label}` : `#${orderId.value}`
-})
+const headerSubtitle = computed(() => locale.t.chat.directSubtitle)
 
 function scrollToBottom(smooth = true) {
   void nextTick(() => {
@@ -65,12 +55,11 @@ function scrollToBottom(smooth = true) {
 let pollTimer: ReturnType<typeof setInterval> | null = null
 
 onMounted(async () => {
-  await chat.openThread(orderId.value)
+  await chat.openDirectThread(directChatId.value)
   scrollToBottom(false)
 
-  // Simple polling — 5s keeps the thread fresh without websockets.
   pollTimer = setInterval(() => {
-    if (auth.isAuthenticated && chat.currentChat) void chat.poll(orderId.value)
+    if (auth.isAuthenticated && chat.currentChat) void chat.pollDirect(directChatId.value)
   }, 5000)
 })
 
@@ -84,8 +73,7 @@ async function handleSend(body: string, fileIds: number[]): Promise<boolean> {
   if ((body === '' && fileIds.length === 0) || chat.isSending) return false
   haptic('light')
 
-  // The whole batch (text + files) is one message.
-  const ok = await chat.send(orderId.value, body, fileIds)
+  const ok = await chat.sendDirect(directChatId.value, body, fileIds)
   if (ok) haptic('medium')
   return ok
 }
@@ -136,7 +124,7 @@ async function handleSend(body: string, fileIds: number[]): Promise<boolean> {
           v-if="chat.messages.length === 0"
           class="py-8 text-center text-sm text-muted-foreground"
         >
-          {{ locale.t.chat.threadEmpty }}
+          {{ locale.t.chat.directEmpty }}
         </p>
 
         <template v-for="item in feed" :key="item.key">
@@ -175,23 +163,15 @@ async function handleSend(body: string, fileIds: number[]): Promise<boolean> {
       </p>
     </section>
 
-    <!-- Composer (docks at the bottom — the tab bar is hidden on this page) -->
     <div
       v-if="chat.currentChat"
       class="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-background px-5 pb-[max(env(safe-area-inset-bottom),0.75rem)] pt-2.5"
     >
       <ChatComposer
-        v-if="writable"
         :send="handleSend"
         :sending="chat.isSending"
         :max-length="2000"
       />
-      <p
-        v-else
-        class="rounded-2xl bg-secondary px-4 py-3 text-center text-sm text-muted-foreground dark:bg-white/5"
-      >
-        {{ locale.t.chat.closedNote }}
-      </p>
     </div>
   </div>
 </template>

@@ -2,6 +2,11 @@ import type { RouteRecordRaw } from 'vue-router'
 
 export const productsRoutes: RouteRecordRaw[] = [
   {
+    path: 'products',
+    name: 'products',
+    component: () => import('@/modules/products/pages/ProductsPage.vue'),
+  },
+  {
     // Reserved for the upcoming marketplace product feature; product banners
     // link here. Currently shows a "coming soon" placeholder.
     path: 'products/:id',

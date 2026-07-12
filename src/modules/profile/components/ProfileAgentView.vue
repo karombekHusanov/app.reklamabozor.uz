@@ -1,10 +1,9 @@
 <script setup lang="ts">
-import { MessageCircle, Send } from '@lucide/vue'
 import { computed, ref, watch } from 'vue'
 import type { User } from '@/modules/auth/types/user'
 import type { AgentProfile } from '@/modules/agent/types/agent'
 import { categoryName } from '@/core/i18n/category-name'
-import { ROUTES } from '@/modules/shell/constants/routes'
+import AgentProfileShortcuts from '@/modules/profile/components/agent-sections/AgentProfileShortcuts.vue'
 import AgentShowcase from '@/modules/profile/components/AgentShowcase.vue'
 import type { useLocaleStore } from '@/core/i18n/locale.store'
 import { fetchPublicAgent, type PublicAgent } from '@/modules/marketplace/services/agents.service'
@@ -76,35 +75,16 @@ const reviews = computed(() => publicAgent.value?.reviews ?? [])
     :rating-count="ratingCount"
     :categories="profile?.categories ?? []"
     :reviews="reviews"
+    :advantages="publicAgent?.advantages ?? profile?.advantages ?? []"
+    :portfolio="publicAgent?.portfolio ?? profile?.portfolio ?? []"
+    :workflow-steps="publicAgent?.workflow_steps ?? profile?.workflow_steps ?? []"
     :locale="locale"
   >
-    <template #actions>
-      <button
-        type="button"
-        class="agent-profile-order-btn pressable flex-1"
-        @click="emit('navigate', ROUTES.orders)"
-      >
-        <Send class="size-3.5 shrink-0" />
-        <span class="min-w-0 text-left">
-          <span class="agent-profile-order-btn__title">
-            {{ locale.t.profile.agentOrderCta }}
-          </span>
-          <span class="agent-profile-order-btn__hint">
-            {{ locale.t.profile.agentOrderHint }}
-          </span>
-        </span>
-      </button>
-
-      <button
-        type="button"
-        class="agent-profile-chat-btn pressable"
-        @click="emit('navigate', ROUTES.chatThreads)"
-      >
-        <MessageCircle class="agent-profile-chat-btn__icon" />
-        <span class="agent-profile-chat-btn__label">
-          {{ locale.t.profile.agentChatCta }}
-        </span>
-      </button>
+    <template #shortcuts>
+      <AgentProfileShortcuts
+        :locale="locale"
+        @navigate="emit('navigate', $event)"
+      />
     </template>
   </AgentShowcase>
 </template>

@@ -3,8 +3,11 @@ import { computed, ref } from 'vue'
 import { getApiErrorMessage } from '@/core/api/api-error'
 import {
   fetchChats,
+  fetchDirectMessages,
+  fetchDirectThread,
   fetchMessages,
   fetchThread,
+  sendDirectMessage,
   sendMessage as sendMessageRequest,
 } from '@/modules/chat/services/chat.service'
 import type { Chat, ChatMessage } from '@/modules/chat/types/chat'
@@ -63,10 +66,43 @@ export const useChatStore = defineStore('chat', () => {
     }
   }
 
+  async function openDirectThread(chatId: number) {
+    isLoadingThread.value = true
+    error.value = null
+    currentChat.value = null
+    messages.value = []
+    try {
+      const thread = await fetchDirectThread(chatId)
+      currentChat.value = thread.chat
+      messages.value = thread.messages
+      return true
+    }
+    catch (e) {
+      error.value = getApiErrorMessage(e)
+      return false
+    }
+    finally {
+      isLoadingThread.value = false
+    }
+  }
+
   /** Fetch messages newer than the last known one and append (poll tick). */
   async function poll(orderId: number) {
     try {
       const fresh = await fetchMessages(orderId, lastMessageId.value)
+      if (fresh.length > 0) {
+        const known = new Set(messages.value.map(m => m.id))
+        messages.value.push(...fresh.filter(m => !known.has(m.id)))
+      }
+    }
+    catch {
+      // Polling failures are transient — the next tick retries.
+    }
+  }
+
+  async function pollDirect(chatId: number) {
+    try {
+      const fresh = await fetchDirectMessages(chatId, lastMessageId.value)
       if (fresh.length > 0) {
         const known = new Set(messages.value.map(m => m.id))
         messages.value.push(...fresh.filter(m => !known.has(m.id)))
@@ -82,6 +118,23 @@ export const useChatStore = defineStore('chat', () => {
     error.value = null
     try {
       const message = await sendMessageRequest(orderId, body, fileIds)
+      messages.value.push(message)
+      return true
+    }
+    catch (e) {
+      error.value = getApiErrorMessage(e)
+      return false
+    }
+    finally {
+      isSending.value = false
+    }
+  }
+
+  async function sendDirect(chatId: number, body: string, fileIds: number[] = []) {
+    isSending.value = true
+    error.value = null
+    try {
+      const message = await sendDirectMessage(chatId, body, fileIds)
       messages.value.push(message)
       return true
     }
@@ -112,8 +165,11 @@ export const useChatStore = defineStore('chat', () => {
     isSending,
     loadChats,
     openThread,
+    openDirectThread,
     poll,
+    pollDirect,
     send,
+    sendDirect,
     reset,
   }
 })

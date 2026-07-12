@@ -66,7 +66,7 @@ function clear() {
       <button
         type="button"
         :class="cn(
-          'group glass-field relative flex size-24 shrink-0 items-center justify-center overflow-hidden rounded-2xl',
+          'group glass-field relative flex size-28 shrink-0 items-center justify-center overflow-hidden rounded-2xl',
           props.class,
         )"
         @click="pick"

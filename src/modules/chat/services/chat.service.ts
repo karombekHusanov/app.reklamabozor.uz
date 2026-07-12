@@ -35,6 +35,38 @@ export async function sendMessage(orderId: number, body: string, fileIds: number
   return data.data
 }
 
+// ---- Direct client ↔ agency chat ----
+
+export async function openDirectChat(agentProfileId: number): Promise<Chat> {
+  const { data } = await api.post<ApiSuccess<Chat>>(`/api/v1/agents/${agentProfileId}/direct-chat`)
+
+  return data.data
+}
+
+export async function fetchDirectThread(chatId: number): Promise<ChatThread> {
+  const { data } = await api.get<ApiSuccess<ChatThread>>(`/api/v1/direct-chats/${chatId}`)
+
+  return data.data
+}
+
+export async function fetchDirectMessages(chatId: number, afterId?: number): Promise<ChatMessage[]> {
+  const { data } = await api.get<ApiSuccess<ChatMessage[]>>(
+    `/api/v1/direct-chats/${chatId}/messages`,
+    { params: afterId ? { after: afterId } : undefined },
+  )
+
+  return data.data
+}
+
+export async function sendDirectMessage(chatId: number, body: string, fileIds: number[] = []): Promise<ChatMessage> {
+  const { data } = await api.post<ApiSuccess<ChatMessage>>(
+    `/api/v1/direct-chats/${chatId}/messages`,
+    { body: body || undefined, file_ids: fileIds.length > 0 ? fileIds : undefined },
+  )
+
+  return data.data
+}
+
 // ---- Global (community-wide) chat ----
 
 export async function fetchGlobalMeta(): Promise<GlobalChatMeta> {

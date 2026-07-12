@@ -1,6 +1,6 @@
 import { api } from '@/core/api/client'
 import type { ApiSuccess } from '@/core/types/api'
-import type { Category } from '@/modules/agent/types/agent'
+import type { Advantage, Category, PortfolioItem, WorkflowStep } from '@/modules/agent/types/agent'
 
 export interface PublicReview {
   id: number
@@ -33,6 +33,10 @@ export interface PublicAgent {
   categories: Category[]
   /** Approved client reviews — populated on the detail endpoint only. */
   reviews?: PublicReview[]
+  /** Picked advantages + visible portfolio + workflow — detail endpoint only. */
+  advantages?: Advantage[]
+  portfolio?: PortfolioItem[]
+  workflow_steps?: WorkflowStep[]
   /** Distance from the requested point in metres — only on the nearby endpoint. */
   distance_m?: number
 }

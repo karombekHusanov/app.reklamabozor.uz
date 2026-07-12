@@ -1,5 +1,46 @@
 export type AgentProfileStatus = 'pending' | 'approved' | 'rejected'
 
+/** Admin-managed catalog entry a provider can pick as an "advantage". */
+export interface Advantage {
+  id: number
+  name_uz: string
+  name_ru: string
+  hint_uz: string | null
+  hint_ru: string | null
+  /** Lucide icon key (e.g. "timer", "shield-check"). */
+  icon: string
+}
+
+/** Uploaded file attached to a portfolio block. */
+export interface PortfolioFile {
+  id: number
+  url: string
+  original_name: string
+  mime_type: string
+  size: number
+}
+
+/** One "qilgan ishimiz" portfolio card. */
+export interface PortfolioItem {
+  id: number
+  title: string
+  description: string | null
+  link_url: string | null
+  /** Cover image URL (first gallery image). */
+  image: string | null
+  images: PortfolioFile[]
+  attachments: PortfolioFile[]
+  sort_order: number
+  /** True when moderation took the item down (owner-only surface). */
+  is_hidden: boolean
+}
+
+/** Editable "ish jarayoni" step. */
+export interface WorkflowStep {
+  title: string
+  description?: string | null
+}
+
 export interface Category {
   id: number
   name_uz: string
@@ -38,6 +79,9 @@ export interface AgentProfile {
   location_label: string | null
   results_text: string | null
   categories: Category[]
+  advantages: Advantage[]
+  portfolio: PortfolioItem[]
+  workflow_steps: WorkflowStep[]
   completion_percent: number
 
   // Status.
@@ -74,4 +118,24 @@ export interface AgentDetailsPayload {
   location_label?: string | null
   results_text?: string | null
   category_ids?: number[]
+  advantage_ids?: number[]
+  workflow_steps?: WorkflowStep[] | null
+}
+
+/** POST /agent/portfolio payload. */
+export interface PortfolioItemPayload {
+  image_file_ids: number[]
+  attachment_file_ids?: number[]
+  title: string
+  description?: string | null
+  link_url?: string | null
+}
+
+/** PATCH /agent/portfolio/{id} payload. */
+export interface PortfolioItemUpdatePayload {
+  image_file_ids?: number[]
+  attachment_file_ids?: number[] | null
+  title?: string
+  description?: string | null
+  link_url?: string | null
 }

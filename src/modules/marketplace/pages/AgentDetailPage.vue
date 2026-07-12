@@ -58,20 +58,19 @@ async function openChat() {
   try {
     const result = await resolveAgentChat(Number(props.id))
 
-    if (result.kind === 'thread') {
-      await router.push(`/chat/${result.orderId}`)
+    if (result.kind === 'direct') {
+      await router.push(ROUTES.chatDirect(result.chatId))
+      return
+    }
+
+    if (result.kind === 'order') {
+      await router.push(ROUTES.chatOrder(result.orderId))
       return
     }
 
     if (result.kind === 'picker') {
       await router.push({ path: ROUTES.chatThreads, query: { agent: props.id } })
-      return
     }
-
-    await router.push({
-      path: ROUTES.chatThreads,
-      query: { agent: props.id, noChat: '1' },
-    })
   }
   catch {
     await router.push({ path: ROUTES.chatThreads, query: { agent: props.id } })
@@ -119,6 +118,9 @@ function orderFromAgency() {
       :rating-count="agent.rating_count"
       :categories="agent.categories"
       :reviews="agent.reviews ?? []"
+      :advantages="agent.advantages ?? []"
+      :portfolio="agent.portfolio ?? []"
+      :workflow-steps="agent.workflow_steps ?? []"
       :locale="locale"
     >
       <template #actions>

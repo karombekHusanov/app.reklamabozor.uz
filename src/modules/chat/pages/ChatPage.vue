@@ -13,7 +13,7 @@ import { useLocaleStore } from '@/core/i18n/locale.store'
 import { categoryName } from '@/core/i18n/category-name'
 import { formatMessageTime } from '@/core/lib/date'
 import { ROUTES } from '@/modules/shell/constants/routes'
-import { fetchChats } from '@/modules/chat/services/chat.service'
+import { fetchChats, openDirectChat } from '@/modules/chat/services/chat.service'
 import { useChatStore } from '@/modules/chat/stores/chat.store'
 import type { Chat } from '@/modules/chat/types/chat'
 
@@ -27,8 +27,6 @@ const agentProfileId = computed(() => {
   const id = Number(route.query.agent)
   return Number.isInteger(id) && id > 0 ? id : null
 })
-
-const showAgentEmpty = computed(() => route.query.noChat === '1')
 
 const filteredChats = ref<Chat[]>([])
 const filtering = ref(false)
@@ -77,21 +75,39 @@ function chatTitle(item: Chat) {
 }
 
 function orderLabel(item: Chat) {
-  const category = item.order.category
+  if (item.type === 'direct') {
+    return locale.t.chat.directLabel
+  }
+
+  const category = item.order?.category
     ? categoryName(item.order.category, locale.locale)
-    : item.order.title
+    : item.order?.title
   return `#${item.order_id} · ${category ?? ''}`
 }
 
 function openThread(item: Chat) {
-  router.push(`/chat/${item.order_id}`)
+  if (item.type === 'direct') {
+    router.push(ROUTES.chatDirect(item.id))
+    return
+  }
+
+  if (item.order_id) {
+    router.push(ROUTES.chatOrder(item.order_id))
+  }
 }
 
-function placeOrderWithAgent() {
+async function startDirectChat() {
   if (!agentProfileId.value) {
     return
   }
-  router.push({ path: ROUTES.newOrder, query: { agent: String(agentProfileId.value) } })
+
+  try {
+    const chatItem = await openDirectChat(agentProfileId.value)
+    router.push(ROUTES.chatDirect(chatItem.id))
+  }
+  catch {
+    // openDirectChat errors surface via global toast elsewhere if needed
+  }
 }
 </script>
 
@@ -133,7 +149,7 @@ function placeOrderWithAgent() {
       </template>
 
       <GlassCard
-        v-else-if="showAgentEmpty || (agentProfileId && displayChats.length === 0)"
+        v-else-if="agentProfileId && displayChats.length === 0"
         padding="none"
         class="overflow-hidden"
       >
@@ -143,12 +159,11 @@ function placeOrderWithAgent() {
           :description="locale.t.chat.agentEmptyBody"
         >
           <Button
-            v-if="agentProfileId"
             class="mt-1 rounded-2xl"
-            @click="placeOrderWithAgent"
+            @click="startDirectChat"
           >
             <Send class="size-4" />
-            {{ locale.t.marketplace.orderFromAgency }}
+            {{ locale.t.chat.startDirectChat }}
           </Button>
         </EmptyState>
       </GlassCard>

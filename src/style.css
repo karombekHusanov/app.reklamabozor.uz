@@ -237,6 +237,10 @@
     @apply border-violet-500/20 bg-violet-500/8 text-violet-600 dark:text-violet-300;
   }
 
+  .client-profile-shortcut__icon--indigo {
+    @apply border-indigo-500/20 bg-indigo-500/8 text-indigo-600 dark:text-indigo-300;
+  }
+
   .client-profile-shortcut__label {
     @apply min-w-0 text-sm font-semibold leading-snug text-foreground;
   }
@@ -604,13 +608,436 @@
       inset 0 1px 0 rgba(255, 255, 255, 0.08);
   }
 
+  .offers-radar-hero {
+    @apply relative mb-4 flex items-center gap-4 overflow-hidden rounded-3xl border border-primary/15 bg-card p-4;
+    background-image:
+      radial-gradient(ellipse 120% 80% at 100% 0%, oklch(0.72 0.16 285 / 0.14), transparent 55%),
+      radial-gradient(ellipse 90% 70% at 0% 100%, oklch(0.78 0.12 25 / 0.1), transparent 50%);
+    box-shadow:
+      0 18px 36px -24px rgba(15, 23, 42, 0.35),
+      inset 0 1px 0 rgba(255, 255, 255, 0.85);
+  }
+
+  .dark .offers-radar-hero {
+    box-shadow:
+      0 18px 36px -24px rgba(0, 0, 0, 0.55),
+      inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  }
+
+  .offers-radar-hero__rings {
+    @apply relative flex size-[4.5rem] shrink-0 items-center justify-center;
+  }
+
+  .offers-radar-hero__ring {
+    @apply absolute inset-0 rounded-full border border-primary/25;
+    animation: offers-radar-pulse 2.8s ease-out infinite;
+  }
+
+  .offers-radar-hero__ring--mid {
+    animation-delay: 0.6s;
+  }
+
+  .offers-radar-hero__ring--inner {
+    animation-delay: 1.2s;
+  }
+
+  .offers-radar-hero__core {
+    @apply relative z-10 flex size-10 items-center justify-center rounded-full border border-primary/30 bg-primary/10 text-primary;
+    box-shadow: 0 0 0 6px oklch(0.72 0.16 285 / 0.08);
+  }
+
+  .offers-radar-hero__eyebrow {
+    @apply text-[10px] font-bold uppercase tracking-[0.18em] text-primary;
+  }
+
+  .offers-radar-hero__title {
+    @apply mt-1 bg-gradient-to-r from-foreground via-primary to-foreground bg-clip-text text-[1.35rem] font-extrabold leading-tight tracking-tight text-transparent;
+  }
+
+  .offers-radar-hero__subtitle {
+    @apply mt-1 text-xs leading-snug text-muted-foreground;
+  }
+
+  .offers-radar-hero__chip {
+    @apply mt-3 inline-flex items-center gap-1.5 rounded-full border border-border/70 bg-background/70 px-2.5 py-1 text-[11px] font-semibold text-muted-foreground;
+  }
+
+  .offers-radar-hero__chip--live {
+    @apply border-emerald-500/25 bg-emerald-500/8 text-emerald-700 dark:text-emerald-300;
+  }
+
+  .offers-radar-hero__dot {
+    @apply size-1.5 rounded-full bg-muted-foreground/40;
+  }
+
+  .offers-radar-hero__chip--live .offers-radar-hero__dot {
+    @apply bg-emerald-500;
+    animation: offers-radar-blink 1.4s ease-in-out infinite;
+  }
+
+  @keyframes offers-radar-pulse {
+    0% {
+      transform: scale(0.55);
+      opacity: 0.85;
+    }
+
+    70% {
+      transform: scale(1);
+      opacity: 0;
+    }
+
+    100% {
+      transform: scale(1);
+      opacity: 0;
+    }
+  }
+
+  @keyframes offers-radar-blink {
+    0%,
+    100% {
+      opacity: 1;
+      box-shadow: 0 0 0 0 oklch(0.72 0.17 155 / 0.45);
+    }
+
+    50% {
+      opacity: 0.45;
+      box-shadow: 0 0 0 4px oklch(0.72 0.17 155 / 0);
+    }
+  }
+
+  .profile-edit-completion {
+    @apply rounded-3xl border border-primary/15 bg-card p-4;
+    box-shadow:
+      0 18px 36px -24px rgba(15, 23, 42, 0.28),
+      inset 0 1px 0 rgba(255, 255, 255, 0.85);
+  }
+
+  .dark .profile-edit-completion {
+    box-shadow:
+      0 18px 36px -24px rgba(0, 0, 0, 0.45),
+      inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  }
+
+  .profile-edit-completion__value {
+    @apply text-lg font-extrabold text-primary;
+  }
+
+  .profile-edit-completion__track {
+    @apply mt-2.5 h-2.5 overflow-hidden rounded-full bg-black/10 dark:bg-white/10;
+  }
+
+  .profile-edit-completion__fill {
+    @apply h-full rounded-full bg-gradient-to-r from-primary to-primary/70 transition-all duration-500;
+  }
+
+  .profile-edit-tabs-sticky {
+    @apply sticky z-30 -mx-4 px-4 pb-2 backdrop-blur-md;
+    top: calc(var(--app-header-offset) + 0.25rem);
+    background: linear-gradient(
+      to bottom,
+      oklch(from var(--background) l c h / 0.96) 0%,
+      oklch(from var(--background) l c h / 0.88) 72%,
+      transparent 100%
+    );
+  }
+
+  .profile-edit-tabs-scroll {
+    @apply overflow-x-auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .profile-edit-tabs-scroll::-webkit-scrollbar {
+    display: none;
+  }
+
+  .profile-edit-tabs-card {
+    @apply w-max min-w-full;
+  }
+
+  .profile-edit-segment {
+    @apply relative flex w-max min-w-full rounded-2xl p-1;
+  }
+
+  .profile-edit-segment__btn {
+    @apply relative z-10 shrink-0 rounded-xl px-3.5 py-2 text-xs font-semibold text-muted-foreground transition-colors;
+  }
+
+  .profile-edit-segment__btn--active {
+    @apply text-foreground;
+  }
+
+  .profile-form-section {
+    @apply overflow-hidden;
+  }
+
+  .profile-form-section__header {
+    @apply border-b border-border/60 px-5 pb-4 pt-5;
+  }
+
+  .profile-form-section__title {
+    @apply text-base font-bold tracking-tight text-foreground;
+  }
+
+  .profile-form-section__subtitle {
+    @apply mt-1.5 text-sm leading-relaxed text-muted-foreground;
+  }
+
+  .profile-form-section__body {
+    @apply space-y-7 px-5 py-5;
+  }
+
+  .profile-form-field {
+    @apply space-y-3;
+  }
+
+  .profile-form-label {
+    @apply block text-[11px] font-bold uppercase tracking-[0.16em] text-primary;
+  }
+
+  .profile-form-hint {
+    @apply -mt-1 text-xs leading-relaxed text-muted-foreground;
+  }
+
+  .profile-form-control {
+    @apply space-y-2;
+  }
+
+  .profile-form-input {
+    @apply h-12 px-4 text-[15px];
+  }
+
+  .profile-form-textarea {
+    @apply min-h-[10rem] resize-y px-4 py-3.5 text-[15px] leading-relaxed;
+  }
+
+  .profile-form-textarea--lg {
+    @apply min-h-[14rem];
+  }
+
+  .profile-form-textarea--compact {
+    @apply min-h-[5.5rem];
+  }
+
+  .workflow-steps-editor {
+    @apply space-y-4;
+  }
+
+  .workflow-steps-editor__intro {
+    @apply text-sm leading-relaxed text-muted-foreground;
+  }
+
+  .workflow-steps-empty {
+    @apply rounded-2xl border border-dashed border-border/80 bg-muted/30 px-4 py-6 text-center;
+  }
+
+  .workflow-steps-empty__text {
+    @apply text-sm leading-relaxed text-muted-foreground;
+  }
+
+  .workflow-steps-list {
+    @apply space-y-3;
+  }
+
+  .workflow-step-card {
+    @apply overflow-hidden rounded-2xl border border-border/70 bg-card shadow-sm;
+  }
+
+  .workflow-step-card__header {
+    @apply flex items-start gap-3 border-b border-border/60 bg-muted/25 px-4 py-3.5;
+  }
+
+  .workflow-step-card__badge {
+    @apply flex size-9 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground;
+  }
+
+  .workflow-step-card__title {
+    @apply text-sm font-bold text-foreground;
+  }
+
+  .workflow-step-card__hint {
+    @apply mt-0.5 text-xs leading-snug text-muted-foreground;
+  }
+
+  .workflow-step-card__remove {
+    @apply flex size-9 shrink-0 items-center justify-center rounded-full border border-border/70 text-muted-foreground transition hover:border-destructive/30 hover:bg-destructive/10 hover:text-destructive;
+  }
+
+  .workflow-step-card__body {
+    @apply space-y-5 px-4 py-4;
+  }
+
+  .workflow-step-connector {
+    @apply flex justify-center py-1 text-primary/45;
+  }
+
+  .workflow-steps-add {
+    @apply flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-border bg-muted/40 py-3.5 text-sm font-semibold text-muted-foreground transition hover:border-primary/50 hover:bg-primary/5;
+  }
+
+  .workflow-steps-add--primary {
+    @apply mt-4 border-primary/25 bg-primary/8 text-primary;
+  }
+
+  .portfolio-manager {
+    @apply space-y-4;
+  }
+
+  .portfolio-manager__intro {
+    @apply text-sm leading-relaxed text-muted-foreground;
+  }
+
+  .portfolio-manager-empty {
+    @apply rounded-2xl border border-dashed border-border/80 bg-muted/30 px-4 py-6 text-center;
+  }
+
+  .portfolio-manager-empty__text {
+    @apply text-sm leading-relaxed text-muted-foreground;
+  }
+
+  .portfolio-manager-list {
+    @apply space-y-3;
+  }
+
+  .portfolio-item-card {
+    @apply overflow-hidden rounded-2xl border border-border/70 bg-card shadow-sm;
+  }
+
+  .portfolio-item-card--hidden {
+    @apply opacity-80;
+  }
+
+  .portfolio-item-card--draft {
+    @apply border-primary/25 bg-primary/5;
+  }
+
+  .portfolio-item-card__header {
+    @apply flex items-start gap-3 border-b border-border/60 bg-muted/25 px-4 py-3.5;
+  }
+
+  .portfolio-item-card__badge {
+    @apply flex size-9 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground;
+  }
+
+  .portfolio-item-card__title {
+    @apply text-sm font-bold text-foreground;
+  }
+
+  .portfolio-item-card__hint {
+    @apply mt-0.5 line-clamp-2 text-xs leading-snug text-muted-foreground;
+  }
+
+  .portfolio-item-card__hidden {
+    @apply mt-1 flex items-center gap-1 text-xs text-destructive;
+  }
+
+  .portfolio-item-card__action {
+    @apply flex size-9 shrink-0 items-center justify-center rounded-full border border-border/70 text-muted-foreground transition hover:border-primary/30 hover:bg-primary/10 hover:text-primary;
+  }
+
+  .portfolio-item-card__action--danger {
+    @apply hover:border-destructive/30 hover:bg-destructive/10 hover:text-destructive;
+  }
+
+  .portfolio-item-card__body {
+    @apply space-y-4 px-4 py-4;
+  }
+
+  .portfolio-item-card__gallery {
+    @apply flex gap-2 overflow-x-auto pb-1;
+  }
+
+  .portfolio-item-card__gallery-image {
+    @apply size-24 shrink-0 rounded-xl object-cover;
+  }
+
+  .portfolio-item-card__link {
+    @apply truncate text-xs text-primary;
+  }
+
+  .portfolio-item-card__attachments {
+    @apply space-y-2;
+  }
+
+  .portfolio-item-card__attachments-label {
+    @apply text-xs font-semibold uppercase tracking-wide text-muted-foreground;
+  }
+
+  .portfolio-item-card__attachment {
+    @apply flex items-center gap-2 rounded-xl border border-border/70 bg-muted/30 px-3 py-2;
+  }
+
+  .portfolio-manager-add {
+    @apply flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-border bg-muted/40 py-3.5 text-sm font-semibold text-muted-foreground transition hover:border-primary/50 hover:bg-primary/5;
+  }
+
+  .portfolio-manager-add--primary {
+    @apply mt-4 border-primary/25 bg-primary/8 text-primary;
+  }
+
+  .profile-category-list {
+    @apply space-y-3;
+  }
+
+  .profile-category-row {
+    @apply grid cursor-pointer grid-cols-[1fr_auto] items-center gap-4 rounded-2xl border border-border/70 bg-card px-4 py-3.5 shadow-sm transition-colors;
+  }
+
+  .profile-category-row--selected {
+    @apply bg-primary/5;
+  }
+
+  .profile-category-row__label {
+    @apply min-w-0 text-sm font-semibold leading-snug text-foreground;
+  }
+
+  .profile-category-row__content {
+    @apply flex min-w-0 items-center gap-3;
+  }
+
+  .profile-category-row__icon {
+    @apply size-4 shrink-0;
+  }
+
+  .profile-category-row--disabled {
+    @apply opacity-50;
+  }
+
+  .profile-category-row__checkbox {
+    @apply flex size-6 shrink-0 items-center justify-center rounded-full border-2 border-border bg-background text-primary transition;
+  }
+
+  .profile-category-row--selected .profile-category-row__checkbox {
+    @apply border-primary bg-primary text-primary-foreground;
+  }
+
+  .profile-edit-lock-banner {
+    @apply flex items-start gap-2.5 rounded-2xl border border-amber-500/25 bg-amber-500/8 px-3.5 py-3 text-amber-800 dark:text-amber-200;
+  }
+
+  .profile-edit-readonly-field {
+    @apply rounded-2xl border border-border/70 bg-muted/40 px-3.5 py-3 dark:bg-white/5;
+  }
+
+  .profile-edit-readonly-field__label {
+    @apply text-[11px] font-semibold uppercase tracking-wide text-muted-foreground;
+  }
+
+  .profile-edit-readonly-field__value {
+    @apply mt-1 text-sm font-medium leading-snug text-foreground;
+  }
+
+  .profile-edit-readonly-file {
+    @apply inline-flex w-full items-center gap-2 rounded-2xl border border-border/70 bg-muted/40 px-3.5 py-3 text-sm font-medium text-primary dark:bg-white/5;
+  }
+
   /* Agent profile — flat surfaces (public + owner views). */
   .agent-profile-page {
     @apply min-h-full bg-background;
   }
 
   .agent-profile-stat {
-    @apply rounded-xl border border-border bg-card p-1.5 text-center;
+    @apply rounded-2xl border border-border bg-card p-1.5 text-center;
   }
 
   .agent-profile-stat__icon {
@@ -618,7 +1045,7 @@
   }
 
   .agent-profile-card {
-    @apply rounded-[28px] border border-border bg-card shadow-sm;
+    @apply rounded-3xl border border-border bg-card shadow-sm;
   }
 
   .agent-profile-toolbar-btn {
@@ -650,12 +1077,50 @@
     @apply text-[11px] font-bold leading-none;
   }
 
+  .agent-profile-section,
   .agent-profile-services-card {
-    @apply rounded-[28px] border border-border bg-card shadow-sm;
+    @apply overflow-hidden rounded-3xl border border-border bg-card shadow-sm;
+  }
+
+  .agent-profile-section__header {
+    @apply flex items-center justify-between gap-2 px-4 pt-4;
+  }
+
+  .agent-profile-section__title {
+    @apply text-sm font-bold leading-tight text-foreground;
+  }
+
+  .agent-profile-section__subtitle {
+    @apply mb-2.5 text-[11px] leading-snug text-muted-foreground;
+  }
+
+  .agent-profile-section__body {
+    @apply px-4 pb-4 pt-3;
+  }
+
+  .agent-profile-info-card,
+  .agent-profile-advantage {
+    @apply flex items-start gap-3 rounded-2xl border border-border/70 bg-muted/15 p-3;
+  }
+
+  .agent-profile-info-card__icon {
+    @apply flex size-9 shrink-0 items-center justify-center rounded-xl border border-primary/20 bg-primary/6 text-primary;
+  }
+
+  .agent-profile-info-card__title {
+    @apply text-xs font-bold leading-tight text-foreground;
+  }
+
+  .agent-profile-info-card__text {
+    @apply mt-0.5 text-[11px] leading-snug text-muted-foreground;
+  }
+
+  .agent-profile-info-card__link {
+    @apply mt-0.5 truncate text-[11px] leading-snug text-primary;
   }
 
   .agent-profile-service {
-    @apply rounded-xl border border-border bg-card p-2.5 text-center;
+    @apply rounded-2xl border border-border bg-card p-2.5 text-center;
   }
 
   .agent-profile-service__icon {
@@ -663,11 +1128,7 @@
   }
 
   .agent-profile-portfolio-card {
-    @apply overflow-hidden rounded-xl border border-border bg-card;
-  }
-
-  .agent-profile-advantage {
-    @apply rounded-xl border border-border bg-card p-2.5;
+    @apply overflow-hidden rounded-2xl border border-border bg-card;
   }
 
   .agent-category-tile {
@@ -727,7 +1188,7 @@
   }
 
   .agent-portfolio-bento {
-    @apply grid grid-cols-2 gap-2;
+    @apply grid grid-cols-2 gap-2.5;
   }
 
   .agent-portfolio-bento__item {
@@ -756,6 +1217,14 @@
 
   .agent-portfolio-bento__image {
     @apply size-full object-cover;
+  }
+
+  .agent-portfolio-bento__media {
+    @apply relative size-full;
+  }
+
+  .agent-portfolio-bento__more {
+    @apply absolute right-2 top-2 rounded-full bg-black/55 px-2 py-0.5 text-[10px] font-bold text-white;
   }
 
   .agent-portfolio-bento__overlay {
@@ -914,7 +1383,7 @@
   }
 
   .agent-profile-testimonial {
-    @apply rounded-xl border border-border bg-card;
+    @apply rounded-2xl border border-border bg-card;
   }
 
   .agent-profile-carousel [data-slot="carousel-item"] {

@@ -4,6 +4,7 @@ export const profileRoutes: RouteRecordRaw[] = [
   {
     path: 'clients/:id',
     name: 'client-detail',
+    meta: { hideTabBar: true },
     component: () => import('@/modules/profile/pages/ClientDetailPage.vue'),
     props: true,
   },

@@ -15,9 +15,9 @@ const locale = useLocaleStore()
 </script>
 
 <template>
-  <section class="agent-profile-services-card px-3 pb-3 pt-4 sm:px-4 sm:pb-4 sm:pt-5">
-    <div class="flex items-center justify-between gap-2">
-      <h3 class="pt-0.5 text-[0.9rem] font-bold text-foreground">
+  <section class="agent-profile-section">
+    <div class="agent-profile-section__header">
+      <h3 class="agent-profile-section__title">
         {{ title }}
       </h3>
       <button
@@ -31,7 +31,7 @@ const locale = useLocaleStore()
       </button>
     </div>
 
-    <div class="mt-3">
+    <div class="agent-profile-section__body">
       <slot />
     </div>
   </section>

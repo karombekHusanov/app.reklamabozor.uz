@@ -7,6 +7,8 @@ export const ROUTES = {
   map: '/map',
   chat: '/chat',
   chatThreads: '/chat/threads',
+  chatDirect: (id: number | string) => `/chat/direct/${id}`,
+  chatOrder: (id: number | string) => `/chat/${id}`,
   notifications: '/notifications',
   orders: '/orders',
   offers: '/offers',
