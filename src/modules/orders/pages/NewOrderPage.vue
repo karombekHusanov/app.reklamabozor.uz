@@ -56,7 +56,7 @@ async function loadCategories() {
     if (targetAgentId.value !== null) {
       // Directed order — use the agency's own categories and remember its name.
       const agent = await fetchPublicAgent(targetAgentId.value)
-      targetAgent.value = { id: agent.id, company_name: agent.company_name }
+      targetAgent.value = { id: agent.id, company_name: agent.display_name }
       categories.value = agent.categories
     }
     else {

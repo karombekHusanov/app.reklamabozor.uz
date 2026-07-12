@@ -102,9 +102,9 @@ function orderFromAgency() {
 
     <AgentShowcase
       v-else-if="agent"
-      :header-title="agent.company_name"
-      :name="agent.company_name"
-      :logo="agent.company_logo"
+      :header-title="agent.display_name"
+      :name="agent.display_name"
+      :logo="agent.company_logo ?? agent.avatar"
       :subtitle="subtitle"
       :is-approved="true"
       :bio="agent.bio"

@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { getApiErrorMessage } from '@/core/api/api-error'
 import {
+  createDesignerProfile,
   fetchAgentCategories,
   fetchMyAgentProfile,
   resubmitAgentApplication,
@@ -13,6 +14,7 @@ import type {
   AgentDetailsPayload,
   AgentProfile,
   Category,
+  DesignerProfilePayload,
 } from '@/modules/agent/types/agent'
 
 export const useAgentStore = defineStore('agent', () => {
@@ -100,6 +102,25 @@ export const useAgentStore = defineStore('agent', () => {
     }
   }
 
+  /** Designer profili: minimal forma, KYC'siz — darhol approved bo'ladi. */
+  async function submitDesigner(payload: DesignerProfilePayload) {
+    isSubmitting.value = true
+    error.value = null
+
+    try {
+      profile.value = await createDesignerProfile(payload)
+      loaded.value = true
+      return true
+    }
+    catch (e) {
+      error.value = getApiErrorMessage(e)
+      return false
+    }
+    finally {
+      isSubmitting.value = false
+    }
+  }
+
   /** Phase 2 — save the client-facing presentation (approved profiles only). */
   async function submitDetails(payload: AgentDetailsPayload) {
     isSavingDetails.value = true
@@ -145,6 +166,7 @@ export const useAgentStore = defineStore('agent', () => {
     loadProfile,
     loadCategories,
     submit,
+    submitDesigner,
     submitDetails,
     reset,
   }

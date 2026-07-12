@@ -17,12 +17,17 @@ const props = withDefaults(defineProps<{
   maxLength: 4000,
 })
 
+const emit = defineEmits<{
+  focus: []
+}>()
+
 const locale = useLocaleStore()
 const { isUploading, error, upload } = useFileUpload()
 
 const draft = ref('')
 const attachments = ref<UploadedFile[]>([])
 const fileInput = ref<HTMLInputElement | null>(null)
+const textareaRef = ref<HTMLTextAreaElement | null>(null)
 
 function isImage(file: UploadedFile): boolean {
   return (file.mime_type ?? '').startsWith('image/')
@@ -63,6 +68,16 @@ async function submit() {
     attachments.value = []
     error.value = null // a stale upload error shouldn't outlive a successful send
   }
+}
+
+function onFocus() {
+  emit('focus')
+  // After the keyboard animates in, keep the caret area inside the visual viewport.
+  requestAnimationFrame(() => {
+    window.setTimeout(() => {
+      textareaRef.value?.scrollIntoView({ block: 'nearest', inline: 'nearest' })
+    }, 320)
+  })
 }
 </script>
 
@@ -130,11 +145,14 @@ async function submit() {
       </button>
 
       <textarea
+        ref="textareaRef"
         v-model="draft"
         rows="1"
         :maxlength="maxLength"
         :placeholder="placeholder || locale.t.chat.inputPlaceholder"
-        class="max-h-28 flex-1 resize-none bg-transparent py-2 text-sm text-foreground outline-none placeholder:text-muted-foreground"
+        class="chat-composer-input max-h-28 flex-1 resize-none bg-transparent py-2 text-foreground outline-none placeholder:text-muted-foreground"
+        enterkeyhint="send"
+        @focus="onFocus"
         @keydown.enter.exact.prevent="submit"
       />
 

@@ -7,6 +7,7 @@ import GlassCard from '@/core/ui/GlassCard.vue'
 import { useTelegram } from '@/core/composables/useTelegram'
 import { useToast } from '@/core/composables/useToast'
 import { useLocaleStore } from '@/core/i18n/locale.store'
+import { navigateBack } from '@/core/lib/navigation'
 import WizardProgress from '@/modules/orders/components/wizard/WizardProgress.vue'
 import ServiceStep from '@/modules/orders/components/wizard/ServiceStep.vue'
 import BriefStep from '@/modules/orders/components/wizard/BriefStep.vue'
@@ -76,7 +77,7 @@ function validateStep(): boolean {
 function goBack() {
   haptic('light')
   if (step.value === 0) {
-    router.back()
+    navigateBack(router)
     return
   }
   step.value -= 1

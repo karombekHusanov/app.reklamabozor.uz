@@ -96,7 +96,7 @@ const filteredAgents = computed(() => {
 
     const matchCat = activeCategory.value === null || a.categories.some(c => c.id === activeCategory.value)
     const matchQ = !q
-      || a.company_name.toLowerCase().includes(q)
+      || a.display_name.toLowerCase().includes(q)
       || (a.location_label?.toLowerCase().includes(q) ?? false)
     return matchCat && matchQ
   })
@@ -239,7 +239,7 @@ onBeforeUnmount(() => {
           v-model="query"
           type="search"
           :placeholder="locale.t.map.searchPlaceholder"
-          class="w-full bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
+          class="w-full bg-transparent text-base text-foreground outline-none placeholder:text-muted-foreground"
         >
       </div>
     </div>
@@ -336,15 +336,15 @@ onBeforeUnmount(() => {
             @click="openAgent(selectedAgent)"
           >
             <Avatar
-              :src="selectedAgent.company_logo"
-              :name="selectedAgent.company_name"
+              :src="selectedAgent.company_logo ?? selectedAgent.avatar"
+              :name="selectedAgent.display_name"
               size="lg"
               class="!size-[3.75rem] shrink-0 !rounded-2xl"
             />
             <div class="min-w-0 flex-1">
               <div class="flex items-center gap-1">
                 <p class="truncate font-bold text-slate-900">
-                  {{ selectedAgent.company_name }}
+                  {{ selectedAgent.display_name }}
                 </p>
                 <BadgeCheck class="size-4 shrink-0 fill-primary/15 text-primary" />
               </div>

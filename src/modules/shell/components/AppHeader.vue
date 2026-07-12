@@ -6,6 +6,7 @@ import type { HTMLAttributes } from 'vue'
 import WebApp from '@twa-dev/sdk'
 import GlassCard from '@/core/ui/GlassCard.vue'
 import { useLocaleStore } from '@/core/i18n/locale.store'
+import { navigateBack } from '@/core/lib/navigation'
 import { isInsideTelegram, supportsVersion } from '@/core/lib/telegram-init'
 
 const props = withDefaults(defineProps<{
@@ -25,7 +26,7 @@ const locale = useLocaleStore()
 const router = useRouter()
 
 function goBack() {
-  router.back()
+  navigateBack(router)
 }
 
 // Also wire Telegram's native BackButton when available — but keep the in-page

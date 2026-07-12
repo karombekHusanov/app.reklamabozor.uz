@@ -16,6 +16,7 @@ import {
   sendGlobalMessage,
 } from '@/modules/chat/services/chat.service'
 import ChatComposer from '@/modules/chat/components/ChatComposer.vue'
+import ChatComposerDock from '@/modules/chat/components/ChatComposerDock.vue'
 import MessageBubble from '@/modules/chat/components/MessageBubble.vue'
 import { buildChatFeed } from '@/modules/chat/lib/chat-feed'
 import { resolveAgentChat } from '@/modules/chat/lib/open-agent-chat'
@@ -354,7 +355,7 @@ onBeforeUnmount(() => {
     </section>
 
     <!-- Composer with rule-driven states -->
-    <div class="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-background px-5 pb-[max(env(safe-area-inset-bottom),0.75rem)] pt-2.5">
+    <ChatComposerDock>
       <p
         v-if="meta && !meta.enabled"
         class="rounded-2xl bg-secondary px-4 py-3 text-center text-sm text-muted-foreground dark:bg-white/5"
@@ -386,7 +387,8 @@ onBeforeUnmount(() => {
         :send="handleSend"
         :sending="isSending"
         :max-length="meta?.max_message_length ?? 500"
+        @focus="scrollToBottom(false)"
       />
-    </div>
+    </ChatComposerDock>
   </div>
 </template>

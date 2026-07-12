@@ -14,7 +14,12 @@ export interface PublicReview {
 export interface PublicAgent {
   id: number
   user_id: number
-  company_name: string
+  company_name: string | null
+  /** Studio nomi bo'lmasa — shaxsning jonli ism-familiyasi. */
+  display_name: string
+  /** User Telegram avatari (dizaynerlar uchun asosiy rasm). */
+  avatar: string | null
+  provider_type: 'agent' | 'designer'
   company_logo: string | null
   bio: string | null
   location_label: string | null

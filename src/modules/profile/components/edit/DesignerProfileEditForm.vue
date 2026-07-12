@@ -5,12 +5,10 @@ import GlassCard from '@/core/ui/GlassCard.vue'
 import Skeleton from '@/core/ui/Skeleton.vue'
 import { useToast } from '@/core/composables/useToast'
 import { useLocaleStore } from '@/core/i18n/locale.store'
-import AgentApplicationForm from '@/modules/agent/components/AgentApplicationForm.vue'
-import AgentStatusCard from '@/modules/agent/components/AgentStatusCard.vue'
-import PortfolioManager from '@/modules/profile/components/edit/PortfolioManager.vue'
+import DesignerCreateForm from '@/modules/profile/components/edit/DesignerCreateForm.vue'
 import DesignerDetailsForm from '@/modules/profile/components/edit/DesignerDetailsForm.vue'
 import { useAgentStore } from '@/modules/agent/stores/agent.store'
-import type { AgentApplicationPayload, AgentDetailsPayload } from '@/modules/agent/types/agent'
+import type { AgentDetailsPayload, DesignerProfilePayload } from '@/modules/agent/types/agent'
 import { ROUTES } from '@/modules/shell/constants/routes'
 
 const agent = useAgentStore()
@@ -20,17 +18,18 @@ const router = useRouter()
 
 const profile = computed(() => agent.profile)
 const designerCategories = computed(() => agent.categories.filter(category => category.type === 'designer'))
-const showApplication = computed(() => !agent.isApproved)
-const showDetails = computed(() => agent.isApproved && profile.value)
+// Dizaynerda KYC yo'q: profil bor = darhol approved, forma faqat profil yo'qligida.
+const showCreate = computed(() => !profile.value)
+const showDetails = computed(() => Boolean(profile.value))
 
 onMounted(() => {
   void Promise.all([agent.loadProfile(true), agent.loadCategories()])
 })
 
-async function handleSubmit(payload: AgentApplicationPayload) {
-  const ok = await agent.submit(payload)
+async function handleCreate(payload: DesignerProfilePayload) {
+  const ok = await agent.submitDesigner(payload)
   if (ok) {
-    toast.success(locale.t.agent.submittedToast)
+    toast.success(locale.t.designer.createdToast)
     return
   }
   if (agent.error) toast.error(agent.error)
@@ -67,20 +66,12 @@ async function handleSaveDetails(payload: AgentDetailsPayload) {
         </p>
       </GlassCard>
 
-      <AgentStatusCard
-        v-if="profile"
-        :profile="profile"
-      />
-
-      <AgentApplicationForm
-        v-if="showApplication"
-        :initial="profile"
+      <DesignerCreateForm
+        v-if="showCreate"
+        :categories="designerCategories"
         :submitting="agent.isSubmitting"
-        @submit="handleSubmit"
+        @submit="handleCreate"
       />
-
-      <!-- Portfolio publishes immediately (own CRUD) — separate from the PATCH form. -->
-      <PortfolioManager v-if="showDetails && profile" />
 
       <DesignerDetailsForm
         v-if="showDetails && profile"

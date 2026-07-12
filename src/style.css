@@ -164,6 +164,14 @@
     @apply bg-background text-foreground font-sans antialiased;
     min-height: 100svh;
   }
+
+  /* iOS auto-zooms focused inputs when font-size < 16px. */
+  input:not([type='checkbox']):not([type='radio']):not([type='file']):not([type='hidden']):not([type='button']):not([type='submit']):not([type='reset']):not([type='image']):not([type='range']):not([type='color']),
+  textarea,
+  select {
+    font-size: 16px;
+    touch-action: manipulation;
+  }
 }
 
 @layer utilities {
@@ -804,11 +812,11 @@
   }
 
   .profile-form-input {
-    @apply h-12 px-4 text-[15px];
+    @apply h-12 px-4 text-base;
   }
 
   .profile-form-textarea {
-    @apply min-h-[10rem] resize-y px-4 py-3.5 text-[15px] leading-relaxed;
+    @apply min-h-[10rem] resize-y px-4 py-3.5 text-base leading-relaxed;
   }
 
   .profile-form-textarea--lg {
@@ -1080,6 +1088,88 @@
   .agent-profile-section,
   .agent-profile-services-card {
     @apply overflow-hidden rounded-3xl border border-border bg-card shadow-sm;
+  }
+
+  .agent-verify-cta {
+    @apply grid w-full grid-cols-[auto_1fr_auto] items-center gap-3 border-b border-primary/15 bg-primary/[0.07] px-4 py-3.5 text-left;
+    @apply dark:bg-primary/10;
+    box-shadow: inset 0 1px 0 color-mix(in oklab, white 55%, transparent);
+  }
+
+  .agent-verify-cta__icon {
+    @apply relative flex size-11 shrink-0 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-[0_8px_20px_-8px_rgba(11,107,203,0.65)];
+  }
+
+  .agent-verify-cta__icon-pulse {
+    @apply pointer-events-none absolute inset-0 rounded-2xl bg-primary/35;
+    animation: agent-verify-pulse 2.4s ease-out infinite;
+  }
+
+  .agent-verify-cta__copy {
+    @apply min-w-0 space-y-0.5;
+  }
+
+  .agent-verify-cta__badge {
+    @apply inline-flex rounded-full bg-primary/12 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-primary;
+  }
+
+  .agent-verify-cta__title {
+    @apply block text-sm font-bold leading-snug text-foreground;
+  }
+
+  .agent-verify-cta__hint {
+    @apply block text-xs leading-snug text-muted-foreground;
+  }
+
+  .agent-verify-cta__chevron {
+    @apply size-4 shrink-0 text-primary;
+  }
+
+  @keyframes agent-verify-pulse {
+    0% {
+      transform: scale(0.92);
+      opacity: 0.75;
+    }
+    70% {
+      transform: scale(1.18);
+      opacity: 0;
+    }
+    100% {
+      transform: scale(1.18);
+      opacity: 0;
+    }
+  }
+
+  .agent-verify-cta--pending {
+    @apply border-primary/20 bg-primary/[0.05];
+  }
+
+  .agent-verify-cta--pending .agent-verify-cta__icon {
+    @apply bg-primary/15 text-primary shadow-none;
+  }
+
+  .agent-verify-cta--pending .agent-verify-cta__badge {
+    @apply bg-primary/10 text-primary;
+  }
+
+  .agent-verify-cta--pending .agent-verify-cta__chevron {
+    @apply text-primary/70;
+  }
+
+  .agent-verify-cta--rejected {
+    @apply border-red-500/20 bg-red-500/[0.06];
+  }
+
+  .agent-verify-cta--rejected .agent-verify-cta__icon {
+    @apply bg-red-500/15 text-red-600 shadow-none dark:text-red-400;
+  }
+
+  .agent-verify-cta--rejected .agent-verify-cta__badge {
+    @apply bg-red-500/12 text-red-700 dark:text-red-300;
+  }
+
+  .agent-verify-cta--rejected .agent-verify-cta__chevron {
+    @apply text-red-600/70 dark:text-red-400/70;
   }
 
   .agent-profile-section__header {
@@ -1506,7 +1596,7 @@
 
   /* Text inputs / textareas. */
   .glass-input {
-    @apply w-full rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground shadow-sm outline-none transition;
+    @apply w-full rounded-2xl border border-border bg-card px-4 py-3 text-base text-foreground shadow-sm outline-none transition;
     @apply placeholder:text-muted-foreground;
     @apply focus:border-primary focus:ring-2 focus:ring-primary/15;
     @apply dark:bg-white/5 dark:focus:bg-white/10;
@@ -1526,6 +1616,18 @@
   .chat-day-pill {
     @apply mx-auto w-fit rounded-full bg-background/80 px-3 py-1 text-xs font-medium text-muted-foreground shadow-sm backdrop-blur;
     @apply dark:bg-white/10 dark:text-white/70;
+  }
+
+  /* Fixed chat composer — lifted above the keyboard via useKeyboardInset(). */
+  .chat-composer-dock {
+    @apply fixed inset-x-0 z-20 border-t border-border bg-background px-5 pt-2.5;
+    padding-bottom: max(env(safe-area-inset-bottom), 0.75rem);
+    transition: bottom 0.2s ease-out;
+  }
+
+  /* Chat composer textarea — line-height tuned for single-line growth. */
+  .chat-composer-input {
+    line-height: 1.375;
   }
 
   /* Unselected pill / chip. */
@@ -1673,11 +1775,12 @@
   opacity: 0;
 }
 
-@layer base {
-  * {
-    @apply border-border outline-ring/50;
-    }
-  body {
-    @apply bg-background text-foreground;
-    }
+/* iOS WebViews: utility classes like text-sm must not shrink form controls below 16px. */
+@supports (-webkit-touch-callout: none) {
+  input:not([type='checkbox']):not([type='radio']):not([type='file']):not([type='hidden']):not([type='button']):not([type='submit']):not([type='reset']):not([type='image']):not([type='range']):not([type='color']),
+  textarea,
+  select {
+    font-size: 16px !important;
+    touch-action: manipulation;
+  }
 }

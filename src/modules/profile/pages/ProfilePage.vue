@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, watch } from 'vue'
+import { computed, onActivated, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import AppHeader from '@/modules/shell/components/AppHeader.vue'
 import { useAuthStore } from '@/modules/auth/stores/auth.store'
@@ -37,6 +37,11 @@ async function load() {
 
 onMounted(() => void load())
 watch(() => auth.isAuthenticated, load)
+onActivated(() => {
+  if (auth.isAuthenticated && isProvider.value) {
+    void agent.loadProfile(true)
+  }
+})
 
 function navigate(to: string) {
   router.push(to)

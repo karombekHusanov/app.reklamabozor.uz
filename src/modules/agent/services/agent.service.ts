@@ -2,6 +2,7 @@ import { api } from '@/core/api/client'
 import type { ApiSuccess } from '@/core/types/api'
 import type {
   Advantage,
+  DesignerProfilePayload,
   AgentApplicationPayload,
   AgentDetailsPayload,
   AgentProfile,
@@ -84,4 +85,11 @@ export async function updatePortfolioItem(
 
 export async function deletePortfolioItem(id: number): Promise<void> {
   await api.delete(`/api/v1/agent/portfolio/${id}`)
+}
+
+/** Designer profili: minimal forma, KYC'siz, darhol approved. */
+export async function createDesignerProfile(payload: DesignerProfilePayload): Promise<AgentProfile> {
+  const { data } = await api.post<ApiSuccess<AgentProfile>>('/api/v1/designer/profile', payload)
+
+  return data.data
 }

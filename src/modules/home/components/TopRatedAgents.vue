@@ -81,15 +81,15 @@ function openAgent(id: number) {
         </span>
 
         <Avatar
-          :src="agent.company_logo"
-          :name="agent.company_name"
+          :src="agent.company_logo ?? agent.avatar"
+          :name="agent.display_name"
           size="md"
           class="top-agents-avatar"
         />
 
         <div class="min-w-0 flex-1">
           <p class="truncate text-sm font-bold text-foreground">
-            {{ agent.company_name }}
+            {{ agent.display_name }}
           </p>
           <p v-if="agentCategory(agent)" class="truncate text-xs text-muted-foreground">
             {{ agentCategory(agent) }}

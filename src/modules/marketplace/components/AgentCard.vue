@@ -30,12 +30,12 @@ const distanceLabel = computed(() => {
     class="pressable flex w-full items-center gap-3 rounded-2xl border border-border bg-card p-3.5 text-left shadow-sm"
     @click="$emit('open')"
   >
-    <Avatar :src="agent.company_logo" :name="agent.company_name" size="md" class="shrink-0 rounded-xl" />
+    <Avatar :src="agent.company_logo ?? agent.avatar" :name="agent.display_name" size="md" class="shrink-0 rounded-xl" />
 
     <div class="min-w-0 flex-1">
       <div class="flex items-center gap-1.5">
         <h3 class="truncate font-semibold leading-tight">
-          {{ agent.company_name }}
+          {{ agent.display_name }}
         </h3>
         <BadgeCheck class="size-4 shrink-0 fill-primary text-primary-foreground" />
       </div>

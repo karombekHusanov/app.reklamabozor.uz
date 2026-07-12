@@ -3,7 +3,7 @@ import { computed, ref, watch } from 'vue'
 import type { User } from '@/modules/auth/types/user'
 import type { AgentProfile } from '@/modules/agent/types/agent'
 import { categoryName } from '@/core/i18n/category-name'
-import AgentProfileShortcuts from '@/modules/profile/components/agent-sections/AgentProfileShortcuts.vue'
+import AgentProfileShortcuts, { type AgentVerificationState } from '@/modules/profile/components/agent-sections/AgentProfileShortcuts.vue'
 import AgentShowcase from '@/modules/profile/components/AgentShowcase.vue'
 import type { useLocaleStore } from '@/core/i18n/locale.store'
 import { fetchPublicAgent, type PublicAgent } from '@/modules/marketplace/services/agents.service'
@@ -51,15 +51,28 @@ const subtitle = computed(() => {
 const completion = computed(() => props.profile?.completion_percent ?? 0)
 const isApproved = computed(() => props.profile?.status === 'approved')
 
+const verificationState = computed((): AgentVerificationState | undefined => {
+  if (!props.profile) return 'none'
+  if (props.profile.status === 'pending') return 'pending'
+  if (props.profile.status === 'rejected') return 'rejected'
+  return undefined
+})
+
 const completedOrdersCount = computed(() => publicAgent.value?.completed_orders_count ?? 0)
 const ratingAvg = computed(() => publicAgent.value?.rating_avg ?? null)
 const ratingCount = computed(() => publicAgent.value?.rating_count ?? 0)
 const reviews = computed(() => publicAgent.value?.reviews ?? [])
+
+const pageTitle = computed(() =>
+  props.user.role === 'designer'
+    ? props.locale.t.profile.designerPageTitle
+    : props.locale.t.profile.agentPageTitle,
+)
 </script>
 
 <template>
   <AgentShowcase
-    :header-title="locale.t.profile.agentPageTitle"
+    :header-title="pageTitle"
     :name="title"
     :logo="profile?.company_logo ?? user.avatar"
     :subtitle="subtitle"
@@ -83,6 +96,9 @@ const reviews = computed(() => publicAgent.value?.reviews ?? [])
     <template #shortcuts>
       <AgentProfileShortcuts
         :locale="locale"
+        :needs-verification="!isApproved"
+        :verification-state="verificationState"
+        :rejection-reason="profile?.rejection_reason ?? null"
         @navigate="emit('navigate', $event)"
       />
     </template>

@@ -52,6 +52,8 @@ export interface Category {
 
 export interface AgentProfile {
   id: number
+  display_name: string
+  provider_type: 'agent' | 'designer'
 
   // Phase 1 — verification / KYC.
   company_name: string
@@ -120,6 +122,13 @@ export interface AgentDetailsPayload {
   category_ids?: number[]
   advantage_ids?: number[]
   workflow_steps?: WorkflowStep[] | null
+}
+
+/** POST /designer/profile payload — minimal, KYC'siz. */
+export interface DesignerProfilePayload {
+  company_name?: string | null
+  bio?: string | null
+  category_ids: number[]
 }
 
 /** POST /agent/portfolio payload. */

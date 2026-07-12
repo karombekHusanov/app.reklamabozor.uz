@@ -1,17 +1,18 @@
 <script setup lang="ts">
-import { Check, Loader2 } from '@lucide/vue'
-import { onMounted, reactive, ref } from 'vue'
-import GlassCard from '@/core/ui/GlassCard.vue'
-import ImageUpload from '@/core/ui/ImageUpload.vue'
+import { Loader2 } from '@lucide/vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import StickyActionBar from '@/core/ui/StickyActionBar.vue'
-import LocationPicker from '@/core/ui/LocationPicker.vue'
+import ImageUpload from '@/core/ui/ImageUpload.vue'
 import { Button } from '@/core/ui/button'
-import { cn } from '@/core/lib/utils'
+import { useLocaleStore } from '@/core/i18n/locale.store'
 import AdvantagesPicker from '@/modules/profile/components/edit/AdvantagesPicker.vue'
+import CategoryCheckboxList from '@/modules/profile/components/edit/CategoryCheckboxList.vue'
+import PortfolioManager from '@/modules/profile/components/edit/PortfolioManager.vue'
+import ProfileEditSegmentTabs from '@/modules/profile/components/edit/ProfileEditSegmentTabs.vue'
+import ProfileFormField from '@/modules/profile/components/edit/ProfileFormField.vue'
+import ProfileFormSection from '@/modules/profile/components/edit/ProfileFormSection.vue'
 import WorkflowStepsEditor from '@/modules/profile/components/edit/WorkflowStepsEditor.vue'
 import { fetchAdvantagesCatalog } from '@/modules/agent/services/agent.service'
-import { useLocaleStore } from '@/core/i18n/locale.store'
-import { categoryName } from '@/core/i18n/category-name'
 import type {
   Advantage,
   AgentDetailsPayload,
@@ -19,6 +20,8 @@ import type {
   Category,
   WorkflowStep,
 } from '@/modules/agent/types/agent'
+
+type EditTab = 'brand' | 'categories' | 'links' | 'portfolio' | 'advantages' | 'workflow'
 
 const locale = useLocaleStore()
 
@@ -32,34 +35,49 @@ const emit = defineEmits<{
   save: [payload: AgentDetailsPayload]
 }>()
 
+const activeTab = ref<EditTab>('brand')
+
+const tabs = computed(() => [
+  { key: 'brand' as const, label: locale.t.agent.editTabBrand },
+  { key: 'categories' as const, label: locale.t.agent.editTabCategories },
+  { key: 'links' as const, label: locale.t.designer.editTabLinks },
+  { key: 'portfolio' as const, label: locale.t.agent.editTabPortfolio },
+  { key: 'advantages' as const, label: locale.t.agent.editTabAdvantages },
+  { key: 'workflow' as const, label: locale.t.agent.editTabWorkflow },
+])
+
+const showSaveBar = computed(() => activeTab.value !== 'portfolio')
+
+const advantagesSubtitle = computed(() =>
+  locale.t.agent.advantagesSelectedCount
+    .replace('{count}', String(selectedAdvantageIds.value.length))
+    .replace('{max}', '6'),
+)
+
+const workflowSubtitle = computed(() =>
+  locale.t.profile.editWorkflowSubtitle
+    .replace('{count}', String(workflowSteps.value.length))
+    .replace('{max}', '6'),
+)
+
+const portfolioCount = ref(0)
+
+const portfolioSubtitle = computed(() =>
+  locale.t.profile.editPortfolioSubtitle
+    .replace('{count}', String(portfolioCount.value))
+    .replace('{max}', '12'),
+)
+
 const form = reactive({
   company_logo_file_id: props.profile.company_logo_file_id,
   bio: props.profile.bio ?? '',
   website_url: props.profile.website_url ?? '',
   linkedin_url: props.profile.linkedin_url ?? '',
-  location_label: props.profile.location_label ?? '',
-  lat: props.profile.lat !== null ? Number(props.profile.lat) : null as number | null,
-  lng: props.profile.lng !== null ? Number(props.profile.lng) : null as number | null,
   results_text: props.profile.results_text ?? '',
 })
 
-const selectedCategoryIds = ref<number[]>(props.profile.categories.map((c) => c.id))
+const selectedCategoryIds = ref<number[]>(props.profile.categories.map(c => c.id))
 
-function toggleCategory(id: number) {
-  const index = selectedCategoryIds.value.indexOf(id)
-  if (index === -1) selectedCategoryIds.value.push(id)
-  else selectedCategoryIds.value.splice(index, 1)
-}
-
-function onLocationPicked(value: { lat: number; lng: number; address: string | null }) {
-  form.lat = value.lat
-  form.lng = value.lng
-  if (value.address && form.location_label.trim() === '') {
-    form.location_label = value.address
-  }
-}
-
-// Advantages catalog (admin-managed) + the provider's current picks.
 const advantagesCatalog = ref<Advantage[]>([])
 const selectedAdvantageIds = ref<number[]>((props.profile.advantages ?? []).map(a => a.id))
 const workflowSteps = ref<WorkflowStep[]>(
@@ -81,9 +99,6 @@ function handleSave() {
     bio: form.bio.trim() || null,
     website_url: form.website_url.trim() || null,
     linkedin_url: form.linkedin_url.trim() || null,
-    location_label: form.location_label.trim() || null,
-    lat: form.lat,
-    lng: form.lng,
     results_text: form.results_text.trim() || null,
     category_ids: [...selectedCategoryIds.value],
     advantage_ids: [...selectedAdvantageIds.value],
@@ -92,166 +107,159 @@ function handleSave() {
       .filter(step => step.title !== ''),
   })
 }
-
-const inputClass = 'glass-input'
 </script>
 
 <template>
-  <form
-    class="space-y-4"
-    @submit.prevent="handleSave"
-  >
-    <GlassCard class="space-y-4">
-      <p class="text-sm font-semibold">
-        {{ locale.t.designer.brand }}
-      </p>
-      <ImageUpload
-        v-model="form.company_logo_file_id"
-        :label="locale.t.designer.studioLogo"
-        :hint="locale.t.designer.logoHint"
-        :preview-url="profile.company_logo"
+  <div class="space-y-4">
+    <ProfileEditSegmentTabs
+      v-model="activeTab"
+      :tabs="tabs"
+    />
+
+    <ProfileFormSection
+      v-if="activeTab === 'portfolio'"
+      :title="locale.t.profile.editPortfolioTitle"
+      :subtitle="portfolioSubtitle"
+    >
+      <PortfolioManager
+        embedded
+        @update:count="portfolioCount = $event"
       />
+    </ProfileFormSection>
 
-      <div class="space-y-1.5">
-        <label
-          class="text-sm font-medium"
-          for="designer_bio"
-        >{{ locale.t.designer.aboutStudio }}</label>
-        <textarea
-          id="designer_bio"
-          v-model="form.bio"
-          rows="3"
-          :placeholder="locale.t.designer.aboutPlaceholder"
-          :class="cn(inputClass, 'resize-none')"
-        />
-      </div>
-
-      <div class="space-y-1.5">
-        <label
-          class="text-sm font-medium"
-          for="designer_results_text"
-        >{{ locale.t.designer.resultsHighlights }}</label>
-        <textarea
-          id="designer_results_text"
-          v-model="form.results_text"
-          rows="2"
-          :placeholder="locale.t.designer.resultsPlaceholder"
-          :class="cn(inputClass, 'resize-none')"
-        />
-      </div>
-    </GlassCard>
-
-    <GlassCard class="space-y-3">
-      <div>
-        <p class="text-sm font-semibold">
-          {{ locale.t.designer.serviceCategories }}
-        </p>
-        <p class="text-xs text-muted-foreground">
-          {{ locale.t.designer.servicePickHint }}
-        </p>
-      </div>
-
-      <div class="flex flex-wrap gap-2">
-        <button
-          v-for="category in categories"
-          :key="category.id"
-          type="button"
-          :class="cn(
-            'inline-flex items-center gap-1.5 rounded-full px-3.5 py-2 text-sm font-medium transition',
-            selectedCategoryIds.includes(category.id)
-              ? 'bg-primary text-primary-foreground shadow-sm'
-              : 'glass-chip',
-          )"
-          @click="toggleCategory(category.id)"
-        >
-          <Check
-            v-if="selectedCategoryIds.includes(category.id)"
-            class="size-3.5"
-          />
-          {{ categoryName(category, locale.locale) }}
-        </button>
-      </div>
-    </GlassCard>
-
-    <GlassCard class="space-y-4">
-      <p class="text-sm font-semibold">
-        {{ locale.t.designer.linksLocation }}
-      </p>
-      <div class="space-y-1.5">
-        <label
-          class="text-sm font-medium"
-          for="designer_website_url"
-        >{{ locale.t.designer.website }}</label>
-        <input
-          id="designer_website_url"
-          v-model="form.website_url"
-          type="url"
-          inputmode="url"
-          placeholder="https://behance.net/…"
-          :class="inputClass"
-        >
-      </div>
-
-      <div class="space-y-1.5">
-        <label
-          class="text-sm font-medium"
-          for="designer_linkedin_url"
-        >{{ locale.t.designer.linkedin }}</label>
-        <input
-          id="designer_linkedin_url"
-          v-model="form.linkedin_url"
-          type="url"
-          inputmode="url"
-          placeholder="https://dribbble.com/…"
-          :class="inputClass"
-        >
-      </div>
-
-      <div class="space-y-2">
-        <label
-          class="text-sm font-medium"
-          for="designer_location_label"
-        >{{ locale.t.designer.location }}</label>
-        <LocationPicker
-          :lat="form.lat"
-          :lng="form.lng"
-          @change="onLocationPicked"
-        />
-        <input
-          id="designer_location_label"
-          v-model="form.location_label"
-          type="text"
-          :placeholder="locale.t.designer.locationPlaceholder"
-          :class="inputClass"
-        >
-      </div>
-    </GlassCard>
-
-    <!-- Advantages (picked from the admin-managed catalog) -->
-    <GlassCard v-if="advantagesCatalog.length > 0">
-      <AdvantagesPicker
-        v-model="selectedAdvantageIds"
-        :catalog="advantagesCatalog"
-      />
-    </GlassCard>
-
-    <!-- "Ish jarayoni" steps shown on the public profile -->
-    <GlassCard>
-      <WorkflowStepsEditor v-model="workflowSteps" />
-    </GlassCard>
-
-    <StickyActionBar>
-      <Button
-        type="submit"
-        class="h-12 w-full rounded-2xl text-base shadow-lg shadow-primary/20"
-        :disabled="saving"
+    <form
+      v-else
+      class="space-y-4"
+      @submit.prevent="handleSave"
+    >
+      <ProfileFormSection
+        v-if="activeTab === 'brand'"
+        :title="locale.t.designer.brand"
       >
-        <Loader2
-          v-if="saving"
-          class="size-4 animate-spin"
+        <ProfileFormField
+          :label="locale.t.designer.studioLogo"
+          :hint="locale.t.designer.logoHint"
+        >
+          <ImageUpload
+            v-model="form.company_logo_file_id"
+            :preview-url="profile.company_logo"
+          />
+        </ProfileFormField>
+
+        <ProfileFormField
+          :label="locale.t.designer.aboutStudio"
+          html-for="designer_bio"
+        >
+          <textarea
+            id="designer_bio"
+            v-model="form.bio"
+            :placeholder="locale.t.designer.aboutPlaceholder"
+            class="glass-input profile-form-textarea profile-form-textarea--lg"
+          />
+        </ProfileFormField>
+
+        <ProfileFormField
+          :label="locale.t.designer.resultsHighlights"
+          html-for="designer_results_text"
+        >
+          <textarea
+            id="designer_results_text"
+            v-model="form.results_text"
+            :placeholder="locale.t.designer.resultsPlaceholder"
+            class="glass-input profile-form-textarea"
+          />
+        </ProfileFormField>
+      </ProfileFormSection>
+
+      <ProfileFormSection
+        v-if="activeTab === 'categories'"
+        :title="locale.t.designer.serviceCategories"
+        :subtitle="locale.t.designer.servicePickHint"
+      >
+        <CategoryCheckboxList
+          v-model="selectedCategoryIds"
+          :categories="categories"
         />
-        {{ saving ? locale.t.designer.saving : locale.t.designer.saveProfile }}
-      </Button>
-    </StickyActionBar>
-  </form>
+      </ProfileFormSection>
+
+      <ProfileFormSection
+        v-if="activeTab === 'links'"
+        :title="locale.t.designer.linksLocation"
+      >
+        <ProfileFormField
+          :label="locale.t.designer.website"
+          html-for="designer_website_url"
+        >
+          <input
+            id="designer_website_url"
+            v-model="form.website_url"
+            type="url"
+            inputmode="url"
+            placeholder="https://behance.net/…"
+            class="glass-input profile-form-input"
+          >
+        </ProfileFormField>
+
+        <ProfileFormField
+          :label="locale.t.designer.linkedin"
+          html-for="designer_linkedin_url"
+        >
+          <input
+            id="designer_linkedin_url"
+            v-model="form.linkedin_url"
+            type="url"
+            inputmode="url"
+            placeholder="https://dribbble.com/…"
+            class="glass-input profile-form-input"
+          >
+        </ProfileFormField>
+      </ProfileFormSection>
+
+      <ProfileFormSection
+        v-if="activeTab === 'advantages' && advantagesCatalog.length > 0"
+        :title="locale.t.profile.editAdvantagesTitle"
+        :subtitle="advantagesSubtitle"
+      >
+        <AdvantagesPicker
+          v-model="selectedAdvantageIds"
+          :catalog="advantagesCatalog"
+          embedded
+        />
+      </ProfileFormSection>
+
+      <ProfileFormSection
+        v-if="activeTab === 'advantages' && advantagesCatalog.length === 0"
+        :title="locale.t.profile.editAdvantagesTitle"
+      >
+        <p class="text-sm leading-relaxed text-muted-foreground">
+          {{ locale.t.agent.noAdvantagesCatalog }}
+        </p>
+      </ProfileFormSection>
+
+      <ProfileFormSection
+        v-if="activeTab === 'workflow'"
+        :title="locale.t.profile.editWorkflowTitle"
+        :subtitle="workflowSubtitle"
+      >
+        <WorkflowStepsEditor
+          v-model="workflowSteps"
+          embedded
+        />
+      </ProfileFormSection>
+
+      <StickyActionBar v-if="showSaveBar">
+        <Button
+          type="submit"
+          class="h-12 w-full rounded-2xl text-base shadow-lg shadow-primary/20"
+          :disabled="saving"
+        >
+          <Loader2
+            v-if="saving"
+            class="size-4 animate-spin"
+          />
+          {{ saving ? locale.t.designer.saving : locale.t.designer.saveProfile }}
+        </Button>
+      </StickyActionBar>
+    </form>
+  </div>
 </template>
