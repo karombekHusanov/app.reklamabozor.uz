@@ -2,18 +2,16 @@
 import { CloudUpload, FileText, ImageIcon, Loader2, X } from '@lucide/vue'
 import { inject, ref } from 'vue'
 import { useFileUpload } from '@/core/composables/useFileUpload'
-import { useToast } from '@/core/composables/useToast'
 import { useLocaleStore } from '@/core/i18n/locale.store'
 import { WIZARD_KEY } from '@/modules/orders/components/wizard/context'
 import { formatFileSize, isImageFile } from '@/modules/orders/lib/wizard'
 
 const locale = useLocaleStore()
-const toast = useToast()
 const ctx = inject(WIZARD_KEY)!
 
 const MAX_FILES = 5
 const fileInput = ref<HTMLInputElement | null>(null)
-const { isUploading, error, upload } = useFileUpload()
+const { isUploading, upload } = useFileUpload()
 
 function pick() {
   if (isUploading.value || ctx.draft.files.length >= MAX_FILES) return
@@ -36,10 +34,6 @@ async function onFileChange(event: Event) {
       size: uploaded.size,
     })
     delete ctx.errors.files
-  }
-  else if (error.value) {
-    // Surface the upload failure as a toast — the inline message is easy to miss.
-    toast.error(error.value)
   }
 }
 

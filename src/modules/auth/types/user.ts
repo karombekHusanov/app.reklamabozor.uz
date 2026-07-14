@@ -1,5 +1,10 @@
 export type UserRole = 'client' | 'agent' | 'designer' | 'admin' | 'seller'
 
+/** Roles a user may pick for themselves (admin is granted out-of-band). */
+export const SELF_SELECTABLE_ROLES = ['client', 'agent', 'designer', 'seller'] as const
+
+export type SelectableRole = (typeof SELF_SELECTABLE_ROLES)[number]
+
 export interface User {
   id: number
   telegram_id: number | null
@@ -10,7 +15,10 @@ export interface User {
   phone: string | null
   avatar_file_id: number | null
   avatar: string | null
+  /** The currently active role — all gating is based on this. */
   role: UserRole
+  /** Every role the user holds; switching between them is instant via PATCH /me/role. */
+  roles: UserRole[]
   /** Timestamp the user chose their role at onboarding; null = not yet selected. */
   role_selected_at: string | null
   is_active: boolean
@@ -25,8 +33,15 @@ export function fullName(user: Pick<User, 'first_name' | 'last_name'>): string {
   return [user.first_name, user.last_name].filter(Boolean).join(' ').trim()
 }
 
+/** Active role is a marketplace provider role. */
 export function isBusinessUser(user: Pick<User, 'role'>): boolean {
   return BUSINESS_ROLES.includes(user.role)
+}
+
+/** Held roles include any marketplace provider role (active or not). */
+export function holdsBusinessRole(user: Pick<User, 'role' | 'roles'>): boolean {
+  const held = user.roles?.length ? user.roles : [user.role]
+  return held.some(role => BUSINESS_ROLES.includes(role))
 }
 
 export function roleLabel(role: UserRole): string {

@@ -35,9 +35,7 @@ async function handleSubmit(payload: AgentApplicationPayload) {
   if (ok) {
     toast.success(locale.t.agent.submittedToast)
     void router.push(ROUTES.profile)
-    return
   }
-  if (agent.error) toast.error(agent.error)
 }
 
 async function handleSaveDetails(payload: AgentDetailsPayload) {
@@ -45,9 +43,7 @@ async function handleSaveDetails(payload: AgentDetailsPayload) {
   if (ok) {
     toast.success(locale.t.agent.savedToast)
     void router.push(ROUTES.profile)
-    return
   }
-  if (agent.error) toast.error(agent.error)
 }
 </script>
 

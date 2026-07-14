@@ -48,19 +48,14 @@ async function save() {
   if (ok) {
     toast.success(locale.t.profile.savedToast)
     void router.push(ROUTES.profile)
-    return
   }
-
-  if (auth.error) toast.error(auth.error)
 }
 
 async function handleAvatarChange(fileId: number | null) {
   const ok = await auth.saveAvatar(fileId)
   if (ok) {
     toast.success(locale.t.profile.savedToast)
-    return
   }
-  if (auth.error) toast.error(auth.error)
 }
 </script>
 

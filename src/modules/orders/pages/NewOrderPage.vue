@@ -7,7 +7,6 @@ import GlassCard from '@/core/ui/GlassCard.vue'
 import Skeleton from '@/core/ui/Skeleton.vue'
 import { Button } from '@/core/ui/button'
 import { useTelegram } from '@/core/composables/useTelegram'
-import { useToast } from '@/core/composables/useToast'
 import { useLocaleStore } from '@/core/i18n/locale.store'
 import { useAuthStore } from '@/modules/auth/stores/auth.store'
 import { ROUTES } from '@/modules/shell/constants/routes'
@@ -23,7 +22,6 @@ const router = useRouter()
 const auth = useAuthStore()
 const orders = useOrdersStore()
 const locale = useLocaleStore()
-const toast = useToast()
 const { haptic } = useTelegram()
 
 const serviceType = computed(() => {
@@ -54,10 +52,13 @@ async function loadCategories() {
   loadingCategories.value = true
   try {
     if (targetAgentId.value !== null) {
-      // Directed order — use the agency's own categories and remember its name.
+      // Directed order — prefer the agency's categories; fall back to the full
+      // catalog when the profile has none configured yet.
       const agent = await fetchPublicAgent(targetAgentId.value)
       targetAgent.value = { id: agent.id, company_name: agent.display_name }
-      categories.value = agent.categories
+      categories.value = agent.categories.length > 0
+        ? agent.categories
+        : await fetchCategories(agent.provider_type)
     }
     else {
       targetAgent.value = null
@@ -83,10 +84,8 @@ async function handleSubmit(payload: CreateOrderPayload) {
     // Let the success screen breathe, then send the user to their orders.
     setTimeout(() => router.replace(ROUTES.orders), 2400)
   }
-  else if (orders.error) {
-    // Surface the failure as a toast — the inline message is easy to miss.
+  else {
     haptic('heavy')
-    toast.error(orders.error)
   }
 }
 </script>
@@ -156,7 +155,7 @@ async function handleSubmit(payload: CreateOrderPayload) {
         <Skeleton class="h-56 w-full rounded-3xl" />
       </template>
 
-      <!-- Wizard (errors surface via toast in handleSubmit) -->
+      <!-- Wizard -->
       <template v-else>
         <OrderWizard
           :categories="categories"

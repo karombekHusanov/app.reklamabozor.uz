@@ -17,10 +17,17 @@ export async function fetchThread(orderId: number): Promise<ChatThread> {
 }
 
 /** Poll for messages newer than the given id (fetches everything when omitted). */
-export async function fetchMessages(orderId: number, afterId?: number): Promise<ChatMessage[]> {
+export async function fetchMessages(
+  orderId: number,
+  afterId?: number,
+  opts?: { skipErrorToast?: boolean },
+): Promise<ChatMessage[]> {
   const { data } = await api.get<ApiSuccess<ChatMessage[]>>(
     `/api/v1/orders/${orderId}/chat/messages`,
-    { params: afterId ? { after: afterId } : undefined },
+    {
+      params: afterId ? { after: afterId } : undefined,
+      skipErrorToast: opts?.skipErrorToast,
+    },
   )
 
   return data.data
@@ -49,10 +56,17 @@ export async function fetchDirectThread(chatId: number): Promise<ChatThread> {
   return data.data
 }
 
-export async function fetchDirectMessages(chatId: number, afterId?: number): Promise<ChatMessage[]> {
+export async function fetchDirectMessages(
+  chatId: number,
+  afterId?: number,
+  opts?: { skipErrorToast?: boolean },
+): Promise<ChatMessage[]> {
   const { data } = await api.get<ApiSuccess<ChatMessage[]>>(
     `/api/v1/direct-chats/${chatId}/messages`,
-    { params: afterId ? { after: afterId } : undefined },
+    {
+      params: afterId ? { after: afterId } : undefined,
+      skipErrorToast: opts?.skipErrorToast,
+    },
   )
 
   return data.data
@@ -75,8 +89,14 @@ export async function fetchGlobalMeta(): Promise<GlobalChatMeta> {
   return data.data
 }
 
-export async function fetchGlobalMessages(params?: { after_id?: number, before_id?: number }): Promise<GlobalChatMessage[]> {
-  const { data } = await api.get<ApiSuccess<GlobalChatMessage[]>>('/api/v1/chat/global/messages', { params })
+export async function fetchGlobalMessages(
+  params?: { after_id?: number, before_id?: number },
+  opts?: { skipErrorToast?: boolean },
+): Promise<GlobalChatMessage[]> {
+  const { data } = await api.get<ApiSuccess<GlobalChatMessage[]>>('/api/v1/chat/global/messages', {
+    params,
+    skipErrorToast: opts?.skipErrorToast,
+  })
 
   return data.data
 }

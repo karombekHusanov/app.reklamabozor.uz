@@ -179,7 +179,7 @@ async function poll() {
   if (!auth.isAuthenticated || messages.value.length === 0) return
   try {
     const lastId = messages.value[messages.value.length - 1]!.id
-    const fresh = await fetchGlobalMessages({ after_id: lastId })
+    const fresh = await fetchGlobalMessages({ after_id: lastId }, { skipErrorToast: true })
     if (fresh.length > 0) {
       messages.value = [...messages.value, ...fresh]
       scrollToBottom()

@@ -2,12 +2,13 @@ import {
   authenticateWithTelegram,
   fetchCurrentUser,
   logout as logoutRequest,
+  setUserRole,
   updateCurrentUser,
 } from '@/modules/auth/services/auth.service'
 import { getApiErrorMessage } from '@/core/api/api-error'
 import { clearToken, hydrateToken, persistToken, readToken } from '@/core/lib/token-storage'
 import { isInsideTelegram, resolveTelegramUser, type TelegramAuthPayload } from '@/core/lib/telegram-init'
-import type { User } from '@/modules/auth/types/user'
+import type { SelectableRole, User } from '@/modules/auth/types/user'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
@@ -53,7 +54,9 @@ export const useAuthStore = defineStore('auth', () => {
     }
 
     try {
-      const response = await authenticateWithTelegram(payload)
+      const response = await authenticateWithTelegram(payload, {
+        skipErrorToast: options?.silent,
+      })
       setSession(response.user, response.token)
     } catch (e) {
       if (options?.silent) {
@@ -94,6 +97,19 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  /** Switch the active role or acquire a new self-selectable one; the session user is refreshed from the response. */
+  async function switchRole(role: SelectableRole): Promise<boolean> {
+    error.value = null
+    try {
+      user.value = await setUserRole(role)
+      return true
+    }
+    catch (e) {
+      error.value = getApiErrorMessage(e)
+      return false
+    }
+  }
+
   /** Re-fetch the current user (e.g. to pick up a phone saved by the bot webhook). */
   async function refreshUser(): Promise<User | null> {
     if (!token.value) {
@@ -101,7 +117,7 @@ export const useAuthStore = defineStore('auth', () => {
     }
 
     try {
-      user.value = await fetchCurrentUser()
+      user.value = await fetchCurrentUser({ skipErrorToast: true })
       return user.value
     }
     catch {
@@ -119,7 +135,7 @@ export const useAuthStore = defineStore('auth', () => {
     error.value = null
 
     try {
-      user.value = await fetchCurrentUser()
+      user.value = await fetchCurrentUser({ skipErrorToast: true })
       status.value = 'authenticated'
       return true
     } catch {
@@ -214,6 +230,7 @@ export const useAuthStore = defineStore('auth', () => {
     refreshUser,
     saveAvatar,
     updateProfile,
+    switchRole,
     setUser,
     logout,
     clearSession,

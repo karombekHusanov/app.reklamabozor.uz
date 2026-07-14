@@ -89,7 +89,7 @@ export const useChatStore = defineStore('chat', () => {
   /** Fetch messages newer than the last known one and append (poll tick). */
   async function poll(orderId: number) {
     try {
-      const fresh = await fetchMessages(orderId, lastMessageId.value)
+      const fresh = await fetchMessages(orderId, lastMessageId.value, { skipErrorToast: true })
       if (fresh.length > 0) {
         const known = new Set(messages.value.map(m => m.id))
         messages.value.push(...fresh.filter(m => !known.has(m.id)))
@@ -102,7 +102,7 @@ export const useChatStore = defineStore('chat', () => {
 
   async function pollDirect(chatId: number) {
     try {
-      const fresh = await fetchDirectMessages(chatId, lastMessageId.value)
+      const fresh = await fetchDirectMessages(chatId, lastMessageId.value, { skipErrorToast: true })
       if (fresh.length > 0) {
         const known = new Set(messages.value.map(m => m.id))
         messages.value.push(...fresh.filter(m => !known.has(m.id)))

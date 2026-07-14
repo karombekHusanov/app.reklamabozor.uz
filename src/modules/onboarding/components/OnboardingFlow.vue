@@ -9,7 +9,7 @@ import { useTelegram } from '@/core/composables/useTelegram'
 import { getApiErrorMessage } from '@/core/api/api-error'
 import { ROUTES } from '@/modules/shell/constants/routes'
 import { useOnboardingStore } from '@/modules/onboarding/stores/onboarding.store'
-import type { SelectableRole } from '@/modules/onboarding/services/onboarding.service'
+import type { SelectableRole } from '@/modules/auth/types/user'
 
 const locale = useLocaleStore()
 const onboarding = useOnboardingStore()

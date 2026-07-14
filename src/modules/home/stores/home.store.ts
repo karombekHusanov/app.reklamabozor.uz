@@ -5,7 +5,7 @@ import { useAgentStore } from '@/modules/agent/stores/agent.store'
 import { useAuthStore } from '@/modules/auth/stores/auth.store'
 import { useNotificationsStore } from '@/modules/notifications/stores/notifications.store'
 import { type Banner, fetchBanners } from '@/modules/home/services/banners.service'
-import { isBusinessUser } from '@/modules/auth/types/user'
+import { holdsBusinessRole } from '@/modules/auth/types/user'
 import { fetchTopAgents, type PublicAgent } from '@/modules/marketplace/services/agents.service'
 import { useOrdersStore } from '@/modules/orders/stores/orders.store'
 
@@ -26,15 +26,16 @@ export const useHomeStore = defineStore('home', () => {
     const agent = useAgentStore()
     const orders = useOrdersStore()
     const notifications = useNotificationsStore()
-    const isProvider = auth.user ? isBusinessUser(auth.user) : false
+    // Multirole: profile/workspace may exist even when active role is client.
+    const mayHaveProviderProfile = auth.user ? holdsBusinessRole(auth.user) : false
 
     await Promise.all([
       orders.loadMyOrders(force),
       notifications.load(force),
-      isProvider ? agent.loadProfile(force) : Promise.resolve(),
+      mayHaveProviderProfile ? agent.loadProfile(force) : Promise.resolve(),
     ])
 
-    if (isProvider && agent.isApproved) {
+    if (mayHaveProviderProfile && agent.isApproved) {
       await orders.loadAgentWorkspace(force)
     }
   }

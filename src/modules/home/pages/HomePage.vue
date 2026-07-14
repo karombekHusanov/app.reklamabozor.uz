@@ -3,13 +3,15 @@ import {
   ArrowRight,
   Bell,
   Building2,
+  Handshake,
   Loader2,
   Map,
+  MessageCircle,
   MessagesSquare,
   Palette,
   Star,
 } from '@lucide/vue'
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch, type Component } from 'vue'
 import { useRouter } from 'vue-router'
 import Autoplay from 'embla-carousel-autoplay'
 import Avatar from '@/core/ui/Avatar.vue'
@@ -28,7 +30,7 @@ import type { Banner } from '@/modules/home/services/banners.service'
 import HomePageSkeleton from '@/modules/home/components/HomePageSkeleton.vue'
 import HomeMenuDropdown from '@/modules/home/components/HomeMenuDropdown.vue'
 import TopRatedAgents from '@/modules/home/components/TopRatedAgents.vue'
-import { fullName, isBusinessUser } from '@/modules/auth/types/user'
+import { fullName, isBusinessUser, type UserRole } from '@/modules/auth/types/user'
 import { ROUTES } from '@/modules/shell/constants/routes'
 
 const auth = useAuthStore()
@@ -49,11 +51,38 @@ const displayName = computed(() => {
   return locale.t.home.guest
 })
 
-const userRoleLabel = computed(() => {
-  const role = auth.user?.role
-  if (!role) return null
-  return locale.t.roles[role]
+/**
+ * Home card badges: client always; agent only after KYC approval;
+ * designer only after an approved designer profile (no KYC).
+ */
+const displayRoleBadges = computed((): UserRole[] => {
+  if (!auth.user) return []
+
+  const badges: UserRole[] = ['client']
+  const held = auth.user.roles?.length ? auth.user.roles : [auth.user.role]
+  const profile = agent.profile
+  const verified = agent.isApproved
+  // Agent KYC always stores legal identity; designer profiles do not.
+  const isAgentKyc = Boolean(profile?.inn || profile?.legal_form)
+
+  if (held.includes('agent') && verified && isAgentKyc) {
+    badges.push('agent')
+  }
+  if (held.includes('designer') && verified && !isAgentKyc) {
+    badges.push('designer')
+  }
+
+  return badges
 })
+
+/** Verified agent/designer — even when active role is client. */
+const showOffersQuickLink = computed(() => {
+  if (!auth.user || !agent.isApproved) return false
+  const held = auth.user.roles?.length ? auth.user.roles : [auth.user.role]
+  return held.includes('agent') || held.includes('designer')
+})
+
+const offersOpenCount = computed(() => orders.availableOrders.length)
 
 const ordersCount = computed(() => orders.myOrders.length)
 const activeOrdersCount = computed(() =>
@@ -69,40 +98,77 @@ const hasUnread = computed(() => notifications.hasUnread)
 const hasBanners = computed(() => home.banners.length > 0)
 const showSkeleton = computed(() => !home.hasLoaded && (home.isLoading || auth.isLoading))
 
-const quickLinks = computed(() => [
-  {
-    key: 'chat',
-    to: ROUTES.chat,
-    label: locale.t.home.globalChat,
-    hint: locale.t.chat.subtitle,
-    icon: MessagesSquare,
-    tone: 'quick-link-tile--sky',
-  },
-  {
-    key: 'map',
-    to: ROUTES.map,
-    label: locale.t.home.viewMap,
-    hint: locale.t.home.viewMapHint,
-    icon: Map,
-    tone: 'quick-link-tile--indigo',
-  },
-  {
-    key: 'designers',
-    to: ROUTES.designers,
-    label: locale.t.designers.title,
-    hint: locale.t.designers.subtitle,
-    icon: Palette,
-    tone: 'quick-link-tile--violet',
-  },
-  {
-    key: 'agencies',
-    to: ROUTES.agencies,
-    label: locale.t.home.agencies,
-    hint: locale.t.home.browseProvidersHint,
-    icon: Building2,
-    tone: 'quick-link-tile--teal',
-  },
-])
+interface QuickLink {
+  key: string
+  to: string
+  label: string
+  hint: string
+  icon: Component
+  tone: string
+  badge?: number
+}
+
+const quickLinks = computed((): QuickLink[] => {
+  const links: QuickLink[] = []
+
+  // Only my offers is role-gated (verified agent / designer).
+  if (showOffersQuickLink.value) {
+    links.push({
+      key: 'offers',
+      to: ROUTES.offers,
+      label: locale.t.home.quickOffers,
+      hint: locale.t.home.quickOffersHint,
+      icon: Handshake,
+      tone: 'quick-link-tile--sky',
+      badge: offersOpenCount.value > 0 ? offersOpenCount.value : undefined,
+    })
+  }
+
+  links.push(
+    {
+      key: 'agency-chats',
+      to: ROUTES.chatThreads,
+      label: locale.t.home.quickAgencyChats,
+      hint: locale.t.home.quickAgencyChatsHint,
+      icon: MessageCircle,
+      tone: 'quick-link-tile--indigo',
+    },
+    {
+      key: 'chat',
+      to: ROUTES.chat,
+      label: locale.t.home.globalChat,
+      hint: locale.t.chat.subtitle,
+      icon: MessagesSquare,
+      tone: 'quick-link-tile--violet',
+    },
+    {
+      key: 'map',
+      to: ROUTES.map,
+      label: locale.t.home.viewMap,
+      hint: locale.t.home.viewMapHint,
+      icon: Map,
+      tone: 'quick-link-tile--teal',
+    },
+    {
+      key: 'designers',
+      to: ROUTES.designers,
+      label: locale.t.designers.title,
+      hint: locale.t.designers.subtitle,
+      icon: Palette,
+      tone: 'quick-link-tile--sky',
+    },
+    {
+      key: 'agencies',
+      to: ROUTES.agencies,
+      label: locale.t.home.agencies,
+      hint: locale.t.home.browseProvidersHint,
+      icon: Building2,
+      tone: 'quick-link-tile--indigo',
+    },
+  )
+
+  return links
+})
 
 const activeBanner = ref(0)
 
@@ -232,15 +298,7 @@ watch(
     <!-- Profile card -->
     <section class="px-5 pt-4">
       <div class="home-card relative p-4">
-        <Badge
-          v-if="userRoleLabel"
-          variant="primary"
-          class="absolute right-4 top-4 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.14em]"
-        >
-          {{ userRoleLabel }}
-        </Badge>
-
-        <div class="flex items-center gap-3.5">
+        <div class="flex items-start gap-3.5">
           <button type="button" class="pressable shrink-0" @click="navigate(ROUTES.profile)">
             <Avatar
               :src="auth.user?.avatar"
@@ -259,6 +317,19 @@ watch(
             <p v-if="auth.user?.phone" class="mt-1 truncate text-xs text-muted-foreground">
               {{ auth.user.phone }}
             </p>
+          </div>
+          <div
+            v-if="displayRoleBadges.length"
+            class="flex shrink-0 flex-col items-end gap-1"
+          >
+            <Badge
+              v-for="role in displayRoleBadges"
+              :key="role"
+              variant="primary"
+              class="px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.14em]"
+            >
+              {{ locale.t.roles[role] }}
+            </Badge>
           </div>
         </div>
 
@@ -366,13 +437,19 @@ watch(
         v-for="link in quickLinks"
         :key="link.key"
         type="button"
-        class="pressable quick-link-tile min-h-[148px] rounded-[28px] p-4 text-left"
+        class="pressable quick-link-tile relative min-h-[148px] rounded-[28px] p-4 text-left"
         :class="link.tone"
         @click="navigate(link.to)"
       >
         <div class="flex h-full flex-col items-start justify-between">
-          <span class="quick-link-tile__icon-wrap">
+          <span class="quick-link-tile__icon-wrap relative">
             <component :is="link.icon" class="size-7" />
+            <span
+              v-if="link.badge"
+              class="absolute -right-1.5 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-bold leading-none text-white shadow-sm"
+            >
+              {{ link.badge > 99 ? '99+' : link.badge }}
+            </span>
           </span>
           <div class="w-full">
             <p class="text-[1.02rem] font-bold leading-tight text-foreground">

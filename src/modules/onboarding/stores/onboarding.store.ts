@@ -1,7 +1,8 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
+import { setUserRole } from '@/modules/auth/services/auth.service'
 import { useAuthStore } from '@/modules/auth/stores/auth.store'
-import { setUserRole, type SelectableRole } from '@/modules/onboarding/services/onboarding.service'
+import type { SelectableRole } from '@/modules/auth/types/user'
 
 export type OnboardingStep = 'language' | 'terms' | 'role'
 

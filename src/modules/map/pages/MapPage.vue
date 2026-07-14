@@ -14,6 +14,8 @@ import { useToast } from '@/core/composables/useToast'
 import { getUserLocation, hasLocationAccess, warmupLocationManager } from '@/core/lib/user-location'
 import { isInsideTelegram, supportsVersion } from '@/core/lib/telegram-init'
 import { fetchTopAgents, type PublicAgent } from '@/modules/marketplace/services/agents.service'
+import { fetchCategories } from '@/modules/orders/services/orders.service'
+import type { Category } from '@/modules/agent/types/agent'
 
 const locale = useLocaleStore()
 const router = useRouter()
@@ -50,6 +52,8 @@ let markerLayer: L.LayerGroup | null = null
 let userLocationLayer: L.LayerGroup | null = null
 
 const agents = ref<PublicAgent[]>([])
+/** Full agent-type catalog — not derived from loaded markers. */
+const categories = ref<Category[]>([])
 const query = ref('')
 const activeCategory = ref<number | null>(null)
 const locating = ref(false)
@@ -76,15 +80,17 @@ const USER_PIN = L.divIcon({
   iconAnchor: [14, 14],
 })
 
-const categories = computed(() => {
-  const map2 = new Map<number, string>()
-  agents.value.forEach(a => a.categories.forEach(c => map2.set(c.id, categoryName(c, locale.locale))))
-  return [...map2.entries()].map(([id, name]) => ({ id, name }))
-})
+const categoryOptions = computed(() =>
+  categories.value.map(category => ({
+    id: category.id,
+    name: categoryName(category, locale.locale),
+  })),
+)
 
 const activeCategoryLabel = computed(() => {
   if (activeCategory.value === null) return locale.t.map.allCategories
-  return categories.value.find(category => category.id === activeCategory.value)?.name ?? locale.t.map.allCategories
+  return categoryOptions.value.find(category => category.id === activeCategory.value)?.name
+    ?? locale.t.map.allCategories
 })
 
 const filteredAgents = computed(() => {
@@ -164,12 +170,13 @@ function pickCategory(id: number | null) {
 }
 
 async function load() {
-  try {
-    agents.value = await fetchTopAgents(50)
-  }
-  catch {
-    agents.value = []
-  }
+  const [agentsResult, categoriesResult] = await Promise.allSettled([
+    fetchTopAgents(50),
+    fetchCategories('agent'),
+  ])
+
+  agents.value = agentsResult.status === 'fulfilled' ? agentsResult.value : []
+  categories.value = categoriesResult.status === 'fulfilled' ? categoriesResult.value : []
 }
 
 onMounted(async () => {
@@ -297,7 +304,7 @@ onBeforeUnmount(() => {
         </button>
 
         <button
-          v-for="category in categories"
+          v-for="category in categoryOptions"
           :key="category.id"
           type="button"
           class="map-category-option pressable"

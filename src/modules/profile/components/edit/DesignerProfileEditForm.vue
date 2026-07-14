@@ -30,9 +30,7 @@ async function handleCreate(payload: DesignerProfilePayload) {
   const ok = await agent.submitDesigner(payload)
   if (ok) {
     toast.success(locale.t.designer.createdToast)
-    return
   }
-  if (agent.error) toast.error(agent.error)
 }
 
 async function handleSaveDetails(payload: AgentDetailsPayload) {
@@ -40,9 +38,7 @@ async function handleSaveDetails(payload: AgentDetailsPayload) {
   if (ok) {
     toast.success(locale.t.profile.savedToast)
     void router.push(ROUTES.profile)
-    return
   }
-  if (agent.error) toast.error(agent.error)
 }
 </script>
 

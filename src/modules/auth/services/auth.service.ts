@@ -1,16 +1,27 @@
 import { api } from '@/core/api/client'
 import type { TelegramAuthPayload } from '@/core/lib/telegram-init'
 import type { ApiSuccess, AuthResponse } from '@/core/types/api'
-import type { User } from '@/modules/auth/types/user'
+import type { SelectableRole, User } from '@/modules/auth/types/user'
 
-export async function authenticateWithTelegram(payload: TelegramAuthPayload): Promise<AuthResponse> {
-  const { data } = await api.post<ApiSuccess<AuthResponse>>('/api/v1/auth/telegram', payload)
+type RequestOpts = { skipErrorToast?: boolean }
+
+export async function authenticateWithTelegram(
+  payload: TelegramAuthPayload,
+  opts?: RequestOpts,
+): Promise<AuthResponse> {
+  const { data } = await api.post<ApiSuccess<AuthResponse>>(
+    '/api/v1/auth/telegram',
+    payload,
+    { skipErrorToast: opts?.skipErrorToast },
+  )
 
   return data.data
 }
 
-export async function fetchCurrentUser(): Promise<User> {
-  const { data } = await api.get<ApiSuccess<User>>('/api/v1/auth/me')
+export async function fetchCurrentUser(opts?: RequestOpts): Promise<User> {
+  const { data } = await api.get<ApiSuccess<User>>('/api/v1/auth/me', {
+    skipErrorToast: opts?.skipErrorToast,
+  })
 
   return data.data
 }
@@ -26,6 +37,17 @@ export async function updateCurrentUser(payload: {
   return data.data
 }
 
+/**
+ * Set the active role — PATCH /api/v1/me/role. The first call picks the onboarding role;
+ * later calls switch to an already-held role or acquire a new self-selectable one.
+ */
+export async function setUserRole(role: SelectableRole): Promise<User> {
+  const { data } = await api.patch<ApiSuccess<User>>('/api/v1/me/role', { role })
+
+  return data.data
+}
+
 export async function logout(): Promise<void> {
-  await api.post('/api/v1/auth/logout')
+  // Logout may 401 if the token is already gone — don't toast on cleanup.
+  await api.post('/api/v1/auth/logout', undefined, { skipErrorToast: true })
 }
