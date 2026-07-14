@@ -7,38 +7,40 @@ import GlassCard from '@/core/ui/GlassCard.vue'
 import EmptyState from '@/core/ui/EmptyState.vue'
 import Skeleton from '@/core/ui/Skeleton.vue'
 import { cn } from '@/core/lib/utils'
-import { getApiErrorMessage } from '@/core/api/api-error'
 import { useLocaleStore } from '@/core/i18n/locale.store'
 import { categoryName } from '@/core/i18n/category-name'
 import AgentCard from '@/modules/marketplace/components/AgentCard.vue'
 import { fetchTopAgents, type PublicAgent } from '@/modules/marketplace/services/agents.service'
+import { fetchCategories } from '@/modules/orders/services/orders.service'
+import type { Category } from '@/modules/agent/types/agent'
 
 const locale = useLocaleStore()
 const router = useRouter()
 
 const agents = ref<PublicAgent[]>([])
+/** Full agent-type catalog — not derived from loaded agencies. */
+const categories = ref<Category[]>([])
 const loading = ref(true)
-const error = ref<string | null>(null)
 
 const activeCategory = ref<'all' | number>('all')
 
 onMounted(async () => {
-  try {
-    agents.value = await fetchTopAgents(50)
-  }
-  catch (e) {
-    error.value = getApiErrorMessage(e)
-  }
-  finally {
-    loading.value = false
-  }
+  const [agentsResult, categoriesResult] = await Promise.allSettled([
+    fetchTopAgents(50),
+    fetchCategories('agent'),
+  ])
+
+  agents.value = agentsResult.status === 'fulfilled' ? agentsResult.value : []
+  categories.value = categoriesResult.status === 'fulfilled' ? categoriesResult.value : []
+  loading.value = false
 })
 
-const categories = computed(() => {
-  const map = new Map<number, string>()
-  agents.value.forEach(agent => agent.categories.forEach(c => map.set(c.id, categoryName(c, locale.locale))))
-  return [...map.entries()].map(([id, name]) => ({ id, name }))
-})
+const categoryChips = computed(() =>
+  categories.value.map(category => ({
+    id: category.id,
+    name: categoryName(category, locale.locale),
+  })),
+)
 
 const filtered = computed(() =>
   agents.value.filter(agent =>
@@ -62,7 +64,7 @@ function openAgent(id: number) {
 
     <section class="space-y-4 px-4">
       <div
-        v-if="categories.length"
+        v-if="categoryChips.length"
         class="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
         <button
@@ -74,7 +76,7 @@ function openAgent(id: number) {
           {{ locale.t.agencies.all }}
         </button>
         <button
-          v-for="category in categories"
+          v-for="category in categoryChips"
           :key="category.id"
           type="button"
           :class="cn(
@@ -94,13 +96,6 @@ function openAgent(id: number) {
           class="h-24 w-full rounded-3xl"
         />
       </template>
-
-      <p
-        v-else-if="error"
-        class="rounded-2xl bg-destructive/10 px-4 py-3 text-sm text-destructive"
-      >
-        {{ error }}
-      </p>
 
       <GlassCard
         v-else-if="filtered.length === 0"
