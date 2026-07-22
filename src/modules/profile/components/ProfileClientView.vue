@@ -12,6 +12,8 @@ import ClientAgentInsightsSection from '@/modules/profile/components/client-sect
 import ClientOrderHistorySection from '@/modules/profile/components/client-sections/ClientOrderHistorySection.vue'
 import ClientProfileHeaderSection from '@/modules/profile/components/client-sections/ClientProfileHeaderSection.vue'
 import ClientProfileShortcuts from '@/modules/profile/components/client-sections/ClientProfileShortcuts.vue'
+import ProfileSwitcher from '@/modules/profile/components/ProfileSwitcher.vue'
+import LegalEntityVerificationCard from '@/modules/profile/components/LegalEntityVerificationCard.vue'
 import type { ClientProfileStat } from '@/modules/profile/components/client-sections/ClientProfileHeaderSection.vue'
 
 const props = defineProps<{
@@ -151,7 +153,13 @@ function openOrder(id: number) {
         :rating="rating"
         :review-count="reviewCount"
         :is-verified="isVerified"
-      />
+      >
+        <template #top>
+          <ProfileSwitcher class="mb-3" />
+        </template>
+      </ClientProfileHeaderSection>
+
+      <LegalEntityVerificationCard />
 
       <ClientProfileShortcuts
         :locale="locale"

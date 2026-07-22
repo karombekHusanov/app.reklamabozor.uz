@@ -4,6 +4,8 @@ export type OrderStatus
   = | 'new'
     | 'offers_sent'
     | 'client_selected'
+    // Client picked an offer; waiting for the payment to clear (gateway on).
+    | 'awaiting_payment'
     | 'in_progress'
     // Agent delivered the work — waiting for the client to confirm.
     | 'work_submitted'
@@ -11,6 +13,29 @@ export type OrderStatus
     | 'cancelled'
 
 export type OfferStatus = 'pending' | 'accepted' | 'rejected'
+
+export type PaymentStatus = 'draft' | 'progress' | 'success' | 'error' | 'revert' | 'hold'
+
+export interface Payment {
+  id: number
+  uuid: string
+  purpose: 'order'
+  status: PaymentStatus
+  amount: number // tiyin
+  amount_som: number
+  currency: string
+  checkout_url: string | null
+  card_pan: string | null
+  ps: string | null
+  paid_at: string | null
+  created_at: string
+}
+
+/** Response of POST /offers/{id}/accept. */
+export interface AcceptOfferResult {
+  offer: Offer
+  payment: Payment | null
+}
 
 export interface OfferAgent {
   id: number
@@ -69,6 +94,8 @@ export interface Order {
   auto_completed: boolean
   /** The client's review of the winning agency (absent until submitted). */
   review?: OrderReview | null
+  /** Latest payment for the order (checkout_url / status). Null when gateway off. */
+  payment?: Payment | null
   offers?: Offer[]
   offers_count?: number
   views_count?: number

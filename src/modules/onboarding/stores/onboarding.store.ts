@@ -1,10 +1,10 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
-import { setUserRole } from '@/modules/auth/services/auth.service'
+import { setUserPersonType, setUserRole } from '@/modules/auth/services/auth.service'
 import { useAuthStore } from '@/modules/auth/stores/auth.store'
-import type { SelectableRole } from '@/modules/auth/types/user'
+import type { PersonType, SelectableRole } from '@/modules/auth/types/user'
 
-export type OnboardingStep = 'language' | 'terms' | 'role'
+export type OnboardingStep = 'language' | 'terms' | 'role' | 'person_type'
 
 export const useOnboardingStore = defineStore('onboarding', () => {
   const auth = useAuthStore()
@@ -16,6 +16,10 @@ export const useOnboardingStore = defineStore('onboarding', () => {
   const completed = ref(false)
   const step = ref<OnboardingStep>('language')
   const termsAccepted = ref(false)
+  // Latches true once the flow is under way, so onboarding stays open through
+  // the post-role person_type step (selecting a role sets role_selected_at,
+  // which would otherwise flip needsOnboarding to false mid-flow).
+  const active = ref(false)
 
   /**
    * Onboarding is driven purely by the backend: a user whose /me response has no
@@ -25,7 +29,9 @@ export const useOnboardingStore = defineStore('onboarding', () => {
   const needsOnboarding = computed(() => {
     if (completed.value) return false
     if (!auth.isAuthenticated || !auth.user) return false
-    return auth.user.role_selected_at === null
+    if (auth.user.role_selected_at === null) return true
+    // Role saved but the flow is still running (person_type step).
+    return active.value
   })
 
   function goTo(next: OnboardingStep) {
@@ -37,12 +43,27 @@ export const useOnboardingStore = defineStore('onboarding', () => {
     step.value = 'role'
   }
 
-  /** Persist the chosen role to the backend and finish onboarding. */
+  /**
+   * Persist the chosen role. Does NOT finish onboarding — the flow then asks
+   * client/designer users for their person type; agents/sellers skip straight
+   * to completion (their legal nature is fixed by the role).
+   */
   async function selectRole(role: SelectableRole): Promise<void> {
+    // Keep the flow open after role_selected_at is set (person_type step).
+    active.value = true
+
     // When authenticated, persist the role; in non-Telegram dev contexts without a
     // session we still let the user through so the flow is testable.
     if (auth.isAuthenticated) {
       const user = await setUserRole(role)
+      auth.setUser(user)
+    }
+  }
+
+  /** Persist the self-declared legal nature and finish onboarding. */
+  async function selectPersonType(personType: PersonType): Promise<void> {
+    if (auth.isAuthenticated) {
+      const user = await setUserPersonType(personType)
       auth.setUser(user)
     }
 
@@ -51,6 +72,7 @@ export const useOnboardingStore = defineStore('onboarding', () => {
 
   function complete() {
     completed.value = true
+    active.value = false
   }
 
   return {
@@ -60,6 +82,7 @@ export const useOnboardingStore = defineStore('onboarding', () => {
     goTo,
     acceptTerms,
     selectRole,
+    selectPersonType,
     complete,
   }
 })

@@ -25,7 +25,11 @@ api.interceptors.request.use((config) => {
   const token = currentToken()
 
   if (token) {
-    config.headers.Authorization = `Bearer ${token}`
+    // Use AxiosHeaders#set (not a plain property assignment) so the header lands
+    // in the normalized store and survives requests that replace `config.headers`
+    // wholesale (e.g. the multipart file upload) — a bare assignment there can be
+    // dropped during serialization, sending the request unauthenticated.
+    config.headers.set('Authorization', `Bearer ${token}`)
   }
 
   return config

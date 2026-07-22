@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { getApiErrorMessage } from '@/core/api/api-error'
+import { openExternalLink } from '@/core/lib/telegram-init'
 import {
   acceptOffer as acceptOfferRequest,
   confirmCompletion as confirmCompletionRequest,
@@ -10,6 +11,8 @@ import {
   fetchAgentOrders,
   fetchMyOrders,
   fetchOrder,
+  fetchOrderPayment,
+  startOrderPayment as startOrderPaymentRequest,
   submitOffer as submitOfferRequest,
   submitReview as submitReviewRequest,
   submitWork as submitWorkRequest,
@@ -90,7 +93,12 @@ export const useOrdersStore = defineStore('orders', () => {
     isSubmitting.value = true
     error.value = null
     try {
-      await acceptOfferRequest(offerId)
+      const result = await acceptOfferRequest(offerId)
+      // Gateway on: the client must pay before the deal activates — send them
+      // to the Multicard checkout page.
+      if (result.payment?.checkout_url) {
+        openExternalLink(result.payment.checkout_url)
+      }
       if (currentOrder.value) await loadOrder(currentOrder.value.id)
       return true
     }
@@ -100,6 +108,41 @@ export const useOrdersStore = defineStore('orders', () => {
     }
     finally {
       isSubmitting.value = false
+    }
+  }
+
+  /** (Re)start checkout for an order awaiting payment (retry button). */
+  async function payForOrder(orderId: number) {
+    isSubmitting.value = true
+    error.value = null
+    try {
+      const payment = await startOrderPaymentRequest(orderId)
+      if (payment.checkout_url) openExternalLink(payment.checkout_url)
+      return true
+    }
+    catch (e) {
+      error.value = getApiErrorMessage(e)
+      return false
+    }
+    finally {
+      isSubmitting.value = false
+    }
+  }
+
+  /**
+   * Poll the order's payment status once (used when the client returns from the
+   * checkout page). Reloads the order if the payment has settled.
+   */
+  async function refreshPayment(orderId: number) {
+    try {
+      const payment = await fetchOrderPayment(orderId)
+      if (payment?.status === 'success' && currentOrder.value?.id === orderId) {
+        await loadOrder(orderId)
+      }
+      return payment
+    }
+    catch {
+      return null
     }
   }
 
@@ -234,6 +277,8 @@ export const useOrdersStore = defineStore('orders', () => {
     loadOrder,
     create,
     accept,
+    payForOrder,
+    refreshPayment,
     confirmCompletion,
     disputeCompletion,
     submitReview,

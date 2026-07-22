@@ -8,10 +8,12 @@ import {
 } from '@lucide/vue'
 import { computed } from 'vue'
 import type { useLocaleStore } from '@/core/i18n/locale.store'
+import type { PersonType } from '@/modules/auth/types/user'
 import type { Advantage, Category, PortfolioItem, WorkflowStep } from '@/modules/agent/types/agent'
 import type { PublicReview } from '@/modules/marketplace/services/agents.service'
 import AppHeader from '@/modules/shell/components/AppHeader.vue'
 import Avatar from '@/core/ui/Avatar.vue'
+import PersonTypeBadge from '@/core/ui/PersonTypeBadge.vue'
 import AgentAdvantagesSection from '@/modules/profile/components/agent-sections/AgentAdvantagesSection.vue'
 import AgentContactSection from '@/modules/profile/components/agent-sections/AgentContactSection.vue'
 import AgentPortfolioSection from '@/modules/profile/components/agent-sections/AgentPortfolioSection.vue'
@@ -46,6 +48,8 @@ const props = defineProps<{
   advantages: Advantage[]
   portfolio: PortfolioItem[]
   workflowSteps: WorkflowStep[]
+  personType?: PersonType | null
+  personTypeVerified?: boolean
   locale: ReturnType<typeof useLocaleStore>
 }>()
 
@@ -104,6 +108,8 @@ const showAboutSection = computed(() =>
     />
 
     <section class="space-y-4 px-4 pt-3">
+      <slot name="top" />
+
       <div class="agent-profile-card overflow-hidden p-4">
         <div class="flex items-start gap-3">
           <div class="relative shrink-0">
@@ -134,6 +140,13 @@ const showAboutSection = computed(() =>
             <p class="mt-0.5 line-clamp-2 text-[11px] leading-snug text-muted-foreground">
               {{ subtitle }}
             </p>
+
+            <PersonTypeBadge
+              v-if="personType"
+              :type="personType"
+              :verified="personTypeVerified"
+              class="mt-1.5"
+            />
 
             <div
               v-if="ratingValue"

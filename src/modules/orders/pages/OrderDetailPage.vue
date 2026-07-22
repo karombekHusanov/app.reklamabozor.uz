@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { CheckCircle2, Eye, FileText, Loader2, MessageCircle, MessageSquareQuote, PartyPopper, Star, Store } from '@lucide/vue'
-import { computed, onMounted, ref } from 'vue'
+import { CheckCircle2, CreditCard, Eye, FileText, Loader2, MessageCircle, MessageSquareQuote, PartyPopper, Star, Store } from '@lucide/vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import AppHeader from '@/modules/shell/components/AppHeader.vue'
 import GlassCard from '@/core/ui/GlassCard.vue'
@@ -14,6 +14,7 @@ import { categoryName } from '@/core/i18n/category-name'
 import { formatDate } from '@/core/lib/date'
 import OrderStatusBadge from '@/modules/orders/components/OrderStatusBadge.vue'
 import OfferCard from '@/modules/orders/components/OfferCard.vue'
+import { formatPrice } from '@/modules/orders/lib/order-status'
 import { useOrdersStore } from '@/modules/orders/stores/orders.store'
 
 const props = defineProps<{ id: string }>()
@@ -33,6 +34,8 @@ const title = computed(() =>
 const selectable = computed(() =>
   order.value ? ['new', 'offers_sent'].includes(order.value.status) : false,
 )
+// Client picked an offer but hasn't paid yet — show the checkout prompt.
+const awaitingPayment = computed(() => order.value?.status === 'awaiting_payment')
 // The agent delivered — the client decides: accept or report a problem.
 const awaitingConfirmation = computed(() => order.value?.status === 'work_submitted')
 
@@ -48,12 +51,34 @@ const attachmentFiles = computed(() => order.value?.attachment_files ?? [])
 const ratingDraft = ref(0)
 const ratingComment = ref('')
 
-onMounted(() => orders.loadOrder(Number(props.id)))
+// When the client returns from the checkout page (tab becomes visible again),
+// re-check the payment so the order flips to in_progress without a manual reload.
+async function recheckPayment() {
+  if (document.visibilityState !== 'visible' || !awaitingPayment.value || !order.value) return
+  const payment = await orders.refreshPayment(order.value.id)
+  if (payment?.status === 'success') {
+    haptic('medium')
+    toast.success(locale.t.orders.payDoneToast)
+  }
+}
+
+onMounted(() => {
+  orders.loadOrder(Number(props.id))
+  document.addEventListener('visibilitychange', recheckPayment)
+})
+
+onUnmounted(() => document.removeEventListener('visibilitychange', recheckPayment))
 
 async function acceptOffer(offerId: number) {
   haptic('light')
   const ok = await orders.accept(offerId)
   if (ok) haptic('medium')
+}
+
+async function payNow() {
+  if (!order.value) return
+  haptic('light')
+  await orders.payForOrder(order.value.id)
 }
 
 async function confirmWork() {
@@ -176,6 +201,38 @@ async function sendReview() {
           >
             <MessageCircle class="size-4" />
             {{ locale.t.chat.openChat }}
+          </Button>
+        </GlassCard>
+
+        <!-- Payment: client picked an offer and must pay to start the deal. -->
+        <GlassCard
+          v-if="awaitingPayment"
+          class="space-y-3"
+        >
+          <div class="flex items-center gap-2">
+            <CreditCard class="size-5 text-primary" />
+            <h3 class="text-base font-semibold">
+              {{ locale.t.orders.payTitle }}
+            </h3>
+          </div>
+          <p class="text-sm text-muted-foreground">
+            {{ locale.t.orders.payBody }}
+          </p>
+          <Button
+            class="h-11 w-full rounded-2xl"
+            :disabled="orders.isSubmitting"
+            @click="payNow"
+          >
+            <Loader2
+              v-if="orders.isSubmitting"
+              class="size-4 animate-spin"
+            />
+            <CreditCard
+              v-else
+              class="size-4"
+            />
+            {{ locale.t.orders.payNow }}
+            <span v-if="order.payment"> · {{ formatPrice(order.payment.amount_som) }}</span>
           </Button>
         </GlassCard>
 

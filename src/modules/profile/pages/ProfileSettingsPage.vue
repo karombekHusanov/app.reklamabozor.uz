@@ -9,6 +9,7 @@ import { useTelegram } from '@/core/composables/useTelegram'
 import { ROUTES } from '@/modules/shell/constants/routes'
 import { useAuthStore } from '@/modules/auth/stores/auth.store'
 import ThemeSwitcher from '@/modules/profile/components/ThemeSwitcher.vue'
+import RoleSwitcher from '@/modules/profile/components/RoleSwitcher.vue'
 
 const auth = useAuthStore()
 const locale = useLocaleStore()
@@ -55,6 +56,8 @@ function navigate(to: string) {
           <ChevronRight class="size-3.5 shrink-0 text-muted-foreground/50" aria-hidden="true" />
         </button>
       </GlassCard>
+
+      <RoleSwitcher v-if="auth.isAuthenticated" />
 
       <div>
         <h2 class="profile-settings-section-title">

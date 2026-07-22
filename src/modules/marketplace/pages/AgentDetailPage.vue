@@ -121,6 +121,8 @@ function orderFromAgency() {
       :advantages="agent.advantages ?? []"
       :portfolio="agent.portfolio ?? []"
       :workflow-steps="agent.workflow_steps ?? []"
+      :person-type="agent.person_type"
+      :person-type-verified="agent.person_type_verified"
       :locale="locale"
     >
       <template #actions>

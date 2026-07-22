@@ -1,7 +1,7 @@
 import { api } from '@/core/api/client'
 import type { TelegramAuthPayload } from '@/core/lib/telegram-init'
 import type { ApiSuccess, AuthResponse } from '@/core/types/api'
-import type { SelectableRole, User } from '@/modules/auth/types/user'
+import type { PersonType, SelectableRole, User } from '@/modules/auth/types/user'
 
 type RequestOpts = { skipErrorToast?: boolean }
 
@@ -43,6 +43,18 @@ export async function updateCurrentUser(payload: {
  */
 export async function setUserRole(role: SelectableRole): Promise<User> {
   const { data } = await api.patch<ApiSuccess<User>>('/api/v1/me/role', { role })
+
+  return data.data
+}
+
+/**
+ * Self-declare the legal nature — PATCH /api/v1/me/person-type. Only meaningful
+ * for client/designer users; agents/sellers derive it from their role.
+ */
+export async function setUserPersonType(personType: PersonType): Promise<User> {
+  const { data } = await api.patch<ApiSuccess<User>>('/api/v1/me/person-type', {
+    person_type: personType,
+  })
 
   return data.data
 }

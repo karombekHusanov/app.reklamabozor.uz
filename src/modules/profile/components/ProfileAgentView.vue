@@ -5,6 +5,7 @@ import type { AgentProfile } from '@/modules/agent/types/agent'
 import { categoryName } from '@/core/i18n/category-name'
 import AgentProfileShortcuts, { type AgentVerificationState } from '@/modules/profile/components/agent-sections/AgentProfileShortcuts.vue'
 import AgentShowcase from '@/modules/profile/components/AgentShowcase.vue'
+import ProfileSwitcher from '@/modules/profile/components/ProfileSwitcher.vue'
 import type { useLocaleStore } from '@/core/i18n/locale.store'
 import { fetchPublicAgent, type PublicAgent } from '@/modules/marketplace/services/agents.service'
 
@@ -91,8 +92,14 @@ const pageTitle = computed(() =>
     :advantages="publicAgent?.advantages ?? profile?.advantages ?? []"
     :portfolio="publicAgent?.portfolio ?? profile?.portfolio ?? []"
     :workflow-steps="publicAgent?.workflow_steps ?? profile?.workflow_steps ?? []"
+    :person-type="user.person_type"
+    :person-type-verified="user.person_type_verified"
     :locale="locale"
   >
+    <template #top>
+      <ProfileSwitcher />
+    </template>
+
     <template #shortcuts>
       <AgentProfileShortcuts
         :locale="locale"

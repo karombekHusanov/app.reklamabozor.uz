@@ -9,6 +9,7 @@ const ORDER_VARIANTS: Record<OrderStatus, BadgeVariant> = {
   new: 'primary',
   offers_sent: 'primary',
   client_selected: 'warning',
+  awaiting_payment: 'warning',
   in_progress: 'success',
   work_submitted: 'warning',
   completed: 'success',

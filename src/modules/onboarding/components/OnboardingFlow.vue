@@ -9,7 +9,7 @@ import { useTelegram } from '@/core/composables/useTelegram'
 import { getApiErrorMessage } from '@/core/api/api-error'
 import { ROUTES } from '@/modules/shell/constants/routes'
 import { useOnboardingStore } from '@/modules/onboarding/stores/onboarding.store'
-import type { SelectableRole } from '@/modules/auth/types/user'
+import { roleChoosesPersonType, type PersonType, type SelectableRole } from '@/modules/auth/types/user'
 
 const locale = useLocaleStore()
 const onboarding = useOnboardingStore()
@@ -19,6 +19,7 @@ const { haptic } = useTelegram()
 const agreed = ref(false)
 const submitting = ref(false)
 const errorMessage = ref<string | null>(null)
+const pickedRole = ref<SelectableRole | null>(null)
 
 const roleOptions: { role: SelectableRole, key: 'client' | 'agent' | 'designer' | 'seller' }[] = [
   { role: 'client', key: 'client' },
@@ -47,15 +48,52 @@ async function pickRole(role: SelectableRole) {
 
   try {
     await onboarding.selectRole(role)
-    // Providers land on profile after role selection.
-    if (role !== 'client') {
-      await router.replace(ROUTES.profile)
+    pickedRole.value = role
+
+    // Client/designer self-declare their legal nature next; agents/sellers are
+    // auto legal entities and go straight to their profile.
+    if (roleChoosesPersonType(role)) {
+      onboarding.goTo('person_type')
+      submitting.value = false
+      return
     }
+
+    onboarding.complete()
+    await router.replace(ROUTES.profile)
   }
   catch (e) {
     errorMessage.value = getApiErrorMessage(e) || locale.t.onboarding.role.error
     submitting.value = false
   }
+}
+
+async function finishPersonType() {
+  // Providers (designer) land on their profile; clients drop into the app.
+  if (pickedRole.value && pickedRole.value !== 'client') {
+    await router.replace(ROUTES.profile)
+  }
+}
+
+async function pickPersonType(personType: PersonType) {
+  if (submitting.value) return
+  submitting.value = true
+  errorMessage.value = null
+  haptic('medium')
+
+  try {
+    await onboarding.selectPersonType(personType)
+    await finishPersonType()
+  }
+  catch (e) {
+    errorMessage.value = getApiErrorMessage(e) || locale.t.onboarding.role.error
+    submitting.value = false
+  }
+}
+
+async function skipPersonType() {
+  haptic('light')
+  onboarding.complete()
+  await finishPersonType()
 }
 </script>
 
@@ -118,7 +156,7 @@ async function pickRole(role: SelectableRole) {
       </div>
 
       <!-- ============ ROLE ============ -->
-      <div v-else class="mt-12 flex flex-1 flex-col">
+      <div v-else-if="onboarding.step === 'role'" class="mt-12 flex flex-1 flex-col">
         <p class="text-center text-sm text-muted-foreground">
           {{ locale.t.onboarding.role.title }}
         </p>
@@ -139,6 +177,54 @@ async function pickRole(role: SelectableRole) {
         <p v-if="submitting" class="mt-4 text-center text-sm text-muted-foreground">
           {{ locale.t.onboarding.role.saving }}
         </p>
+        <p
+          v-if="errorMessage"
+          class="mt-4 rounded-2xl bg-destructive/10 px-3 py-2 text-center text-sm text-destructive"
+        >
+          {{ errorMessage }}
+        </p>
+      </div>
+
+      <!-- ============ PERSON TYPE ============ -->
+      <div v-else class="mt-12 flex flex-1 flex-col">
+        <h2 class="text-center text-lg font-bold text-foreground">
+          {{ locale.t.onboarding.personType.title }}
+        </h2>
+        <p class="mx-auto mt-3 max-w-sm text-center text-sm leading-relaxed text-muted-foreground">
+          {{ locale.t.onboarding.personType.body }}
+        </p>
+
+        <div class="mt-8 space-y-3">
+          <button
+            type="button"
+            class="glass-input flex w-full flex-col items-start gap-0.5 rounded-2xl px-4 py-3.5 text-left"
+            :disabled="submitting"
+            @click="pickPersonType('individual')"
+          >
+            <span class="text-sm font-semibold text-foreground">{{ locale.t.onboarding.personType.individual }}</span>
+            <span class="text-[12px] text-muted-foreground">{{ locale.t.onboarding.personType.individualHint }}</span>
+          </button>
+
+          <button
+            type="button"
+            class="glass-input flex w-full flex-col items-start gap-0.5 rounded-2xl px-4 py-3.5 text-left"
+            :disabled="submitting"
+            @click="pickPersonType('legal_entity')"
+          >
+            <span class="text-sm font-semibold text-foreground">{{ locale.t.onboarding.personType.legalEntity }}</span>
+            <span class="text-[12px] text-muted-foreground">{{ locale.t.onboarding.personType.legalEntityHint }}</span>
+          </button>
+        </div>
+
+        <button
+          type="button"
+          class="mx-auto mt-6 text-[13px] font-medium text-muted-foreground underline-offset-2 hover:underline"
+          :disabled="submitting"
+          @click="skipPersonType"
+        >
+          {{ locale.t.onboarding.personType.skip }}
+        </button>
+
         <p
           v-if="errorMessage"
           class="mt-4 rounded-2xl bg-destructive/10 px-3 py-2 text-center text-sm text-destructive"

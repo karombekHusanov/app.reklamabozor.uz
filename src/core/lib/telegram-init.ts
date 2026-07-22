@@ -56,6 +56,25 @@ export function readTelegramInitData(): string {
 }
 
 /**
+ * Open an external URL (e.g. the Multicard checkout page). Inside Telegram we
+ * use WebApp.openLink (opens the in-app browser); outside we fall back to a
+ * normal navigation so it also works in a plain browser during dev.
+ */
+export function openExternalLink(url: string): void {
+  if (isInsideTelegram()) {
+    try {
+      WebApp.openLink(url)
+      return
+    }
+    catch {
+      // unsupported on this client — fall through to window.open
+    }
+  }
+
+  window.open(url, '_blank', 'noopener')
+}
+
+/**
  * Deep-link parameter passed via `t.me/<bot>/<app>?startapp=…` launches.
  * (Inline web_app buttons carry the target in the URL itself instead.)
  */

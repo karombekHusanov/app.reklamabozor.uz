@@ -20,6 +20,9 @@ export interface PublicAgent {
   /** User Telegram avatari (dizaynerlar uchun asosiy rasm). */
   avatar: string | null
   provider_type: 'agent' | 'designer'
+  /** Legal nature of the provider (agents are verified legal; designers may vary). */
+  person_type: 'individual' | 'legal_entity' | null
+  person_type_verified: boolean
   company_logo: string | null
   bio: string | null
   location_label: string | null

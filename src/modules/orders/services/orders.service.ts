@@ -2,6 +2,7 @@ import { api } from '@/core/api/client'
 import type { ApiSuccess } from '@/core/types/api'
 import type { Category } from '@/modules/agent/types/agent'
 import type {
+  AcceptOfferResult,
   AgentOffer,
   AgentOrder,
   CreateOfferPayload,
@@ -9,6 +10,7 @@ import type {
   Offer,
   Order,
   OrderReview,
+  Payment,
 } from '@/modules/orders/types/order'
 
 /** Active categories, optionally filtered by service type. */
@@ -40,8 +42,22 @@ export async function createOrder(payload: CreateOrderPayload): Promise<Order> {
   return data.data
 }
 
-export async function acceptOffer(offerId: number): Promise<Offer> {
-  const { data } = await api.post<ApiSuccess<Offer>>(`/api/v1/offers/${offerId}/accept`)
+export async function acceptOffer(offerId: number): Promise<AcceptOfferResult> {
+  const { data } = await api.post<ApiSuccess<AcceptOfferResult>>(`/api/v1/offers/${offerId}/accept`)
+
+  return data.data
+}
+
+/** (Re)start the Multicard checkout for an order awaiting payment. */
+export async function startOrderPayment(orderId: number): Promise<Payment> {
+  const { data } = await api.post<ApiSuccess<Payment>>(`/api/v1/orders/${orderId}/pay`)
+
+  return data.data
+}
+
+/** Latest payment status for an order (polled after returning from checkout). */
+export async function fetchOrderPayment(orderId: number): Promise<Payment | null> {
+  const { data } = await api.get<ApiSuccess<Payment | null>>(`/api/v1/orders/${orderId}/payment`)
 
   return data.data
 }

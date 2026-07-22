@@ -11,7 +11,6 @@ import { fullName, isBusinessUser } from '@/modules/auth/types/user'
 import ProfileAgentView from '@/modules/profile/components/ProfileAgentView.vue'
 import ProfileClientView from '@/modules/profile/components/ProfileClientView.vue'
 import ProfileGuestCard from '@/modules/profile/components/ProfileGuestCard.vue'
-import RoleSwitcher from '@/modules/profile/components/RoleSwitcher.vue'
 
 const auth = useAuthStore()
 const agent = useAgentStore()
@@ -38,7 +37,7 @@ async function load() {
 
 onMounted(() => void load())
 watch(() => auth.isAuthenticated, load)
-// Switching the active role (RoleSwitcher) may reveal the provider view — load its profile.
+// Switching the active role may reveal the provider view — load its profile.
 watch(() => user.value?.role, load)
 onActivated(() => {
   if (auth.isAuthenticated && isProvider.value) {
@@ -87,9 +86,6 @@ async function handleLogout() {
           @navigate="navigate"
         />
 
-        <div class="mt-4 px-4 pb-6">
-          <RoleSwitcher />
-        </div>
       </template>
 
       <template v-else>

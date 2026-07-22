@@ -5,7 +5,7 @@ import GlassCard from '@/core/ui/GlassCard.vue'
 import { useLocaleStore } from '@/core/i18n/locale.store'
 import { useTelegram } from '@/core/composables/useTelegram'
 import { useAuthStore } from '@/modules/auth/stores/auth.store'
-import { SELF_SELECTABLE_ROLES, type SelectableRole } from '@/modules/auth/types/user'
+import { canAcquireRole, SELF_SELECTABLE_ROLES, type SelectableRole } from '@/modules/auth/types/user'
 
 const auth = useAuthStore()
 const locale = useLocaleStore()
@@ -33,11 +33,15 @@ const options = computed<RoleOption[]>(() => {
 
   const held = user.roles ?? [user.role]
 
-  return SELF_SELECTABLE_ROLES.map(role => ({
-    role,
-    active: user.role === role,
-    held: held.includes(role),
-  }))
+  return SELF_SELECTABLE_ROLES
+    // Hide roles the user can neither switch to nor acquire (coexistence
+    // matrix): e.g. a designer never sees agent/seller, and vice versa.
+    .filter(role => held.includes(role) || canAcquireRole(user, role))
+    .map(role => ({
+      role,
+      active: user.role === role,
+      held: held.includes(role),
+    }))
 })
 
 function hintFor(option: RoleOption): string {
@@ -94,7 +98,7 @@ async function pick(option: RoleOption) {
               class="block text-[13px] font-semibold"
               :class="option.active ? 'text-primary' : 'text-foreground'"
             >
-              {{ locale.t.roles[option.role] }}
+              {{ locale.t.profile.roleSwitcherRoles[option.role] }}
             </span>
             <span class="block text-[11px] text-muted-foreground">
               {{ hintFor(option) }}

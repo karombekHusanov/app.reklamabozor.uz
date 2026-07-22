@@ -7,6 +7,7 @@ import {
 import { computed } from 'vue'
 import AppHeader from '@/modules/shell/components/AppHeader.vue'
 import Avatar from '@/core/ui/Avatar.vue'
+import PersonTypeBadge from '@/core/ui/PersonTypeBadge.vue'
 import type { User } from '@/modules/auth/types/user'
 
 export interface ClientProfileStat {
@@ -17,7 +18,7 @@ export interface ClientProfileStat {
 }
 
 const props = defineProps<{
-  user: Pick<User, 'avatar'>
+  user: Pick<User, 'avatar'> & Partial<Pick<User, 'person_type' | 'person_type_verified' | 'legal_entity_status'>>
   displayName: string
   locale: any
   stats: ClientProfileStat[]
@@ -48,6 +49,8 @@ function statIconClass(tone?: ClientProfileStat['tone']) {
       class="client-profile-hero__header"
     />
 
+    <slot name="top" />
+
     <div class="home-card p-3 sm:p-4">
       <div class="flex items-start gap-3">
         <div class="relative shrink-0">
@@ -76,6 +79,14 @@ function statIconClass(tone?: ClientProfileStat['tone']) {
             <BadgeCheck class="size-3.5 fill-primary/15" />
             {{ locale.t.profile.clientVerified }}
           </p>
+
+          <PersonTypeBadge
+            v-if="user.person_type"
+            :type="user.person_type"
+            :verified="user.person_type_verified"
+            :status="user.legal_entity_status"
+            class="mt-1.5"
+          />
 
           <div class="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] font-semibold text-foreground">
             <span class="inline-flex items-center gap-1">

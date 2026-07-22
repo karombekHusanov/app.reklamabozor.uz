@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import {
+  ExternalLink,
   EyeOff,
   FileText,
   ImagePlus,
@@ -13,6 +14,7 @@ import GlassCard from '@/core/ui/GlassCard.vue'
 import { Button } from '@/core/ui/button'
 import { useFileUpload } from '@/core/composables/useFileUpload'
 import { getApiErrorMessage } from '@/core/api/api-error'
+import { openExternalLink } from '@/core/lib/telegram-init'
 import { useLocaleStore } from '@/core/i18n/locale.store'
 import PortfolioDraftFields from '@/modules/profile/components/edit/PortfolioDraftFields.vue'
 import type { PortfolioItemDraft, PortfolioMediaDraft } from '@/modules/profile/types/portfolio'
@@ -249,6 +251,10 @@ function openAddForm() {
   resetAddDraft()
 }
 
+function openLink(url: string) {
+  openExternalLink(url)
+}
+
 function displayImages(item: PortfolioItem): Array<{ url: string, original_name: string }> {
   if (item.images.length > 0) return item.images
   if (item.image) return [{ url: item.image, original_name: item.title }]
@@ -377,12 +383,15 @@ function displayImages(item: PortfolioItem): Array<{ url: string, original_name:
               >
             </div>
 
-            <p
+            <button
               v-if="item.link_url"
+              type="button"
               class="portfolio-item-card__link"
+              @click="openLink(item.link_url)"
             >
-              {{ item.link_url }}
-            </p>
+              <ExternalLink class="size-3.5 shrink-0" />
+              <span class="truncate">{{ item.link_url }}</span>
+            </button>
 
             <div
               v-if="item.attachments.length > 0"
