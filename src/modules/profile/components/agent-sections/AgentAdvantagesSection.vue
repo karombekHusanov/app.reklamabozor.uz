@@ -10,6 +10,18 @@ defineProps<{
 
 const locale = useLocaleStore()
 
+/** Accent classes cycled per card so the grid reads as a set, not a wall. */
+const ACCENTS = [
+  'agent-advantage--primary',
+  'agent-advantage--teal',
+  'agent-advantage--amber',
+  'agent-advantage--violet',
+]
+
+function accent(index: number): string {
+  return ACCENTS[index % ACCENTS.length]
+}
+
 function name(advantage: Advantage): string {
   return locale.locale === 'ru' ? advantage.name_ru : advantage.name_uz
 }
@@ -23,27 +35,26 @@ function hint(advantage: Advantage): string | null {
   <AgentProfileSectionShell :title="locale.t.profile.agentAdvantagesTitle">
     <div class="grid grid-cols-2 gap-2.5">
       <div
-        v-for="advantage in advantages"
+        v-for="(advantage, index) in advantages"
         :key="advantage.id"
-        class="agent-profile-info-card"
+        class="agent-advantage"
+        :class="accent(index)"
       >
-        <span class="agent-profile-info-card__icon">
+        <span class="agent-advantage__icon">
           <component
             :is="advantageIcon(advantage.icon)"
-            class="size-4"
+            class="size-[1.15rem]"
           />
         </span>
-        <div class="min-w-0 pt-0.5">
-          <p class="agent-profile-info-card__title">
-            {{ name(advantage) }}
-          </p>
-          <p
-            v-if="hint(advantage)"
-            class="agent-profile-info-card__text"
-          >
-            {{ hint(advantage) }}
-          </p>
-        </div>
+        <p class="agent-advantage__title">
+          {{ name(advantage) }}
+        </p>
+        <p
+          v-if="hint(advantage)"
+          class="agent-advantage__text"
+        >
+          {{ hint(advantage) }}
+        </p>
       </div>
     </div>
   </AgentProfileSectionShell>

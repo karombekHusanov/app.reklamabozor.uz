@@ -9,6 +9,7 @@ import {
   MessageCircle,
   MessagesSquare,
   Palette,
+  Radio,
   Star,
 } from '@lucide/vue'
 import { computed, onMounted, ref, watch, type Component } from 'vue'
@@ -125,6 +126,14 @@ const quickLinks = computed((): QuickLink[] => {
   }
 
   links.push(
+    {
+      key: 'live-orders',
+      to: ROUTES.liveOrders,
+      label: locale.t.home.liveOrdersTitle,
+      hint: locale.t.home.liveOrdersHint,
+      icon: Radio,
+      tone: 'quick-link-tile--emerald',
+    },
     {
       key: 'agency-chats',
       to: ROUTES.chatThreads,

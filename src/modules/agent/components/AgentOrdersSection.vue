@@ -30,13 +30,16 @@ const toast = useToast()
 const router = useRouter()
 const { haptic } = useTelegram()
 
-// Won deals the agent is currently working on (or waiting for the client to
-// confirm). Open orders live in `availableOrders`; these come from the
-// agent's accepted offers.
+// Won deals: the agent's accepted offers. Includes `awaiting_payment` — with
+// the gateway on, accepting an offer parks the order there until the client
+// pays, and the agent must still see they won (otherwise the offer vanishes
+// from both this list and `availableOrders`). Open orders live in
+// `availableOrders`; these come from the agent's accepted offers.
+const ACTIVE_DEAL_STATUSES = ['awaiting_payment', 'in_progress', 'work_submitted']
 const activeDeals = computed(() =>
   orders.myOffers.filter(offer =>
     offer.status === 'accepted'
-    && (offer.order.status === 'in_progress' || offer.order.status === 'work_submitted'),
+    && ACTIVE_DEAL_STATUSES.includes(offer.order.status ?? ''),
   ),
 )
 
@@ -108,7 +111,19 @@ async function handleSubmitWork(orderId: number) {
           {{ locale.t.agent.workAwaitingClient }}
         </p>
 
-        <div class="flex gap-2">
+        <!-- Won, but the client hasn't paid yet: no chat / work actions exist
+             until payment lands, so just reassure the agent they won. -->
+        <p
+          v-if="deal.order.status === 'awaiting_payment'"
+          class="rounded-2xl bg-amber-500/10 px-3.5 py-3 text-sm text-amber-700 dark:text-amber-300"
+        >
+          {{ locale.t.agent.dealAwaitingPayment }}
+        </p>
+
+        <div
+          v-else
+          class="flex gap-2"
+        >
           <Button
             variant="outline"
             class="h-11 flex-1 rounded-2xl"

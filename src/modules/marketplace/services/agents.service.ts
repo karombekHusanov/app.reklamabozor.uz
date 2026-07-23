@@ -50,9 +50,13 @@ export interface PublicAgent {
 }
 
 /** Top approved agents (ranked by profile completeness) for the home slider / marketplace. */
-export async function fetchTopAgents(limit = 10, type?: 'agent' | 'designer'): Promise<PublicAgent[]> {
+export async function fetchTopAgents(
+  limit = 10,
+  type?: 'agent' | 'designer',
+  providerType?: 'agent' | 'designer',
+): Promise<PublicAgent[]> {
   const { data } = await api.get<ApiSuccess<PublicAgent[]>>('/api/v1/agents', {
-    params: { limit, type },
+    params: { limit, type, provider_type: providerType },
   })
 
   return data.data

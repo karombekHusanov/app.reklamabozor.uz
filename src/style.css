@@ -295,6 +295,53 @@
     @apply divide-y divide-border/70;
   }
 
+  /* Home "live orders" carousel — public social-proof cards. */
+  .live-orders-pulse {
+    @apply relative flex size-6 shrink-0 items-center justify-center rounded-full bg-primary/12 text-primary;
+  }
+
+  .live-orders-pulse::after {
+    content: '';
+    @apply pointer-events-none absolute inset-0 rounded-full bg-primary/25;
+    animation: live-orders-ping 2.2s ease-out infinite;
+  }
+
+  @keyframes live-orders-ping {
+    0% {
+      transform: scale(0.9);
+      opacity: 0.7;
+    }
+    70%,
+    100% {
+      transform: scale(1.7);
+      opacity: 0;
+    }
+  }
+
+  .live-order-card {
+    @apply flex h-full flex-col gap-2 rounded-2xl border border-border bg-muted/20 p-3.5;
+  }
+
+  .live-order-card__chip {
+    @apply inline-flex max-w-full truncate rounded-full bg-primary/10 px-2.5 py-1 text-[11px] font-bold text-primary;
+  }
+
+  .live-order-card__desc {
+    @apply line-clamp-2 min-h-[2.5rem] text-[12.5px] font-medium leading-snug text-foreground;
+  }
+
+  .live-order-card__meta {
+    @apply mt-auto flex items-center gap-3 border-t border-border/60 pt-2.5;
+  }
+
+  .live-order-card__stat {
+    @apply inline-flex items-center gap-1 text-[11px] font-bold text-foreground;
+  }
+
+  .live-order-card__stat--offers {
+    @apply text-primary;
+  }
+
   .top-agents-row {
     @apply flex w-full items-center gap-3 py-3 text-left transition active:opacity-80;
   }
@@ -1321,6 +1368,122 @@
     @apply absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/75 via-black/35 to-transparent px-2.5 pt-8 pb-2.5;
   }
 
+  .agent-portfolio-bento__open {
+    @apply absolute right-2 top-2 flex size-7 items-center justify-center rounded-full bg-white/20 text-white opacity-0 backdrop-blur-sm transition;
+  }
+
+  .agent-portfolio-bento__item:active .agent-portfolio-bento__open {
+    @apply opacity-100;
+  }
+
+  /* Portfolio detail — gallery, files, link CTA. */
+  .portfolio-detail-gallery {
+    @apply relative overflow-hidden rounded-3xl border border-border bg-muted/15;
+  }
+
+  .portfolio-detail-gallery__track {
+    @apply flex aspect-[4/3] snap-x snap-mandatory overflow-x-auto scroll-smooth;
+    scrollbar-width: none;
+  }
+
+  .portfolio-detail-gallery__track::-webkit-scrollbar {
+    display: none;
+  }
+
+  .portfolio-detail-gallery__slide {
+    @apply w-full shrink-0 snap-center;
+  }
+
+  .portfolio-detail-gallery__image {
+    @apply size-full object-cover;
+  }
+
+  .portfolio-detail-gallery__counter {
+    @apply absolute right-3 top-3 rounded-full bg-black/55 px-2.5 py-0.5 text-[11px] font-bold text-white;
+  }
+
+  .portfolio-detail-gallery__dots {
+    @apply absolute inset-x-0 bottom-3 flex items-center justify-center gap-1.5;
+  }
+
+  .portfolio-detail-gallery__dot {
+    @apply size-1.5 rounded-full bg-white/50 transition-all;
+  }
+
+  .portfolio-detail-gallery__dot--active {
+    @apply w-4 bg-white;
+  }
+
+  .portfolio-detail-file {
+    @apply flex w-full items-center gap-3 rounded-2xl border border-border bg-card p-3 text-left transition active:scale-[0.99];
+  }
+
+  .portfolio-detail-file__icon {
+    @apply flex size-9 shrink-0 items-center justify-center rounded-xl border border-primary/20 bg-primary/6 text-primary;
+  }
+
+  .portfolio-detail-file__name {
+    @apply block truncate text-[13px] font-semibold text-foreground;
+  }
+
+  .portfolio-detail-file__size {
+    @apply mt-0.5 block text-[11px] text-muted-foreground;
+  }
+
+  .portfolio-detail-link {
+    background: var(--brand-gradient);
+    @apply flex w-full items-center justify-center gap-2 rounded-2xl px-4 py-3 text-[13px] font-bold text-white shadow-sm transition active:scale-[0.98];
+  }
+
+  /* Advantages — vertical accent cards. */
+  .agent-advantage {
+    @apply relative flex flex-col rounded-2xl border p-3;
+  }
+
+  .agent-advantage__icon {
+    @apply mb-2.5 flex size-10 items-center justify-center rounded-xl border;
+  }
+
+  .agent-advantage__title {
+    @apply text-[12.5px] font-bold leading-tight text-foreground;
+  }
+
+  .agent-advantage__text {
+    @apply mt-1 text-[11px] leading-snug text-muted-foreground;
+  }
+
+  .agent-advantage--primary {
+    @apply border-primary/20 bg-primary/[0.06];
+  }
+
+  .agent-advantage--primary .agent-advantage__icon {
+    @apply border-primary/25 bg-primary/10 text-primary;
+  }
+
+  .agent-advantage--teal {
+    @apply border-teal-500/20 bg-teal-500/[0.06];
+  }
+
+  .agent-advantage--teal .agent-advantage__icon {
+    @apply border-teal-500/25 bg-teal-500/10 text-teal-600 dark:text-teal-300;
+  }
+
+  .agent-advantage--amber {
+    @apply border-amber-500/20 bg-amber-500/[0.06];
+  }
+
+  .agent-advantage--amber .agent-advantage__icon {
+    @apply border-amber-500/25 bg-amber-500/10 text-amber-600 dark:text-amber-300;
+  }
+
+  .agent-advantage--violet {
+    @apply border-violet-500/20 bg-violet-500/[0.06];
+  }
+
+  .agent-advantage--violet .agent-advantage__icon {
+    @apply border-violet-500/25 bg-violet-500/10 text-violet-600 dark:text-violet-300;
+  }
+
   .client-insight-card {
     @apply relative flex items-center gap-3 overflow-hidden rounded-2xl border p-3.5;
     box-shadow:
@@ -1505,6 +1668,10 @@
     --quick-link-icon-bg: #0891b2;
   }
 
+  .quick-link-tile--emerald {
+    --quick-link-icon-bg: #059669;
+  }
+
   .dark .quick-link-tile--sky {
     --quick-link-icon-bg: #2563eb;
   }
@@ -1519,6 +1686,10 @@
 
   .dark .quick-link-tile--teal {
     --quick-link-icon-bg: #0e7490;
+  }
+
+  .dark .quick-link-tile--emerald {
+    --quick-link-icon-bg: #047857;
   }
 
   /* Blue→teal accent pill (home CTAs), matching the tab-bar active gradient. */

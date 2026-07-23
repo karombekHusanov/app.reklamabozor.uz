@@ -73,6 +73,7 @@ const pageTitle = computed(() =>
 
 <template>
   <AgentShowcase
+    :agent-id="profile?.id ?? 0"
     :header-title="pageTitle"
     :name="title"
     :logo="profile?.company_logo ?? user.avatar"

@@ -12,4 +12,10 @@ export const marketplaceRoutes: RouteRecordRaw[] = [
     component: () => import('@/modules/marketplace/pages/AgentDetailPage.vue'),
     props: true,
   },
+  {
+    path: 'agents/:id/portfolio/:itemId',
+    name: 'agent-portfolio-detail',
+    component: () => import('@/modules/marketplace/pages/AgentPortfolioDetailPage.vue'),
+    props: true,
+  },
 ]

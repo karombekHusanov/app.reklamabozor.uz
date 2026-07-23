@@ -1,12 +1,15 @@
 <script setup lang="ts">
-import { ExternalLink } from '@lucide/vue'
+import { ArrowUpRight } from '@lucide/vue'
 import { computed } from 'vue'
+import { RouterLink } from 'vue-router'
 import { useLocaleStore } from '@/core/i18n/locale.store'
+import { ROUTES } from '@/modules/shell/constants/routes'
 import AgentProfileSectionShell from '@/modules/profile/components/agent-sections/AgentProfileSectionShell.vue'
 import { portfolioBentoClass } from '@/modules/profile/lib/category-accent'
 import type { PortfolioItem } from '@/modules/agent/types/agent'
 
 const props = defineProps<{
+  agentId: number | string
   items: PortfolioItem[]
 }>()
 
@@ -28,14 +31,11 @@ function extraImageCount(item: PortfolioItem): number {
 <template>
   <AgentProfileSectionShell :title="locale.t.profile.agentPortfolioTitle">
     <div class="agent-portfolio-bento">
-      <component
-        :is="item.link_url ? 'a' : 'article'"
+      <RouterLink
         v-for="(item, index) in items"
         :key="item.id"
-        :href="item.link_url ?? undefined"
-        :target="item.link_url ? '_blank' : undefined"
-        :rel="item.link_url ? 'noopener' : undefined"
-        class="agent-portfolio-bento__item"
+        :to="ROUTES.agentPortfolio(agentId, item.id)"
+        class="agent-portfolio-bento__item pressable"
         :class="portfolioBentoClass(index, total)"
       >
         <div
@@ -65,15 +65,14 @@ function extraImageCount(item: PortfolioItem): number {
           >
             {{ item.description }}
           </p>
-          <span
-            v-if="item.link_url"
-            class="mt-1 inline-flex items-center gap-0.5 text-[10px] font-medium text-white/90"
-          >
-            <ExternalLink class="size-3" />
-            {{ locale.t.profile.agentPortfolioOpenLink }}
-          </span>
         </div>
-      </component>
+        <span
+          class="agent-portfolio-bento__open"
+          aria-hidden="true"
+        >
+          <ArrowUpRight class="size-3.5" />
+        </span>
+      </RouterLink>
     </div>
   </AgentProfileSectionShell>
 </template>

@@ -29,6 +29,7 @@ import AgentProfileSectionShell from '@/modules/profile/components/agent-section
  * is injected via the `actions` slot.
  */
 const props = defineProps<{
+  agentId: number | string
   headerTitle: string
   name: string
   logo: string | null
@@ -239,6 +240,7 @@ const showAboutSection = computed(() =>
       />
       <AgentPortfolioSection
         v-if="portfolio.length"
+        :agent-id="agentId"
         :items="portfolio"
       />
       <AgentAdvantagesSection

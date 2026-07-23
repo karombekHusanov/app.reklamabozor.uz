@@ -102,6 +102,7 @@ function orderFromAgency() {
 
     <AgentShowcase
       v-else-if="agent"
+      :agent-id="props.id"
       :header-title="agent.display_name"
       :name="agent.display_name"
       :logo="agent.company_logo ?? agent.avatar"

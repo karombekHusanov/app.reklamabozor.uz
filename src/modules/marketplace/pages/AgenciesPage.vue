@@ -25,8 +25,10 @@ const loading = ref(true)
 const activeCategory = ref<'all' | number>('all')
 
 onMounted(async () => {
+  // Agencies page lists agents only — designers have their own dedicated page.
+  // Filtered server-side (provider_type=agent) so the result count stays correct.
   const [agentsResult, categoriesResult] = await Promise.allSettled([
-    fetchTopAgents(50),
+    fetchTopAgents(50, undefined, 'agent'),
     fetchCategories('agent'),
   ])
 
