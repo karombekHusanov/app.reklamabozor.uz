@@ -75,6 +75,20 @@ export function openExternalLink(url: string): void {
 }
 
 /**
+ * Open a payment checkout while keeping the user *inside* Telegram.
+ *
+ * openExternalLink launches an external browser — the checkout AND the
+ * gateway's return_url then live in that browser, stranding the user there on
+ * return. Instead we navigate the mini app's own webview to the checkout; once
+ * payment finishes the gateway redirects to its return_url (the mini app order
+ * page), reloading the app back inside Telegram. The auth token survives the
+ * reload via localStorage / Telegram CloudStorage (see token-storage.ts).
+ */
+export function openCheckout(url: string): void {
+  window.location.assign(url)
+}
+
+/**
  * Deep-link parameter passed via `t.me/<bot>/<app>?startapp=…` launches.
  * (Inline web_app buttons carry the target in the URL itself instead.)
  */

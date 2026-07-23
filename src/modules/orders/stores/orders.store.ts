@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { getApiErrorMessage } from '@/core/api/api-error'
-import { openExternalLink } from '@/core/lib/telegram-init'
+import { openCheckout } from '@/core/lib/telegram-init'
 import {
   acceptOffer as acceptOfferRequest,
   confirmCompletion as confirmCompletionRequest,
@@ -95,9 +95,10 @@ export const useOrdersStore = defineStore('orders', () => {
     try {
       const result = await acceptOfferRequest(offerId)
       // Gateway on: the client must pay before the deal activates — send them
-      // to the Multicard checkout page.
+      // to the Multicard checkout in the same Telegram webview so the gateway's
+      // return_url brings them back into the mini app afterwards.
       if (result.payment?.checkout_url) {
-        openExternalLink(result.payment.checkout_url)
+        openCheckout(result.payment.checkout_url)
       }
       if (currentOrder.value) await loadOrder(currentOrder.value.id)
       return true
@@ -117,7 +118,7 @@ export const useOrdersStore = defineStore('orders', () => {
     error.value = null
     try {
       const payment = await startOrderPaymentRequest(orderId)
-      if (payment.checkout_url) openExternalLink(payment.checkout_url)
+      if (payment.checkout_url) openCheckout(payment.checkout_url)
       return true
     }
     catch (e) {
