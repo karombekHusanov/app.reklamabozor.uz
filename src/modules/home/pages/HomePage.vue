@@ -31,6 +31,7 @@ import type { Banner } from '@/modules/home/services/banners.service'
 import HomePageSkeleton from '@/modules/home/components/HomePageSkeleton.vue'
 import HomeMenuDropdown from '@/modules/home/components/HomeMenuDropdown.vue'
 import TopRatedAgents from '@/modules/home/components/TopRatedAgents.vue'
+import LiveOrdersCarousel from '@/modules/home/components/LiveOrdersCarousel.vue'
 import { fullName, isBusinessUser, type UserRole } from '@/modules/auth/types/user'
 import { ROUTES } from '@/modules/shell/constants/routes'
 
@@ -474,6 +475,10 @@ watch(
 
     <section class="px-5 pt-4">
       <TopRatedAgents />
+    </section>
+
+    <section class="overflow-x-hidden px-5 pt-4">
+      <LiveOrdersCarousel />
     </section>
   </div>
 </template>

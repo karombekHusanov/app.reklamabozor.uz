@@ -5,15 +5,18 @@ import { useAgentStore } from '@/modules/agent/stores/agent.store'
 import { useAuthStore } from '@/modules/auth/stores/auth.store'
 import { useNotificationsStore } from '@/modules/notifications/stores/notifications.store'
 import { type Banner, fetchBanners } from '@/modules/home/services/banners.service'
+import { fetchLiveOrders, type LiveOrder } from '@/modules/home/services/live-orders.service'
 import { holdsBusinessRole } from '@/modules/auth/types/user'
 import { fetchTopAgents, type PublicAgent } from '@/modules/marketplace/services/agents.service'
 import { useOrdersStore } from '@/modules/orders/stores/orders.store'
 
 const TOP_AGENTS_LIMIT = 5
+const LIVE_ORDERS_LIMIT = 10
 
 export const useHomeStore = defineStore('home', () => {
   const banners = ref<Banner[]>([])
   const topAgents = ref<PublicAgent[]>([])
+  const liveOrders = ref<LiveOrder[]>([])
   const hasLoaded = ref(false)
   const isLoading = ref(false)
   const isRefreshing = ref(false)
@@ -50,13 +53,15 @@ export const useHomeStore = defineStore('home', () => {
     error.value = null
 
     try {
-      const [bannersData, agentsData] = await Promise.all([
+      const [bannersData, agentsData, liveOrdersData] = await Promise.all([
         fetchBanners().catch(() => [] as Banner[]),
         fetchTopAgents(TOP_AGENTS_LIMIT).catch(() => [] as PublicAgent[]),
+        fetchLiveOrders(LIVE_ORDERS_LIMIT).catch(() => [] as LiveOrder[]),
       ])
 
       banners.value = bannersData
       topAgents.value = agentsData
+      liveOrders.value = liveOrdersData
       await loadUserContext(force)
       hasLoaded.value = true
     }
@@ -76,6 +81,7 @@ export const useHomeStore = defineStore('home', () => {
   function reset() {
     banners.value = []
     topAgents.value = []
+    liveOrders.value = []
     hasLoaded.value = false
     isLoading.value = false
     isRefreshing.value = false
@@ -85,6 +91,7 @@ export const useHomeStore = defineStore('home', () => {
   return {
     banners,
     topAgents,
+    liveOrders,
     hasLoaded,
     isLoading,
     isRefreshing,

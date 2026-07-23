@@ -319,7 +319,7 @@
   }
 
   .live-order-card {
-    @apply flex h-full flex-col gap-2 rounded-2xl border border-border bg-muted/20 p-3.5;
+    @apply flex h-full flex-col gap-2 rounded-2xl border border-border bg-card p-3.5 shadow-sm;
   }
 
   .live-order-card__chip {
