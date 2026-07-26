@@ -1,7 +1,7 @@
 import { api } from '@/core/api/client'
 import type { ApiSuccess } from '@/core/types/api'
 
-export type BannerType = 'agent' | 'product'
+export type BannerType = 'agent' | 'product' | 'link'
 
 export interface Banner {
   id: number

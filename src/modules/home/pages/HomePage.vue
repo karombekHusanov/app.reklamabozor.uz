@@ -20,6 +20,7 @@ import Badge from '@/core/ui/Badge.vue'
 import BrandLogo from '@/core/ui/BrandLogo.vue'
 import { Carousel, CarouselContent, CarouselItem, type CarouselApi } from '@/core/ui/carousel'
 import { usePullToRefresh } from '@/core/composables/usePullToRefresh'
+import { openExternalLink } from '@/core/lib/telegram-init'
 import { useTelegram } from '@/core/composables/useTelegram'
 import { useLocaleStore } from '@/core/i18n/locale.store'
 import { useAuthStore } from '@/modules/auth/stores/auth.store'
@@ -238,8 +239,10 @@ function openBanner(banner: Banner) {
     }
   }
   if (!banner.link_url) return
-  if (/^https?:\/\//.test(banner.link_url)) {
-    window.open(banner.link_url, '_blank', 'noopener')
+  // External URLs open via Telegram's in-app browser; internal deep-links
+  // ("/agents", "/orders/1", …) navigate within the mini app.
+  if (/^https?:\/\//i.test(banner.link_url)) {
+    openExternalLink(banner.link_url)
     return
   }
   void router.push(banner.link_url)
