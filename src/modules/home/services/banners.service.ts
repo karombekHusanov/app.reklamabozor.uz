@@ -20,3 +20,15 @@ export async function fetchBanners(): Promise<Banner[]> {
 
   return data.data
 }
+
+/**
+ * Fire-and-forget analytics pings. Tracking must never disrupt the UI, so
+ * failures are swallowed. Impressions are deduped per session by the caller.
+ */
+export function trackBannerView(id: number): void {
+  void api.post(`/api/v1/banners/${id}/view`).catch(() => {})
+}
+
+export function trackBannerClick(id: number): void {
+  void api.post(`/api/v1/banners/${id}/click`).catch(() => {})
+}

@@ -28,7 +28,7 @@ import { useAgentStore } from '@/modules/agent/stores/agent.store'
 import { useNotificationsStore } from '@/modules/notifications/stores/notifications.store'
 import { useOrdersStore } from '@/modules/orders/stores/orders.store'
 import { useHomeStore } from '@/modules/home/stores/home.store'
-import type { Banner } from '@/modules/home/services/banners.service'
+import { trackBannerClick, trackBannerView, type Banner } from '@/modules/home/services/banners.service'
 import HomePageSkeleton from '@/modules/home/components/HomePageSkeleton.vue'
 import HomeMenuDropdown from '@/modules/home/components/HomeMenuDropdown.vue'
 import TopRatedAgents from '@/modules/home/components/TopRatedAgents.vue'
@@ -196,11 +196,22 @@ const bannerCarouselPlugins = computed(() =>
   home.banners.length > 1 ? [bannerAutoplay] : [],
 )
 
+/** Banners already counted this session — impressions fire once per banner. */
+const seenBanners = new Set<number>()
+
+function recordBannerImpression(index: number) {
+  const banner = home.banners[index]
+  if (!banner || seenBanners.has(banner.id)) return
+  seenBanners.add(banner.id)
+  trackBannerView(banner.id)
+}
+
 function onBannerCarouselInit(api: CarouselApi) {
   if (!api) return
 
   const syncActive = () => {
     activeBanner.value = api.selectedScrollSnap()
+    recordBannerImpression(activeBanner.value)
   }
 
   api.on('select', syncActive)
@@ -228,6 +239,7 @@ function navigate(to: string) {
 
 function openBanner(banner: Banner) {
   haptic('light')
+  trackBannerClick(banner.id)
   if (banner.target_id) {
     if (banner.type === 'agent') {
       void router.push(`/agents/${banner.target_id}`)
