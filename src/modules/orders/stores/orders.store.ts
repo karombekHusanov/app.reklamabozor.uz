@@ -41,21 +41,32 @@ export const useOrdersStore = defineStore('orders', () => {
   const myOrdersLoaded = ref(false)
   const workspaceLoaded = ref(false)
 
+  /** Coalesce parallel Home / Offers callers into one in-flight request. */
+  let myOrdersInflight: Promise<void> | null = null
+  let workspaceInflight: Promise<void> | null = null
+
   async function loadMyOrders(force = false) {
     if (myOrdersLoaded.value && !force) return
+    if (myOrdersInflight) return myOrdersInflight
 
-    isLoading.value = true
-    error.value = null
-    try {
-      myOrders.value = await fetchMyOrders()
-      myOrdersLoaded.value = true
-    }
-    catch (e) {
-      error.value = getApiErrorMessage(e)
-    }
-    finally {
-      isLoading.value = false
-    }
+    myOrdersInflight = (async () => {
+      isLoading.value = true
+      error.value = null
+      try {
+        myOrders.value = await fetchMyOrders()
+        myOrdersLoaded.value = true
+      }
+      catch (e) {
+        error.value = getApiErrorMessage(e)
+      }
+      finally {
+        isLoading.value = false
+      }
+    })().finally(() => {
+      myOrdersInflight = null
+    })
+
+    return myOrdersInflight
   }
 
   async function loadOrder(id: number) {
@@ -187,10 +198,10 @@ export const useOrdersStore = defineStore('orders', () => {
     isSubmitting.value = true
     error.value = null
     try {
-      const updated = await cancelOrderRequest(orderId)
-      if (currentOrder.value?.id === orderId) currentOrder.value = updated
-      // Keep the list in sync so the badge flips without a full reload.
-      myOrders.value = myOrders.value.map(o => (o.id === orderId ? { ...o, status: updated.status } : o))
+      await cancelOrderRequest(orderId)
+      // Cancelled orders leave the client list (kept in admin / DB only).
+      myOrders.value = myOrders.value.filter(o => o.id !== orderId)
+      if (currentOrder.value?.id === orderId) currentOrder.value = null
       return true
     }
     catch (e) {
@@ -224,21 +235,28 @@ export const useOrdersStore = defineStore('orders', () => {
 
   async function loadAgentWorkspace(force = false) {
     if (workspaceLoaded.value && !force) return
+    if (workspaceInflight) return workspaceInflight
 
-    isLoadingAgent.value = true
-    error.value = null
-    try {
-      const [orders, offers] = await Promise.all([fetchAgentOrders(), fetchAgentOffers()])
-      availableOrders.value = orders
-      myOffers.value = offers
-      workspaceLoaded.value = true
-    }
-    catch (e) {
-      error.value = getApiErrorMessage(e)
-    }
-    finally {
-      isLoadingAgent.value = false
-    }
+    workspaceInflight = (async () => {
+      isLoadingAgent.value = true
+      error.value = null
+      try {
+        const [orders, offers] = await Promise.all([fetchAgentOrders(), fetchAgentOffers()])
+        availableOrders.value = orders
+        myOffers.value = offers
+        workspaceLoaded.value = true
+      }
+      catch (e) {
+        error.value = getApiErrorMessage(e)
+      }
+      finally {
+        isLoadingAgent.value = false
+      }
+    })().finally(() => {
+      workspaceInflight = null
+    })
+
+    return workspaceInflight
   }
 
   async function sendOffer(orderId: number, payload: CreateOfferPayload) {
@@ -284,6 +302,8 @@ export const useOrdersStore = defineStore('orders', () => {
     myOrdersLoaded.value = false
     workspaceLoaded.value = false
     error.value = null
+    myOrdersInflight = null
+    workspaceInflight = null
   }
 
   return {

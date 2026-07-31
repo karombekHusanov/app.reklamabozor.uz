@@ -89,12 +89,22 @@ export async function fetchGlobalMeta(): Promise<GlobalChatMeta> {
   return data.data
 }
 
-/** Unread global-chat count relative to the client's last-seen id. */
-export async function fetchGlobalUnread(afterId?: number): Promise<GlobalChatUnread> {
+/** Unread global-chat count from the server-tracked last-seen cursor. */
+export async function fetchGlobalUnread(): Promise<GlobalChatUnread> {
   const { data } = await api.get<ApiSuccess<GlobalChatUnread>>('/api/v1/chat/global/unread', {
-    params: afterId != null ? { after_id: afterId } : undefined,
     skipErrorToast: true,
   })
+
+  return data.data
+}
+
+/** Mark the global feed read up to `messageId` (or the current head). */
+export async function markGlobalChatRead(messageId?: number): Promise<GlobalChatUnread> {
+  const { data } = await api.post<ApiSuccess<GlobalChatUnread>>(
+    '/api/v1/chat/global/read',
+    messageId != null ? { message_id: messageId } : {},
+    { skipErrorToast: true },
+  )
 
   return data.data
 }

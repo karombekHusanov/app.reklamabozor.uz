@@ -1,17 +1,19 @@
 <script setup lang="ts">
 import { CheckCircle2, CreditCard, Download, Eye, FileText, Loader2, MessageCircle, MessageSquareQuote, PartyPopper, Star, Store, XCircle } from '@lucide/vue'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import AppHeader from '@/modules/shell/components/AppHeader.vue'
 import GlassCard from '@/core/ui/GlassCard.vue'
 import EmptyState from '@/core/ui/EmptyState.vue'
 import Skeleton from '@/core/ui/Skeleton.vue'
+import Drawer from '@/core/ui/Drawer.vue'
 import { Button } from '@/core/ui/button'
 import { useTelegram } from '@/core/composables/useTelegram'
 import { useToast } from '@/core/composables/useToast'
 import { useLocaleStore } from '@/core/i18n/locale.store'
 import { categoryName } from '@/core/i18n/category-name'
 import { formatDate } from '@/core/lib/date'
+import { ROUTES } from '@/modules/shell/constants/routes'
 import OrderStatusBadge from '@/modules/orders/components/OrderStatusBadge.vue'
 import OfferCard from '@/modules/orders/components/OfferCard.vue'
 import { formatPrice } from '@/modules/orders/lib/order-status'
@@ -22,6 +24,7 @@ const props = defineProps<{ id: string }>()
 const orders = useOrdersStore()
 const locale = useLocaleStore()
 const toast = useToast()
+const route = useRoute()
 const router = useRouter()
 const { haptic } = useTelegram()
 
@@ -30,12 +33,14 @@ const offers = computed(() => order.value?.offers ?? [])
 const title = computed(() =>
   order.value?.category ? categoryName(order.value.category, locale.locale) : order.value?.title ?? '',
 )
-// The client can still pick a winning offer while the order is open.
+// Offer accept + cancel share the same window: order still open for offers
+// (`new` / `offers_sent`). Unpaid checkout (`awaiting_payment`) can also cancel.
 const selectable = computed(() =>
   order.value ? ['new', 'offers_sent'].includes(order.value.status) : false,
 )
 // Client picked an offer but hasn't paid yet — show the checkout prompt.
 const awaitingPayment = computed(() => order.value?.status === 'awaiting_payment')
+const canCancel = computed(() => selectable.value || awaitingPayment.value)
 // The agent delivered — the client decides: accept or report a problem.
 const awaitingConfirmation = computed(() => order.value?.status === 'work_submitted')
 
@@ -51,9 +56,8 @@ const attachmentFiles = computed(() => order.value?.attachment_files ?? [])
 const ratingDraft = ref(0)
 const ratingComment = ref('')
 
-// Client can cancel their own order only while no offer is accepted yet
-// (same window as `selectable`). Two-step to avoid an accidental tap.
-const confirmingCancel = ref(false)
+// Confirm in a bottom drawer before killing a live request.
+const cancelDrawerOpen = ref(false)
 
 // Attachments carry storage-hashed names (unreadable), so we represent each
 // file by its type + size and a download affordance instead of the raw name.
@@ -96,6 +100,14 @@ async function recheckPayment() {
 onMounted(() => {
   orders.loadOrder(Number(props.id))
   document.addEventListener('visibilitychange', recheckPayment)
+
+  // Multicard return_error_url lands here with ?pay=failed.
+  if (route.query.pay === 'failed') {
+    toast.error(locale.t.orders.payFailedToast)
+    const q = { ...route.query }
+    delete q.pay
+    router.replace({ query: q })
+  }
 })
 
 onUnmounted(() => document.removeEventListener('visibilitychange', recheckPayment))
@@ -135,15 +147,23 @@ function openChat() {
   router.push(`/chat/${order.value.id}`)
 }
 
+function openCancelDrawer() {
+  haptic('light')
+  cancelDrawerOpen.value = true
+}
+
 async function cancelOrder() {
-  if (!order.value) return
+  if (!order.value || !canCancel.value) return
   haptic('light')
   const ok = await orders.cancelOrder(order.value.id)
   if (ok) {
     haptic('medium')
-    confirmingCancel.value = false
+    cancelDrawerOpen.value = false
     toast.success(locale.t.orders.cancelledToast)
+    router.replace(ROUTES.orders)
+    return
   }
+  toast.error(orders.error ?? locale.t.orders.cancelOrder)
 }
 
 async function sendReview() {
@@ -268,6 +288,17 @@ async function sendReview() {
             <MessageCircle class="size-4" />
             {{ locale.t.chat.openChat }}
           </Button>
+
+          <!-- Compact red button — visible, but not a hero block. -->
+          <button
+            v-if="canCancel"
+            type="button"
+            class="pressable inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-xl bg-destructive px-3 text-xs font-semibold text-white transition active:scale-[0.98] active:brightness-95"
+            @click="openCancelDrawer"
+          >
+            <XCircle class="size-3.5" />
+            {{ locale.t.orders.cancelOrder }}
+          </button>
         </GlassCard>
 
         <!-- Payment: client picked an offer and must pay to start the deal. -->
@@ -440,65 +471,16 @@ async function sendReview() {
             />
           </GlassCard>
 
-          <OfferCard
-            v-for="offer in offers"
-            v-else
-            :key="offer.id"
-            :offer="offer"
-            :selectable="selectable"
-            :accepting="orders.isSubmitting"
-            @accept="acceptOffer(offer.id)"
-          />
-        </div>
-
-        <!-- Cancel: allowed only before an offer is accepted. Two-step confirm. -->
-        <div v-if="selectable" class="pt-1">
-          <GlassCard
-            v-if="confirmingCancel"
-            class="space-y-3 border-destructive/30"
-          >
-            <div class="flex items-center gap-2">
-              <XCircle class="size-5 text-destructive" />
-              <h3 class="text-base font-semibold">
-                {{ locale.t.orders.cancelConfirmTitle }}
-              </h3>
-            </div>
-            <p class="text-sm text-muted-foreground">
-              {{ locale.t.orders.cancelConfirmBody }}
-            </p>
-            <div class="flex gap-2">
-              <Button
-                variant="outline"
-                class="h-11 flex-1 rounded-2xl"
-                :disabled="orders.isSubmitting"
-                @click="confirmingCancel = false"
-              >
-                {{ locale.t.orders.cancelKeep }}
-              </Button>
-              <Button
-                variant="destructive"
-                class="h-11 flex-1 rounded-2xl"
-                :disabled="orders.isSubmitting"
-                @click="cancelOrder"
-              >
-                <Loader2
-                  v-if="orders.isSubmitting"
-                  class="size-4 animate-spin"
-                />
-                {{ locale.t.orders.cancelConfirm }}
-              </Button>
-            </div>
-          </GlassCard>
-
-          <button
-            v-else
-            type="button"
-            class="pressable flex w-full items-center justify-center gap-1.5 rounded-2xl py-3 text-sm font-medium text-muted-foreground transition active:text-destructive"
-            @click="confirmingCancel = true"
-          >
-            <XCircle class="size-4" />
-            {{ locale.t.orders.cancelOrder }}
-          </button>
+          <template v-else>
+            <OfferCard
+              v-for="offer in offers"
+              :key="offer.id"
+              :offer="offer"
+              :selectable="selectable"
+              :accepting="orders.isSubmitting"
+              @accept="acceptOffer(offer.id)"
+            />
+          </template>
         </div>
 
         <p
@@ -521,5 +503,48 @@ async function sendReview() {
         />
       </GlassCard>
     </section>
+
+    <Drawer
+      v-model:open="cancelDrawerOpen"
+      :title="locale.t.orders.cancelConfirmTitle"
+    >
+      <div class="space-y-4 pb-2">
+        <div class="flex flex-col items-center gap-3 px-2 pt-1 text-center">
+          <span class="flex size-14 items-center justify-center rounded-full bg-destructive/12 text-destructive dark:bg-destructive/20">
+            <XCircle class="size-7" />
+          </span>
+          <p class="text-sm leading-relaxed text-muted-foreground">
+            {{ awaitingPayment ? locale.t.orders.cancelPayConfirmBody : locale.t.orders.cancelConfirmBody }}
+          </p>
+        </div>
+
+        <div class="flex flex-col gap-2">
+          <Button
+            variant="destructive"
+            class="h-12 w-full rounded-2xl text-base"
+            :disabled="orders.isSubmitting"
+            @click="cancelOrder"
+          >
+            <Loader2
+              v-if="orders.isSubmitting"
+              class="size-4 animate-spin"
+            />
+            <XCircle
+              v-else
+              class="size-4"
+            />
+            {{ locale.t.orders.cancelConfirm }}
+          </Button>
+          <Button
+            variant="outline"
+            class="h-12 w-full rounded-2xl"
+            :disabled="orders.isSubmitting"
+            @click="cancelDrawerOpen = false"
+          >
+            {{ locale.t.orders.cancelKeep }}
+          </Button>
+        </div>
+      </div>
+    </Drawer>
   </div>
 </template>

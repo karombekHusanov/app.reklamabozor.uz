@@ -8,6 +8,7 @@ import {
   fetchGlobalUnread,
   fetchMessages,
   fetchThread,
+  markGlobalChatRead,
   sendDirectMessage,
   sendMessage as sendMessageRequest,
 } from '@/modules/chat/services/chat.service'
@@ -26,84 +27,93 @@ export const useChatStore = defineStore('chat', () => {
   const isLoadingThread = ref(false)
   const isSending = ref(false)
 
+  /** Coalesce parallel callers (Home mount + poll + visibility). */
+  let chatsInflight: Promise<void> | null = null
+  let globalUnreadInflight: Promise<void> | null = null
+
   const lastMessageId = computed(() =>
     messages.value.length > 0 ? messages.value[messages.value.length - 1]!.id : undefined,
   )
 
-  /** Total unread messages across every order/direct chat — drives the home badge. */
+  /** Total unread across order/direct chats — from GET /chats, cached in Pinia. */
   const totalUnread = computed(() =>
-    chats.value.reduce((sum, c) => sum + (c.unread_count || 0), 0),
+    chats.value.reduce((sum, c) => sum + (Number(c.unread_count) || 0), 0),
   )
 
-  // ---- Global chat unread (client-tracked cursor) ----
-  const GLOBAL_SEEN_KEY = 'adspace_global_seen'
+  /** Global chat unread — from GET /chat/global/unread, cached in Pinia. */
   const globalUnread = ref(0)
 
-  function globalSeenId(): number | null {
-    try {
-      const raw = localStorage.getItem(GLOBAL_SEEN_KEY)
-      const n = raw != null ? Number(raw) : Number.NaN
-      return Number.isInteger(n) && n >= 0 ? n : null
-    }
-    catch {
-      return null
-    }
-  }
-
-  function persistGlobalSeen(id: number) {
-    try {
-      localStorage.setItem(GLOBAL_SEEN_KEY, String(id))
-    }
-    catch {
-      // Private mode / Telegram WebView may block storage — badge just resets.
-    }
-  }
-
-  /** Refresh the global-chat unread count against the stored cursor. */
+  /** Refresh the global-chat unread count from the server. */
   async function loadGlobalUnread() {
-    try {
-      const seen = globalSeenId()
-      const { count, latest_id } = await fetchGlobalUnread(seen ?? undefined)
+    if (globalUnreadInflight) return globalUnreadInflight
 
-      // First run: adopt the current head as "seen" so we don't flash a badge
-      // for the entire backlog.
-      if (seen === null) {
-        persistGlobalSeen(latest_id)
-        globalUnread.value = 0
-        return
+    globalUnreadInflight = (async () => {
+      try {
+        const { count } = await fetchGlobalUnread()
+        globalUnread.value = count
       }
+      catch {
+        // Transient — keep the previous value.
+      }
+    })().finally(() => {
+      globalUnreadInflight = null
+    })
 
+    return globalUnreadInflight
+  }
+
+  /** Mark the global feed read on the server (opening / viewing the page). */
+  async function markGlobalSeen(maxId?: number) {
+    try {
+      const { count } = await markGlobalChatRead(maxId)
       globalUnread.value = count
     }
     catch {
-      // Transient — keep the previous value.
+      // Optimistic clear so the home badge drops even if the request flakes.
+      globalUnread.value = 0
     }
   }
 
-  /** Mark the global chat read up to `maxId` (called when the user views it). */
-  function markGlobalSeen(maxId: number) {
-    const seen = globalSeenId()
-    if (seen === null || maxId > seen) {
-      persistGlobalSeen(maxId)
+  /** Zero the inbox badge for a chat after the server marks it read on open. */
+  function clearLocalUnread(matcher: (c: Chat) => boolean) {
+    const item = chats.value.find(matcher)
+    if (item && item.unread_count > 0) {
+      item.unread_count = 0
     }
-    globalUnread.value = 0
   }
 
   async function loadChats(force = false) {
     if (inboxLoaded.value && !force) return
+    if (chatsInflight) return chatsInflight
 
-    isLoading.value = true
-    error.value = null
-    try {
-      chats.value = await fetchChats()
-      inboxLoaded.value = true
-    }
-    catch (e) {
-      error.value = getApiErrorMessage(e)
-    }
-    finally {
-      isLoading.value = false
-    }
+    chatsInflight = (async () => {
+      isLoading.value = true
+      error.value = null
+      try {
+        const items = await fetchChats()
+        // Normalize so Home `badge > 0` checks never see string "0" / null.
+        chats.value = items.map(item => ({
+          ...item,
+          unread_count: Number(item.unread_count) || 0,
+        }))
+        inboxLoaded.value = true
+      }
+      catch (e) {
+        error.value = getApiErrorMessage(e)
+      }
+      finally {
+        isLoading.value = false
+      }
+    })().finally(() => {
+      chatsInflight = null
+    })
+
+    return chatsInflight
+  }
+
+  /** Home badge refresh — both endpoints, coalesced. */
+  async function loadBadges(force = false) {
+    await Promise.all([loadChats(force), loadGlobalUnread()])
   }
 
   async function openThread(orderId: number) {
@@ -115,6 +125,7 @@ export const useChatStore = defineStore('chat', () => {
       const thread = await fetchThread(orderId)
       currentChat.value = thread.chat
       messages.value = thread.messages
+      clearLocalUnread(c => c.type === 'order' && c.order_id === orderId)
       return true
     }
     catch (e) {
@@ -135,6 +146,7 @@ export const useChatStore = defineStore('chat', () => {
       const thread = await fetchDirectThread(chatId)
       currentChat.value = thread.chat
       messages.value = thread.messages
+      clearLocalUnread(c => c.type === 'direct' && c.id === chatId)
       return true
     }
     catch (e) {
@@ -214,6 +226,8 @@ export const useChatStore = defineStore('chat', () => {
     inboxLoaded.value = false
     globalUnread.value = 0
     error.value = null
+    chatsInflight = null
+    globalUnreadInflight = null
   }
 
   return {
@@ -221,6 +235,7 @@ export const useChatStore = defineStore('chat', () => {
     totalUnread,
     globalUnread,
     loadGlobalUnread,
+    loadBadges,
     markGlobalSeen,
     isLoading,
     error,

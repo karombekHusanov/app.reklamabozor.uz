@@ -16,7 +16,14 @@ export default defineConfig({
     // Allow Cloudflare/ngrok tunnel hosts during local development.
     allowedHosts: true,
     proxy: {
+      // API JSON + Sanctum.
       '/api': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+      },
+      // Public uploads (avatars, logos, chat attachments). Same-origin so
+      // Telegram tunnels / LAN devices don't try to fetch 127.0.0.1.
+      '/storage': {
         target: 'http://localhost:8000',
         changeOrigin: true,
       },

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { CheckCircle2, RefreshCw, ShoppingBag, XCircle } from '@lucide/vue'
+import { CheckCircle2, RefreshCw, ShoppingBag } from '@lucide/vue'
 import { computed, onMounted } from 'vue'
 import { memberDuration } from '@/core/lib/date'
 import { ROUTES } from '@/modules/shell/constants/routes'
@@ -45,9 +45,6 @@ const inProgressCount = computed(() =>
 const completedCount = computed(() =>
   orderList.value.filter(order => order.status === 'completed').length,
 )
-const cancelledCount = computed(() =>
-  orderList.value.filter(order => order.status === 'cancelled').length,
-)
 
 const reviewsLeft = computed(() =>
   orderList.value.filter(order => order.review?.status === 'approved' || order.review?.rating),
@@ -77,12 +74,6 @@ const stats = computed<ClientProfileStat[]>(() => [
     label: props.locale.t.profile.clientStatCompleted,
     icon: CheckCircle2,
     tone: 'success',
-  },
-  {
-    value: cancelledCount.value,
-    label: props.locale.t.profile.clientStatCancelled,
-    icon: XCircle,
-    tone: 'danger',
   },
 ])
 

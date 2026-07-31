@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ChevronRight, ClipboardList, Menu, Send, Settings, User } from '@lucide/vue'
+import { ChevronRight, ClipboardList, Menu, MessageCircle, Send, Settings, User } from '@lucide/vue'
 import { onClickOutside } from '@vueuse/core'
 import type { Component } from 'vue'
 import { computed, nextTick, ref, watch } from 'vue'
@@ -8,6 +8,10 @@ import { ROUTES } from '@/modules/shell/constants/routes'
 
 const props = defineProps<{
   isProvider: boolean
+  /** Open marketplace offers — shown on the Offers row for approved providers. */
+  offersCount?: number
+  /** Unread agency/order chats — shown on the Chats row. */
+  chatsUnread?: number
 }>()
 
 const emit = defineEmits<{
@@ -31,7 +35,8 @@ interface MenuItem {
   label: string
   to: string
   icon: Component
-  tone: 'sky' | 'violet' | 'teal' | 'amber'
+  tone: 'sky' | 'violet' | 'teal' | 'amber' | 'indigo'
+  badge?: number
 }
 
 const items = computed<MenuItem[]>(() => {
@@ -45,6 +50,14 @@ const items = computed<MenuItem[]>(() => {
       icon: ClipboardList,
       tone: 'teal',
     },
+    {
+      key: 'chats',
+      label: locale.t.home.quickAgencyChats,
+      to: ROUTES.chatThreads,
+      icon: MessageCircle,
+      tone: 'indigo',
+      badge: props.chatsUnread && props.chatsUnread > 0 ? props.chatsUnread : undefined,
+    },
   ]
 
   if (props.isProvider) {
@@ -54,6 +67,7 @@ const items = computed<MenuItem[]>(() => {
       to: ROUTES.offers,
       icon: Send,
       tone: 'amber',
+      badge: props.offersCount && props.offersCount > 0 ? props.offersCount : undefined,
     })
   }
 
@@ -96,13 +110,18 @@ watch(open, (isOpen) => {
   <div ref="wrapRef" class="relative">
     <button
       type="button"
-      class="pressable home-icon-btn"
+      class="pressable home-icon-btn relative"
       :aria-expanded="open"
       :aria-label="locale.t.home.menuTitle"
       aria-haspopup="menu"
       @click="toggle"
     >
       <Menu class="size-5" />
+      <span
+        v-if="(chatsUnread ?? 0) > 0 || (isProvider && (offersCount ?? 0) > 0)"
+        class="absolute right-2.5 top-2.5 size-2 rounded-full bg-destructive"
+        aria-hidden="true"
+      />
     </button>
 
     <Teleport to="body">
@@ -136,7 +155,15 @@ watch(open, (isOpen) => {
                   <component :is="item.icon" class="size-4" />
                 </span>
                 <span class="home-menu-dropdown__label">{{ item.label }}</span>
-                <ChevronRight class="home-menu-dropdown__chevron" aria-hidden="true" />
+                <span class="home-menu-dropdown__meta">
+                  <span
+                    v-if="item.badge"
+                    class="flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-bold leading-none text-white"
+                  >
+                    {{ item.badge > 99 ? '99+' : item.badge }}
+                  </span>
+                  <ChevronRight class="home-menu-dropdown__chevron" aria-hidden="true" />
+                </span>
               </button>
             </li>
           </ul>

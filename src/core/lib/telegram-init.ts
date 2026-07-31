@@ -75,17 +75,27 @@ export function openExternalLink(url: string): void {
 }
 
 /**
- * Open a payment checkout while keeping the user *inside* Telegram.
+ * Open a payment checkout while keeping the user *inside* the mini-app webview.
  *
- * openExternalLink launches an external browser — the checkout AND the
- * gateway's return_url then live in that browser, stranding the user there on
- * return. Instead we navigate the mini app's own webview to the checkout; once
- * payment finishes the gateway redirects to its return_url (the mini app order
- * page), reloading the app back inside Telegram. The auth token survives the
- * reload via localStorage / Telegram CloudStorage (see token-storage.ts).
+ * Do NOT use WebApp.openLink / openTelegramLink here — those open an external
+ * browser, so Multicard's return_url / return_error_url land outside Telegram
+ * and the user is stranded. Navigate the current webview to the checkout; after
+ * pay (or fail) the gateway redirects back to TELEGRAM_MINI_APP_URL/orders/{id}.
+ * The auth token survives via localStorage / CloudStorage (token-storage.ts).
+ *
+ * Plain browser (local dev): same assign — return_url still works if the mini
+ * app URL points at the Vite origin.
  */
 export function openCheckout(url: string): void {
-  window.location.assign(url)
+  if (!url) return
+
+  try {
+    window.location.assign(url)
+  }
+  catch {
+    // Extremely old webviews — last-resort same-tab navigation.
+    window.location.href = url
+  }
 }
 
 /**

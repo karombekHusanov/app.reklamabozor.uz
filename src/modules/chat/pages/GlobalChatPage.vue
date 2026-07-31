@@ -127,7 +127,7 @@ function scrollToBottom(smooth = true) {
 /** Being on this page means the newest visible message has been seen — clear the badge. */
 function markSeen() {
   const last = messages.value[messages.value.length - 1]
-  if (last) chatStore.markGlobalSeen(last.id)
+  void chatStore.markGlobalSeen(last?.id)
 }
 
 async function redirectAgentDeepLink(): Promise<boolean> {

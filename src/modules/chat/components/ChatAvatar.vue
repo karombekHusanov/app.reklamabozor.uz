@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
+import { mediaUrl } from '@/core/lib/media'
 
 const props = defineProps<{
   name: string
@@ -20,9 +21,10 @@ const PALETTE = [
 ] as const
 
 const failed = ref(false)
-watch(() => props.src, () => { failed.value = false })
+const imageSrc = computed(() => mediaUrl(props.src))
+watch(imageSrc, () => { failed.value = false })
 
-const showImage = computed(() => !!props.src && !failed.value)
+const showImage = computed(() => !!imageSrc.value && !failed.value)
 
 const initials = computed(() =>
   props.name
@@ -47,7 +49,7 @@ const gradient = computed(() => {
   >
     <img
       v-if="showImage"
-      :src="src!"
+      :src="imageSrc!"
       :alt="name"
       class="size-full object-cover"
       @error="failed = true"

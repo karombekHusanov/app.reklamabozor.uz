@@ -99,6 +99,14 @@ const badge = computed(() => {
       {{ locale.t.agent.dealAwaitingPayment }}
     </p>
 
+    <!-- Accepted, then client cancelled before paying (or timeout). -->
+    <p
+      v-else-if="offer.status === 'accepted' && orderStatus === 'cancelled'"
+      class="text-sm text-muted-foreground"
+    >
+      {{ locale.t.agent.dealCancelledBeforePay }}
+    </p>
+
     <p
       v-else-if="orderStatus === 'work_submitted'"
       class="text-sm text-muted-foreground"

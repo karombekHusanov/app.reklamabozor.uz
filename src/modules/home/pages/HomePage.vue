@@ -13,7 +13,7 @@ import {
   Radio,
   Star,
 } from '@lucide/vue'
-import { computed, onMounted, ref, watch, type Component } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch, type Component } from 'vue'
 import { useRouter } from 'vue-router'
 import Autoplay from 'embla-carousel-autoplay'
 import Avatar from '@/core/ui/Avatar.vue'
@@ -119,11 +119,13 @@ interface QuickLink {
   tag?: string
 }
 
-/** Unread messages across all agency/order chats. */
-const unreadChats = computed(() => chat.totalUnread)
+/** Unread messages across all agency/order chats (track `chats` directly for Pinia reactivity). */
+const unreadChats = computed(() =>
+  chat.chats.reduce((sum, item) => sum + (Number(item.unread_count) || 0), 0),
+)
 
 /** New messages in the community-wide global chat since the user last opened it. */
-const unreadGlobal = computed(() => chat.globalUnread)
+const unreadGlobal = computed(() => Number(chat.globalUnread) || 0)
 
 const quickLinks = computed((): QuickLink[] => {
   const links: QuickLink[] = []
@@ -249,11 +251,8 @@ function onBannerCarouselInit(api: CarouselApi) {
 const { pullDistance, isPulling } = usePullToRefresh({
   onRefresh: async () => {
     haptic('light')
-    await Promise.all([
-      home.refresh(),
-      auth.isAuthenticated ? chat.loadChats(true) : Promise.resolve(),
-      auth.isAuthenticated ? chat.loadGlobalUnread() : Promise.resolve(),
-    ])
+    // home.refresh already reloads chat badges via loadUserContext.
+    await home.refresh()
   },
 })
 
@@ -291,29 +290,75 @@ function openBanner(banner: Banner) {
   void router.push(banner.link_url)
 }
 
-function loadChatBadges() {
-  void chat.loadChats(true)
-  void chat.loadGlobalUnread()
+/** Keep home tiles live while the page is open (no websocket). */
+const BADGE_POLL_MS = 15_000
+let badgePollTimer: ReturnType<typeof setInterval> | null = null
+
+function refreshBadges() {
+  if (!auth.isAuthenticated) return
+  void chat.loadBadges(true)
+}
+
+function startBadgePoll() {
+  stopBadgePoll()
+  if (!auth.isAuthenticated) return
+  badgePollTimer = setInterval(() => {
+    if (document.visibilityState === 'visible') refreshBadges()
+  }, BADGE_POLL_MS)
+}
+
+function stopBadgePoll() {
+  if (badgePollTimer != null) {
+    clearInterval(badgePollTimer)
+    badgePollTimer = null
+  }
+}
+
+function onVisibilityChange() {
+  if (document.visibilityState === 'visible' && auth.isAuthenticated) {
+    refreshBadges()
+  }
 }
 
 onMounted(() => {
+  // Splash already waited for auth.
+  // home.load() no-ops when cached — always force-refresh chat badges on enter
+  // so "Suhbatlar" unread isn't stuck at a stale 0 from the previous visit.
   void home.load()
-  if (auth.isAuthenticated) loadChatBadges()
+  if (auth.isAuthenticated) {
+    refreshBadges()
+    startBadgePoll()
+  }
+  document.addEventListener('visibilitychange', onVisibilityChange)
+})
+
+onUnmounted(() => {
+  stopBadgePoll()
+  document.removeEventListener('visibilitychange', onVisibilityChange)
 })
 
 watch(() => auth.isAuthenticated, (authed, wasAuthed) => {
-  if (authed === wasAuthed) return
+  // Skip the initial undefined→value observation; only react to real login/logout.
+  if (wasAuthed === undefined || authed === wasAuthed) return
   home.reset()
   chat.reset()
-  void home.load()
-  if (authed) loadChatBadges()
+  orders.reset()
+  if (authed) {
+    void home.load()
+    refreshBadges()
+    startBadgePoll()
+  }
+  else {
+    stopBadgePoll()
+  }
 })
 
+// If KYC flips to approved while staying on Home, load offers once (no force storm).
 watch(
   () => agent.isApproved,
-  (approved) => {
-    if (approved && auth.isAuthenticated) {
-      void orders.loadAgentWorkspace(true)
+  (approved, wasApproved) => {
+    if (approved && !wasApproved && auth.isAuthenticated) {
+      void orders.loadAgentWorkspace()
     }
   },
 )
@@ -338,7 +383,9 @@ watch(
     <!-- Top bar: menu · brand · notifications -->
     <header class="safe-top relative z-20 flex items-center justify-between gap-3 px-5 pt-3">
       <HomeMenuDropdown
-        :is-provider="isProvider"
+        :is-provider="showOffersQuickLink"
+        :offers-count="offersOpenCount"
+        :chats-unread="unreadChats"
         @navigate="navigate"
       />
 
@@ -515,7 +562,7 @@ watch(
           <span class="quick-link-tile__icon-wrap relative">
             <component :is="link.icon" class="size-7" />
             <span
-              v-if="link.badge"
+              v-if="link.badge != null && link.badge > 0"
               class="absolute -right-1.5 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-bold leading-none text-white shadow-sm"
             >
               <span
