@@ -90,8 +90,11 @@ function orderTitle(order: LiveOrder): string {
         >
           <article class="live-order-card">
             <div class="flex items-center gap-2">
-              <span class="live-order-card__chip">
+              <span class="live-order-card__chip min-w-0">
                 {{ orderTitle(order) }}
+              </span>
+              <span class="live-order-card__date">
+                {{ formatDate(order.created_at, locale.locale) }}
               </span>
             </div>
 
@@ -105,13 +108,10 @@ function orderTitle(order: LiveOrder): string {
                 {{ order.views_count }}
                 <span class="text-muted-foreground/80">{{ locale.t.orders.viewsSuffix }}</span>
               </span>
-              <span class="live-order-card__stat live-order-card__stat--offers">
+              <span class="live-order-card__stat--offers">
                 <MessageSquareQuote class="size-3.5" />
                 {{ order.offers_count }}
                 <span class="opacity-80">{{ locale.t.orders.offersSuffix }}</span>
-              </span>
-              <span class="ml-auto shrink-0 text-[10px] font-medium text-muted-foreground">
-                {{ formatDate(order.created_at, locale.locale) }}
               </span>
             </div>
           </article>

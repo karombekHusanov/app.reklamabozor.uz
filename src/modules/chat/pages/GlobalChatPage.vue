@@ -18,6 +18,7 @@ import {
 import ChatComposer from '@/modules/chat/components/ChatComposer.vue'
 import ChatComposerDock from '@/modules/chat/components/ChatComposerDock.vue'
 import MessageBubble from '@/modules/chat/components/MessageBubble.vue'
+import ChatAvatar from '@/modules/chat/components/ChatAvatar.vue'
 import { buildChatFeed } from '@/modules/chat/lib/chat-feed'
 import { resolveAgentChat } from '@/modules/chat/lib/open-agent-chat'
 import { ROUTES } from '@/modules/shell/constants/routes'
@@ -325,12 +326,30 @@ onBeforeUnmount(() => {
 
           <div
             v-else
-            class="flex"
+            class="flex items-end gap-2"
             :class="[
               isMine(item.message) ? 'justify-end' : 'justify-start',
               item.first ? 'mt-2' : 'mt-0.5',
             ]"
           >
+            <!-- Telegram-style avatar gutter: shown on the last bubble of an
+                 incoming run, an empty spacer otherwise so bubbles stay aligned. -->
+            <div v-if="!isMine(item.message)" class="w-[30px] shrink-0 self-end">
+              <button
+                v-if="item.last"
+                type="button"
+                class="block transition active:scale-95"
+                :class="canOpenSenderProfile(item.message.sender) ? '' : 'pointer-events-none'"
+                @click="openSenderProfile(item.message.sender)"
+              >
+                <ChatAvatar
+                  :name="senderName(item.message.sender)"
+                  :src="item.message.sender.avatar_url"
+                  :seed="item.message.sender.id"
+                />
+              </button>
+            </div>
+
             <MessageBubble
               :mine="isMine(item.message)"
               :body="item.message.body"

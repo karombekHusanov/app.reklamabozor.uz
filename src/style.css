@@ -326,20 +326,24 @@
     @apply inline-flex max-w-full truncate rounded-full bg-primary/10 px-2.5 py-1 text-[11px] font-bold text-primary;
   }
 
+  .live-order-card__date {
+    @apply ml-auto shrink-0 whitespace-nowrap rounded-md bg-muted/60 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-muted-foreground;
+  }
+
   .live-order-card__desc {
     @apply line-clamp-2 min-h-[2.5rem] text-[12.5px] font-medium leading-snug text-foreground;
   }
 
   .live-order-card__meta {
-    @apply mt-auto flex items-center gap-3 border-t border-border/60 pt-2.5;
+    @apply mt-auto flex min-w-0 flex-wrap items-center gap-2 border-t border-border/60 pt-2.5;
   }
 
   .live-order-card__stat {
-    @apply inline-flex items-center gap-1 text-[11px] font-bold text-foreground;
+    @apply inline-flex shrink-0 items-center gap-1 text-[11px] font-bold text-foreground;
   }
 
   .live-order-card__stat--offers {
-    @apply text-primary;
+    @apply inline-flex shrink-0 items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-bold text-primary;
   }
 
   .top-agents-row {

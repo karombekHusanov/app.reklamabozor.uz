@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { ChevronRight, CircleX, ClipboardList, Clock, Inbox, Plus, Settings, ShieldCheck, UserRound } from '@lucide/vue'
+import { ChevronRight, CircleX, ClipboardList, Clock, Inbox, Plus, Settings, ShieldCheck, UserRound, Wallet } from '@lucide/vue'
 import { computed } from 'vue'
 import { ROUTES } from '@/modules/shell/constants/routes'
+import { earningsStrings } from '@/modules/profile/lib/earnings-i18n'
 
 export type AgentVerificationState = 'none' | 'pending' | 'rejected'
 
@@ -95,6 +96,20 @@ function openVerification() {
     </button>
 
     <div class="divide-y divide-border/70">
+      <button
+        type="button"
+        class="client-profile-shortcut pressable"
+        @click="emit('navigate', ROUTES.earnings)"
+      >
+        <span class="client-profile-shortcut__icon client-profile-shortcut__icon--emerald">
+          <Wallet class="size-4" />
+        </span>
+        <span class="client-profile-shortcut__label">
+          {{ earningsStrings(locale.locale).title }}
+        </span>
+        <ChevronRight class="client-profile-shortcut__chevron" aria-hidden="true" />
+      </button>
+
       <button
         type="button"
         class="client-profile-shortcut pressable"

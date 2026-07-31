@@ -58,6 +58,8 @@ export interface GlobalChatSender {
   username: string | null
   role: string
   company_name: string | null
+  /** Agency logo or the user's own photo; null → initials fallback. */
+  avatar_url: string | null
   /** Set only for approved agencies — the public in-app profile target. */
   agent_profile_id: number | null
 }

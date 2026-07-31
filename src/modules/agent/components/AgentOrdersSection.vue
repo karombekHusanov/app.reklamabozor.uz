@@ -1,58 +1,136 @@
 <script setup lang="ts">
-import { CheckCircle2, Inbox, Loader2, MessageCircle } from '@lucide/vue'
-import { computed, nextTick, onMounted, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { Inbox, MessageSquareDashed } from '@lucide/vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import GlassCard from '@/core/ui/GlassCard.vue'
-import Badge from '@/core/ui/Badge.vue'
 import EmptyState from '@/core/ui/EmptyState.vue'
 import Skeleton from '@/core/ui/Skeleton.vue'
-import { Button } from '@/core/ui/button'
 import { useTelegram } from '@/core/composables/useTelegram'
 import { useToast } from '@/core/composables/useToast'
 import { useLocaleStore } from '@/core/i18n/locale.store'
-import { categoryName } from '@/core/i18n/category-name'
 import AgentOrderItem from '@/modules/agent/components/AgentOrderItem.vue'
-import { formatPrice, orderStatusVariant } from '@/modules/orders/lib/order-status'
+import AgentOfferItem from '@/modules/agent/components/AgentOfferItem.vue'
 import { useOrdersStore } from '@/modules/orders/stores/orders.store'
-import type { CreateOfferPayload } from '@/modules/orders/types/order'
+import type { AgentOffer, CreateOfferPayload } from '@/modules/orders/types/order'
 
 const locale = useLocaleStore()
 
 const props = defineProps<{
   /** Deep-link target — scroll to and highlight this order once loaded. */
   focusOrderId?: number | null
-  /** Hide the opportunities sub-header (page supplies its own hero). */
-  hideOpportunitiesHeader?: boolean
 }>()
+
+// The active tab is shared with the page header so the subtitle can follow it.
+const activeTab = defineModel<'orders' | 'offers'>('tab', { default: 'orders' })
 
 const orders = useOrdersStore()
 const toast = useToast()
-const router = useRouter()
 const { haptic } = useTelegram()
 
-// Won deals: the agent's accepted offers. Includes `awaiting_payment` — with
-// the gateway on, accepting an offer parks the order there until the client
-// pays, and the agent must still see they won (otherwise the offer vanishes
-// from both this list and `availableOrders`). Open orders live in
-// `availableOrders`; these come from the agent's accepted offers.
+type OfferFilter = 'all' | 'pending' | 'active' | 'completed' | 'rejected'
+const offerFilter = ref<OfferFilter>('all')
+
 const ACTIVE_DEAL_STATUSES = ['awaiting_payment', 'in_progress', 'work_submitted']
-const activeDeals = computed(() =>
-  orders.myOffers.filter(offer =>
-    offer.status === 'accepted'
-    && ACTIVE_DEAL_STATUSES.includes(offer.order.status ?? ''),
-  ),
+
+// Tab 1 — open opportunities from /agent/orders, newest first.
+const availableOrders = computed(() =>
+  [...orders.availableOrders].sort((a, b) => b.id - a.id),
 )
 
-onMounted(() => orders.loadAgentWorkspace())
+// Tab 2 — the agent's own offers from /agent/offers, newest first.
+const myOffers = computed(() =>
+  [...orders.myOffers].sort((a, b) => b.order.id - a.order.id),
+)
 
-// Scroll the deep-linked order into view once the lists have loaded.
+function offerMatchesFilter(offer: AgentOffer, filter: OfferFilter): boolean {
+  const orderStatus = offer.order.status ?? ''
+  switch (filter) {
+    case 'pending':
+      return offer.status === 'pending'
+    case 'active':
+      return offer.status === 'accepted' && ACTIVE_DEAL_STATUSES.includes(orderStatus)
+    case 'completed':
+      return offer.status === 'accepted' && orderStatus === 'completed'
+    case 'rejected':
+      return offer.status === 'rejected' || orderStatus === 'cancelled'
+    default:
+      return true
+  }
+}
+
+const offerFilters = computed(() => {
+  const keys: OfferFilter[] = ['all', 'pending', 'active', 'completed', 'rejected']
+  return keys.map(key => ({
+    key,
+    label: locale.t.agent[
+      key === 'all' ? 'filterAll'
+      : key === 'pending' ? 'filterPending'
+      : key === 'active' ? 'filterActive'
+      : key === 'completed' ? 'filterCompleted'
+      : 'filterRejected'
+    ],
+    count: key === 'all'
+      ? myOffers.value.length
+      : myOffers.value.filter(o => offerMatchesFilter(o, key)).length,
+  }))
+})
+
+const filteredOffers = computed(() =>
+  myOffers.value.filter(offer => offerMatchesFilter(offer, offerFilter.value)),
+)
+
+const tabs = computed(() => [
+  { key: 'orders' as const, label: locale.t.agent.tabNewOrders, count: availableOrders.value.length },
+  { key: 'offers' as const, label: locale.t.agent.tabMyOffers, count: myOffers.value.length },
+])
+
+// --- Sliding segment pill (measured, so labels of any width stay aligned) ---
+const segmentRef = ref<HTMLElement | null>(null)
+const pillWidth = ref(0)
+const pillOffset = ref(0)
+const pillReady = ref(false)
+
+function updatePill() {
+  const track = segmentRef.value
+  if (!track) return
+  const buttons = track.querySelectorAll<HTMLButtonElement>('[data-tab]')
+  const index = tabs.value.findIndex(tab => tab.key === activeTab.value)
+  const button = buttons[index]
+  if (!button) {
+    pillReady.value = false
+    return
+  }
+  pillWidth.value = button.offsetWidth
+  pillOffset.value = button.offsetLeft
+  pillReady.value = true
+}
+
+let resizeObserver: ResizeObserver | null = null
+
+onMounted(() => {
+  orders.loadAgentWorkspace()
+  void nextTick(updatePill)
+  if (typeof ResizeObserver !== 'undefined' && segmentRef.value) {
+    resizeObserver = new ResizeObserver(() => updatePill())
+    resizeObserver.observe(segmentRef.value)
+  }
+})
+
+onBeforeUnmount(() => resizeObserver?.disconnect())
+
+watch([activeTab, tabs], () => void nextTick(updatePill))
+
+// Deep-link: switch to whichever tab holds the order, then scroll to it.
 watch(
   [() => orders.availableOrders, () => orders.myOffers, () => props.focusOrderId],
   async () => {
     if (!props.focusOrderId) return
+    const inOffers = orders.myOffers.some(o => o.order.id === props.focusOrderId)
+    activeTab.value = inOffers ? 'offers' : 'orders'
+    if (inOffers) offerFilter.value = 'all'
     await nextTick()
+    const prefix = inOffers ? 'agent-offer' : 'agent-order'
     document
-      .getElementById(`agent-order-${props.focusOrderId}`)
+      .getElementById(`${prefix}-${props.focusOrderId}`)
       ?.scrollIntoView({ behavior: 'smooth', block: 'center' })
   },
   { immediate: true },
@@ -61,7 +139,11 @@ watch(
 async function handleSubmit(orderId: number, payload: CreateOfferPayload) {
   haptic('light')
   const ok = await orders.sendOffer(orderId, payload)
-  if (ok) haptic('medium')
+  if (ok) {
+    haptic('medium')
+    // A fresh offer moves the order out of the opportunities list — show it.
+    activeTab.value = 'offers'
+  }
 }
 
 async function handleSubmitWork(orderId: number) {
@@ -75,108 +157,105 @@ async function handleSubmitWork(orderId: number) {
 </script>
 
 <template>
-  <div class="space-y-3">
-    <!-- Active deals: accepted offers with work in progress / awaiting confirmation. -->
-    <template v-if="activeDeals.length > 0">
-      <h3 class="px-1 text-base font-semibold text-foreground">
-        {{ locale.t.agent.activeDeals }}
-      </h3>
-
-      <GlassCard
-        v-for="deal in activeDeals"
-        :id="`agent-order-${deal.order.id}`"
-        :key="deal.id"
-        class="scroll-mt-20 space-y-3"
-        :class="deal.order.id === focusOrderId && 'ring-2 ring-primary/50'"
+  <div class="space-y-4">
+    <!-- Tabs: new orders (/agent/orders) vs my offers (/agent/offers). -->
+    <div ref="segmentRef" class="glass-segment flex rounded-2xl p-1">
+      <span
+        class="glass-segment-active"
+        :class="!pillReady && 'no-anim'"
+        :style="{
+          width: `${pillWidth}px`,
+          transform: `translateX(${pillOffset}px)`,
+          opacity: pillReady ? 1 : 0,
+        }"
+      />
+      <button
+        v-for="tab in tabs"
+        :key="tab.key"
+        type="button"
+        data-tab
+        class="pressable relative z-10 flex-1 rounded-xl py-2 text-sm font-semibold transition-colors"
+        :class="activeTab === tab.key ? 'text-foreground' : 'text-muted-foreground'"
+        @click="activeTab = tab.key"
       >
-        <div class="flex items-start justify-between gap-3">
-          <div class="min-w-0">
-            <p class="truncate font-semibold leading-tight">
-              {{ deal.order.category ? categoryName(deal.order.category, locale.locale) : deal.order.title }}
-            </p>
-            <p class="text-xs text-muted-foreground">
-              #{{ deal.order.id }} · {{ locale.t.agent.yourOffer }} {{ formatPrice(deal.price) }}
-            </p>
-          </div>
-          <Badge
-            v-if="deal.order.status"
-            :variant="orderStatusVariant(deal.order.status)"
-            class="shrink-0"
-          >
-            {{ locale.t.orders.status[deal.order.status] }}
-          </Badge>
-        </div>
-
-        <p v-if="deal.order.status === 'work_submitted'" class="text-sm text-muted-foreground">
-          {{ locale.t.agent.workAwaitingClient }}
-        </p>
-
-        <!-- Won, but the client hasn't paid yet: no chat / work actions exist
-             until payment lands, so just reassure the agent they won. -->
-        <p
-          v-if="deal.order.status === 'awaiting_payment'"
-          class="rounded-2xl bg-amber-500/10 px-3.5 py-3 text-sm text-amber-700 dark:text-amber-300"
-        >
-          {{ locale.t.agent.dealAwaitingPayment }}
-        </p>
-
-        <div
-          v-else
-          class="flex gap-2"
-        >
-          <Button
-            variant="outline"
-            class="h-11 flex-1 rounded-2xl"
-            @click="router.push(`/chat/${deal.order.id}`)"
-          >
-            <MessageCircle class="size-4" />
-            {{ locale.t.chat.openChat }}
-          </Button>
-          <Button
-            v-if="deal.order.status === 'in_progress'"
-            class="h-11 flex-1 rounded-2xl"
-            :disabled="orders.isSubmitting"
-            @click="handleSubmitWork(deal.order.id)"
-          >
-            <Loader2 v-if="orders.isSubmitting" class="size-4 animate-spin" />
-            <CheckCircle2 v-else class="size-4" />
-            {{ locale.t.agent.submitWork }}
-          </Button>
-        </div>
-      </GlassCard>
-    </template>
-
-    <div
-      v-if="!hideOpportunitiesHeader"
-      class="flex items-center justify-between px-1"
-    >
-      <h3 class="text-base font-semibold text-foreground">
-        {{ locale.t.agent.orderOpportunities }}
-      </h3>
-      <span class="text-xs text-muted-foreground">{{ locale.t.agent.inYourCategories }}</span>
+        {{ tab.label }}
+        <span v-if="tab.count > 0" class="ml-1 text-xs font-medium opacity-70">{{ tab.count }}</span>
+      </button>
     </div>
 
-    <template v-if="orders.isLoadingAgent && orders.availableOrders.length === 0">
-      <Skeleton v-for="n in 2" :key="n" class="h-40 w-full rounded-3xl" />
+    <!-- ===================== Tab 1: New orders ===================== -->
+    <template v-if="activeTab === 'orders'">
+      <template v-if="orders.isLoadingAgent && orders.availableOrders.length === 0">
+        <Skeleton v-for="n in 2" :key="n" class="h-40 w-full rounded-3xl" />
+      </template>
+
+      <GlassCard v-else-if="availableOrders.length === 0" padding="none" class="overflow-hidden">
+        <EmptyState
+          :icon="Inbox"
+          :title="locale.t.agent.noOpenOrders"
+          :description="locale.t.agent.noOpenOrdersBody"
+        />
+      </GlassCard>
+
+      <div v-else class="space-y-3">
+        <AgentOrderItem
+          v-for="order in availableOrders"
+          :key="order.id"
+          :order="order"
+          :submitting="orders.isSubmitting"
+          :highlight="order.id === focusOrderId"
+          @submit="handleSubmit"
+        />
+      </div>
     </template>
 
-    <GlassCard v-else-if="orders.availableOrders.length === 0" padding="none" class="overflow-hidden">
-      <EmptyState
-        :icon="Inbox"
-        :title="locale.t.agent.noOpenOrders"
-        :description="locale.t.agent.noOpenOrdersBody"
-      />
-    </GlassCard>
-
+    <!-- ===================== Tab 2: My offers ===================== -->
     <template v-else>
-      <AgentOrderItem
-        v-for="order in orders.availableOrders"
-        :key="order.id"
-        :order="order"
-        :submitting="orders.isSubmitting"
-        :highlight="order.id === focusOrderId"
-        @submit="handleSubmit"
-      />
+      <template v-if="orders.isLoadingAgent && orders.myOffers.length === 0">
+        <Skeleton v-for="n in 2" :key="n" class="h-32 w-full rounded-3xl" />
+      </template>
+
+      <GlassCard v-else-if="myOffers.length === 0" padding="none" class="overflow-hidden">
+        <EmptyState
+          :icon="MessageSquareDashed"
+          :title="locale.t.agent.noOffersYet"
+          :description="locale.t.agent.noOffersYetBody"
+        />
+      </GlassCard>
+
+      <template v-else>
+        <!-- Status filter chips. -->
+        <div class="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
+          <button
+            v-for="filter in offerFilters"
+            :key="filter.key"
+            type="button"
+            class="pressable shrink-0 rounded-full px-3.5 py-1.5 text-xs font-medium transition-colors"
+            :class="offerFilter === filter.key
+              ? 'bg-primary text-primary-foreground'
+              : 'glass-chip'"
+            @click="offerFilter = filter.key"
+          >
+            {{ filter.label }}
+            <span v-if="filter.count > 0" class="ml-1 opacity-70">{{ filter.count }}</span>
+          </button>
+        </div>
+
+        <div v-if="filteredOffers.length === 0" class="px-1 py-8 text-center text-sm text-muted-foreground">
+          {{ locale.t.agent.noOffersInFilter }}
+        </div>
+
+        <div v-else class="space-y-3">
+          <AgentOfferItem
+            v-for="offer in filteredOffers"
+            :key="offer.id"
+            :offer="offer"
+            :submitting="orders.isSubmitting"
+            :highlight="offer.order.id === focusOrderId"
+            @submit-work="handleSubmitWork"
+          />
+        </div>
+      </template>
     </template>
 
     <p v-if="orders.error" class="rounded-2xl bg-destructive/10 px-4 py-3 text-sm text-destructive">

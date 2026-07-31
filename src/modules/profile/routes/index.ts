@@ -14,6 +14,12 @@ export const profileRoutes: RouteRecordRaw[] = [
     component: () => import('@/modules/profile/pages/ProfileEditPage.vue'),
   },
   {
+    path: 'earnings',
+    name: 'earnings',
+    meta: { hideTabBar: true },
+    component: () => import('@/modules/profile/pages/EarningsPage.vue'),
+  },
+  {
     path: 'profile',
     name: 'profile',
     component: () => import('@/modules/profile/pages/ProfilePage.vue'),

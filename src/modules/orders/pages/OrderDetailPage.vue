@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { CheckCircle2, CreditCard, Eye, FileText, Loader2, MessageCircle, MessageSquareQuote, PartyPopper, Star, Store } from '@lucide/vue'
+import { CheckCircle2, CreditCard, Download, Eye, FileText, Loader2, MessageCircle, MessageSquareQuote, PartyPopper, Star, Store } from '@lucide/vue'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import AppHeader from '@/modules/shell/components/AppHeader.vue'
@@ -50,6 +50,33 @@ const canRate = computed(() => order.value?.status === 'completed' && !hasReview
 const attachmentFiles = computed(() => order.value?.attachment_files ?? [])
 const ratingDraft = ref(0)
 const ratingComment = ref('')
+
+// Attachments carry storage-hashed names (unreadable), so we represent each
+// file by its type + size and a download affordance instead of the raw name.
+function isImageAttachment(file: { mime_type: string | null }): boolean {
+  return (file.mime_type ?? '').startsWith('image/')
+}
+
+/** Short, human file-type label (PDF, PNG, DOC…) — empty when undeterminable. */
+function attachmentType(file: { original_name: string, mime_type: string | null }): string {
+  const ext = /\.([a-z0-9]{1,6})$/i.exec(file.original_name ?? '')?.[1]
+  if (ext) return ext.toUpperCase()
+
+  const sub = (file.mime_type ?? '').split('/')[1] ?? ''
+  if (sub.includes('pdf')) return 'PDF'
+  if (sub.includes('word')) return 'DOC'
+  if (sub.includes('sheet') || sub.includes('excel')) return 'XLS'
+  if (sub.includes('presentation')) return 'PPT'
+  if (sub.includes('zip') || sub.includes('rar') || sub.includes('compressed')) return 'ZIP'
+  return sub && sub.length <= 4 ? sub.toUpperCase() : ''
+}
+
+function formatFileSize(bytes: number): string {
+  if (!bytes) return ''
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+}
 
 // When the client returns from the checkout page (tab becomes visible again),
 // re-check the payment so the order flips to in_progress without a manual reload.
@@ -137,16 +164,18 @@ async function sendReview() {
         <!-- Summary -->
         <GlassCard class="space-y-4">
           <div class="min-w-0">
-            <div class="flex items-start justify-between gap-2">
-              <h2 class="text-lg font-semibold leading-tight text-foreground">
-                {{ title }}
-              </h2>
-              <OrderStatusBadge
-                :status="order.status"
-                class="shrink-0"
-              />
-            </div>
-            <p class="mt-1 text-xs text-muted-foreground">
+            <OrderStatusBadge
+              :status="order.status"
+              class="mb-2"
+            />
+            <h2 class="text-lg font-semibold leading-tight text-foreground">
+              {{ title }}
+            </h2>
+            <p class="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
+              <span class="rounded-md bg-muted px-1.5 py-0.5 font-semibold tabular-nums text-foreground/70 dark:bg-white/10">
+                #{{ order.id }}
+              </span>
+              <span aria-hidden="true">·</span>
               {{ formatDate(order.created_at, locale.locale) }}
             </p>
             <p
@@ -180,17 +209,39 @@ async function sendReview() {
             <p class="text-xs font-medium uppercase tracking-wide text-muted-foreground">
               {{ locale.t.orders.attachedFiles }}
             </p>
-            <a
-              v-for="file in attachmentFiles"
-              :key="file.id"
-              :href="file.url"
-              target="_blank"
-              rel="noopener"
-              class="glass-field flex items-center gap-2 rounded-2xl px-4 py-3 text-sm font-medium text-primary"
-            >
-              <FileText class="size-4 shrink-0" />
-              <span class="truncate">{{ file.original_name }}</span>
-            </a>
+            <div class="flex flex-wrap gap-2">
+              <a
+                v-for="file in attachmentFiles"
+                :key="file.id"
+                :href="file.url"
+                target="_blank"
+                rel="noopener"
+                :download="file.original_name"
+                class="group flex items-center gap-2.5 rounded-2xl border border-dashed border-border bg-card/40 px-3 py-2.5 transition active:scale-[0.98] dark:bg-white/5"
+              >
+                <!-- Image → thumbnail; any other file → a document icon. Never
+                     the raw (storage-hashed) name. -->
+                <span class="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-primary/10 text-primary">
+                  <img
+                    v-if="isImageAttachment(file)"
+                    :src="file.url"
+                    alt=""
+                    class="size-full object-cover"
+                    loading="lazy"
+                  >
+                  <FileText v-else class="size-5" />
+                </span>
+                <span class="flex min-w-0 flex-col leading-tight">
+                  <span v-if="attachmentType(file)" class="text-xs font-bold text-foreground">
+                    {{ attachmentType(file) }}
+                  </span>
+                  <span v-if="formatFileSize(file.size)" class="text-[11px] text-muted-foreground">
+                    {{ formatFileSize(file.size) }}
+                  </span>
+                </span>
+                <Download class="size-4 shrink-0 text-muted-foreground transition group-active:text-primary" />
+              </a>
+            </div>
           </div>
 
           <Button
