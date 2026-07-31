@@ -8,6 +8,7 @@ import Skeleton from '@/core/ui/Skeleton.vue'
 import { useTelegram } from '@/core/composables/useTelegram'
 import { getApiErrorMessage } from '@/core/api/api-error'
 import { useAuthStore } from '@/modules/auth/stores/auth.store'
+import { useChatStore } from '@/modules/chat/stores/chat.store'
 import { useLocaleStore } from '@/core/i18n/locale.store'
 import { formatDaySeparator, formatMessageTime } from '@/core/lib/date'
 import {
@@ -25,6 +26,7 @@ import { ROUTES } from '@/modules/shell/constants/routes'
 import type { GlobalChatMessage, GlobalChatMeta, GlobalChatSender } from '@/modules/chat/types/chat'
 
 const auth = useAuthStore()
+const chatStore = useChatStore()
 const locale = useLocaleStore()
 const route = useRoute()
 const router = useRouter()
@@ -122,6 +124,12 @@ function scrollToBottom(smooth = true) {
   })
 }
 
+/** Being on this page means the newest visible message has been seen — clear the badge. */
+function markSeen() {
+  const last = messages.value[messages.value.length - 1]
+  if (last) chatStore.markGlobalSeen(last.id)
+}
+
 async function redirectAgentDeepLink(): Promise<boolean> {
   const id = Number(route.query.agent)
   if (!Number.isInteger(id) || id <= 0) {
@@ -166,6 +174,7 @@ async function load() {
     meta.value = metaData
     messages.value = messageData
     hasOlder.value = messageData.length >= PAGE_SIZE
+    markSeen()
     scrollToBottom(false)
   }
   catch (err) {
@@ -183,6 +192,7 @@ async function poll() {
     const fresh = await fetchGlobalMessages({ after_id: lastId }, { skipErrorToast: true })
     if (fresh.length > 0) {
       messages.value = [...messages.value, ...fresh]
+      markSeen()
       scrollToBottom()
     }
   }
@@ -217,6 +227,7 @@ async function handleSend(body: string, fileIds: number[]): Promise<boolean> {
   try {
     // The whole batch (text + files) is one message.
     messages.value = [...messages.value, await sendGlobalMessage(body, fileIds)]
+    markSeen()
     haptic('medium')
     scrollToBottom()
     // Refresh cooldown/ban state from the server after each send.

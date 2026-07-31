@@ -72,6 +72,13 @@ export interface GlobalChatMessage {
   sender: GlobalChatSender
 }
 
+/** GET /chat/global/unread payload — drives the home badge. */
+export interface GlobalChatUnread {
+  count: number
+  /** Highest visible message id right now — used to seed the client cursor. */
+  latest_id: number
+}
+
 /** GET /chat/global payload — composer state for the current user. */
 export interface GlobalChatMeta {
   enabled: boolean

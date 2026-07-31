@@ -1,6 +1,6 @@
 import { api } from '@/core/api/client'
 import type { ApiSuccess } from '@/core/types/api'
-import type { Chat, ChatMessage, ChatThread, GlobalChatMessage, GlobalChatMeta } from '@/modules/chat/types/chat'
+import type { Chat, ChatMessage, ChatThread, GlobalChatMessage, GlobalChatMeta, GlobalChatUnread } from '@/modules/chat/types/chat'
 
 export async function fetchChats(agentProfileId?: number): Promise<Chat[]> {
   const { data } = await api.get<ApiSuccess<Chat[]>>('/api/v1/chats', {
@@ -85,6 +85,16 @@ export async function sendDirectMessage(chatId: number, body: string, fileIds: n
 
 export async function fetchGlobalMeta(): Promise<GlobalChatMeta> {
   const { data } = await api.get<ApiSuccess<GlobalChatMeta>>('/api/v1/chat/global')
+
+  return data.data
+}
+
+/** Unread global-chat count relative to the client's last-seen id. */
+export async function fetchGlobalUnread(afterId?: number): Promise<GlobalChatUnread> {
+  const { data } = await api.get<ApiSuccess<GlobalChatUnread>>('/api/v1/chat/global/unread', {
+    params: afterId != null ? { after_id: afterId } : undefined,
+    skipErrorToast: true,
+  })
 
   return data.data
 }

@@ -5,6 +5,7 @@ import {
   fetchChats,
   fetchDirectMessages,
   fetchDirectThread,
+  fetchGlobalUnread,
   fetchMessages,
   fetchThread,
   sendDirectMessage,
@@ -28,6 +29,65 @@ export const useChatStore = defineStore('chat', () => {
   const lastMessageId = computed(() =>
     messages.value.length > 0 ? messages.value[messages.value.length - 1]!.id : undefined,
   )
+
+  /** Total unread messages across every order/direct chat — drives the home badge. */
+  const totalUnread = computed(() =>
+    chats.value.reduce((sum, c) => sum + (c.unread_count || 0), 0),
+  )
+
+  // ---- Global chat unread (client-tracked cursor) ----
+  const GLOBAL_SEEN_KEY = 'adspace_global_seen'
+  const globalUnread = ref(0)
+
+  function globalSeenId(): number | null {
+    try {
+      const raw = localStorage.getItem(GLOBAL_SEEN_KEY)
+      const n = raw != null ? Number(raw) : Number.NaN
+      return Number.isInteger(n) && n >= 0 ? n : null
+    }
+    catch {
+      return null
+    }
+  }
+
+  function persistGlobalSeen(id: number) {
+    try {
+      localStorage.setItem(GLOBAL_SEEN_KEY, String(id))
+    }
+    catch {
+      // Private mode / Telegram WebView may block storage — badge just resets.
+    }
+  }
+
+  /** Refresh the global-chat unread count against the stored cursor. */
+  async function loadGlobalUnread() {
+    try {
+      const seen = globalSeenId()
+      const { count, latest_id } = await fetchGlobalUnread(seen ?? undefined)
+
+      // First run: adopt the current head as "seen" so we don't flash a badge
+      // for the entire backlog.
+      if (seen === null) {
+        persistGlobalSeen(latest_id)
+        globalUnread.value = 0
+        return
+      }
+
+      globalUnread.value = count
+    }
+    catch {
+      // Transient — keep the previous value.
+    }
+  }
+
+  /** Mark the global chat read up to `maxId` (called when the user views it). */
+  function markGlobalSeen(maxId: number) {
+    const seen = globalSeenId()
+    if (seen === null || maxId > seen) {
+      persistGlobalSeen(maxId)
+    }
+    globalUnread.value = 0
+  }
 
   async function loadChats(force = false) {
     if (inboxLoaded.value && !force) return
@@ -152,11 +212,16 @@ export const useChatStore = defineStore('chat', () => {
     currentChat.value = null
     messages.value = []
     inboxLoaded.value = false
+    globalUnread.value = 0
     error.value = null
   }
 
   return {
     chats,
+    totalUnread,
+    globalUnread,
+    loadGlobalUnread,
+    markGlobalSeen,
     isLoading,
     error,
     currentChat,

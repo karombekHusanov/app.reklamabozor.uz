@@ -27,12 +27,6 @@ const { haptic } = useTelegram()
 const orderId = computed(() => Number(props.orderId))
 const bottomAnchor = ref<HTMLElement | null>(null)
 
-// The conversation stays writable while the deal is active.
-const writable = computed(() => {
-  const status = chat.currentChat?.order?.status
-  return status === 'in_progress' || status === 'work_submitted'
-})
-
 const feed = computed(() =>
   buildChatFeed(chat.messages, m => ({ senderId: m.sender_id, createdAt: m.created_at })),
 )
@@ -178,18 +172,11 @@ async function handleSend(body: string, fileIds: number[]): Promise<boolean> {
 
     <ChatComposerDock v-if="chat.currentChat">
       <ChatComposer
-        v-if="writable"
         :send="handleSend"
         :sending="chat.isSending"
         :max-length="2000"
         @focus="scrollToBottom(false)"
       />
-      <p
-        v-else
-        class="rounded-2xl bg-secondary px-4 py-3 text-center text-sm text-muted-foreground dark:bg-white/5"
-      >
-        {{ locale.t.chat.closedNote }}
-      </p>
     </ChatComposerDock>
   </div>
 </template>

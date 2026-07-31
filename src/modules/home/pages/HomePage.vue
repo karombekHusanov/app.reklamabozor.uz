@@ -26,6 +26,7 @@ import { useLocaleStore } from '@/core/i18n/locale.store'
 import { useAuthStore } from '@/modules/auth/stores/auth.store'
 import { useAgentStore } from '@/modules/agent/stores/agent.store'
 import { useNotificationsStore } from '@/modules/notifications/stores/notifications.store'
+import { useChatStore } from '@/modules/chat/stores/chat.store'
 import { useOrdersStore } from '@/modules/orders/stores/orders.store'
 import { useHomeStore } from '@/modules/home/stores/home.store'
 import { trackBannerClick, trackBannerView, type Banner } from '@/modules/home/services/banners.service'
@@ -39,6 +40,7 @@ import { ROUTES } from '@/modules/shell/constants/routes'
 const auth = useAuthStore()
 const agent = useAgentStore()
 const notifications = useNotificationsStore()
+const chat = useChatStore()
 const orders = useOrdersStore()
 const home = useHomeStore()
 const router = useRouter()
@@ -100,6 +102,7 @@ const ratingDisplay = computed(() => (4.5 + (completion.value / 100) * 0.5).toFi
 const hasUnread = computed(() => notifications.hasUnread)
 const hasBanners = computed(() => home.banners.length > 0)
 const showSkeleton = computed(() => !home.hasLoaded && (home.isLoading || auth.isLoading))
+const providersLoading = computed(() => !home.hasLoaded && home.isLoading)
 
 interface QuickLink {
   key: string
@@ -109,7 +112,15 @@ interface QuickLink {
   icon: Component
   tone: string
   badge?: number
+  /** Blinking red halo behind the badge — draws the eye to unread messages. */
+  pulse?: boolean
 }
+
+/** Unread messages across all agency/order chats. */
+const unreadChats = computed(() => chat.totalUnread)
+
+/** New messages in the community-wide global chat since the user last opened it. */
+const unreadGlobal = computed(() => chat.globalUnread)
 
 const quickLinks = computed((): QuickLink[] => {
   const links: QuickLink[] = []
@@ -143,6 +154,8 @@ const quickLinks = computed((): QuickLink[] => {
       hint: locale.t.home.quickAgencyChatsHint,
       icon: MessageCircle,
       tone: 'quick-link-tile--indigo',
+      badge: unreadChats.value > 0 ? unreadChats.value : undefined,
+      pulse: unreadChats.value > 0,
     },
     {
       key: 'chat',
@@ -151,6 +164,8 @@ const quickLinks = computed((): QuickLink[] => {
       hint: locale.t.chat.subtitle,
       icon: MessagesSquare,
       tone: 'quick-link-tile--violet',
+      badge: unreadGlobal.value > 0 ? unreadGlobal.value : undefined,
+      pulse: unreadGlobal.value > 0,
     },
     {
       key: 'map',
@@ -222,7 +237,11 @@ function onBannerCarouselInit(api: CarouselApi) {
 const { pullDistance, isPulling } = usePullToRefresh({
   onRefresh: async () => {
     haptic('light')
-    await home.refresh()
+    await Promise.all([
+      home.refresh(),
+      auth.isAuthenticated ? chat.loadChats(true) : Promise.resolve(),
+      auth.isAuthenticated ? chat.loadGlobalUnread() : Promise.resolve(),
+    ])
   },
 })
 
@@ -260,14 +279,22 @@ function openBanner(banner: Banner) {
   void router.push(banner.link_url)
 }
 
+function loadChatBadges() {
+  void chat.loadChats(true)
+  void chat.loadGlobalUnread()
+}
+
 onMounted(() => {
   void home.load()
+  if (auth.isAuthenticated) loadChatBadges()
 })
 
 watch(() => auth.isAuthenticated, (authed, wasAuthed) => {
   if (authed === wasAuthed) return
   home.reset()
+  chat.reset()
   void home.load()
+  if (authed) loadChatBadges()
 })
 
 watch(
@@ -473,7 +500,12 @@ watch(
               v-if="link.badge"
               class="absolute -right-1.5 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-bold leading-none text-white shadow-sm"
             >
-              {{ link.badge > 99 ? '99+' : link.badge }}
+              <span
+                v-if="link.pulse"
+                class="absolute inset-0 rounded-full bg-destructive animate-ping opacity-70"
+                aria-hidden="true"
+              />
+              <span class="relative">{{ link.badge > 99 ? '99+' : link.badge }}</span>
             </span>
           </span>
           <div class="w-full">
@@ -489,7 +521,21 @@ watch(
     </section>
 
     <section class="px-5 pt-4">
-      <TopRatedAgents />
+      <TopRatedAgents
+        :title="locale.t.home.topAgencies"
+        :agents="home.topAgents"
+        :view-all-route="ROUTES.agencies"
+        :loading="providersLoading"
+      />
+    </section>
+
+    <section class="px-5 pt-4">
+      <TopRatedAgents
+        :title="locale.t.home.topDesigners"
+        :agents="home.topDesigners"
+        :view-all-route="ROUTES.designers"
+        :loading="providersLoading"
+      />
     </section>
 
     <section class="overflow-x-hidden px-5 pt-4">

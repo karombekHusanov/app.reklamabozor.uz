@@ -16,6 +16,7 @@ const LIVE_ORDERS_LIMIT = 10
 export const useHomeStore = defineStore('home', () => {
   const banners = ref<Banner[]>([])
   const topAgents = ref<PublicAgent[]>([])
+  const topDesigners = ref<PublicAgent[]>([])
   const liveOrders = ref<LiveOrder[]>([])
   const hasLoaded = ref(false)
   const isLoading = ref(false)
@@ -53,14 +54,16 @@ export const useHomeStore = defineStore('home', () => {
     error.value = null
 
     try {
-      const [bannersData, agentsData, liveOrdersData] = await Promise.all([
+      const [bannersData, agentsData, designersData, liveOrdersData] = await Promise.all([
         fetchBanners().catch(() => [] as Banner[]),
-        fetchTopAgents(TOP_AGENTS_LIMIT).catch(() => [] as PublicAgent[]),
+        fetchTopAgents(TOP_AGENTS_LIMIT, undefined, 'agent').catch(() => [] as PublicAgent[]),
+        fetchTopAgents(TOP_AGENTS_LIMIT, undefined, 'designer').catch(() => [] as PublicAgent[]),
         fetchLiveOrders(LIVE_ORDERS_LIMIT).catch(() => [] as LiveOrder[]),
       ])
 
       banners.value = bannersData
       topAgents.value = agentsData
+      topDesigners.value = designersData
       liveOrders.value = liveOrdersData
       await loadUserContext(force)
       hasLoaded.value = true
@@ -81,6 +84,7 @@ export const useHomeStore = defineStore('home', () => {
   function reset() {
     banners.value = []
     topAgents.value = []
+    topDesigners.value = []
     liveOrders.value = []
     hasLoaded.value = false
     isLoading.value = false
@@ -91,6 +95,7 @@ export const useHomeStore = defineStore('home', () => {
   return {
     banners,
     topAgents,
+    topDesigners,
     liveOrders,
     hasLoaded,
     isLoading,

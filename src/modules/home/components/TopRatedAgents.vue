@@ -1,22 +1,22 @@
 <script setup lang="ts">
 import { ChevronRight, Star } from '@lucide/vue'
-import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import Avatar from '@/core/ui/Avatar.vue'
 import Skeleton from '@/core/ui/Skeleton.vue'
 import HomeAgentCardSkeleton from '@/modules/home/components/HomeAgentCardSkeleton.vue'
 import { categoryName } from '@/core/i18n/category-name'
 import { useLocaleStore } from '@/core/i18n/locale.store'
-import { useHomeStore } from '@/modules/home/stores/home.store'
-import { ROUTES } from '@/modules/shell/constants/routes'
 import type { PublicAgent } from '@/modules/marketplace/services/agents.service'
+
+const props = defineProps<{
+  title: string
+  agents: PublicAgent[]
+  viewAllRoute: string
+  loading: boolean
+}>()
 
 const locale = useLocaleStore()
 const router = useRouter()
-const home = useHomeStore()
-
-const loading = computed(() => !home.hasLoaded && home.isLoading)
-const visibleAgents = computed(() => home.topAgents)
 
 function rankClass(rank: number): string {
   const base = 'top-agents-rank'
@@ -43,20 +43,20 @@ function openAgent(id: number) {
 </script>
 
 <template>
-  <div v-if="loading || visibleAgents.length" class="home-card overflow-hidden p-4">
+  <div v-if="props.loading || props.agents.length" class="home-card overflow-hidden p-4">
     <div class="flex items-center justify-between pb-1">
-      <template v-if="loading">
+      <template v-if="props.loading">
         <Skeleton class="top-agents-skeleton--strong h-5 w-32 rounded-md" />
         <Skeleton class="top-agents-skeleton h-4 w-20 rounded-md" />
       </template>
       <template v-else>
         <h2 class="text-base font-bold text-foreground">
-          {{ locale.t.home.topAgencies }}
+          {{ props.title }}
         </h2>
         <button
           type="button"
           class="pressable inline-flex items-center gap-0.5 text-sm font-medium text-muted-foreground transition active:text-foreground"
-          @click="router.push(ROUTES.agencies)"
+          @click="router.push(props.viewAllRoute)"
         >
           {{ locale.t.home.viewAllAgents }}
           <ChevronRight class="size-4" />
@@ -64,13 +64,13 @@ function openAgent(id: number) {
       </template>
     </div>
 
-    <div v-if="loading" class="top-agents-list">
+    <div v-if="props.loading" class="top-agents-list">
       <HomeAgentCardSkeleton v-for="n in 4" :key="n" />
     </div>
 
     <div v-else class="top-agents-list">
       <button
-        v-for="(agent, index) in visibleAgents"
+        v-for="(agent, index) in props.agents"
         :key="agent.id"
         type="button"
         class="top-agents-row"
