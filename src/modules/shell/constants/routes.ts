@@ -7,6 +7,7 @@ export const ROUTES = {
     `/agents/${agentId}/portfolio/${itemId}`,
   products: '/products',
   designers: '/designers',
+  tender: '/tender',
   map: '/map',
   chat: '/chat',
   chatThreads: '/chat/threads',

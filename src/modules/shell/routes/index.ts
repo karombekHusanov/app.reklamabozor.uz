@@ -8,6 +8,7 @@ import { marketplaceRoutes } from '@/modules/marketplace/routes'
 import { ordersRoutes } from '@/modules/orders'
 import { productsRoutes } from '@/modules/products/routes'
 import { profileRoutes } from '@/modules/profile/routes'
+import { tenderRoutes } from '@/modules/tender'
 
 export const shellRoutes: RouteRecordRaw[] = [
   {
@@ -17,6 +18,7 @@ export const shellRoutes: RouteRecordRaw[] = [
       ...homeRoutes,
       ...marketplaceRoutes,
       ...designersRoutes,
+      ...tenderRoutes,
       ...mapRoutes,
       ...chatRoutes,
       ...notificationsRoutes,

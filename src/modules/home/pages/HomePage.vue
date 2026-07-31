@@ -3,6 +3,7 @@ import {
   ArrowRight,
   Bell,
   Building2,
+  Gavel,
   Handshake,
   Loader2,
   Map,
@@ -114,6 +115,8 @@ interface QuickLink {
   badge?: number
   /** Blinking red halo behind the badge — draws the eye to unread messages. */
   pulse?: boolean
+  /** Small corner ribbon, e.g. "Soon" for not-yet-live features. */
+  tag?: string
 }
 
 /** Unread messages across all agency/order chats. */
@@ -139,6 +142,15 @@ const quickLinks = computed((): QuickLink[] => {
   }
 
   links.push(
+    {
+      key: 'tender',
+      to: ROUTES.tender,
+      label: locale.t.tender.title,
+      hint: locale.t.tender.subtitle,
+      icon: Gavel,
+      tone: 'quick-link-tile--amber',
+      tag: locale.t.tender.comingSoonBadge,
+    },
     {
       key: 'live-orders',
       to: ROUTES.liveOrders,
@@ -493,6 +505,12 @@ watch(
         :class="link.tone"
         @click="navigate(link.to)"
       >
+        <span
+          v-if="link.tag"
+          class="absolute right-3 top-3 rounded-full bg-amber-400/20 px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wide text-amber-600 dark:bg-amber-400/15 dark:text-amber-300"
+        >
+          {{ link.tag }}
+        </span>
         <div class="flex h-full flex-col items-start justify-between">
           <span class="quick-link-tile__icon-wrap relative">
             <component :is="link.icon" class="size-7" />

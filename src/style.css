@@ -1676,6 +1676,10 @@
     --quick-link-icon-bg: #059669;
   }
 
+  .quick-link-tile--amber {
+    --quick-link-icon-bg: #d97706;
+  }
+
   .dark .quick-link-tile--sky {
     --quick-link-icon-bg: #2563eb;
   }
@@ -1694,6 +1698,10 @@
 
   .dark .quick-link-tile--emerald {
     --quick-link-icon-bg: #047857;
+  }
+
+  .dark .quick-link-tile--amber {
+    --quick-link-icon-bg: #b45309;
   }
 
   /* Blue→teal accent pill (home CTAs), matching the tab-bar active gradient. */
