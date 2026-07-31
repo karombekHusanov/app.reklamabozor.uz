@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { CheckCircle2, CreditCard, Download, Eye, FileText, Loader2, MessageCircle, MessageSquareQuote, PartyPopper, Star, Store } from '@lucide/vue'
+import { CheckCircle2, CreditCard, Download, Eye, FileText, Loader2, MessageCircle, MessageSquareQuote, PartyPopper, Star, Store, XCircle } from '@lucide/vue'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import AppHeader from '@/modules/shell/components/AppHeader.vue'
@@ -50,6 +50,10 @@ const canRate = computed(() => order.value?.status === 'completed' && !hasReview
 const attachmentFiles = computed(() => order.value?.attachment_files ?? [])
 const ratingDraft = ref(0)
 const ratingComment = ref('')
+
+// Client can cancel their own order only while no offer is accepted yet
+// (same window as `selectable`). Two-step to avoid an accidental tap.
+const confirmingCancel = ref(false)
 
 // Attachments carry storage-hashed names (unreadable), so we represent each
 // file by its type + size and a download affordance instead of the raw name.
@@ -129,6 +133,17 @@ function openChat() {
   if (!order.value) return
   haptic('light')
   router.push(`/chat/${order.value.id}`)
+}
+
+async function cancelOrder() {
+  if (!order.value) return
+  haptic('light')
+  const ok = await orders.cancelOrder(order.value.id)
+  if (ok) {
+    haptic('medium')
+    confirmingCancel.value = false
+    toast.success(locale.t.orders.cancelledToast)
+  }
 }
 
 async function sendReview() {
@@ -434,6 +449,56 @@ async function sendReview() {
             :accepting="orders.isSubmitting"
             @accept="acceptOffer(offer.id)"
           />
+        </div>
+
+        <!-- Cancel: allowed only before an offer is accepted. Two-step confirm. -->
+        <div v-if="selectable" class="pt-1">
+          <GlassCard
+            v-if="confirmingCancel"
+            class="space-y-3 border-destructive/30"
+          >
+            <div class="flex items-center gap-2">
+              <XCircle class="size-5 text-destructive" />
+              <h3 class="text-base font-semibold">
+                {{ locale.t.orders.cancelConfirmTitle }}
+              </h3>
+            </div>
+            <p class="text-sm text-muted-foreground">
+              {{ locale.t.orders.cancelConfirmBody }}
+            </p>
+            <div class="flex gap-2">
+              <Button
+                variant="outline"
+                class="h-11 flex-1 rounded-2xl"
+                :disabled="orders.isSubmitting"
+                @click="confirmingCancel = false"
+              >
+                {{ locale.t.orders.cancelKeep }}
+              </Button>
+              <Button
+                variant="destructive"
+                class="h-11 flex-1 rounded-2xl"
+                :disabled="orders.isSubmitting"
+                @click="cancelOrder"
+              >
+                <Loader2
+                  v-if="orders.isSubmitting"
+                  class="size-4 animate-spin"
+                />
+                {{ locale.t.orders.cancelConfirm }}
+              </Button>
+            </div>
+          </GlassCard>
+
+          <button
+            v-else
+            type="button"
+            class="pressable flex w-full items-center justify-center gap-1.5 rounded-2xl py-3 text-sm font-medium text-muted-foreground transition active:text-destructive"
+            @click="confirmingCancel = true"
+          >
+            <XCircle class="size-4" />
+            {{ locale.t.orders.cancelOrder }}
+          </button>
         </div>
 
         <p

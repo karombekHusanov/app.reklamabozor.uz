@@ -4,6 +4,7 @@ import { getApiErrorMessage } from '@/core/api/api-error'
 import { openCheckout } from '@/core/lib/telegram-init'
 import {
   acceptOffer as acceptOfferRequest,
+  cancelOrder as cancelOrderRequest,
   confirmCompletion as confirmCompletionRequest,
   createOrder as createOrderRequest,
   disputeCompletion as disputeCompletionRequest,
@@ -181,6 +182,26 @@ export const useOrdersStore = defineStore('orders', () => {
     }
   }
 
+  /** Client cancels their own order (only while still open for offers). */
+  async function cancelOrder(orderId: number) {
+    isSubmitting.value = true
+    error.value = null
+    try {
+      const updated = await cancelOrderRequest(orderId)
+      if (currentOrder.value?.id === orderId) currentOrder.value = updated
+      // Keep the list in sync so the badge flips without a full reload.
+      myOrders.value = myOrders.value.map(o => (o.id === orderId ? { ...o, status: updated.status } : o))
+      return true
+    }
+    catch (e) {
+      error.value = getApiErrorMessage(e)
+      return false
+    }
+    finally {
+      isSubmitting.value = false
+    }
+  }
+
   /** Client rates the winning agency on a completed order. */
   async function submitReview(orderId: number, rating: number, comment: string | null) {
     isSubmitting.value = true
@@ -282,6 +303,7 @@ export const useOrdersStore = defineStore('orders', () => {
     refreshPayment,
     confirmCompletion,
     disputeCompletion,
+    cancelOrder,
     submitReview,
     loadAgentWorkspace,
     sendOffer,

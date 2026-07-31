@@ -76,6 +76,13 @@ export async function disputeCompletion(orderId: number): Promise<Order> {
   return data.data
 }
 
+/** Client cancels their own order — only while it is still open for offers. */
+export async function cancelOrder(orderId: number): Promise<Order> {
+  const { data } = await api.post<ApiSuccess<Order>>(`/api/v1/orders/${orderId}/cancel`)
+
+  return data.data
+}
+
 /** Client rates the winning agency on a completed order (moderated). */
 export async function submitReview(orderId: number, rating: number, comment: string | null): Promise<OrderReview> {
   const { data } = await api.post<ApiSuccess<OrderReview>>(`/api/v1/orders/${orderId}/review`, {
