@@ -8,7 +8,9 @@ import { Button } from '@/core/ui/button'
 import { useLocaleStore } from '@/core/i18n/locale.store'
 import { categoryName } from '@/core/i18n/category-name'
 import { formatPrice, offerStatusVariant, orderStatusVariant } from '@/modules/orders/lib/order-status'
-import type { AgentOffer } from '@/modules/orders/types/order'
+import CriteriaReviewForm from '@/modules/orders/components/CriteriaReviewForm.vue'
+import ReviewDisplay from '@/modules/orders/components/ReviewDisplay.vue'
+import type { AgentOffer, ReviewCriterionScore } from '@/modules/orders/types/order'
 
 const locale = useLocaleStore()
 const router = useRouter()
@@ -22,6 +24,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   submitWork: [orderId: number]
+  reviewClient: [orderId: number, criteria: ReviewCriterionScore[], comment: string | null]
 }>()
 
 const orderStatus = computed(() => props.offer.order.status)
@@ -37,6 +40,20 @@ const isActiveDeal = computed(() =>
   props.offer.status === 'accepted'
   && ['in_progress', 'work_submitted', 'completed'].includes(orderStatus.value ?? ''),
 )
+
+const isCompleted = computed(() =>
+  props.offer.status === 'accepted' && orderStatus.value === 'completed',
+)
+
+const canReviewClient = computed(() =>
+  isCompleted.value && !props.offer.my_review,
+)
+
+const hasProviderReview = computed(() => Boolean(props.offer.my_review))
+
+function handleReviewClient(criteria: ReviewCriterionScore[], comment: string | null) {
+  emit('reviewClient', props.offer.order.id, criteria, comment)
+}
 
 // The badge tracks the deal's lifecycle once accepted; before that (pending /
 // rejected) the offer's own status is what matters to the agent.
@@ -115,7 +132,7 @@ const badge = computed(() => {
     </p>
 
     <p
-      v-else-if="orderStatus === 'completed'"
+      v-else-if="orderStatus === 'completed' && !canReviewClient && !hasProviderReview"
       class="text-sm text-muted-foreground"
     >
       {{ locale.t.agent.offerCompletedNote }}
@@ -142,5 +159,21 @@ const badge = computed(() => {
         <span class="truncate">{{ locale.t.chat.openChat }}</span>
       </Button>
     </div>
+
+    <!-- Provider reviews client after completion. -->
+    <CriteriaReviewForm
+      v-if="canReviewClient"
+      target-role="client"
+      :title="locale.t.orders.rateClientTitle"
+      :body="locale.t.orders.rateClientBody"
+      :submitting="submitting"
+      @submit="handleReviewClient"
+    />
+
+    <ReviewDisplay
+      v-else-if="hasProviderReview && offer.my_review"
+      :review="offer.my_review"
+      :label="locale.t.orders.rateYourReview"
+    />
   </GlassCard>
 </template>

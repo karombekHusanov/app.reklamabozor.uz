@@ -5,6 +5,7 @@ import type { AgentProfile } from '@/modules/agent/types/agent'
 import { categoryName } from '@/core/i18n/category-name'
 import AgentProfileShortcuts, { type AgentVerificationState } from '@/modules/profile/components/agent-sections/AgentProfileShortcuts.vue'
 import AgentShowcase from '@/modules/profile/components/AgentShowcase.vue'
+import MyRatingCard from '@/modules/profile/components/MyRatingCard.vue'
 import ProfileSwitcher from '@/modules/profile/components/ProfileSwitcher.vue'
 import type { useLocaleStore } from '@/core/i18n/locale.store'
 import { fetchPublicAgent, type PublicAgent } from '@/modules/marketplace/services/agents.service'
@@ -62,6 +63,10 @@ const verificationState = computed((): AgentVerificationState | undefined => {
 const completedOrdersCount = computed(() => publicAgent.value?.completed_orders_count ?? 0)
 const ratingAvg = computed(() => publicAgent.value?.rating_avg ?? null)
 const ratingCount = computed(() => publicAgent.value?.rating_count ?? 0)
+const stars = computed(() => publicAgent.value?.stars ?? null)
+const starsCount = computed(() => publicAgent.value?.stars_count ?? 0)
+const grade = computed(() => publicAgent.value?.grade ?? null)
+const gradeLabel = computed(() => publicAgent.value?.grade_label ?? null)
 const reviews = computed(() => publicAgent.value?.reviews ?? [])
 
 const pageTitle = computed(() =>
@@ -88,6 +93,10 @@ const pageTitle = computed(() =>
     :completed-orders-count="completedOrdersCount"
     :rating-avg="ratingAvg"
     :rating-count="ratingCount"
+    :stars="stars"
+    :stars-count="starsCount"
+    :grade="grade"
+    :grade-label="gradeLabel"
     :categories="profile?.categories ?? []"
     :reviews="reviews"
     :advantages="publicAgent?.advantages ?? profile?.advantages ?? []"
@@ -102,6 +111,7 @@ const pageTitle = computed(() =>
     </template>
 
     <template #shortcuts>
+      <MyRatingCard v-if="isApproved" :role="user.role" />
       <AgentProfileShortcuts
         :locale="locale"
         :needs-verification="!isApproved"

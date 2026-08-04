@@ -10,7 +10,7 @@ import { useLocaleStore } from '@/core/i18n/locale.store'
 import AgentOrderItem from '@/modules/agent/components/AgentOrderItem.vue'
 import AgentOfferItem from '@/modules/agent/components/AgentOfferItem.vue'
 import { useOrdersStore } from '@/modules/orders/stores/orders.store'
-import type { AgentOffer, CreateOfferPayload } from '@/modules/orders/types/order'
+import type { AgentOffer, CreateOfferPayload, ReviewCriterionScore } from '@/modules/orders/types/order'
 
 const locale = useLocaleStore()
 
@@ -154,6 +154,15 @@ async function handleSubmitWork(orderId: number) {
     toast.success(locale.t.agent.submitWorkToast)
   }
 }
+
+async function handleReviewClient(orderId: number, criteria: ReviewCriterionScore[], comment: string | null) {
+  haptic('light')
+  const ok = await orders.submitProviderReview(orderId, criteria, comment)
+  if (ok) {
+    haptic('medium')
+    toast.success(locale.t.orders.rateThanks)
+  }
+}
 </script>
 
 <template>
@@ -247,13 +256,14 @@ async function handleSubmitWork(orderId: number) {
 
         <div v-else class="space-y-3">
           <AgentOfferItem
-            v-for="offer in filteredOffers"
-            :key="offer.id"
-            :offer="offer"
-            :submitting="orders.isSubmitting"
-            :highlight="offer.order.id === focusOrderId"
-            @submit-work="handleSubmitWork"
-          />
+              v-for="offer in filteredOffers"
+              :key="offer.id"
+              :offer="offer"
+              :submitting="orders.isSubmitting"
+              :highlight="offer.order.id === focusOrderId"
+              @submit-work="handleSubmitWork"
+              @review-client="handleReviewClient"
+            />
         </div>
       </template>
     </template>

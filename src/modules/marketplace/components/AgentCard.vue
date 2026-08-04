@@ -13,9 +13,21 @@ defineEmits<{ open: [] }>()
 
 const locale = useLocaleStore()
 
-const ratingLabel = computed(() =>
-  props.agent.rating_avg !== null ? props.agent.rating_avg.toFixed(1) : null,
-)
+const ratingLabel = computed(() => {
+  const stars = props.agent.stars ?? props.agent.rating_avg
+  return stars !== null ? stars.toFixed(1) : null
+})
+
+const reviewCount = computed(() => props.agent.stars_count || props.agent.rating_count)
+
+const gradeColor = computed(() => {
+  const g = props.agent.grade
+  if (g == null) return null
+  if (g >= 80) return 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
+  if (g >= 60) return 'bg-primary/10 text-primary'
+  if (g >= 40) return 'bg-amber-500/15 text-amber-600 dark:text-amber-400'
+  return 'bg-destructive/10 text-destructive'
+})
 
 const distanceLabel = computed(() => {
   const m = props.agent.distance_m
@@ -49,7 +61,14 @@ const distanceLabel = computed(() => {
         >
           <Star class="size-3 fill-warning" />
           {{ ratingLabel }}
-          <span class="text-muted-foreground">({{ agent.rating_count }})</span>
+          <span class="text-muted-foreground">({{ reviewCount }})</span>
+        </span>
+        <span
+          v-if="agent.grade != null && agent.grade_label"
+          class="inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold"
+          :class="gradeColor"
+        >
+          {{ agent.grade_label }}
         </span>
         <span v-if="distanceLabel" class="text-xs text-muted-foreground">
           {{ locale.t.marketplace.distanceFrom }} {{ distanceLabel }}

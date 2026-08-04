@@ -1,6 +1,7 @@
 export const ROUTES = {
   home: '/',
   liveOrders: '/live-orders',
+  liveOrderDetail: (id: number | string) => `/live-orders/${id}`,
   marketplace: '/marketplace',
   agencies: '/agencies',
   agentPortfolio: (agentId: number | string, itemId: number | string) =>

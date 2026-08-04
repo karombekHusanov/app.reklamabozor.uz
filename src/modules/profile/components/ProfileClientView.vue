@@ -12,6 +12,7 @@ import ClientAgentInsightsSection from '@/modules/profile/components/client-sect
 import ClientOrderHistorySection from '@/modules/profile/components/client-sections/ClientOrderHistorySection.vue'
 import ClientProfileHeaderSection from '@/modules/profile/components/client-sections/ClientProfileHeaderSection.vue'
 import ClientProfileShortcuts from '@/modules/profile/components/client-sections/ClientProfileShortcuts.vue'
+import MyRatingCard from '@/modules/profile/components/MyRatingCard.vue'
 import ProfileSwitcher from '@/modules/profile/components/ProfileSwitcher.vue'
 import LegalEntityVerificationCard from '@/modules/profile/components/LegalEntityVerificationCard.vue'
 import type { ClientProfileStat } from '@/modules/profile/components/client-sections/ClientProfileHeaderSection.vue'
@@ -149,6 +150,8 @@ function openOrder(id: number) {
           <ProfileSwitcher class="mb-3" />
         </template>
       </ClientProfileHeaderSection>
+
+      <MyRatingCard role="client" />
 
       <LegalEntityVerificationCard />
 

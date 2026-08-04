@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { CheckCircle2, CreditCard, Download, Eye, FileText, Loader2, MessageCircle, MessageSquareQuote, PartyPopper, Star, Store, XCircle } from '@lucide/vue'
+import { CheckCircle2, CreditCard, Download, Eye, FileText, Loader2, MessageCircle, MessageSquareQuote, PartyPopper, Store, XCircle } from '@lucide/vue'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AppHeader from '@/modules/shell/components/AppHeader.vue'
@@ -16,8 +16,11 @@ import { formatDate } from '@/core/lib/date'
 import { ROUTES } from '@/modules/shell/constants/routes'
 import OrderStatusBadge from '@/modules/orders/components/OrderStatusBadge.vue'
 import OfferCard from '@/modules/orders/components/OfferCard.vue'
+import CriteriaReviewForm from '@/modules/orders/components/CriteriaReviewForm.vue'
+import ReviewDisplay from '@/modules/orders/components/ReviewDisplay.vue'
 import { formatPrice } from '@/modules/orders/lib/order-status'
 import { useOrdersStore } from '@/modules/orders/stores/orders.store'
+import type { ReviewCriterionScore } from '@/modules/orders/types/order'
 
 const props = defineProps<{ id: string }>()
 
@@ -50,11 +53,20 @@ const hasChat = computed(() =>
 )
 
 // Rating: offered once the order completes, until a review is stored.
-const hasReview = computed(() => Boolean(order.value?.review?.rating))
+const hasReview = computed(() => Boolean(order.value?.review))
 const canRate = computed(() => order.value?.status === 'completed' && !hasReview.value)
 const attachmentFiles = computed(() => order.value?.attachment_files ?? [])
-const ratingDraft = ref(0)
-const ratingComment = ref('')
+
+// Determine the provider role for criteria — prefer winning profile type
+// (matches backend ReviewService), fall back to category type.
+const providerRole = computed<'agent' | 'designer'>(() => {
+  const accepted = order.value?.offers?.find(o => o.status === 'accepted')
+  const fromProfile = accepted?.agent?.provider_type
+  if (fromProfile === 'agent' || fromProfile === 'designer') {
+    return fromProfile
+  }
+  return order.value?.category?.type ?? 'agent'
+})
 
 // Confirm in a bottom drawer before killing a live request.
 const cancelDrawerOpen = ref(false)
@@ -166,14 +178,10 @@ async function cancelOrder() {
   toast.error(orders.error ?? locale.t.orders.cancelOrder)
 }
 
-async function sendReview() {
-  if (!order.value || ratingDraft.value < 1) return
+async function sendReview(criteria: ReviewCriterionScore[], comment: string | null) {
+  if (!order.value) return
   haptic('light')
-  const ok = await orders.submitReview(
-    order.value.id,
-    ratingDraft.value,
-    ratingComment.value.trim() || null,
-  )
+  const ok = await orders.submitReview(order.value.id, criteria, comment)
   if (ok) {
     haptic('medium')
     toast.success(locale.t.orders.rateThanks)
@@ -379,76 +387,29 @@ async function sendReview() {
           </div>
         </GlassCard>
 
-        <!-- Rating: once completed, ask the client to rate the agency. -->
-        <GlassCard
+        <!-- Rating: once completed, ask the client to rate the agency (criteria-based). -->
+        <CriteriaReviewForm
           v-if="canRate"
-          class="space-y-3"
-        >
-          <h3 class="text-base font-semibold">
-            {{ locale.t.orders.rateTitle }}
-          </h3>
-          <p class="text-sm text-muted-foreground">
-            {{ locale.t.orders.rateBody }}
-          </p>
+          :target-role="providerRole"
+          :title="locale.t.orders.rateTitle"
+          :body="locale.t.orders.rateBody"
+          :submitting="orders.isSubmitting"
+          @submit="sendReview"
+        />
 
-          <div class="flex justify-center gap-2 py-1">
-            <button
-              v-for="star in 5"
-              :key="star"
-              type="button"
-              class="p-1"
-              @click="ratingDraft = star"
-            >
-              <Star
-                class="size-8 transition-colors"
-                :class="star <= ratingDraft ? 'fill-amber-400 text-amber-400' : 'text-muted-foreground/40'"
-              />
-            </button>
-          </div>
+        <!-- Already rated — show client review with criteria breakdown. -->
+        <ReviewDisplay
+          v-else-if="hasReview && order.review"
+          :review="order.review"
+          :label="locale.t.orders.rateYourReview"
+        />
 
-          <textarea
-            v-model="ratingComment"
-            rows="2"
-            :placeholder="locale.t.orders.rateCommentPlaceholder"
-            class="glass-input resize-none"
-          />
-
-          <Button
-            class="h-11 w-full rounded-2xl"
-            :disabled="ratingDraft < 1 || orders.isSubmitting"
-            @click="sendReview"
-          >
-            <Loader2
-              v-if="orders.isSubmitting"
-              class="size-4 animate-spin"
-            />
-            {{ locale.t.orders.rateSubmit }}
-          </Button>
-        </GlassCard>
-
-        <!-- Already rated -->
-        <GlassCard
-          v-else-if="hasReview"
-          class="space-y-2"
-        >
-          <p class="text-sm font-medium">
-            {{ locale.t.orders.yourRating }}
-          </p>
-          <div class="flex gap-1">
-            <Star
-              v-for="star in 5"
-              :key="star"
-              class="size-5"
-              :class="star <= (order.review?.rating ?? 0) ? 'fill-amber-400 text-amber-400' : 'text-muted-foreground/40'"
-            />
-          </div>
-          <p
-            v-if="order.review?.comment"
-            class="text-sm text-muted-foreground"
-          >
-            {{ order.review.comment }}
-          </p>
-        </GlassCard>
+        <!-- Provider's review of the client (if any). -->
+        <ReviewDisplay
+          v-if="order.provider_review"
+          :review="order.provider_review"
+          :label="locale.t.orders.rateProviderReview"
+        />
 
         <!-- Offers -->
         <div class="space-y-3">

@@ -2,9 +2,16 @@ import { api } from '@/core/api/client'
 import type { ApiSuccess } from '@/core/types/api'
 import type { Advantage, Category, PortfolioItem, WorkflowStep } from '@/modules/agent/types/agent'
 
+export interface PublicReviewCriterion {
+  code: string
+  score: number
+  label?: string
+}
+
 export interface PublicReview {
   id: number
   rating: number
+  criteria?: PublicReviewCriterion[]
   comment: string | null
   created_at: string
   client_name: string
@@ -35,7 +42,13 @@ export interface PublicAgent {
   completion_percent: number
   /** Number of accepted offers that ended in a completed order (successful jobs). */
   completed_orders_count: number
-  /** Average of approved (moderated) client ratings — null until the first one. */
+  /** Weighted stars (1.00–5.00) — prefers this over legacy rating_avg. */
+  stars: number | null
+  stars_count: number
+  /** Platform grade (0–100). */
+  grade: number | null
+  grade_label: string | null
+  /** Legacy aliases — kept for backward compat. */
   rating_avg: number | null
   rating_count: number
   categories: Category[]

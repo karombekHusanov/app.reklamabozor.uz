@@ -2,7 +2,6 @@
 import {
   BadgeCheck,
   LayoutGrid,
-  MessageCircle,
   Shield,
   Star,
 } from '@lucide/vue'
@@ -44,6 +43,10 @@ const props = defineProps<{
   completedOrdersCount: number
   ratingAvg: number | null
   ratingCount: number
+  stars?: number | null
+  starsCount?: number
+  grade?: number | null
+  gradeLabel?: string | null
   categories: Category[]
   reviews: PublicReview[]
   advantages: Advantage[]
@@ -54,8 +57,11 @@ const props = defineProps<{
   locale: ReturnType<typeof useLocaleStore>
 }>()
 
+const effectiveStars = computed(() => props.stars ?? props.ratingAvg)
+const effectiveCount = computed(() => props.starsCount ?? props.ratingCount)
+
 const ratingValue = computed(() =>
-  props.ratingAvg !== null ? props.ratingAvg.toFixed(1) : null,
+  effectiveStars.value !== null ? effectiveStars.value.toFixed(1) : null,
 )
 
 const filledStars = computed(() => (ratingValue.value ? Math.floor(Number(ratingValue.value)) : 0))
@@ -64,10 +70,19 @@ const hasHalfStar = computed(() =>
 )
 
 const reviewCountLabel = computed(() =>
-  props.ratingCount > 0
-    ? props.locale.t.profile.agentReviewCount.replace('{count}', String(props.ratingCount))
+  effectiveCount.value > 0
+    ? props.locale.t.profile.agentReviewCount.replace('{count}', String(effectiveCount.value))
     : null,
 )
+
+const gradeColor = computed(() => {
+  const g = props.grade
+  if (g == null) return null
+  if (g >= 80) return 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
+  if (g >= 60) return 'bg-primary/10 text-primary'
+  if (g >= 40) return 'bg-amber-500/15 text-amber-600 dark:text-amber-400'
+  return 'bg-destructive/10 text-destructive'
+})
 
 const stats = computed(() => [
   {
@@ -81,14 +96,14 @@ const stats = computed(() => [
     icon: LayoutGrid,
   },
   {
-    value: `${props.completion}%`,
-    label: props.locale.t.profile.agentStatsProfile,
-    icon: BadgeCheck,
-  },
-  {
     value: ratingValue.value ? `${ratingValue.value}/5` : '—',
     label: props.locale.t.profile.agentStatRating,
-    icon: MessageCircle,
+    icon: Star,
+  },
+  {
+    value: props.grade != null ? String(props.grade) : '—',
+    label: props.locale.t.rating.grade,
+    icon: BadgeCheck,
   },
 ])
 
@@ -173,6 +188,14 @@ const showAboutSection = computed(() =>
                   v-if="reviewCountLabel"
                   class="font-medium text-muted-foreground"
                 >{{ reviewCountLabel }}</span>
+              </span>
+
+              <span
+                v-if="grade != null && gradeLabel"
+                class="inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-bold"
+                :class="gradeColor"
+              >
+                {{ gradeLabel }}
               </span>
 
               <span

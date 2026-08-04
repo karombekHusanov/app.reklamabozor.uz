@@ -35,6 +35,7 @@ import HomePageSkeleton from '@/modules/home/components/HomePageSkeleton.vue'
 import HomeMenuDropdown from '@/modules/home/components/HomeMenuDropdown.vue'
 import TopRatedAgents from '@/modules/home/components/TopRatedAgents.vue'
 import LiveOrdersCarousel from '@/modules/home/components/LiveOrdersCarousel.vue'
+import { fetchLiveOrders } from '@/modules/home/services/live-orders.service'
 import { fullName, isBusinessUser, type UserRole } from '@/modules/auth/types/user'
 import { ROUTES } from '@/modules/shell/constants/routes'
 
@@ -160,6 +161,8 @@ const quickLinks = computed((): QuickLink[] => {
       hint: locale.t.home.liveOrdersHint,
       icon: Radio,
       tone: 'quick-link-tile--emerald',
+      badge: home.newLiveOrdersCount > 0 ? home.newLiveOrdersCount : undefined,
+      pulse: home.newLiveOrdersCount > 0,
     },
     {
       key: 'agency-chats',
@@ -295,13 +298,19 @@ const BADGE_POLL_MS = 15_000
 let badgePollTimer: ReturnType<typeof setInterval> | null = null
 
 function refreshBadges() {
-  if (!auth.isAuthenticated) return
-  void chat.loadBadges(true)
+  if (auth.isAuthenticated) {
+    void chat.loadBadges(true)
+  }
+  // Keep the Live Orders "new" badge in sync while home stays open.
+  void fetchLiveOrders(10)
+    .then((items) => {
+      home.liveOrders = items
+    })
+    .catch(() => {})
 }
 
 function startBadgePoll() {
   stopBadgePoll()
-  if (!auth.isAuthenticated) return
   badgePollTimer = setInterval(() => {
     if (document.visibilityState === 'visible') refreshBadges()
   }, BADGE_POLL_MS)
@@ -315,20 +324,18 @@ function stopBadgePoll() {
 }
 
 function onVisibilityChange() {
-  if (document.visibilityState === 'visible' && auth.isAuthenticated) {
+  if (document.visibilityState === 'visible') {
     refreshBadges()
   }
 }
 
 onMounted(() => {
   // Splash already waited for auth.
-  // home.load() no-ops when cached — always force-refresh chat badges on enter
-  // so "Suhbatlar" unread isn't stuck at a stale 0 from the previous visit.
+  // home.load() no-ops when cached — always force-refresh badges on enter
+  // so chat unread / live-orders "new" aren't stuck stale from the previous visit.
   void home.load()
-  if (auth.isAuthenticated) {
-    refreshBadges()
-    startBadgePoll()
-  }
+  refreshBadges()
+  startBadgePoll()
   document.addEventListener('visibilitychange', onVisibilityChange)
 })
 
@@ -343,14 +350,9 @@ watch(() => auth.isAuthenticated, (authed, wasAuthed) => {
   home.reset()
   chat.reset()
   orders.reset()
-  if (authed) {
-    void home.load()
-    refreshBadges()
-    startBadgePoll()
-  }
-  else {
-    stopBadgePoll()
-  }
+  void home.load()
+  refreshBadges()
+  startBadgePoll()
 })
 
 // If KYC flips to approved while staying on Home, load offers once (no force storm).

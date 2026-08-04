@@ -11,4 +11,10 @@ export const homeRoutes: RouteRecordRaw[] = [
     name: 'live-orders',
     component: () => import('@/modules/home/pages/LiveOrdersPage.vue'),
   },
+  {
+    path: 'live-orders/:id',
+    name: 'live-order-detail',
+    component: () => import('@/modules/home/pages/LiveOrderDetailPage.vue'),
+    props: true,
+  },
 ]

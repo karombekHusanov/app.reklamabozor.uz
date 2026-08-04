@@ -1,11 +1,15 @@
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { getApiErrorMessage } from '@/core/api/api-error'
 import { useAgentStore } from '@/modules/agent/stores/agent.store'
 import { useAuthStore } from '@/modules/auth/stores/auth.store'
 import { useChatStore } from '@/modules/chat/stores/chat.store'
 import { useNotificationsStore } from '@/modules/notifications/stores/notifications.store'
 import { type Banner, fetchBanners } from '@/modules/home/services/banners.service'
+import {
+  readLiveOrdersSeenAt,
+  writeLiveOrdersSeenAt,
+} from '@/modules/home/lib/live-orders-seen'
 import { fetchLiveOrders, type LiveOrder } from '@/modules/home/services/live-orders.service'
 import { holdsBusinessRole } from '@/modules/auth/types/user'
 import { fetchTopAgents, type PublicAgent } from '@/modules/marketplace/services/agents.service'
@@ -19,10 +23,36 @@ export const useHomeStore = defineStore('home', () => {
   const topAgents = ref<PublicAgent[]>([])
   const topDesigners = ref<PublicAgent[]>([])
   const liveOrders = ref<LiveOrder[]>([])
+  /** ISO timestamp — last time the user opened the Live Orders list. */
+  const liveOrdersSeenAt = ref<string | null>(readLiveOrdersSeenAt())
   const hasLoaded = ref(false)
   const isLoading = ref(false)
   const isRefreshing = ref(false)
   const error = ref<string | null>(null)
+
+  /**
+   * Orders newer than the last list visit. Own orders are excluded.
+   * First visit (no seen marker): all non-own feed items count as new.
+   */
+  const newLiveOrdersCount = computed(() => {
+    const auth = useAuthStore()
+    const myId = auth.user?.id
+    const seenMs = liveOrdersSeenAt.value ? Date.parse(liveOrdersSeenAt.value) : null
+    const seenValid = seenMs != null && !Number.isNaN(seenMs)
+
+    return liveOrders.value.filter((order) => {
+      if (myId != null && order.client?.id === myId) return false
+      if (!seenValid) return true
+      const created = Date.parse(order.created_at)
+      return !Number.isNaN(created) && created > seenMs!
+    }).length
+  })
+
+  function markLiveOrdersSeen() {
+    const now = new Date().toISOString()
+    liveOrdersSeenAt.value = now
+    writeLiveOrdersSeenAt(now)
+  }
 
   /** One in-flight home load — prevents mount + auth-watch double fetch. */
   let loadInflight: Promise<void> | null = null
@@ -100,6 +130,7 @@ export const useHomeStore = defineStore('home', () => {
     topAgents.value = []
     topDesigners.value = []
     liveOrders.value = []
+    liveOrdersSeenAt.value = readLiveOrdersSeenAt()
     hasLoaded.value = false
     isLoading.value = false
     isRefreshing.value = false
@@ -112,12 +143,15 @@ export const useHomeStore = defineStore('home', () => {
     topAgents,
     topDesigners,
     liveOrders,
+    liveOrdersSeenAt,
+    newLiveOrdersCount,
     hasLoaded,
     isLoading,
     isRefreshing,
     error,
     load,
     refresh,
+    markLiveOrdersSeen,
     reset,
   }
 })

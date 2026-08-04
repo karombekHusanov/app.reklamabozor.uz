@@ -47,6 +47,7 @@ export interface Category {
   name_ru: string
   type: 'agent' | 'designer'
   is_active: boolean
+  is_other?: boolean
   sort_order: number
 }
 

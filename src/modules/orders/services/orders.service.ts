@@ -11,6 +11,9 @@ import type {
   Order,
   OrderReview,
   Payment,
+  RatingInfo,
+  ReviewCriterionDef,
+  ReviewCriterionScore,
 } from '@/modules/orders/types/order'
 
 /** Active categories, optionally filtered by service type. */
@@ -83,11 +86,54 @@ export async function cancelOrder(orderId: number): Promise<Order> {
   return data.data
 }
 
-/** Client rates the winning agency on a completed order (moderated). */
-export async function submitReview(orderId: number, rating: number, comment: string | null): Promise<OrderReview> {
+/** Fetch the criteria catalog for a given reviewer role. */
+export async function fetchReviewCriteria(role: 'agent' | 'designer' | 'client'): Promise<ReviewCriterionDef[]> {
+  const { data } = await api.get<ApiSuccess<ReviewCriterionDef[]>>('/api/v1/review-criteria', {
+    params: { role },
+  })
+
+  return data.data
+}
+
+/** Client rates the winning agency on a completed order (criteria-based). */
+export async function submitReview(
+  orderId: number,
+  criteria: ReviewCriterionScore[],
+  comment: string | null,
+): Promise<OrderReview> {
   const { data } = await api.post<ApiSuccess<OrderReview>>(`/api/v1/orders/${orderId}/review`, {
-    rating,
+    criteria,
     comment,
+  })
+
+  return data.data
+}
+
+/** Provider rates the client on a completed order (criteria-based). */
+export async function submitProviderReview(
+  orderId: number,
+  criteria: ReviewCriterionScore[],
+  comment: string | null,
+): Promise<OrderReview> {
+  const { data } = await api.post<ApiSuccess<OrderReview>>(`/api/v1/agent/orders/${orderId}/review`, {
+    criteria,
+    comment,
+  })
+
+  return data.data
+}
+
+/** Fetch both reviews for an order (client + provider). */
+export async function fetchOrderReviews(orderId: number): Promise<OrderReview[]> {
+  const { data } = await api.get<ApiSuccess<OrderReview[]>>(`/api/v1/orders/${orderId}/reviews`)
+
+  return data.data
+}
+
+/** Own stars/grade for the active role. */
+export async function fetchMyRating(role?: string): Promise<RatingInfo> {
+  const { data } = await api.get<ApiSuccess<RatingInfo>>('/api/v1/me/rating', {
+    params: role ? { role } : undefined,
   })
 
   return data.data

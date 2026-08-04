@@ -40,6 +40,7 @@ export interface AcceptOfferResult {
 export interface OfferAgent {
   id: number
   profile_id: number | null
+  provider_type?: 'agent' | 'designer' | null
   company_name: string | null
   company_logo: string | null
   location_label: string | null
@@ -58,13 +59,41 @@ export interface Offer {
 
 export type OrderDeadline = 'today_tomorrow' | 'this_week'
 
+export type ReviewDirection = 'client_to_provider' | 'provider_to_client'
+export type ReviewStatus = 'pending' | 'approved' | 'rejected'
+
+export interface ReviewCriterionScore {
+  code: string
+  score: number
+  label?: string
+  weight?: number
+}
+
 export interface OrderReview {
   id: number
   order_id: number
+  direction: ReviewDirection
+  /** Weighted average across criteria (1.00–5.00). */
   rating: number
+  criteria: ReviewCriterionScore[]
   comment: string | null
-  status: 'pending' | 'approved' | 'rejected'
+  status: ReviewStatus
+  reviewer_name?: string | null
+  reviewer_avatar?: string | null
   created_at: string
+}
+
+export interface ReviewCriterionDef {
+  code: string
+  label: string
+  weight: number
+}
+
+export interface RatingInfo {
+  stars: number
+  stars_count: number
+  grade: number
+  grade_label: string
 }
 
 export interface OrderAttachment {
@@ -94,6 +123,8 @@ export interface Order {
   auto_completed: boolean
   /** The client's review of the winning agency (absent until submitted). */
   review?: OrderReview | null
+  /** The provider's review of the client (absent until submitted). */
+  provider_review?: OrderReview | null
   /** Latest payment for the order (checkout_url / status). Null when gateway off. */
   payment?: Payment | null
   offers?: Offer[]
@@ -178,6 +209,8 @@ export interface AgentOffer {
     status: OrderStatus | null
     category: Category | null
   }
+  /** Provider's review of the client on this order (null if not yet reviewed). */
+  my_review?: OrderReview | null
   created_at: string
 }
 

@@ -15,6 +15,7 @@ import {
   fetchOrderPayment,
   startOrderPayment as startOrderPaymentRequest,
   submitOffer as submitOfferRequest,
+  submitProviderReview as submitProviderReviewRequest,
   submitReview as submitReviewRequest,
   submitWork as submitWorkRequest,
 } from '@/modules/orders/services/orders.service'
@@ -24,6 +25,7 @@ import type {
   CreateOfferPayload,
   CreateOrderPayload,
   Order,
+  ReviewCriterionScore,
 } from '@/modules/orders/types/order'
 
 export const useOrdersStore = defineStore('orders', () => {
@@ -213,14 +215,34 @@ export const useOrdersStore = defineStore('orders', () => {
     }
   }
 
-  /** Client rates the winning agency on a completed order. */
-  async function submitReview(orderId: number, rating: number, comment: string | null) {
+  /** Client rates the winning agency on a completed order (criteria-based). */
+  async function submitReview(orderId: number, criteria: ReviewCriterionScore[], comment: string | null) {
     isSubmitting.value = true
     error.value = null
     try {
-      const review = await submitReviewRequest(orderId, rating, comment)
+      const review = await submitReviewRequest(orderId, criteria, comment)
       if (currentOrder.value?.id === orderId) {
         currentOrder.value = { ...currentOrder.value, review }
+      }
+      return true
+    }
+    catch (e) {
+      error.value = getApiErrorMessage(e)
+      return false
+    }
+    finally {
+      isSubmitting.value = false
+    }
+  }
+
+  /** Provider rates the client on a completed order (criteria-based). */
+  async function submitProviderReview(orderId: number, criteria: ReviewCriterionScore[], comment: string | null) {
+    isSubmitting.value = true
+    error.value = null
+    try {
+      const review = await submitProviderReviewRequest(orderId, criteria, comment)
+      if (currentOrder.value?.id === orderId) {
+        currentOrder.value = { ...currentOrder.value, provider_review: review }
       }
       return true
     }
@@ -325,6 +347,7 @@ export const useOrdersStore = defineStore('orders', () => {
     disputeCompletion,
     cancelOrder,
     submitReview,
+    submitProviderReview,
     loadAgentWorkspace,
     sendOffer,
     submitWork,

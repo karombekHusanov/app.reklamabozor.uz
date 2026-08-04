@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Star } from '@lucide/vue'
+import { computed } from 'vue'
 import Avatar from '@/core/ui/Avatar.vue'
 import { Carousel, CarouselContent, CarouselItem } from '@/core/ui/carousel'
 import { useLocaleStore } from '@/core/i18n/locale.store'
@@ -11,6 +12,12 @@ defineProps<{
 }>()
 
 const locale = useLocaleStore()
+
+const criteriaLabels = computed(() => locale.t.rating.criteria as Record<string, string>)
+
+function criterionLabel(code: string): string {
+  return criteriaLabels.value[code] ?? code
+}
 </script>
 
 <template>
@@ -23,7 +30,8 @@ const locale = useLocaleStore()
         <CarouselItem
           v-for="review in reviews"
           :key="review.id"
-          class="w-[11.5rem] shrink-0 grow-0 basis-[11.5rem] pl-2.5"
+          class="shrink-0 grow-0 pl-2.5"
+          :class="review.criteria?.length ? 'w-[14rem] basis-[14rem]' : 'w-[11.5rem] basis-[11.5rem]'"
         >
           <article class="agent-profile-testimonial h-full p-2.5 text-left">
             <div class="flex items-center gap-2">
@@ -40,13 +48,38 @@ const locale = useLocaleStore()
               </div>
             </div>
 
-            <div class="mt-2 flex items-center">
+            <div class="mt-2 flex items-center gap-1">
               <Star
                 v-for="n in 5"
                 :key="n"
                 class="size-3"
-                :class="n <= review.rating ? 'fill-amber-400 text-amber-400' : 'fill-muted/30 text-muted/30'"
+                :class="n <= Math.round(review.rating) ? 'fill-amber-400 text-amber-400' : 'fill-muted/30 text-muted/30'"
               />
+              <span class="ml-0.5 text-[10px] font-bold tabular-nums text-foreground">
+                {{ review.rating.toFixed(1) }}
+              </span>
+            </div>
+
+            <!-- Criteria breakdown when available -->
+            <div
+              v-if="review.criteria?.length"
+              class="mt-2 space-y-0.5"
+            >
+              <div
+                v-for="c in review.criteria"
+                :key="c.code"
+                class="flex items-center justify-between gap-2"
+              >
+                <span class="truncate text-[9px] text-muted-foreground">{{ criterionLabel(c.code) }}</span>
+                <div class="flex shrink-0">
+                  <Star
+                    v-for="n in 5"
+                    :key="n"
+                    class="size-2"
+                    :class="n <= c.score ? 'fill-amber-400 text-amber-400' : 'fill-muted/20 text-muted/20'"
+                  />
+                </div>
+              </div>
             </div>
 
             <p

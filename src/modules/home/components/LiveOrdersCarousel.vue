@@ -4,6 +4,7 @@ import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import Autoplay from 'embla-carousel-autoplay'
 import { Carousel, CarouselContent, CarouselItem } from '@/core/ui/carousel'
+import Avatar from '@/core/ui/Avatar.vue'
 import Skeleton from '@/core/ui/Skeleton.vue'
 import { categoryName } from '@/core/i18n/category-name'
 import { formatDate } from '@/core/lib/date'
@@ -26,14 +27,21 @@ const carouselOpts = {
 }
 
 const AUTOPLAY_MS = 3200
-// One stable plugin instance (matches the banner carousel) — recreating it on
-// every computed re-eval would reset autoplay.
 const autoplay = Autoplay({ delay: AUTOPLAY_MS, stopOnInteraction: true })
 const carouselPlugins = computed(() => (orders.value.length > 1 ? [autoplay] : []))
 
 function orderTitle(order: LiveOrder): string {
   if (order.category) return categoryName(order.category, locale.locale)
   return order.title
+}
+
+function openDetail(order: LiveOrder) {
+  router.push(ROUTES.liveOrderDetail(order.id))
+}
+
+function openClient(e: Event, clientId: number) {
+  e.stopPropagation()
+  router.push(ROUTES.clientDetail(clientId))
 }
 </script>
 
@@ -88,7 +96,10 @@ function orderTitle(order: LiveOrder): string {
           :key="order.id"
           class="basis-[80%] pl-3 sm:basis-[46%]"
         >
-          <article class="live-order-card">
+          <article
+            class="live-order-card pressable cursor-pointer"
+            @click="openDetail(order)"
+          >
             <div class="flex items-center gap-2">
               <span class="live-order-card__chip min-w-0">
                 {{ orderTitle(order) }}
@@ -101,6 +112,23 @@ function orderTitle(order: LiveOrder): string {
             <p class="live-order-card__desc">
               {{ order.description || orderTitle(order) }}
             </p>
+
+            <button
+              v-if="order.client"
+              type="button"
+              class="flex items-center gap-2 text-left"
+              @click.stop="openClient($event, order.client.id)"
+            >
+              <Avatar
+                :src="order.client.avatar"
+                :name="order.client.first_name ?? undefined"
+                size="sm"
+                class="rounded-full"
+              />
+              <span class="truncate text-xs font-semibold text-foreground">
+                {{ order.client.first_name }}
+              </span>
+            </button>
 
             <div class="live-order-card__meta">
               <span class="live-order-card__stat">
