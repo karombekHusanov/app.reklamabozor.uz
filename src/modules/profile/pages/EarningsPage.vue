@@ -97,7 +97,7 @@ async function refreshWithdrawal(silent = false) {
   if (!withdrawal.value) return
   if (!silent) busy.value = true
   try {
-    const w = await fetchWithdrawal(withdrawal.value.id)
+    const w = await fetchWithdrawal(withdrawal.value.id, silent)
     withdrawal.value = w
     if (w.status === 'otp_required') stopPolling()
     if (w.status === 'success') {
