@@ -16,9 +16,16 @@ export async function startWithdrawal(): Promise<Withdrawal> {
   return data.data
 }
 
-/** Poll a withdrawal; advances card_pending → otp_required once the card is bound. */
-export async function fetchWithdrawal(id: number): Promise<Withdrawal> {
-  const { data } = await api.get<ApiSuccess<Withdrawal>>(`/api/v1/agent/withdrawals/${id}`)
+/**
+ * Poll a withdrawal; advances card_pending → otp_required once the card is bound.
+ * Background polls pass `silent` so a transient/gateway error on one tick does not
+ * spam the global error toast every few seconds.
+ */
+export async function fetchWithdrawal(id: number, silent = false): Promise<Withdrawal> {
+  const { data } = await api.get<ApiSuccess<Withdrawal>>(
+    `/api/v1/agent/withdrawals/${id}`,
+    { skipErrorToast: silent },
+  )
 
   return data.data
 }
