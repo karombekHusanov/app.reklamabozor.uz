@@ -1,9 +1,11 @@
 import { api } from '@/core/api/client'
+import { mapUserRatingRow, pickUserRatingRow } from '@/core/lib/rating'
 import type { ApiSuccess } from '@/core/types/api'
 import type { Category } from '@/modules/agent/types/agent'
 import type {
   AcceptOfferResult,
   AgentOffer,
+  AgentOfferDetail,
   AgentOrder,
   CreateOfferPayload,
   CreateOrderPayload,
@@ -11,9 +13,11 @@ import type {
   Order,
   OrderReview,
   Payment,
+  PricelistItemInput,
   RatingInfo,
   ReviewCriterionDef,
   ReviewCriterionScore,
+  UserRatingRow,
 } from '@/modules/orders/types/order'
 
 /** Active categories, optionally filtered by service type. */
@@ -130,19 +134,27 @@ export async function fetchOrderReviews(orderId: number): Promise<OrderReview[]>
   return data.data
 }
 
-/** Own stars/grade for the active role. */
-export async function fetchMyRating(role?: string): Promise<RatingInfo> {
-  const { data } = await api.get<ApiSuccess<RatingInfo>>('/api/v1/me/rating', {
+/** Own stars/grade for the active role (API returns a collection). */
+export async function fetchMyRating(role?: string): Promise<RatingInfo | null> {
+  const { data } = await api.get<ApiSuccess<UserRatingRow[]>>('/api/v1/me/rating', {
     params: role ? { role } : undefined,
   })
 
-  return data.data
+  const row = pickUserRatingRow(data.data ?? [], role)
+  return row ? mapUserRatingRow(row) : null
 }
 
 // --- Agent ------------------------------------------------------------------
 
 export async function fetchAgentOrders(): Promise<AgentOrder[]> {
   const { data } = await api.get<ApiSuccess<AgentOrder[]>>('/api/v1/agent/orders')
+
+  return data.data
+}
+
+/** Single open opportunity the agent may bid on. */
+export async function fetchAgentOrder(orderId: number): Promise<AgentOrder> {
+  const { data } = await api.get<ApiSuccess<AgentOrder>>(`/api/v1/agent/orders/${orderId}`)
 
   return data.data
 }
@@ -158,6 +170,46 @@ export async function submitOffer(orderId: number, payload: CreateOfferPayload):
 
 export async function fetchAgentOffers(): Promise<AgentOffer[]> {
   const { data } = await api.get<ApiSuccess<AgentOffer[]>>('/api/v1/agent/offers')
+
+  return data.data
+}
+
+/** Single offer owned by the agent (detail page). */
+export async function fetchAgentOffer(offerId: number): Promise<AgentOfferDetail> {
+  const { data } = await api.get<ApiSuccess<AgentOfferDetail>>(`/api/v1/agent/offers/${offerId}`)
+
+  return data.data
+}
+
+/** Open (or return) direct chat with the client from a pending offer. */
+export async function openOfferChat(offerId: number): Promise<{ id: number }> {
+  const { data } = await api.post<ApiSuccess<{ id: number }>>(`/api/v1/agent/offers/${offerId}/chat`)
+
+  return data.data
+}
+
+/** Adjust pending offer price (max 5 edits). */
+export async function updateOfferPrice(
+  offerId: number,
+  payload: { price: number, comment?: string | null },
+): Promise<AgentOfferDetail> {
+  const { data } = await api.patch<ApiSuccess<AgentOfferDetail>>(
+    `/api/v1/agent/offers/${offerId}`,
+    payload,
+  )
+
+  return data.data
+}
+
+/** Agent sends (or replaces) the pricelist on a pending offer — the priced contract step. */
+export async function setOfferPricelist(
+  offerId: number,
+  items: PricelistItemInput[],
+): Promise<AgentOfferDetail> {
+  const { data } = await api.put<ApiSuccess<AgentOfferDetail>>(
+    `/api/v1/agent/offers/${offerId}/pricelist`,
+    { items },
+  )
 
   return data.data
 }

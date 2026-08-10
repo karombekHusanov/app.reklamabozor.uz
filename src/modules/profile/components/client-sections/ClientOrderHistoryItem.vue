@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 import Badge from '@/core/ui/Badge.vue'
 import { useLocaleStore } from '@/core/i18n/locale.store'
-import { formatShortDate } from '@/core/lib/date'
+import { formatDateTime } from '@/core/lib/date'
 import { formatPrice, orderStatusVariant } from '@/modules/orders/lib/order-status'
 import type { Order } from '@/modules/orders/types/order'
 
@@ -51,7 +51,7 @@ const thumbnail = computed(() => {
         {{ order.title }}
       </p>
       <p class="mt-0.5 text-[10px] text-muted-foreground">
-        #{{ order.id }} · {{ formatShortDate(order.created_at) }}
+        #{{ order.id }} · {{ formatDateTime(order.created_at) }}
       </p>
     </div>
 

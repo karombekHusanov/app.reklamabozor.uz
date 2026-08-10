@@ -1,16 +1,47 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-import { useRoute } from 'vue-router'
+import { computed, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import AppHeader from '@/modules/shell/components/AppHeader.vue'
 import { useLocaleStore } from '@/core/i18n/locale.store'
 import { useOrdersStore } from '@/modules/orders/stores/orders.store'
 import AgentOrdersSection from '@/modules/agent/components/AgentOrdersSection.vue'
 
+type OffersTab = 'orders' | 'offers'
+
 const locale = useLocaleStore()
 const orders = useOrdersStore()
 const route = useRoute()
+const router = useRouter()
 
-const activeTab = ref<'orders' | 'offers'>('orders')
+function tabFromQuery(): OffersTab {
+  return route.query.tab === 'offers' ? 'offers' : 'orders'
+}
+
+const activeTab = ref<OffersTab>(tabFromQuery())
+
+// Keep the active tab in the URL so back-from-detail restores it.
+watch(activeTab, (tab) => {
+  const current = tabFromQuery()
+  if (tab === current) return
+
+  const query = { ...route.query }
+  if (tab === 'offers') {
+    query.tab = 'offers'
+  }
+  else {
+    delete query.tab
+  }
+
+  void router.replace({ query })
+})
+
+watch(
+  () => route.query.tab,
+  () => {
+    const next = tabFromQuery()
+    if (activeTab.value !== next) activeTab.value = next
+  },
+)
 
 const focusOrderId = computed(() => {
   const raw = route.query.order
@@ -23,7 +54,6 @@ const focusOrderId = computed(() => {
 const openCount = computed(() => orders.availableOrders.length)
 const myOffersCount = computed(() => orders.myOffers.length)
 
-// Subtitle follows the active tab: open opportunities vs. offers sent.
 const subtitle = computed(() =>
   activeTab.value === 'orders'
     ? locale.t.agent.offersOpenCount.replace('{count}', String(openCount.value))

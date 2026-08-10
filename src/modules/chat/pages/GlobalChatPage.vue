@@ -77,7 +77,7 @@ const feed = computed(() =>
 )
 
 function daySeparatorLabel(iso: string): string {
-  return formatDaySeparator(iso, locale.locale, locale.t.chat.today, locale.t.chat.yesterday)
+  return formatDaySeparator(iso, locale.t.chat.today, locale.t.chat.yesterday)
 }
 
 function senderName(sender: GlobalChatSender): string {
@@ -400,7 +400,7 @@ onBeforeUnmount(() => {
         <ShieldBan class="size-4 shrink-0" />
         {{ t.bannedNote }}
         <template v-if="meta.me.ban_expires_at">
-          {{ formatMessageTime(meta.me.ban_expires_at, locale.locale) }} {{ t.bannedUntil }}
+          {{ formatMessageTime(meta.me.ban_expires_at) }} {{ t.bannedUntil }}
         </template>
       </p>
 

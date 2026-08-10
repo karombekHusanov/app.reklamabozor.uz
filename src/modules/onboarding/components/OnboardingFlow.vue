@@ -34,10 +34,21 @@ function pickLanguage(value: Locale) {
   onboarding.goTo('terms')
 }
 
-function confirmTerms() {
-  if (!agreed.value) return
+async function confirmTerms() {
+  if (!agreed.value || submitting.value) return
+  submitting.value = true
+  errorMessage.value = null
   haptic('light')
-  onboarding.acceptTerms()
+
+  try {
+    await onboarding.acceptTerms()
+  }
+  catch (e) {
+    errorMessage.value = getApiErrorMessage(e) || locale.t.onboarding.role.error
+  }
+  finally {
+    submitting.value = false
+  }
 }
 
 async function pickRole(role: SelectableRole) {
@@ -106,7 +117,10 @@ async function skipPersonType() {
       </div>
 
       <!-- ============ LANGUAGE ============ -->
-      <div v-if="onboarding.step === 'language'" class="mt-16 flex flex-1 flex-col">
+      <div
+        v-if="onboarding.step === 'language'"
+        class="mt-16 flex flex-1 flex-col"
+      >
         <div class="space-y-3">
           <button
             v-for="lang in LOCALES"
@@ -121,7 +135,10 @@ async function skipPersonType() {
       </div>
 
       <!-- ============ TERMS ============ -->
-      <div v-else-if="onboarding.step === 'terms'" class="mt-12 flex flex-1 flex-col">
+      <div
+        v-else-if="onboarding.step === 'terms'"
+        class="mt-12 flex flex-1 flex-col"
+      >
         <h2 class="text-center text-lg font-bold text-foreground">
           {{ locale.t.onboarding.terms.title }}
         </h2>
@@ -138,16 +155,26 @@ async function skipPersonType() {
             class="flex size-5 items-center justify-center rounded-md border transition"
             :class="agreed ? 'border-primary bg-primary text-white' : 'border-border bg-card'"
           >
-            <Check v-if="agreed" class="size-3.5" />
+            <Check
+              v-if="agreed"
+              class="size-3.5"
+            />
           </span>
           <span class="text-sm font-medium text-foreground">{{ locale.t.onboarding.terms.agree }}</span>
         </button>
+
+        <p
+          v-if="errorMessage"
+          class="mt-4 rounded-2xl bg-destructive/10 px-3 py-2 text-center text-sm text-destructive"
+        >
+          {{ errorMessage }}
+        </p>
 
         <div class="mt-auto pt-10">
           <button
             type="button"
             class="btn-brand mx-auto flex h-14 w-full max-w-xs items-center justify-center rounded-2xl"
-            :disabled="!agreed"
+            :disabled="!agreed || submitting"
             @click="confirmTerms"
           >
             <ArrowRight class="size-5" />
@@ -156,7 +183,10 @@ async function skipPersonType() {
       </div>
 
       <!-- ============ ROLE ============ -->
-      <div v-else-if="onboarding.step === 'role'" class="mt-12 flex flex-1 flex-col">
+      <div
+        v-else-if="onboarding.step === 'role'"
+        class="mt-12 flex flex-1 flex-col"
+      >
         <p class="text-center text-sm text-muted-foreground">
           {{ locale.t.onboarding.role.title }}
         </p>
@@ -174,7 +204,10 @@ async function skipPersonType() {
           </button>
         </div>
 
-        <p v-if="submitting" class="mt-4 text-center text-sm text-muted-foreground">
+        <p
+          v-if="submitting"
+          class="mt-4 text-center text-sm text-muted-foreground"
+        >
           {{ locale.t.onboarding.role.saving }}
         </p>
         <p
@@ -186,7 +219,10 @@ async function skipPersonType() {
       </div>
 
       <!-- ============ PERSON TYPE ============ -->
-      <div v-else class="mt-12 flex flex-1 flex-col">
+      <div
+        v-else
+        class="mt-12 flex flex-1 flex-col"
+      >
         <h2 class="text-center text-lg font-bold text-foreground">
           {{ locale.t.onboarding.personType.title }}
         </h2>

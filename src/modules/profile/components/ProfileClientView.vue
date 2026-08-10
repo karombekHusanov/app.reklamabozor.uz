@@ -1,18 +1,18 @@
 <script setup lang="ts">
 import { CheckCircle2, RefreshCw, ShoppingBag } from '@lucide/vue'
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { memberDuration } from '@/core/lib/date'
 import { ROUTES } from '@/modules/shell/constants/routes'
 import type { User } from '@/modules/auth/types/user'
 import type { OrderStatus } from '@/modules/orders/types/order'
+import type { RatingInfo } from '@/modules/orders/types/order'
 import { formatPrice } from '@/modules/orders/lib/order-status'
+import { fetchMyRating } from '@/modules/orders/services/orders.service'
 import { useOrdersStore } from '@/modules/orders/stores/orders.store'
 import ClientAboutSection from '@/modules/profile/components/client-sections/ClientAboutSection.vue'
-import ClientAgentInsightsSection from '@/modules/profile/components/client-sections/ClientAgentInsightsSection.vue'
 import ClientOrderHistorySection from '@/modules/profile/components/client-sections/ClientOrderHistorySection.vue'
 import ClientProfileHeaderSection from '@/modules/profile/components/client-sections/ClientProfileHeaderSection.vue'
 import ClientProfileShortcuts from '@/modules/profile/components/client-sections/ClientProfileShortcuts.vue'
-import MyRatingCard from '@/modules/profile/components/MyRatingCard.vue'
 import ProfileSwitcher from '@/modules/profile/components/ProfileSwitcher.vue'
 import LegalEntityVerificationCard from '@/modules/profile/components/LegalEntityVerificationCard.vue'
 import type { ClientProfileStat } from '@/modules/profile/components/client-sections/ClientProfileHeaderSection.vue'
@@ -26,9 +26,11 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   navigate: [to: string]
+  logout: []
 }>()
 
 const orders = useOrdersStore()
+const myRating = ref<RatingInfo | null>(null)
 
 const IN_PROGRESS_STATUSES: OrderStatus[] = [
   'offers_sent',
@@ -46,18 +48,6 @@ const inProgressCount = computed(() =>
 const completedCount = computed(() =>
   orderList.value.filter(order => order.status === 'completed').length,
 )
-
-const reviewsLeft = computed(() =>
-  orderList.value.filter(order => order.review?.status === 'approved' || order.review?.rating),
-)
-
-const rating = computed(() => {
-  if (!reviewsLeft.value.length) return '0'
-  const sum = reviewsLeft.value.reduce((acc, order) => acc + (order.review?.rating ?? 0), 0)
-  return (sum / reviewsLeft.value.length).toFixed(1)
-})
-
-const reviewCount = computed(() => reviewsLeft.value.length)
 
 const stats = computed<ClientProfileStat[]>(() => [
   {
@@ -97,7 +87,7 @@ const avgOrderLabel = computed(() => {
     })
     .filter((price): price is number => price != null && !Number.isNaN(price))
 
-  if (!prices.length) return props.locale.t.profile.clientAvgOrderEmpty
+  if (!prices.length) return null
 
   const avg = prices.reduce((sum, price) => sum + price, 0) / prices.length
   if (avg >= 1_000_000) {
@@ -106,27 +96,23 @@ const avgOrderLabel = computed(() => {
   return formatPrice(avg)
 })
 
-const reviewCountLabel = computed(() =>
-  `${reviewCount.value} ${props.locale.t.profile.clientReviewsUnit}`.trim(),
-)
-
-const responseTimeLabel = computed(() =>
-  props.locale.t.profile.clientResponseTime.replace(
-    '{minutes}',
-    String(totalOrders.value > 0 ? 15 : 30),
-  ),
-)
-
-const activityLabel = computed(() => props.locale.t.profile.clientAboutOnlineToday)
-
-const recommendPercent = computed(() =>
-  Math.min(98, 72 + completedCount.value * 4),
+const completedLabel = computed(() =>
+  completedCount.value > 0
+    ? String(completedCount.value)
+    : null,
 )
 
 const isVerified = computed(() => Boolean(props.user.phone))
 
+const showLegalCard = computed(() =>
+  props.user.person_type === 'legal_entity' && !props.user.person_type_verified,
+)
+
 onMounted(() => {
   void orders.loadMyOrders()
+  void fetchMyRating(props.user.role)
+    .then((rating) => { myRating.value = rating })
+    .catch(() => { myRating.value = null })
 })
 
 function openOrder(id: number) {
@@ -142,31 +128,32 @@ function openOrder(id: number) {
         :display-name="displayName"
         :locale="locale"
         :stats="stats"
-        :rating="rating"
-        :review-count="reviewCount"
+        :stars="myRating?.stars ?? null"
+        :stars-count="myRating?.stars_count ?? 0"
+        :grade="myRating?.grade ?? null"
         :is-verified="isVerified"
+        show-back
       >
         <template #top>
           <ProfileSwitcher class="mb-3" />
         </template>
       </ClientProfileHeaderSection>
 
-      <MyRatingCard role="client" />
+      <!-- Zone B — at most one primary -->
+      <LegalEntityVerificationCard v-if="showLegalCard" />
 
-      <LegalEntityVerificationCard />
-
+      <!-- Zone C — Account -->
       <ClientProfileShortcuts
         :locale="locale"
         @navigate="emit('navigate', $event)"
+        @logout="emit('logout')"
       />
 
       <ClientAboutSection
         :locale="locale"
         :platform-label="platformLabel"
         :avg-order-label="avgOrderLabel"
-        :review-count-label="reviewCountLabel"
-        :response-time-label="responseTimeLabel"
-        :activity-label="activityLabel"
+        :completed-label="completedLabel"
       />
 
       <ClientOrderHistorySection
@@ -174,12 +161,6 @@ function openOrder(id: number) {
         :orders="orderList"
         @navigate="emit('navigate', $event)"
         @open-order="openOrder"
-      />
-
-      <ClientAgentInsightsSection
-        :locale="locale"
-        :recommend-percent="recommendPercent"
-        :show-on-time="completedCount > 0"
       />
     </section>
   </div>

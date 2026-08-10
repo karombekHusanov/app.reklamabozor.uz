@@ -20,13 +20,17 @@ const locale = useLocaleStore()
 const user = computed(() => auth.user)
 const displayName = computed(() => (user.value ? fullName(user.value) : ''))
 const isProvider = computed(() => (user.value ? isBusinessUser(user.value) : false))
-const memberSince = computed(() => (user.value ? formatDate(user.value.created_at, locale.locale) : ''))
+const memberSince = computed(() => (user.value ? formatDate(user.value.created_at) : ''))
 const profileTitle = computed(() => locale.t.profile.title)
 const profileSubtitle = computed(() => {
   if (!user.value) return locale.t.profile.subtitleUser
   if (isProvider.value) return locale.t.profile.subtitleAgent
   return locale.t.profile.subtitleUser
 })
+
+const providerLoading = computed(() =>
+  isProvider.value && agent.isLoadingProfile && !agent.loaded,
+)
 
 async function load() {
   if (!auth.isAuthenticated) return
@@ -37,7 +41,6 @@ async function load() {
 
 onMounted(() => void load())
 watch(() => auth.isAuthenticated, load)
-// Switching the active role may reveal the provider view — load its profile.
 watch(() => user.value?.role, load)
 onActivated(() => {
   if (auth.isAuthenticated && isProvider.value) {
@@ -73,6 +76,7 @@ async function handleLogout() {
           :display-name="displayName"
           :member-since="memberSince"
           :locale="locale"
+          :loading="providerLoading"
           @navigate="navigate"
           @logout="handleLogout"
         />
@@ -84,16 +88,18 @@ async function handleLogout() {
           :member-since="memberSince"
           :locale="locale"
           @navigate="navigate"
+          @logout="handleLogout"
         />
-
       </template>
 
       <template v-else>
-        <ProfileGuestCard
-          :title="locale.t.profile.guestTitle"
-          :body="locale.t.profile.guestBody"
-          :error="auth.error"
-        />
+        <div class="px-4 py-6">
+          <ProfileGuestCard
+            :title="locale.t.profile.guestTitle"
+            :body="locale.t.profile.guestBody"
+            :error="auth.error"
+          />
+        </div>
       </template>
     </section>
   </div>

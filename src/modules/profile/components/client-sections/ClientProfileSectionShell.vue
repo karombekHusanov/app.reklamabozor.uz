@@ -15,15 +15,15 @@ const locale = useLocaleStore()
 </script>
 
 <template>
-  <section class="client-profile-section home-card px-3 pb-3 pt-4 sm:px-4 sm:pb-4 sm:pt-5">
-    <div class="flex items-center justify-between gap-2">
-      <h3 class="pt-0.5 text-[0.9rem] font-bold text-foreground">
+  <section class="app-section !px-4 !pt-4 sm:!px-5">
+    <div class="app-section__header">
+      <h3 class="app-section__title">
         {{ title }}
       </h3>
       <button
         v-if="showViewAll"
         type="button"
-        class="pressable inline-flex shrink-0 items-center gap-0.5 text-[11px] font-semibold text-primary"
+        class="app-section__link"
         @click="$emit('viewAll')"
       >
         {{ locale.t.profile.agentViewAll }}
@@ -31,7 +31,7 @@ const locale = useLocaleStore()
       </button>
     </div>
 
-    <div class="mt-3">
+    <div class="mt-1">
       <slot />
     </div>
   </section>

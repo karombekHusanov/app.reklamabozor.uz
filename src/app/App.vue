@@ -5,7 +5,7 @@ import { useAuthBootstrap } from '@/modules/auth'
 import { useAuthStore } from '@/modules/auth/stores/auth.store'
 import Toaster from '@/core/ui/Toaster.vue'
 import { parseOrderStartParam, readTelegramStartParam } from '@/core/lib/telegram-init'
-import { SplashScreen, OnboardingFlow, useOnboardingStore } from '@/modules/onboarding'
+import { SplashScreen, OnboardingFlow, TermsGate, useOnboardingStore } from '@/modules/onboarding'
 
 useAuthBootstrap()
 
@@ -42,5 +42,7 @@ onMounted(() => {
   <Toaster />
   <SplashScreen v-if="showSplash" />
   <OnboardingFlow v-else-if="onboarding.needsOnboarding" />
+  <!-- Returning user whose accepted offer version is outdated must re-accept. -->
+  <TermsGate v-else-if="auth.needsTerms" />
   <RouterView v-else />
 </template>

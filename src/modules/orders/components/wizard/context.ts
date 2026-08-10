@@ -1,6 +1,7 @@
 import type { InjectionKey } from 'vue'
 import type { Category } from '@/modules/agent/types/agent'
 import type { OrderDraft } from '@/modules/orders/types/order'
+import type { Region } from '@/modules/orders/types/region'
 
 /**
  * Shared state for the order wizard. Provided by `OrderWizard.vue` and injected
@@ -11,6 +12,7 @@ export interface WizardContext {
   draft: OrderDraft
   errors: Record<string, string>
   categories: Category[]
+  regions: Region[]
 }
 
 export const WIZARD_KEY: InjectionKey<WizardContext> = Symbol('order-wizard')

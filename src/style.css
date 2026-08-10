@@ -86,7 +86,8 @@
     --accent-foreground: #92400e;
     --destructive: #e5484d;
     --border: #e5e7eb;
-    --input: #e5e7eb;
+    /* Stronger than --border so form fields read as inputs on white cards. */
+    --input: #c5cdd8;
     --ring: #0b6bcb;
     --success: #12b76a;
     --warning: #f59e0b;
@@ -132,7 +133,7 @@
     --accent-foreground: #f5c066;
     --destructive: #f3635f;
     --border: rgba(255, 255, 255, 0.08);
-    --input: rgba(255, 255, 255, 0.12);
+    --input: rgba(255, 255, 255, 0.22);
     --ring: #4da3ff;
     --success: #3ccb7f;
     --warning: #fbbf24;
@@ -285,10 +286,21 @@
     @apply min-w-0 text-[11px] font-bold leading-snug text-foreground;
   }
 
-  /* Centered banner carousel — active slide full width, neighbors peek on sides. */
+  /* Home banner — one full-width slide; dots overlaid inside the viewport. */
   .home-banner-carousel [data-slot="carousel-item"] {
-    flex: 0 0 calc(100% - 4.5rem);
-    @apply min-w-0 shrink-0 grow-0 pl-3.5;
+    @apply min-w-0 shrink-0 grow-0 basis-full pl-0;
+  }
+
+  .home-banner-carousel__dots {
+    @apply pointer-events-none absolute inset-x-0 bottom-3 z-10 flex items-center justify-center gap-1.5;
+  }
+
+  .home-banner-carousel__dot {
+    @apply h-1.5 w-1.5 rounded-full bg-white/45 shadow-sm transition-all duration-300;
+  }
+
+  .home-banner-carousel__dot--active {
+    @apply w-4 bg-white;
   }
 
   .top-agents-list {
@@ -319,7 +331,8 @@
   }
 
   .live-order-card {
-    @apply flex h-full flex-col gap-2 rounded-2xl border border-border bg-card p-3.5 shadow-sm;
+    @apply flex flex-col gap-2.5 overflow-hidden rounded-[1.35rem] border border-white/70 bg-white/80 p-3.5 shadow-[0_10px_28px_-18px_rgba(11,107,203,0.28)] backdrop-blur-md;
+    @apply dark:border-white/10 dark:bg-white/8;
   }
 
   .live-order-card__chip {
@@ -330,20 +343,30 @@
     @apply ml-auto shrink-0 whitespace-nowrap rounded-md bg-muted/60 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-muted-foreground;
   }
 
+  .live-order-card__title {
+    @apply truncate text-[13.5px] font-bold leading-snug text-foreground;
+  }
+
   .live-order-card__desc {
-    @apply line-clamp-2 min-h-[2.5rem] text-[12.5px] font-medium leading-snug text-foreground;
+    @apply overflow-hidden text-[12.5px] font-medium leading-[1.4] text-muted-foreground;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    max-height: 2.8em;
   }
 
   .live-order-card__meta {
-    @apply mt-auto flex min-w-0 flex-wrap items-center gap-2 border-t border-border/60 pt-2.5;
+    @apply mt-0.5 flex min-w-0 items-center justify-between gap-2 border-t border-border/50 pt-2.5;
   }
 
   .live-order-card__stat {
-    @apply inline-flex shrink-0 items-center gap-1 text-[11px] font-bold text-foreground;
+    @apply inline-flex shrink-0 items-center gap-1 rounded-full bg-muted/70 px-2 py-0.5 text-[11px] font-bold tabular-nums text-foreground;
+    @apply dark:bg-white/10;
   }
 
   .live-order-card__stat--offers {
-    @apply inline-flex shrink-0 items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-bold text-primary;
+    @apply bg-primary/12 text-primary dark:bg-primary/20;
   }
 
   .top-agents-row {
@@ -1078,6 +1101,17 @@
     @apply border-primary bg-primary text-primary-foreground;
   }
 
+  /* Live orders filter drawer — selectable rows (category checkbox group + region) */
+  .live-orders-filter-region {
+    @apply flex w-full cursor-pointer items-center gap-3 rounded-2xl border border-border/70 bg-card px-3.5 py-3 text-left shadow-sm transition-colors;
+  }
+  .live-orders-filter-region--selected {
+    @apply border-primary/40 bg-primary/5;
+  }
+  .live-orders-filter-region__label {
+    @apply min-w-0 flex-1 text-sm font-semibold leading-snug text-foreground;
+  }
+
   .profile-edit-lock-banner {
     @apply flex items-start gap-2.5 rounded-2xl border border-amber-500/25 bg-amber-500/8 px-3.5 py-3 text-amber-800 dark:text-amber-200;
   }
@@ -1785,12 +1819,27 @@
     @apply transition duration-150 active:scale-[0.97] active:opacity-90;
   }
 
-  /* Text inputs / textareas. */
+  /* Text inputs / textareas / select-style triggers.
+     Recessed bg + visible border so fields read as controls on white cards. */
   .glass-input {
-    @apply w-full rounded-2xl border border-border bg-card px-4 py-3 text-base text-foreground shadow-sm outline-none transition;
+    /* 16px hard floor — iOS Safari/Telegram zoom focused fields under 16px. */
+    @apply w-full rounded-xl border border-input bg-background px-3.5 py-3 text-[16px] text-foreground outline-none transition;
     @apply placeholder:text-muted-foreground;
-    @apply focus:border-primary focus:ring-2 focus:ring-primary/15;
-    @apply dark:bg-white/5 dark:focus:bg-white/10;
+    @apply hover:border-muted-foreground/50;
+    @apply focus:border-primary focus:bg-card focus:ring-2 focus:ring-primary/25;
+    @apply dark:border-white/18 dark:bg-white/[0.06] dark:hover:border-white/30;
+    @apply dark:focus:border-primary dark:focus:bg-white/10 dark:focus:ring-primary/30;
+  }
+
+  .glass-input[aria-invalid="true"] {
+    @apply border-destructive hover:border-destructive;
+    @apply focus:border-destructive focus:ring-destructive/25;
+  }
+
+  /* Select-style triggers (DeadlinePicker / RegionPicker) look focused while open. */
+  .glass-input[data-state="open"] {
+    @apply border-primary bg-card ring-2 ring-primary/25;
+    @apply dark:border-primary dark:bg-white/10 dark:ring-primary/30;
   }
 
   /* Outlined / dashed surfaces such as upload drop zones. */
@@ -1842,6 +1891,47 @@
   }
   .glass-segment-active.no-anim {
     transition: none;
+  }
+
+  /* Opportunities workspace — primary segment + status filter chips */
+  .offers-segment {
+    @apply border border-border/70 shadow-[inset_0_1px_0_rgba(255,255,255,0.55)] dark:border-white/10 dark:shadow-none;
+  }
+  .offers-segment__pill {
+    @apply rounded-[0.85rem] shadow-[0_1px_3px_rgba(16,24,40,0.08),0_1px_2px_rgba(16,24,40,0.04)] dark:shadow-none;
+  }
+  .offers-segment__count {
+    @apply inline-flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full px-1.5 text-[11px] font-bold tabular-nums leading-none;
+  }
+  .offers-segment__count--active {
+    @apply bg-primary/12 text-primary dark:bg-primary/20;
+  }
+  .offers-segment__count--idle {
+    @apply bg-black/[0.06] text-muted-foreground dark:bg-white/10;
+  }
+
+  .offers-filters {
+    scroll-snap-type: x proximity;
+    scroll-padding-inline: 2px;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+  }
+  .offers-filter {
+    @apply inline-flex snap-start items-center gap-1.5 rounded-full border border-transparent bg-card px-3.5 py-2 text-[13px] font-semibold leading-none text-secondary-foreground shadow-sm transition-[color,background-color,box-shadow,border-color] duration-200;
+    @apply dark:bg-white/8 dark:text-muted-foreground dark:shadow-none;
+  }
+  .offers-filter:not(.is-active) {
+    @apply border-border/80 dark:border-white/10;
+  }
+  .offers-filter.is-active {
+    @apply border-transparent bg-primary text-primary-foreground shadow-[0_2px_8px_rgba(11,107,203,0.25)] dark:shadow-[0_2px_8px_rgba(43,166,240,0.2)];
+  }
+  .offers-filter__count {
+    @apply inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-black/[0.06] px-1 text-[11px] font-bold tabular-nums leading-none;
+    @apply dark:bg-white/12;
+  }
+  .offers-filter.is-active .offers-filter__count {
+    @apply bg-white/20 text-primary-foreground;
   }
 
   .tab-bar-dock {
@@ -1926,6 +2016,610 @@
   .safe-bottom {
     padding-bottom: max(env(safe-area-inset-bottom), 0.5rem);
   }
+
+  /* -------------------------------------------------------------------------
+   * Flat UI — hub pages use sections + grouped lists instead of card grids.
+   * ------------------------------------------------------------------------- */
+
+  .app-section {
+    @apply px-5 pt-5;
+  }
+
+  .app-section__header {
+    @apply mb-3 flex items-center justify-between gap-2 px-0.5;
+  }
+
+  .app-section__title {
+    @apply text-base font-bold tracking-tight text-foreground;
+  }
+
+  .app-section__subtitle {
+    @apply mt-0.5 text-xs text-muted-foreground;
+  }
+
+  .app-section__link {
+    @apply inline-flex shrink-0 items-center gap-0.5 text-sm font-semibold text-primary transition duration-150 active:scale-[0.97] active:opacity-90;
+  }
+
+  /* In-card section headings (order detail attachments, owner, …). */
+  .order-section-title {
+    @apply text-sm font-bold capitalize tracking-tight text-foreground;
+  }
+
+  /* One bordered surface; rows separated by dividers (Settings / Telegram style). */
+  .app-list {
+    @apply overflow-hidden rounded-2xl border border-border bg-card;
+  }
+
+  .app-list-row {
+    @apply grid w-full grid-cols-[auto_1fr_auto] items-center gap-3 px-4 py-3.5 text-left transition active:bg-muted/45;
+  }
+
+  .app-list-row:not(:last-child) {
+    @apply border-b border-border/70;
+  }
+
+  .app-list-row__icon {
+    @apply relative flex size-9 shrink-0 items-center justify-center rounded-xl border;
+  }
+
+  .app-list-row__icon--sky {
+    @apply border-primary/20 bg-primary/6 text-primary;
+  }
+
+  .app-list-row__icon--amber {
+    @apply border-amber-500/20 bg-amber-500/8 text-amber-600 dark:text-amber-300;
+  }
+
+  .app-list-row__icon--emerald {
+    @apply border-emerald-500/20 bg-emerald-500/8 text-emerald-600 dark:text-emerald-300;
+  }
+
+  .app-list-row__icon--indigo {
+    @apply border-indigo-500/20 bg-indigo-500/8 text-indigo-600 dark:text-indigo-300;
+  }
+
+  .app-list-row__icon--violet {
+    @apply border-violet-500/20 bg-violet-500/8 text-violet-600 dark:text-violet-300;
+  }
+
+  .app-list-row__icon--teal {
+    @apply border-teal-500/20 bg-teal-500/8 text-teal-600 dark:text-teal-300;
+  }
+
+  .app-list-row__body {
+    @apply min-w-0;
+  }
+
+  .app-list-row__label {
+    @apply text-sm font-semibold leading-snug text-foreground;
+  }
+
+  .app-list-row__hint {
+    @apply mt-0.5 line-clamp-1 text-xs leading-snug text-muted-foreground;
+  }
+
+  .app-list-row__meta {
+    @apply flex shrink-0 items-center gap-1.5;
+  }
+
+  .app-list-row__tag {
+    @apply rounded-full bg-amber-400/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-700 dark:text-amber-300;
+  }
+
+  .app-list-row__badge {
+    @apply relative flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-bold leading-none text-white;
+  }
+
+  .app-list-row__badge-ping {
+    @apply pointer-events-none absolute inset-0 rounded-full bg-destructive opacity-70;
+    animation: live-orders-ping 2.2s ease-out infinite;
+  }
+
+  .app-list-row__chevron {
+    @apply size-4 text-muted-foreground/45;
+  }
+
+  /* Home welcome block — flat on canvas, one tappable row for signed-in users. */
+  .home-hero {
+    @apply border-b border-border/60 px-5 pb-4 pt-4;
+  }
+
+  .home-hero__row {
+    @apply flex w-full items-center gap-3.5 text-left;
+  }
+
+  .home-hero__name {
+    @apply line-clamp-2 text-xl font-extrabold leading-tight tracking-tight text-foreground;
+  }
+
+  .home-hero__subtitle {
+    @apply mt-0.5 line-clamp-2 text-sm leading-snug text-muted-foreground;
+  }
+
+  .home-hero__chevron {
+    @apply size-5 shrink-0 text-muted-foreground/45;
+  }
+
+  .home-hero__cta {
+    @apply mt-4 inline-flex h-11 w-full items-center justify-center gap-1.5 rounded-xl px-4 text-sm font-semibold text-white shadow-[0_6px_16px_-8px_rgba(45,212,191,0.6)] transition active:scale-[0.98];
+    background: linear-gradient(135deg, #2b7fff 0%, #2dd4bf 100%);
+  }
+
+  /* Flat agent leaderboard — rows only, no outer card shell. */
+  .app-leaderboard {
+    @apply divide-y divide-border/70;
+  }
+
+  .app-leaderboard-row {
+    @apply flex w-full items-center gap-3 py-3 text-left transition active:opacity-80;
+  }
+
+  /* -------------------------------------------------------------------------
+   * App shell canvas — shared atmospheric background for every page.
+   * ------------------------------------------------------------------------- */
+
+  .app-shell {
+    /* Neutral canvas first; cool tint only as soft top/bottom atmosphere. */
+    background-color: #f3f4f6;
+    background-image:
+      radial-gradient(ellipse 110% 48% at 10% -8%, rgba(3, 134, 217, 0.08), transparent 62%),
+      radial-gradient(ellipse 90% 42% at 98% 0%, rgba(101, 237, 232, 0.09), transparent 58%),
+      radial-gradient(ellipse 95% 40% at 50% 108%, rgba(139, 92, 246, 0.05), transparent 60%),
+      linear-gradient(
+        180deg,
+        #f1f5f9 0%,
+        #f3f4f6 18%,
+        #f3f4f6 78%,
+        #f2f3f6 100%
+      );
+  }
+
+  .dark .app-shell {
+    background-color: #0d1117;
+    background-image:
+      radial-gradient(ellipse 110% 48% at 10% -8%, rgba(3, 134, 217, 0.14), transparent 62%),
+      radial-gradient(ellipse 90% 42% at 98% 0%, rgba(101, 237, 232, 0.07), transparent 58%),
+      radial-gradient(ellipse 95% 40% at 50% 108%, rgba(139, 92, 246, 0.1), transparent 60%),
+      linear-gradient(
+        180deg,
+        #10161f 0%,
+        #0d1117 35%,
+        #0d1117 75%,
+        #111722 100%
+      );
+  }
+
+  /* -------------------------------------------------------------------------
+   * Home — page chrome (canvas lives on .app-shell).
+   * ------------------------------------------------------------------------- */
+
+  .home-page {
+    @apply flex min-h-full flex-1 flex-col;
+  }
+
+  .home-topbar {
+    @apply flex flex-col gap-3 px-5 pb-1 pt-3;
+  }
+
+  .home-topbar__chrome {
+    @apply relative z-20 flex items-center justify-between gap-3;
+  }
+
+  .home-topbar__logo {
+    @apply shrink-0;
+  }
+
+  .home-topbar__identity-row {
+    @apply flex items-center gap-3;
+  }
+
+  .home-topbar__avatar {
+    @apply shrink-0 rounded-full ring-2 ring-white/80 shadow-sm;
+  }
+
+  .home-topbar__avatar-fallback {
+    @apply flex size-11 items-center justify-center rounded-full bg-primary text-sm font-bold text-white shadow-md ring-2 ring-white/80;
+  }
+
+  .home-topbar__identity {
+    @apply min-w-0 flex-1 text-left;
+  }
+
+  .home-topbar__name {
+    @apply block max-w-full truncate text-[1.15rem] font-extrabold leading-tight tracking-tight text-foreground;
+  }
+
+  .home-topbar__meta {
+    @apply mt-0.5 flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[12px] font-semibold leading-tight text-muted-foreground;
+  }
+
+  .home-topbar__rating {
+    @apply inline-flex items-center gap-1 text-foreground;
+  }
+
+  .home-topbar__rating-sep,
+  .home-topbar__meta-sep {
+    @apply text-muted-foreground/40;
+  }
+
+  .home-topbar__grade {
+    @apply text-primary;
+  }
+
+  .home-topbar__role {
+    @apply font-medium text-muted-foreground;
+  }
+
+  /* Vertical rhythm between home marketplace blocks. */
+  .home-stack {
+    @apply pt-7;
+  }
+
+  /* Glassmorphic bento actions — frosted panels with tone washes. */
+  .home-action-dock {
+    @apply flex flex-col gap-2.5 px-5 pb-1 pt-3;
+  }
+
+  .home-action-dock__row {
+    @apply flex gap-2.5;
+  }
+
+  /* Bento: full hero → asymmetric pair → compact trio */
+  .home-action-dock__pair {
+    @apply grid grid-cols-[1.15fr_0.85fr] gap-2.5;
+  }
+
+  .home-action-dock__trio {
+    @apply grid grid-cols-3 gap-2;
+  }
+
+  .home-action-glass {
+    @apply relative flex overflow-hidden rounded-[1.5rem] text-left transition;
+    border: 1px solid rgba(255, 255, 255, 0.65);
+    background:
+      linear-gradient(
+        145deg,
+        rgba(255, 255, 255, 0.72) 0%,
+        rgba(255, 255, 255, 0.38) 45%,
+        rgba(255, 255, 255, 0.22) 100%
+      );
+    box-shadow:
+      0 1px 0 rgba(255, 255, 255, 0.85) inset,
+      0 -1px 0 rgba(15, 23, 42, 0.04) inset,
+      0 14px 36px -18px rgba(11, 107, 203, 0.35);
+    backdrop-filter: blur(18px) saturate(1.35);
+    -webkit-backdrop-filter: blur(18px) saturate(1.35);
+  }
+
+  .dark .home-action-glass {
+    border-color: rgba(255, 255, 255, 0.12);
+    background:
+      linear-gradient(
+        145deg,
+        rgba(255, 255, 255, 0.14) 0%,
+        rgba(255, 255, 255, 0.06) 50%,
+        rgba(255, 255, 255, 0.03) 100%
+      );
+    box-shadow:
+      0 1px 0 rgba(255, 255, 255, 0.12) inset,
+      0 16px 40px -20px rgba(0, 0, 0, 0.55);
+  }
+
+  .home-action-glass__shine {
+    @apply pointer-events-none absolute inset-x-0 top-0 h-1/2;
+    background: linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.45) 0%,
+      rgba(255, 255, 255, 0) 100%
+    );
+  }
+
+  .dark .home-action-glass__shine {
+    background: linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.1) 0%,
+      rgba(255, 255, 255, 0) 100%
+    );
+  }
+
+  .home-action-glass__orb {
+    @apply pointer-events-none absolute -right-6 -top-8 size-28 rounded-full opacity-70 blur-2xl;
+  }
+
+  .home-action-glass__orb--sm {
+    @apply -right-4 -top-6 size-16 opacity-60;
+  }
+
+  .home-action-glass--amber .home-action-glass__orb {
+    background: radial-gradient(circle, rgba(245, 158, 11, 0.35) 0%, transparent 70%);
+  }
+
+  .home-action-glass--sky .home-action-glass__orb {
+    background: radial-gradient(circle, rgba(14, 165, 233, 0.32) 0%, transparent 70%);
+  }
+
+  .home-action-glass--violet .home-action-glass__orb {
+    background: radial-gradient(circle, rgba(139, 92, 246, 0.32) 0%, transparent 70%);
+  }
+
+  .home-action-glass--emerald .home-action-glass__orb {
+    background: radial-gradient(circle, rgba(16, 185, 129, 0.32) 0%, transparent 70%);
+  }
+
+  .home-action-glass--teal .home-action-glass__orb {
+    background: radial-gradient(circle, rgba(20, 184, 166, 0.32) 0%, transparent 70%);
+  }
+
+  .home-action-glass--indigo .home-action-glass__orb {
+    background: radial-gradient(circle, rgba(99, 102, 241, 0.32) 0%, transparent 70%);
+  }
+
+  .home-action-glass__tag {
+    @apply absolute right-2.5 top-2.5 z-[2] rounded-full bg-amber-500/90 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-white shadow-sm;
+  }
+
+  .home-action-glass--featured {
+    @apply relative z-[1] w-full items-center gap-3.5 px-4 py-4;
+  }
+
+  .home-action-glass--compact {
+    @apply relative z-[1] min-h-[7.25rem] flex-col justify-between gap-3 p-3.5;
+  }
+
+  .home-action-dock__row .home-action-glass--compact {
+    @apply flex-1;
+  }
+
+  .home-action-glass--wide {
+    @apply min-h-[8rem];
+  }
+
+  .home-action-glass--dense {
+    @apply relative z-[1] min-h-[5.5rem] flex-col items-start justify-between gap-2.5 p-3;
+  }
+
+  .home-action-glass--dense .home-action-glass__icon {
+    @apply size-8 rounded-xl;
+  }
+
+  .home-action-glass--dense .home-action-glass__label {
+    @apply text-[12px] leading-tight;
+  }
+
+  .home-action-glass__top {
+    @apply relative z-[1] flex w-full items-start justify-between gap-2;
+  }
+
+  .home-action-glass__icon {
+    @apply relative z-[1] flex size-11 shrink-0 items-center justify-center rounded-2xl border border-white/70 shadow-sm;
+    background: linear-gradient(
+      160deg,
+      rgba(255, 255, 255, 0.9) 0%,
+      rgba(255, 255, 255, 0.45) 100%
+    );
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+
+  .dark .home-action-glass__icon {
+    border-color: rgba(255, 255, 255, 0.14);
+    background: linear-gradient(
+      160deg,
+      rgba(255, 255, 255, 0.16) 0%,
+      rgba(255, 255, 255, 0.05) 100%
+    );
+  }
+
+  .home-action-glass--compact .home-action-glass__icon {
+    @apply size-9 rounded-xl;
+  }
+
+  .home-action-glass--amber .home-action-glass__icon {
+    @apply text-amber-700 dark:text-amber-300;
+    box-shadow:
+      0 0 0 1px rgba(245, 158, 11, 0.12),
+      0 8px 18px -10px rgba(245, 158, 11, 0.45);
+  }
+
+  .home-action-glass--sky .home-action-glass__icon {
+    @apply text-sky-600 dark:text-sky-300;
+    box-shadow:
+      0 0 0 1px rgba(14, 165, 233, 0.12),
+      0 8px 18px -10px rgba(14, 165, 233, 0.45);
+  }
+
+  .home-action-glass--violet .home-action-glass__icon {
+    @apply text-violet-700 dark:text-violet-300;
+    box-shadow:
+      0 0 0 1px rgba(139, 92, 246, 0.12),
+      0 8px 18px -10px rgba(139, 92, 246, 0.45);
+  }
+
+  .home-action-glass--emerald .home-action-glass__icon {
+    @apply text-emerald-700 dark:text-emerald-300;
+    box-shadow:
+      0 0 0 1px rgba(16, 185, 129, 0.12),
+      0 8px 18px -10px rgba(16, 185, 129, 0.45);
+  }
+
+  .home-action-glass--teal .home-action-glass__icon {
+    @apply text-teal-700 dark:text-teal-300;
+    box-shadow:
+      0 0 0 1px rgba(20, 184, 166, 0.12),
+      0 8px 18px -10px rgba(20, 184, 166, 0.45);
+  }
+
+  .home-action-glass--indigo .home-action-glass__icon {
+    @apply text-indigo-700 dark:text-indigo-300;
+    box-shadow:
+      0 0 0 1px rgba(99, 102, 241, 0.12),
+      0 8px 18px -10px rgba(99, 102, 241, 0.45);
+  }
+
+  .home-action-glass__body {
+    @apply relative z-[1] flex min-w-0 flex-1 flex-col gap-0.5;
+  }
+
+  .home-action-glass--compact .home-action-glass__body {
+    @apply flex-none;
+  }
+
+  .home-action-glass__label {
+    @apply text-[14px] font-bold leading-snug text-foreground;
+  }
+
+  .home-action-glass__desc {
+    @apply mt-0.5 line-clamp-2 text-[11px] font-medium leading-snug text-muted-foreground;
+  }
+
+  .home-action-glass__pill {
+    @apply relative z-[1] flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full px-1.5 text-[10px] font-bold leading-none text-white;
+    background: linear-gradient(135deg, #2b7fff 0%, #0386d9 100%);
+    box-shadow:
+      0 0 0 2px rgba(255, 255, 255, 0.65),
+      0 6px 14px -6px rgba(11, 107, 203, 0.55);
+  }
+
+  .home-action-glass--pulse .home-action-glass__pill::before {
+    content: '';
+    @apply pointer-events-none absolute inset-0 rounded-full bg-primary/50;
+    animation: live-orders-ping 2.2s ease-out infinite;
+  }
+
+  .home-action-glass__chevron {
+    @apply relative z-[1] size-4 shrink-0 text-muted-foreground/45;
+  }
+
+  .glass-panel {
+    @apply rounded-[1.35rem] border border-white/80 bg-white/72 p-3 shadow-[0_10px_30px_-18px_rgba(11,107,203,0.28)] backdrop-blur-xl;
+    @apply dark:border-white/10 dark:bg-white/8;
+  }
+
+  .filter-chips {
+    @apply flex gap-2 overflow-x-auto pb-1;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .filter-chips::-webkit-scrollbar {
+    display: none;
+  }
+
+  .filter-chip {
+    @apply inline-flex shrink-0 items-center gap-1.5 rounded-full border border-white/70 bg-white/55 px-3.5 py-1.5 text-xs font-semibold text-muted-foreground backdrop-blur-md transition;
+    @apply dark:border-white/10 dark:bg-white/8;
+  }
+
+  .filter-chip--active {
+    @apply border-primary/25 bg-primary/10 text-primary shadow-sm;
+    @apply dark:border-primary/30 dark:bg-primary/20 dark:text-primary-foreground;
+  }
+
+  .filter-chip__count {
+    @apply rounded-full bg-foreground/8 px-1.5 py-0.5 text-[10px] font-bold tabular-nums leading-none;
+  }
+
+  .filter-chip--active .filter-chip__count {
+    @apply bg-primary/15 text-primary;
+  }
+
+  .glass-row {
+    @apply grid w-full grid-cols-[auto_1fr_auto] items-center gap-3 rounded-2xl border border-white/75 bg-white/68 px-3 py-3 text-left shadow-[0_8px_24px_-16px_rgba(15,23,42,0.22)] backdrop-blur-lg;
+    @apply dark:border-white/10 dark:bg-white/6;
+  }
+
+  .glass-row__thumb {
+    @apply shrink-0;
+  }
+
+  .glass-row__icon {
+    @apply flex size-12 items-center justify-center rounded-xl border;
+  }
+
+  .glass-row__icon--sky {
+    @apply border-sky-200 bg-sky-50 text-sky-600 dark:border-sky-500/30 dark:bg-sky-500/15 dark:text-sky-300;
+  }
+
+  .glass-row__icon--emerald {
+    @apply border-emerald-200 bg-emerald-50 text-emerald-600 dark:border-emerald-500/30 dark:bg-emerald-500/15 dark:text-emerald-300;
+  }
+
+  .glass-row__icon--violet {
+    @apply border-violet-200 bg-violet-50 text-violet-600 dark:border-violet-500/30 dark:bg-violet-500/15 dark:text-violet-300;
+  }
+
+  .glass-row__body {
+    @apply min-w-0;
+  }
+
+  .glass-row__title {
+    @apply block truncate text-[15px] font-bold leading-snug text-foreground;
+  }
+
+  .glass-row__subtitle {
+    @apply mt-0.5 block truncate text-xs text-muted-foreground;
+  }
+
+  .glass-row__meta {
+    @apply flex shrink-0 flex-col items-end gap-1.5;
+  }
+
+  .glass-row__rating {
+    @apply inline-flex items-center gap-1 text-sm font-bold text-foreground;
+  }
+
+  .glass-row__badge {
+    @apply rounded-full px-2 py-0.5 text-[10px] font-bold leading-none;
+  }
+
+  .glass-row__badge--sky {
+    @apply bg-sky-100 text-sky-700 dark:bg-sky-500/20 dark:text-sky-300;
+  }
+
+  .glass-row__badge--emerald {
+    @apply bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300;
+  }
+
+  .glass-row__badge--violet {
+    @apply bg-violet-100 text-violet-700 dark:bg-violet-500/20 dark:text-violet-300;
+  }
+
+  .glass-row__badge--amber {
+    @apply bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-300;
+  }
+
+  .glass-row__badge--primary {
+    @apply bg-primary/10 text-primary dark:bg-primary/20;
+  }
+
+  .glass-row__badge--muted {
+    @apply bg-muted text-muted-foreground;
+  }
+
+  .home-feed {
+    @apply px-5 pt-5;
+  }
+
+  .home-feed__header {
+    @apply mb-3 flex items-center justify-between gap-2;
+  }
+
+  .home-feed__title {
+    @apply text-base font-bold text-foreground;
+  }
+
+  .home-feed__link {
+    @apply text-xs font-semibold text-primary;
+  }
+
+  .home-feed__list {
+    @apply mt-3 flex flex-col gap-2.5;
+  }
+
+  .home-feed__empty {
+    @apply mt-4;
+  }
 }
 
 /* --- Native-feel route transitions (push in from the right, pop back out) --- */
@@ -1966,12 +2660,20 @@
   opacity: 0;
 }
 
-/* iOS WebViews: utility classes like text-sm must not shrink form controls below 16px. */
-@supports (-webkit-touch-callout: none) {
-  input:not([type='checkbox']):not([type='radio']):not([type='file']):not([type='hidden']):not([type='button']):not([type='submit']):not([type='reset']):not([type='image']):not([type='range']):not([type='color']),
-  textarea,
-  select {
-    font-size: 16px !important;
-    touch-action: manipulation;
-  }
+/* iOS / Telegram WKWebView: never let utility classes (text-sm/xs) shrink
+   focused form controls below 16px — that triggers auto-zoom on focus. */
+input:not([type='checkbox']):not([type='radio']):not([type='file']):not([type='hidden']):not([type='button']):not([type='submit']):not([type='reset']):not([type='image']):not([type='range']):not([type='color']),
+textarea,
+select {
+  font-size: 16px !important;
+  touch-action: manipulation;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+    }
+  body {
+    @apply bg-background text-foreground;
+    }
 }

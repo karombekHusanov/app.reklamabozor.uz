@@ -1,21 +1,21 @@
 <script setup lang="ts">
 import { Inbox, MessageSquareDashed } from '@lucide/vue'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import GlassCard from '@/core/ui/GlassCard.vue'
 import EmptyState from '@/core/ui/EmptyState.vue'
 import Skeleton from '@/core/ui/Skeleton.vue'
-import { useTelegram } from '@/core/composables/useTelegram'
-import { useToast } from '@/core/composables/useToast'
 import { useLocaleStore } from '@/core/i18n/locale.store'
 import AgentOrderItem from '@/modules/agent/components/AgentOrderItem.vue'
 import AgentOfferItem from '@/modules/agent/components/AgentOfferItem.vue'
 import { useOrdersStore } from '@/modules/orders/stores/orders.store'
-import type { AgentOffer, CreateOfferPayload, ReviewCriterionScore } from '@/modules/orders/types/order'
+import { ROUTES } from '@/modules/shell/constants/routes'
+import type { AgentOffer } from '@/modules/orders/types/order'
 
 const locale = useLocaleStore()
 
 const props = defineProps<{
-  /** Deep-link target — scroll to and highlight this order once loaded. */
+  /** Deep-link target — open the matching detail page once loaded. */
   focusOrderId?: number | null
 }>()
 
@@ -23,8 +23,7 @@ const props = defineProps<{
 const activeTab = defineModel<'orders' | 'offers'>('tab', { default: 'orders' })
 
 const orders = useOrdersStore()
-const toast = useToast()
-const { haptic } = useTelegram()
+const router = useRouter()
 
 type OfferFilter = 'all' | 'pending' | 'active' | 'completed' | 'rejected'
 const offerFilter = ref<OfferFilter>('all')
@@ -85,6 +84,7 @@ const tabs = computed(() => [
 
 // --- Sliding segment pill (measured, so labels of any width stay aligned) ---
 const segmentRef = ref<HTMLElement | null>(null)
+const filterScrollRef = ref<HTMLElement | null>(null)
 const pillWidth = ref(0)
 const pillOffset = ref(0)
 const pillReady = ref(false)
@@ -104,7 +104,27 @@ function updatePill() {
   pillReady.value = true
 }
 
+function scrollActiveFilterIntoView() {
+  const scroller = filterScrollRef.value
+  if (!scroller) return
+  const active = scroller.querySelector<HTMLButtonElement>('[data-filter].is-active')
+  if (!active) return
+
+  const scrollerRect = scroller.getBoundingClientRect()
+  const activeRect = active.getBoundingClientRect()
+  const padding = 8
+
+  if (activeRect.left < scrollerRect.left + padding) {
+    scroller.scrollBy({ left: activeRect.left - scrollerRect.left - padding, behavior: 'smooth' })
+  }
+  else if (activeRect.right > scrollerRect.right - padding) {
+    scroller.scrollBy({ left: activeRect.right - scrollerRect.right + padding, behavior: 'smooth' })
+  }
+}
+
 let resizeObserver: ResizeObserver | null = null
+/** Avoid re-navigating the same deep-link target on every reactive tick. */
+const deepLinkHandled = ref<number | null>(null)
 
 onMounted(() => {
   orders.loadAgentWorkspace()
@@ -118,59 +138,53 @@ onMounted(() => {
 onBeforeUnmount(() => resizeObserver?.disconnect())
 
 watch([activeTab, tabs], () => void nextTick(updatePill))
+watch(offerFilter, () => void nextTick(scrollActiveFilterIntoView))
 
-// Deep-link: switch to whichever tab holds the order, then scroll to it.
+// Deep-link `/offers?order=` → open the matching detail page.
 watch(
-  [() => orders.availableOrders, () => orders.myOffers, () => props.focusOrderId],
-  async () => {
-    if (!props.focusOrderId) return
-    const inOffers = orders.myOffers.some(o => o.order.id === props.focusOrderId)
-    activeTab.value = inOffers ? 'offers' : 'orders'
-    if (inOffers) offerFilter.value = 'all'
-    await nextTick()
-    const prefix = inOffers ? 'agent-offer' : 'agent-order'
-    document
-      .getElementById(`${prefix}-${props.focusOrderId}`)
-      ?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  [() => orders.availableOrders, () => orders.myOffers, () => props.focusOrderId, () => orders.isLoadingAgent],
+  () => {
+    if (!props.focusOrderId || orders.isLoadingAgent) return
+    if (deepLinkHandled.value === props.focusOrderId) return
+
+    const mine = orders.myOffers.find(o => o.order.id === props.focusOrderId)
+    if (mine) {
+      deepLinkHandled.value = props.focusOrderId
+      router.replace(ROUTES.offerDetail(mine.id))
+      return
+    }
+
+    const open = orders.availableOrders.find(o => o.id === props.focusOrderId)
+    if (open) {
+      deepLinkHandled.value = props.focusOrderId
+      router.replace(ROUTES.offerOpportunity(open.id))
+      return
+    }
+
+    // Workspace loaded but order not found — fall back to highlighting in-list.
+    if (orders.workspaceLoaded) {
+      deepLinkHandled.value = props.focusOrderId
+      activeTab.value = 'orders'
+      void nextTick(() => {
+        document
+          .getElementById(`agent-order-${props.focusOrderId}`)
+          ?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      })
+    }
   },
   { immediate: true },
 )
-
-async function handleSubmit(orderId: number, payload: CreateOfferPayload) {
-  haptic('light')
-  const ok = await orders.sendOffer(orderId, payload)
-  if (ok) {
-    haptic('medium')
-    // A fresh offer moves the order out of the opportunities list — show it.
-    activeTab.value = 'offers'
-  }
-}
-
-async function handleSubmitWork(orderId: number) {
-  haptic('light')
-  const ok = await orders.submitWork(orderId)
-  if (ok) {
-    haptic('medium')
-    toast.success(locale.t.agent.submitWorkToast)
-  }
-}
-
-async function handleReviewClient(orderId: number, criteria: ReviewCriterionScore[], comment: string | null) {
-  haptic('light')
-  const ok = await orders.submitProviderReview(orderId, criteria, comment)
-  if (ok) {
-    haptic('medium')
-    toast.success(locale.t.orders.rateThanks)
-  }
-}
 </script>
 
 <template>
-  <div class="space-y-4">
-    <!-- Tabs: new orders (/agent/orders) vs my offers (/agent/offers). -->
-    <div ref="segmentRef" class="glass-segment flex rounded-2xl p-1">
+  <div class="flex flex-col gap-5">
+    <!-- Primary: new orders vs my offers -->
+    <div
+      ref="segmentRef"
+      class="offers-segment glass-segment flex rounded-[1.15rem] p-1"
+    >
       <span
-        class="glass-segment-active"
+        class="glass-segment-active offers-segment__pill"
         :class="!pillReady && 'no-anim'"
         :style="{
           width: `${pillWidth}px`,
@@ -183,19 +197,28 @@ async function handleReviewClient(orderId: number, criteria: ReviewCriterionScor
         :key="tab.key"
         type="button"
         data-tab
-        class="pressable relative z-10 flex-1 rounded-xl py-2 text-sm font-semibold transition-colors"
+        class="pressable relative z-10 flex min-w-0 flex-1 items-center justify-center gap-1.5 rounded-[0.85rem] px-2 py-2.5 text-[13px] font-semibold leading-none transition-colors"
         :class="activeTab === tab.key ? 'text-foreground' : 'text-muted-foreground'"
         @click="activeTab = tab.key"
       >
-        {{ tab.label }}
-        <span v-if="tab.count > 0" class="ml-1 text-xs font-medium opacity-70">{{ tab.count }}</span>
+        <span class="truncate">{{ tab.label }}</span>
+        <span
+          class="offers-segment__count"
+          :class="activeTab === tab.key
+            ? 'offers-segment__count--active'
+            : 'offers-segment__count--idle'"
+        >
+          {{ tab.count }}
+        </span>
       </button>
     </div>
 
     <!-- ===================== Tab 1: New orders ===================== -->
     <template v-if="activeTab === 'orders'">
       <template v-if="orders.isLoadingAgent && orders.availableOrders.length === 0">
-        <Skeleton v-for="n in 2" :key="n" class="h-40 w-full rounded-3xl" />
+        <div class="flex flex-col gap-4">
+          <Skeleton v-for="n in 2" :key="n" class="h-40 w-full rounded-3xl" />
+        </div>
       </template>
 
       <GlassCard v-else-if="availableOrders.length === 0" padding="none" class="overflow-hidden">
@@ -206,14 +229,12 @@ async function handleReviewClient(orderId: number, criteria: ReviewCriterionScor
         />
       </GlassCard>
 
-      <div v-else class="space-y-3">
+      <div v-else class="flex flex-col gap-4">
         <AgentOrderItem
           v-for="order in availableOrders"
           :key="order.id"
           :order="order"
-          :submitting="orders.isSubmitting"
           :highlight="order.id === focusOrderId"
-          @submit="handleSubmit"
         />
       </div>
     </template>
@@ -221,7 +242,9 @@ async function handleReviewClient(orderId: number, criteria: ReviewCriterionScor
     <!-- ===================== Tab 2: My offers ===================== -->
     <template v-else>
       <template v-if="orders.isLoadingAgent && orders.myOffers.length === 0">
-        <Skeleton v-for="n in 2" :key="n" class="h-32 w-full rounded-3xl" />
+        <div class="flex flex-col gap-4">
+          <Skeleton v-for="n in 2" :key="n" class="h-32 w-full rounded-3xl" />
+        </div>
       </template>
 
       <GlassCard v-else-if="myOffers.length === 0" padding="none" class="overflow-hidden">
@@ -232,40 +255,41 @@ async function handleReviewClient(orderId: number, criteria: ReviewCriterionScor
         />
       </GlassCard>
 
-      <template v-else>
-        <!-- Status filter chips. -->
-        <div class="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
-          <button
-            v-for="filter in offerFilters"
-            :key="filter.key"
-            type="button"
-            class="pressable shrink-0 rounded-full px-3.5 py-1.5 text-xs font-medium transition-colors"
-            :class="offerFilter === filter.key
-              ? 'bg-primary text-primary-foreground'
-              : 'glass-chip'"
-            @click="offerFilter = filter.key"
-          >
-            {{ filter.label }}
-            <span v-if="filter.count > 0" class="ml-1 opacity-70">{{ filter.count }}</span>
-          </button>
+      <div v-else class="flex flex-col gap-4">
+        <!-- Status filter chips -->
+        <div
+          ref="filterScrollRef"
+          class="offers-filters overflow-x-auto py-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        >
+          <div class="flex w-max gap-2">
+            <button
+              v-for="filter in offerFilters"
+              :key="filter.key"
+              type="button"
+              data-filter
+              class="offers-filter pressable shrink-0"
+              :class="offerFilter === filter.key && 'is-active'"
+              @click="offerFilter = filter.key"
+            >
+              <span>{{ filter.label }}</span>
+              <span class="offers-filter__count">{{ filter.count }}</span>
+            </button>
+          </div>
         </div>
 
         <div v-if="filteredOffers.length === 0" class="px-1 py-8 text-center text-sm text-muted-foreground">
           {{ locale.t.agent.noOffersInFilter }}
         </div>
 
-        <div v-else class="space-y-3">
+        <div v-else class="flex flex-col gap-4">
           <AgentOfferItem
-              v-for="offer in filteredOffers"
-              :key="offer.id"
-              :offer="offer"
-              :submitting="orders.isSubmitting"
-              :highlight="offer.order.id === focusOrderId"
-              @submit-work="handleSubmitWork"
-              @review-client="handleReviewClient"
-            />
+            v-for="offer in filteredOffers"
+            :key="offer.id"
+            :offer="offer"
+            :highlight="offer.order.id === focusOrderId"
+          />
         </div>
-      </template>
+      </div>
     </template>
 
     <p v-if="orders.error" class="rounded-2xl bg-destructive/10 px-4 py-3 text-sm text-destructive">

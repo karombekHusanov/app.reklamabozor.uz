@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { CloudUpload, FileText, ImageIcon, Loader2, X } from '@lucide/vue'
+import { CloudUpload, FileText, ImageIcon, Loader2, TriangleAlert, X } from '@lucide/vue'
 import { inject, ref } from 'vue'
 import { useFileUpload } from '@/core/composables/useFileUpload'
 import { useLocaleStore } from '@/core/i18n/locale.store'
+import { Checkbox } from '@/core/ui/checkbox'
 import { WIZARD_KEY } from '@/modules/orders/components/wizard/context'
 import { formatFileSize, isImageFile } from '@/modules/orders/lib/wizard'
 
@@ -39,6 +40,10 @@ async function onFileChange(event: Event) {
 
 function remove(index: number) {
   ctx.draft.files.splice(index, 1)
+}
+
+function onShowFilesChange(value: boolean | 'indeterminate') {
+  ctx.draft.show_files_in_showcase = value === true
 }
 </script>
 
@@ -134,6 +139,38 @@ function remove(index: number) {
         >
           <X class="size-4" />
         </button>
+      </div>
+
+      <!-- Showcase files visibility (Recent / Live Orders) -->
+      <div
+        class="mt-3 space-y-3 rounded-2xl border border-amber-500/25 bg-amber-500/5 px-4 py-3.5 dark:border-amber-400/20 dark:bg-amber-400/5"
+      >
+        <div class="flex items-start gap-2.5">
+          <TriangleAlert class="mt-0.5 size-4 shrink-0 text-amber-600/80 dark:text-amber-400/70" />
+          <div class="min-w-0 space-y-0.5">
+            <p class="text-sm font-semibold text-foreground">
+              {{ locale.t.orders.wizard.showFilesTitle }}
+            </p>
+            <p class="text-xs leading-relaxed text-muted-foreground">
+              {{ locale.t.orders.wizard.showFilesHint }}
+            </p>
+          </div>
+        </div>
+
+        <div
+          class="flex cursor-pointer items-start gap-3"
+          @click="onShowFilesChange(!ctx.draft.show_files_in_showcase)"
+        >
+          <Checkbox
+            class="mt-0.5"
+            :model-value="ctx.draft.show_files_in_showcase"
+            @click.stop
+            @update:model-value="onShowFilesChange"
+          />
+          <span class="min-w-0 text-sm font-medium leading-snug text-foreground">
+            {{ locale.t.orders.wizard.showFilesLabel }}
+          </span>
+        </div>
       </div>
     </div>
   </div>

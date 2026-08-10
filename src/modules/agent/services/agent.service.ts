@@ -52,6 +52,15 @@ export async function updateAgentDetails(
   return data.data
 }
 
+/** Upload the signed (wet-signature + stamp) platform agreement scan. */
+export async function uploadSignedContract(fileId: number): Promise<AgentProfile> {
+  const { data } = await api.post<ApiSuccess<AgentProfile>>('/api/v1/agent/profile/contract', {
+    file_id: fileId,
+  })
+
+  return data.data
+}
+
 // ---- Advantages catalog + portfolio (approved providers) ----
 
 /** Active advantages catalog the provider picks from. */

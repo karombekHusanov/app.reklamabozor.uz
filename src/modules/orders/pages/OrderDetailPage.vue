@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { CheckCircle2, CreditCard, Download, Eye, FileText, Loader2, MessageCircle, MessageSquareQuote, PartyPopper, Store, XCircle } from '@lucide/vue'
+import { CheckCircle2, CreditCard, Eye, Loader2, MapPinned, MessageCircle, MessageSquareQuote, PartyPopper, Store, XCircle } from '@lucide/vue'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AppHeader from '@/modules/shell/components/AppHeader.vue'
 import GlassCard from '@/core/ui/GlassCard.vue'
+import LocationMap from '@/core/ui/LocationMap.vue'
 import EmptyState from '@/core/ui/EmptyState.vue'
 import Skeleton from '@/core/ui/Skeleton.vue'
 import Drawer from '@/core/ui/Drawer.vue'
@@ -12,13 +13,17 @@ import { useTelegram } from '@/core/composables/useTelegram'
 import { useToast } from '@/core/composables/useToast'
 import { useLocaleStore } from '@/core/i18n/locale.store'
 import { categoryName } from '@/core/i18n/category-name'
-import { formatDate } from '@/core/lib/date'
+import { formatDateTime } from '@/core/lib/date'
 import { ROUTES } from '@/modules/shell/constants/routes'
 import OrderStatusBadge from '@/modules/orders/components/OrderStatusBadge.vue'
+import OrderHashtagChips from '@/modules/orders/components/OrderHashtagChips.vue'
+import OrderAttachments from '@/modules/orders/components/OrderAttachments.vue'
 import OfferCard from '@/modules/orders/components/OfferCard.vue'
+import ContractDownloadCard from '@/modules/orders/components/ContractDownloadCard.vue'
 import CriteriaReviewForm from '@/modules/orders/components/CriteriaReviewForm.vue'
 import ReviewDisplay from '@/modules/orders/components/ReviewDisplay.vue'
 import { formatPrice } from '@/modules/orders/lib/order-status'
+import { formatOrderRegion } from '@/modules/orders/lib/region-label'
 import { useOrdersStore } from '@/modules/orders/stores/orders.store'
 import type { ReviewCriterionScore } from '@/modules/orders/types/order'
 
@@ -34,7 +39,17 @@ const { haptic } = useTelegram()
 const order = computed(() => orders.currentOrder)
 const offers = computed(() => order.value?.offers ?? [])
 const title = computed(() =>
-  order.value?.category ? categoryName(order.value.category, locale.locale) : order.value?.title ?? '',
+  order.value?.title
+  || (order.value?.category ? categoryName(order.value.category, locale.locale) : '')
+  || '',
+)
+
+const categoryLabel = computed(() =>
+  order.value?.category ? categoryName(order.value.category, locale.locale) : null,
+)
+
+const regionLabel = computed(() =>
+  order.value ? formatOrderRegion(order.value, locale.locale) : null,
 )
 // Offer accept + cancel share the same window: order still open for offers
 // (`new` / `offers_sent`). Unpaid checkout (`awaiting_payment`) can also cancel.
@@ -70,33 +85,6 @@ const providerRole = computed<'agent' | 'designer'>(() => {
 
 // Confirm in a bottom drawer before killing a live request.
 const cancelDrawerOpen = ref(false)
-
-// Attachments carry storage-hashed names (unreadable), so we represent each
-// file by its type + size and a download affordance instead of the raw name.
-function isImageAttachment(file: { mime_type: string | null }): boolean {
-  return (file.mime_type ?? '').startsWith('image/')
-}
-
-/** Short, human file-type label (PDF, PNG, DOC…) — empty when undeterminable. */
-function attachmentType(file: { original_name: string, mime_type: string | null }): string {
-  const ext = /\.([a-z0-9]{1,6})$/i.exec(file.original_name ?? '')?.[1]
-  if (ext) return ext.toUpperCase()
-
-  const sub = (file.mime_type ?? '').split('/')[1] ?? ''
-  if (sub.includes('pdf')) return 'PDF'
-  if (sub.includes('word')) return 'DOC'
-  if (sub.includes('sheet') || sub.includes('excel')) return 'XLS'
-  if (sub.includes('presentation')) return 'PPT'
-  if (sub.includes('zip') || sub.includes('rar') || sub.includes('compressed')) return 'ZIP'
-  return sub && sub.length <= 4 ? sub.toUpperCase() : ''
-}
-
-function formatFileSize(bytes: number): string {
-  if (!bytes) return ''
-  if (bytes < 1024) return `${bytes} B`
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
-}
 
 // When the client returns from the checkout page (tab becomes visible again),
 // re-check the payment so the order flips to in_progress without a manual reload.
@@ -206,24 +194,43 @@ async function sendReview(criteria: ReviewCriterionScore[], comment: string | nu
       <template v-else-if="order">
         <!-- Summary -->
         <GlassCard class="space-y-4">
-          <div class="min-w-0">
-            <OrderStatusBadge
-              :status="order.status"
-              class="mb-2"
-            />
-            <h2 class="text-lg font-semibold leading-tight text-foreground">
-              {{ title }}
-            </h2>
-            <p class="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
-              <span class="rounded-md bg-muted px-1.5 py-0.5 font-semibold tabular-nums text-foreground/70 dark:bg-white/10">
+          <div class="min-w-0 space-y-1.5">
+            <div class="flex items-start justify-between gap-2">
+              <p
+                v-if="categoryLabel"
+                class="min-w-0 truncate text-xs font-bold text-primary"
+              >
+                {{ categoryLabel }}
+              </p>
+              <span
+                v-else
+                class="min-w-0 flex-1"
+              />
+              <OrderStatusBadge
+                :status="order.status"
+                class="shrink-0"
+              />
+            </div>
+
+            <h2 class="flex min-w-0 items-baseline gap-2 text-lg font-semibold leading-tight text-foreground">
+              <span class="shrink-0 rounded-md bg-muted px-1.5 py-0.5 text-xs font-semibold tabular-nums text-foreground/70 dark:bg-white/10">
                 #{{ order.id }}
               </span>
-              <span aria-hidden="true">·</span>
-              {{ formatDate(order.created_at, locale.locale) }}
+              <span class="min-w-0 truncate">{{ title }}</span>
+            </h2>
+
+            <p class="text-xs font-medium tabular-nums text-muted-foreground">
+              {{ formatDateTime(order.created_at) }}
             </p>
+
+            <OrderHashtagChips
+              v-if="order.hashtags?.length"
+              class="pt-0.5"
+              :hashtags="order.hashtags"
+            />
             <p
               v-if="order.target_agent"
-              class="mt-1.5 inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary"
+              class="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary"
             >
               <Store class="size-3.5" />
               {{ order.target_agent.company_name }}
@@ -233,6 +240,21 @@ async function sendReview(criteria: ReviewCriterionScore[], comment: string | nu
           <p class="text-sm leading-relaxed text-muted-foreground">
             {{ order.description }}
           </p>
+
+          <div
+            v-if="regionLabel"
+            class="flex items-center gap-2 text-xs text-muted-foreground"
+          >
+            <MapPinned class="size-3.5 shrink-0" />
+            <span class="font-medium">{{ regionLabel }}</span>
+          </div>
+
+          <LocationMap
+            v-if="order.lat != null && order.lng != null"
+            :lat="order.lat"
+            :lng="order.lng"
+            :label="order.location_label"
+          />
 
           <div class="flex items-center gap-4 text-xs text-muted-foreground">
             <span class="inline-flex items-center gap-1.5">
@@ -245,47 +267,7 @@ async function sendReview(criteria: ReviewCriterionScore[], comment: string | nu
             </span>
           </div>
 
-          <div
-            v-if="attachmentFiles.length > 0"
-            class="space-y-2"
-          >
-            <p class="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              {{ locale.t.orders.attachedFiles }}
-            </p>
-            <div class="flex flex-wrap gap-2">
-              <a
-                v-for="file in attachmentFiles"
-                :key="file.id"
-                :href="file.url"
-                target="_blank"
-                rel="noopener"
-                :download="file.original_name"
-                class="group flex items-center gap-2.5 rounded-2xl border border-dashed border-border bg-card/40 px-3 py-2.5 transition active:scale-[0.98] dark:bg-white/5"
-              >
-                <!-- Image → thumbnail; any other file → a document icon. Never
-                     the raw (storage-hashed) name. -->
-                <span class="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-primary/10 text-primary">
-                  <img
-                    v-if="isImageAttachment(file)"
-                    :src="file.url"
-                    alt=""
-                    class="size-full object-cover"
-                    loading="lazy"
-                  >
-                  <FileText v-else class="size-5" />
-                </span>
-                <span class="flex min-w-0 flex-col leading-tight">
-                  <span v-if="attachmentType(file)" class="text-xs font-bold text-foreground">
-                    {{ attachmentType(file) }}
-                  </span>
-                  <span v-if="formatFileSize(file.size)" class="text-[11px] text-muted-foreground">
-                    {{ formatFileSize(file.size) }}
-                  </span>
-                </span>
-                <Download class="size-4 shrink-0 text-muted-foreground transition group-active:text-primary" />
-              </a>
-            </div>
-          </div>
+          <OrderAttachments :files="attachmentFiles" />
 
           <Button
             v-if="hasChat"
@@ -386,6 +368,12 @@ async function sendReview(criteria: ReviewCriterionScore[], comment: string | nu
             </Button>
           </div>
         </GlassCard>
+
+        <!-- Service contract (generated once the deal started). -->
+        <ContractDownloadCard
+          v-if="order.contract"
+          :contract="order.contract"
+        />
 
         <!-- Rating: once completed, ask the client to rate the agency (criteria-based). -->
         <CriteriaReviewForm

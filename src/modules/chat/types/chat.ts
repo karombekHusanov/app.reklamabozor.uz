@@ -14,13 +14,28 @@ export interface ChatAttachment {
 export interface ChatMessage {
   id: number
   sender_id: number
+  /** text | offer_price_changed | offer_accepted */
+  type?: string
   body: string
+  meta?: Record<string, unknown> | null
   attachments?: ChatAttachment[]
   read_at: string | null
   created_at: string
 }
 
 export type ChatType = 'order' | 'direct'
+
+export interface ChatActiveOffer {
+  id: number
+  order_id: number
+  order_title: string | null
+  price: string | number | null
+  status: string
+  is_interest?: boolean
+  can_edit_price: boolean
+  price_edits_remaining: number
+  max_price_edits: number
+}
 
 export interface Chat {
   id: number
@@ -40,6 +55,11 @@ export interface Chat {
   }
   last_message?: ChatMessage | null
   unread_count: number
+  blocked_at?: string | null
+  blocked_by?: number | null
+  can_write?: boolean
+  /** Present on direct thread detail only. */
+  active_offer?: ChatActiveOffer | null
   created_at: string
   updated_at: string
 }

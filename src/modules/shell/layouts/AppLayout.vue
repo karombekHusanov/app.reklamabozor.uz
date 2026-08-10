@@ -43,7 +43,7 @@ router.afterEach((to, from) => {
 
   <div
     v-else
-    class="flex min-h-svh flex-col bg-background"
+    class="app-shell flex min-h-svh flex-col"
   >
     <main
       class="mx-auto flex w-full max-w-lg flex-1 flex-col"

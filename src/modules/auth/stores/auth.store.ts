@@ -1,4 +1,5 @@
 import {
+  acceptTerms as acceptTermsRequest,
   authenticateWithTelegram,
   fetchCurrentUser,
   logout as logoutRequest,
@@ -26,6 +27,8 @@ export const useAuthStore = defineStore('auth', () => {
   const isLoading = computed(() => status.value === 'loading')
   /** Telegram users must share their phone before using the app. */
   const needsPhone = computed(() => isAuthenticated.value && !user.value?.phone)
+  /** The public offer version changed (or was never accepted) → re-accept. */
+  const needsTerms = computed(() => isAuthenticated.value && user.value?.needs_terms === true)
 
   function setSession(nextUser: User, nextToken: string) {
     user.value = nextUser
@@ -37,6 +40,13 @@ export const useAuthStore = defineStore('auth', () => {
 
   function setUser(nextUser: User) {
     user.value = nextUser
+  }
+
+  /** Record acceptance of the current public offer and refresh the local user. */
+  async function acceptTerms() {
+    const updated = await acceptTermsRequest()
+    user.value = updated
+    return updated
   }
 
   function clearSession() {
@@ -225,6 +235,8 @@ export const useAuthStore = defineStore('auth', () => {
     isAuthenticated,
     isLoading,
     needsPhone,
+    needsTerms,
+    acceptTerms,
     loginWithTelegram,
     restoreSession,
     refreshUser,

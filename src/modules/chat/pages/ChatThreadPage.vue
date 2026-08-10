@@ -32,7 +32,7 @@ const feed = computed(() =>
 )
 
 function daySeparatorLabel(iso: string): string {
-  return formatDaySeparator(iso, locale.locale, locale.t.chat.today, locale.t.chat.yesterday)
+  return formatDaySeparator(iso, locale.t.chat.today, locale.t.chat.yesterday)
 }
 
 function isMine(message: ChatMessage): boolean {

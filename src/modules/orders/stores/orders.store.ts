@@ -337,6 +337,7 @@ export const useOrdersStore = defineStore('orders', () => {
     availableOrders,
     myOffers,
     isLoadingAgent,
+    workspaceLoaded,
     loadMyOrders,
     loadOrder,
     create,

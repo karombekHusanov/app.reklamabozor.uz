@@ -1,5 +1,21 @@
 export type AgentProfileStatus = 'pending' | 'approved' | 'rejected'
 
+export type AgentContractStatus = 'awaiting_signature' | 'under_review' | 'approved' | 'rejected'
+
+/** Platform↔agent agreement: generated from KYC, signed offline, re-uploaded. */
+export interface AgentContract {
+  status: AgentContractStatus | null
+  version: string | null
+  /** Generated agreement PDF (download → sign → upload). */
+  file: string | null
+  /** The agent's uploaded signed scan. */
+  signed_file: string | null
+  rejection_reason: string | null
+  generated_at: string | null
+  signed_at: string | null
+  approved: boolean
+}
+
 /** Admin-managed catalog entry a provider can pick as an "advantage". */
 export interface Advantage {
   id: number
@@ -91,6 +107,8 @@ export interface AgentProfile {
   status: AgentProfileStatus
   rejection_reason: string | null
   approved_at: string | null
+  /** Platform agreement (agents only; null for designers). */
+  contract?: AgentContract | null
   created_at: string
   updated_at: string
 }

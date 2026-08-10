@@ -8,7 +8,6 @@ import { useTelegram } from '@/core/composables/useTelegram'
 import { useToast } from '@/core/composables/useToast'
 import { useLocaleStore } from '@/core/i18n/locale.store'
 import { navigateBack } from '@/core/lib/navigation'
-import WizardProgress from '@/modules/orders/components/wizard/WizardProgress.vue'
 import ServiceStep from '@/modules/orders/components/wizard/ServiceStep.vue'
 import BriefStep from '@/modules/orders/components/wizard/BriefStep.vue'
 import FilesStep from '@/modules/orders/components/wizard/FilesStep.vue'
@@ -16,9 +15,11 @@ import ReviewStep from '@/modules/orders/components/wizard/ReviewStep.vue'
 import { WIZARD_KEY } from '@/modules/orders/components/wizard/context'
 import type { Category } from '@/modules/agent/types/agent'
 import type { CreateOrderPayload, OrderDraft } from '@/modules/orders/types/order'
+import type { Region } from '@/modules/orders/types/region'
 
 const props = defineProps<{
   categories: Category[]
+  regions: Region[]
   submitting?: boolean
   /** When set, the order is directed to this single agency (from its profile). */
   targetAgent?: { id: number, company_name: string } | null
@@ -37,25 +38,30 @@ const draft = reactive<OrderDraft>({
   category_id: null,
   title: '',
   description: '',
+  hashtags: [],
   deadline_date: null,
   budget: null,
+  region_id: null,
+  district_id: null,
+  lat: null,
+  lng: null,
+  location_label: '',
   files: [],
+  show_files_in_showcase: true,
 })
 const errors = reactive<Record<string, string>>({})
 
-provide(WIZARD_KEY, { draft, errors, get categories() { return props.categories } })
+provide(WIZARD_KEY, {
+  draft,
+  errors,
+  get categories() { return props.categories },
+  get regions() { return props.regions },
+})
 
 // --- Steps ------------------------------------------------------------------
 const steps = [ServiceStep, BriefStep, FilesStep, ReviewStep]
 const step = ref(0)
 const isLast = computed(() => step.value === steps.length - 1)
-
-const stepLabels = computed(() => [
-  locale.t.orders.wizard.stepService,
-  locale.t.orders.wizard.stepBrief,
-  locale.t.orders.wizard.stepFiles,
-  locale.t.orders.wizard.stepReview,
-])
 
 function validateStep(): boolean {
   Object.keys(errors).forEach(key => delete errors[key])
@@ -66,6 +72,9 @@ function validateStep(): boolean {
   if (step.value === 1) {
     if (draft.title.trim() === '') errors.title = locale.t.orders.wizard.errProjectName
     if (draft.description.trim() === '') errors.description = locale.t.orders.errComment
+    if (draft.lat === null || draft.lng === null) {
+      errors.location = locale.t.orders.wizard.errLocation
+    }
   }
   if (step.value === 2 && draft.files.length === 0) {
     errors.files = locale.t.orders.wizard.errFiles
@@ -105,10 +114,17 @@ function submit() {
     category_id: draft.category_id!,
     description: draft.description.trim(),
     attachment_file_ids: draft.files.map(f => f.id),
+    lat: draft.lat!,
+    lng: draft.lng!,
+    location_label: draft.location_label.trim() || null,
+    region_id: draft.region_id,
+    district_id: draft.district_id,
     agent_profile_id: props.targetAgent?.id,
     title: draft.title.trim() || undefined,
+    hashtags: draft.hashtags.length ? [...draft.hashtags] : undefined,
     deadline_date: draft.deadline_date,
     budget: draft.budget,
+    show_files_in_showcase: draft.show_files_in_showcase,
   })
 }
 </script>
@@ -126,11 +142,6 @@ function submit() {
         <span class="font-semibold">{{ targetAgent.company_name }}</span>
       </p>
     </div>
-
-    <WizardProgress
-      :current="step"
-      :steps="stepLabels"
-    />
 
     <component :is="steps[step]" />
 

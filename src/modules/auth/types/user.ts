@@ -25,6 +25,12 @@ export interface User {
   roles: UserRole[]
   /** Timestamp the user chose their role at onboarding; null = not yet selected. */
   role_selected_at: string | null
+  /** Public offer version the user accepted; null = never accepted. */
+  accepted_terms_version: string | null
+  /** Public offer version currently in force. */
+  terms_version: string
+  /** True when the accepted offer version no longer matches the one in force. */
+  needs_terms: boolean
   /** Effective legal nature (derived as legal_entity for agents/sellers); null = not asked. */
   person_type: PersonType | null
   /** Whether the legal-entity status is confirmed (agents/sellers are; self-declared isn't yet). */

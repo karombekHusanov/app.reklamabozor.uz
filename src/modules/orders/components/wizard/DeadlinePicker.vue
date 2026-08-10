@@ -25,7 +25,7 @@ watch(open, (isOpen) => {
 
 const today = computed(() => localizedDayjs(locale.locale).startOf('day'))
 
-const selectedLabel = computed(() => (model.value ? formatDate(model.value, locale.locale) : ''))
+const selectedLabel = computed(() => (model.value ? formatDate(model.value) : ''))
 const monthLabel = computed(() => view.value.format('MMMM YYYY'))
 
 // Weekday initials, Monday-first. `.day(1)` is this week's Monday; `dd` is the
@@ -80,6 +80,7 @@ function pick(day: Dayjs) {
       type="button"
       class="glass-input flex w-full items-center gap-3 text-left"
       :class="!model && 'text-muted-foreground'"
+      :data-state="open ? 'open' : 'closed'"
       @click="open = true"
     >
       <CalendarDays class="size-5 shrink-0 text-muted-foreground" />

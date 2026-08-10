@@ -4,7 +4,6 @@ import { computed } from 'vue'
 import { memberDuration } from '@/core/lib/date'
 import type { PublicClient } from '@/modules/profile/services/clients.service'
 import ClientAboutSection from '@/modules/profile/components/client-sections/ClientAboutSection.vue'
-import ClientAgentInsightsSection from '@/modules/profile/components/client-sections/ClientAgentInsightsSection.vue'
 import ClientProfileHeaderSection from '@/modules/profile/components/client-sections/ClientProfileHeaderSection.vue'
 import type { ClientProfileStat } from '@/modules/profile/components/client-sections/ClientProfileHeaderSection.vue'
 import { fullName } from '@/modules/auth/types/user'
@@ -41,7 +40,9 @@ const stats = computed<ClientProfileStat[]>(() => [
   },
 ])
 
-const rating = computed(() => props.client.rating_avg?.toFixed(1) ?? '0')
+const rating = computed(() =>
+  props.client.rating_avg != null ? props.client.rating_avg.toFixed(1) : null,
+)
 
 const platformLabel = computed(() => {
   const { years, months } = memberDuration(props.client.created_at)
@@ -53,19 +54,10 @@ const platformLabel = computed(() => {
   return props.locale.t.profile.clientMemberDurationMonths.replace('{months}', String(Math.max(months, 1)))
 })
 
-const reviewCountLabel = computed(() =>
-  `${props.client.rating_count} ${props.locale.t.profile.clientReviewsUnit}`.trim(),
-)
-
-const responseTimeLabel = computed(() =>
-  props.locale.t.profile.clientResponseTime.replace(
-    '{minutes}',
-    String(props.client.total_orders > 0 ? 15 : 30),
-  ),
-)
-
-const recommendPercent = computed(() =>
-  Math.min(98, 72 + props.client.completed_orders * 4),
+const completedLabel = computed(() =>
+  props.client.completed_orders > 0
+    ? String(props.client.completed_orders)
+    : null,
 )
 </script>
 
@@ -80,21 +72,13 @@ const recommendPercent = computed(() =>
         :rating="rating"
         :review-count="client.rating_count"
         :is-verified="client.is_verified"
+        :show-back="true"
       />
 
       <ClientAboutSection
         :locale="locale"
         :platform-label="platformLabel"
-        :avg-order-label="locale.t.profile.clientAvgOrderEmpty"
-        :review-count-label="reviewCountLabel"
-        :response-time-label="responseTimeLabel"
-        :activity-label="locale.t.profile.clientAboutOnlineToday"
-      />
-
-      <ClientAgentInsightsSection
-        :locale="locale"
-        :recommend-percent="recommendPercent"
-        :show-on-time="client.completed_orders > 0"
+        :completed-label="completedLabel"
       />
     </section>
   </div>

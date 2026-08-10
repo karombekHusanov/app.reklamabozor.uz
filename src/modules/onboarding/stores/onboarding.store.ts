@@ -38,7 +38,16 @@ export const useOnboardingStore = defineStore('onboarding', () => {
     step.value = next
   }
 
-  function acceptTerms() {
+  /**
+   * Record acceptance of the public offer (versioned) and advance to the role
+   * step. In non-Telegram dev contexts without a session we still advance.
+   */
+  async function acceptTerms(): Promise<void> {
+    if (auth.isAuthenticated) {
+      const user = await auth.acceptTerms()
+      auth.setUser(user)
+    }
+
     termsAccepted.value = true
     step.value = 'role'
   }

@@ -21,6 +21,21 @@ export const ordersRoutes: RouteRecordRaw[] = [
     meta: { hideTabBar: true },
   },
   {
+    // Static segment before :id so "order" is not treated as an offer id.
+    path: 'offers/order/:id',
+    name: 'offer-opportunity',
+    component: () => import('@/modules/orders/pages/OpportunityDetailPage.vue'),
+    props: true,
+    meta: { hideTabBar: true },
+  },
+  {
+    path: 'offers/:id',
+    name: 'offer-detail',
+    component: () => import('@/modules/orders/pages/OfferDetailPage.vue'),
+    props: true,
+    meta: { hideTabBar: true },
+  },
+  {
     path: 'orders/:id',
     name: 'order-detail',
     component: () => import('@/modules/orders/pages/OrderDetailPage.vue'),

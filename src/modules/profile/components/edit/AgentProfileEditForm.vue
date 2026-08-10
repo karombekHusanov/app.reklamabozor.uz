@@ -7,6 +7,7 @@ import { Button } from '@/core/ui/button'
 import { useToast } from '@/core/composables/useToast'
 import { useLocaleStore } from '@/core/i18n/locale.store'
 import AgentApplicationForm from '@/modules/agent/components/AgentApplicationForm.vue'
+import AgentContractCard from '@/modules/agent/components/AgentContractCard.vue'
 import AgentDetailsForm from '@/modules/agent/components/AgentDetailsForm.vue'
 import AgentProfileCompletionBar from '@/modules/profile/components/edit/AgentProfileCompletionBar.vue'
 import AgentStatusCard from '@/modules/agent/components/AgentStatusCard.vue'
@@ -45,6 +46,16 @@ async function handleSaveDetails(payload: AgentDetailsPayload) {
     void router.push(ROUTES.profile)
   }
 }
+
+async function handleUploadContract(fileId: number) {
+  const ok = await agent.submitSignedContract(fileId)
+  if (ok) {
+    toast.success(locale.t.agent.contract.uploadedToast)
+  }
+  else if (agent.error) {
+    toast.error(agent.error)
+  }
+}
 </script>
 
 <template>
@@ -73,6 +84,12 @@ async function handleSaveDetails(payload: AgentDetailsPayload) {
 
       <template v-else-if="hasSubmittedApplication && profile">
         <AgentStatusCard :profile="profile" />
+        <AgentContractCard
+          v-if="profile.contract"
+          :contract="profile.contract"
+          :uploading="agent.isUploadingContract"
+          @upload="handleUploadContract"
+        />
         <AgentVerificationReadOnly :profile="profile" />
         <Button
           type="button"

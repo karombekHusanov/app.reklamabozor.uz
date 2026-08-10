@@ -8,6 +8,7 @@ import {
   resubmitAgentApplication,
   submitAgentApplication,
   updateAgentDetails,
+  uploadSignedContract,
 } from '@/modules/agent/services/agent.service'
 import type {
   AgentApplicationPayload,
@@ -140,6 +141,27 @@ export const useAgentStore = defineStore('agent', () => {
     }
   }
 
+  const isUploadingContract = ref(false)
+
+  /** Upload the signed platform agreement scan → status becomes under_review. */
+  async function submitSignedContract(fileId: number) {
+    isUploadingContract.value = true
+    error.value = null
+
+    try {
+      profile.value = await uploadSignedContract(fileId)
+      loaded.value = true
+      return true
+    }
+    catch (e) {
+      error.value = getApiErrorMessage(e)
+      return false
+    }
+    finally {
+      isUploadingContract.value = false
+    }
+  }
+
   function reset() {
     profile.value = null
     categories.value = []
@@ -154,6 +176,7 @@ export const useAgentStore = defineStore('agent', () => {
     isLoadingCategories,
     isSubmitting,
     isSavingDetails,
+    isUploadingContract,
     error,
     loaded,
     status,
@@ -168,6 +191,7 @@ export const useAgentStore = defineStore('agent', () => {
     submit,
     submitDesigner,
     submitDetails,
+    submitSignedContract,
     reset,
   }
 })

@@ -6,9 +6,9 @@ import { fetchPublicAgent } from '@/modules/marketplace/services/agents.service'
 const ACTIVE_STATUSES: OrderStatus[] = ['in_progress', 'work_submitted']
 
 export type AgentChatResolution =
-  | { kind: 'direct'; chatId: number }
-  | { kind: 'order'; orderId: number }
-  | { kind: 'picker'; chats: Chat[] }
+  | { kind: 'direct', chatId: number }
+  | { kind: 'order', orderId: number }
+  | { kind: 'picker', chats: Chat[] }
 
 /** Threads with the given agency (profile id or owning user id). */
 export function chatsForAgent(
@@ -32,7 +32,7 @@ export function chatsForAgent(
 
 /** Prefer an active order deal, otherwise the most recently updated order thread. */
 export function pickBestOrderChat(chats: Chat[]): Chat | null {
-  const orderChats = chats.filter(chat => chat.type === 'order')
+  const orderChats = chats.filter(chat => chat.type === 'order' || chat.order_id != null)
 
   if (!orderChats.length) {
     return null
@@ -50,7 +50,8 @@ export function pickBestOrderChat(chats: Chat[]): Chat | null {
 
 /**
  * Resolve where to navigate when a user taps "Chat" on an agency profile.
- * Opens (or returns) a direct in-app conversation — no Telegram redirect.
+ * Marketplace profile Chat opens marketplace DM only (`order_id == null`) —
+ * never an order-scoped interest/deal thread.
  */
 export async function resolveAgentChat(agentProfileId: number): Promise<AgentChatResolution> {
   const [agent, chats] = await Promise.all([
@@ -59,21 +60,12 @@ export async function resolveAgentChat(agentProfileId: number): Promise<AgentCha
   ])
 
   const matched = chatsForAgent(chats, agentProfileId, agent.user_id)
-  const direct = matched.find(chat => chat.type === 'direct')
 
-  if (direct) {
-    return { kind: 'direct', chatId: direct.id }
-  }
-
-  const orderChats = matched.filter(chat => chat.type === 'order')
-
-  if (orderChats.length > 1) {
-    return { kind: 'picker', chats: orderChats }
-  }
-
-  const bestOrder = pickBestOrderChat(orderChats)
-  if (bestOrder?.order_id) {
-    return { kind: 'order', orderId: bestOrder.order_id }
+  const marketplaceDm = matched.find(
+    chat => chat.type === 'direct' && chat.order_id == null,
+  )
+  if (marketplaceDm) {
+    return { kind: 'direct', chatId: marketplaceDm.id }
   }
 
   const opened = await openDirectChat(agentProfileId)

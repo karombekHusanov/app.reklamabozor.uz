@@ -75,14 +75,15 @@ function chatTitle(item: Chat) {
 }
 
 function orderLabel(item: Chat) {
-  if (item.type === 'direct') {
-    return locale.t.chat.directLabel
+  if (item.order_id != null) {
+    const title = item.order?.title
+      || (item.order?.category ? categoryName(item.order.category, locale.locale) : null)
+    return locale.t.chat.orderChip
+      .replace('{id}', String(item.order_id))
+      .replace('{title}', title ?? '')
   }
 
-  const category = item.order?.category
-    ? categoryName(item.order.category, locale.locale)
-    : item.order?.title
-  return `#${item.order_id} · ${category ?? ''}`
+  return locale.t.chat.directLabel
 }
 
 function openThread(item: Chat) {
@@ -203,7 +204,7 @@ async function startDirectChat() {
                 v-if="item.last_message"
                 class="shrink-0 text-xs text-muted-foreground"
               >
-                {{ formatMessageTime(item.last_message.created_at, locale.locale) }}
+                {{ formatMessageTime(item.last_message.created_at) }}
               </span>
             </div>
             <p class="truncate text-xs text-muted-foreground">

@@ -59,6 +59,13 @@ export async function setUserPersonType(personType: PersonType): Promise<User> {
   return data.data
 }
 
+/** Record acceptance of the current public offer — POST /api/v1/me/accept-terms. */
+export async function acceptTerms(): Promise<User> {
+  const { data } = await api.post<ApiSuccess<User>>('/api/v1/me/accept-terms')
+
+  return data.data
+}
+
 export async function logout(): Promise<void> {
   // Logout may 401 if the token is already gone — don't toast on cleanup.
   await api.post('/api/v1/auth/logout', undefined, { skipErrorToast: true })

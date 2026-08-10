@@ -4,76 +4,89 @@ import HomeAgentCardSkeleton from '@/modules/home/components/HomeAgentCardSkelet
 </script>
 
 <template>
-  <div class="pb-2" aria-busy="true" aria-label="Loading home">
-    <!-- Top bar -->
-    <header class="safe-top flex items-center justify-between gap-3 px-5 pt-3">
-      <Skeleton class="size-11 rounded-2xl" />
-      <Skeleton class="size-9 rounded-xl" />
-      <Skeleton class="size-11 rounded-2xl" />
+  <div
+    class="home-page"
+    aria-busy="true"
+    aria-label="Loading home"
+  >
+    <header class="home-topbar safe-top">
+      <div class="home-topbar__chrome">
+        <Skeleton class="size-11 shrink-0 rounded-2xl" />
+        <Skeleton class="size-9 shrink-0 rounded-xl" />
+        <Skeleton class="size-11 shrink-0 rounded-2xl" />
+      </div>
+      <div class="home-topbar__identity-row">
+        <Skeleton class="size-11 shrink-0 rounded-full" />
+        <div class="min-w-0 flex-1 space-y-1.5">
+          <Skeleton class="h-6 w-40 max-w-full rounded-lg" />
+          <Skeleton class="h-3.5 w-28 rounded-md" />
+        </div>
+      </div>
     </header>
 
-    <!-- Profile card -->
-    <section class="px-5 pt-4">
-      <div class="home-card relative p-4">
-        <Skeleton class="absolute right-4 top-4 h-5 w-16 rounded-full" />
-        <div class="flex items-center gap-3.5">
-          <Skeleton class="size-16 shrink-0 rounded-2xl" />
-          <div class="min-w-0 flex-1 space-y-2">
-            <Skeleton class="h-3 w-20 rounded-md" />
-            <Skeleton class="h-5 w-32 max-w-full rounded-lg" />
-            <Skeleton class="h-3 w-24 rounded-md" />
-          </div>
-        </div>
-        <div class="mt-4 space-y-3">
-          <div class="rounded-2xl bg-muted/55 p-3">
-            <Skeleton class="h-3 w-28 rounded-md" />
-            <div class="mt-2 flex gap-2">
-              <Skeleton class="h-7 w-24 rounded-full" />
-              <Skeleton class="h-7 w-28 rounded-full" />
-            </div>
-          </div>
-          <Skeleton class="h-11 w-full rounded-full" />
-        </div>
-      </div>
-    </section>
-
-    <!-- Banner -->
-    <div class="home-banner-carousel overflow-x-hidden pt-4">
-      <div class="flex items-center justify-center gap-3.5 overflow-hidden">
-        <Skeleton class="h-[154px] w-9 shrink-0 rounded-[28px] opacity-40" />
-        <Skeleton class="h-[154px] w-[calc(100%-4.5rem)] shrink-0 rounded-[28px]" />
-        <Skeleton class="h-[154px] w-9 shrink-0 rounded-[28px] opacity-40" />
-      </div>
+    <div class="home-banner-carousel px-5 pt-3">
+      <Skeleton class="h-[154px] w-full rounded-[1.35rem]" />
     </div>
 
-    <!-- Quick links grid -->
-    <section class="grid grid-cols-2 gap-4 px-5 pt-4">
-      <div
-        v-for="n in 4"
-        :key="n"
-        class="min-h-[148px] rounded-[28px] border border-border bg-card p-4 shadow-sm"
-      >
-        <div class="flex h-full flex-col items-start justify-between">
-          <Skeleton class="size-13 rounded-[22px]" />
-          <div class="w-full">
-            <Skeleton class="h-4 w-24 rounded-md" />
-            <Skeleton class="mt-2 h-3 w-22 rounded-md" />
-            <Skeleton class="mt-1.5 h-3 w-16 rounded-md" />
-          </div>
-        </div>
+    <section class="home-action-dock">
+      <Skeleton class="h-[4.75rem] w-full rounded-[1.5rem]" />
+      <div class="home-action-dock__row">
+        <Skeleton class="h-[7rem] flex-1 rounded-[1.5rem]" />
+        <Skeleton class="h-[7rem] flex-1 rounded-[1.5rem]" />
       </div>
     </section>
 
-    <!-- Top agents list -->
-    <section class="px-5 pt-4">
-      <div class="home-card overflow-hidden p-4">
-        <div class="flex items-center justify-between pb-2">
-          <Skeleton class="h-5 w-32 rounded-md" />
-          <Skeleton class="h-4 w-20 rounded-md" />
-        </div>
-        <div class="divide-y divide-border">
-          <HomeAgentCardSkeleton v-for="n in 4" :key="n" />
-        </div>
+    <section class="home-action-dock">
+      <Skeleton class="h-[4.75rem] w-full rounded-[1.5rem]" />
+      <div class="home-action-dock__pair">
+        <Skeleton class="h-[7.25rem] rounded-[1.5rem]" />
+        <Skeleton class="h-[7.25rem] rounded-[1.5rem]" />
+      </div>
+      <div class="home-action-dock__trio">
+        <Skeleton
+          v-for="n in 3"
+          :key="n"
+          class="h-[5.5rem] rounded-[1.5rem]"
+        />
+      </div>
+    </section>
+
+    <section class="home-stack overflow-x-hidden px-5">
+      <div class="app-section__header">
+        <Skeleton class="h-5 w-36 rounded-md" />
+        <Skeleton class="h-4 w-20 rounded-md" />
+      </div>
+      <div class="flex gap-3">
+        <Skeleton class="h-[8.5rem] w-[78%] shrink-0 rounded-[1.35rem]" />
+        <Skeleton class="h-[8.5rem] w-[78%] shrink-0 rounded-[1.35rem]" />
+      </div>
+    </section>
+
+    <section class="home-stack px-5">
+      <div class="app-section__header">
+        <Skeleton class="h-5 w-32 rounded-md" />
+        <Skeleton class="h-4 w-20 rounded-md" />
+      </div>
+      <div class="app-list">
+        <HomeAgentCardSkeleton
+          v-for="n in 3"
+          :key="`a-${n}`"
+          class="px-4"
+        />
+      </div>
+    </section>
+
+    <section class="home-stack px-5 pb-2">
+      <div class="app-section__header">
+        <Skeleton class="h-5 w-32 rounded-md" />
+        <Skeleton class="h-4 w-20 rounded-md" />
+      </div>
+      <div class="app-list">
+        <HomeAgentCardSkeleton
+          v-for="n in 3"
+          :key="`d-${n}`"
+          class="px-4"
+        />
       </div>
     </section>
   </div>

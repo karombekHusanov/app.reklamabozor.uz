@@ -1,28 +1,27 @@
 <script setup lang="ts">
-import { Clock, Eye, FileText, Loader2, MessageSquareQuote, Send } from '@lucide/vue'
-import { computed, reactive, ref } from 'vue'
+import { Clock, Eye, MessageSquareQuote } from '@lucide/vue'
+import { computed } from 'vue'
+import { useRouter } from 'vue-router'
 import GlassCard from '@/core/ui/GlassCard.vue'
 import Badge from '@/core/ui/Badge.vue'
-import Drawer from '@/core/ui/Drawer.vue'
-import { Button } from '@/core/ui/button'
-import { cn } from '@/core/lib/utils'
 import { useLocaleStore } from '@/core/i18n/locale.store'
 import { categoryName } from '@/core/i18n/category-name'
-import { formatPrice, offerStatusVariant } from '@/modules/orders/lib/order-status'
-import { maskMoneyInput } from '@/core/lib/money'
-import type { AgentOrder, CreateOfferPayload } from '@/modules/orders/types/order'
+import { offerStatusVariant } from '@/modules/orders/lib/order-status'
+import { ROUTES } from '@/modules/shell/constants/routes'
+import type { AgentOrder } from '@/modules/orders/types/order'
 
 const locale = useLocaleStore()
+const router = useRouter()
 
 const props = defineProps<{
   order: AgentOrder
-  submitting?: boolean
-  /** Deep-link focus — highlight and open the detail drawer by default. */
+  /** Deep-link focus — highlight this card once scrolled into view. */
   highlight?: boolean
 }>()
 
 const orderTitle = computed(() =>
-  props.order.category ? categoryName(props.order.category, locale.locale) : props.order.title,
+  props.order.title
+  || (props.order.category ? categoryName(props.order.category, locale.locale) : ''),
 )
 
 const deadlineLabel = computed(() => {
@@ -31,39 +30,9 @@ const deadlineLabel = computed(() => {
   return null
 })
 
-const emit = defineEmits<{
-  submit: [orderId: number, payload: CreateOfferPayload]
-}>()
-
-// Deep-linked orders open straight into the full detail drawer.
-const drawerOpen = ref(Boolean(props.highlight))
-// Inside the drawer, the offer form auto-opens too when deep-linked (and not already offered).
-const showForm = ref(Boolean(props.highlight) && !props.order.my_offer)
-const form = reactive({ priceDisplay: '', priceAmount: 0, comment: '' })
-
-const canSubmit = computed(() =>
-  form.priceAmount > 0 && form.comment.trim() !== '',
-)
-
-function onPriceInput(event: Event) {
-  const input = event.target as HTMLInputElement
-  const { amount, display } = maskMoneyInput(input.value)
-  form.priceAmount = amount
-  form.priceDisplay = display
-  input.value = display
+function openDetail() {
+  router.push(ROUTES.offerOpportunity(props.order.id))
 }
-
-function send() {
-  if (!canSubmit.value) return
-  emit('submit', props.order.id, {
-    price: form.priceAmount,
-    comment: form.comment.trim(),
-  })
-  showForm.value = false
-  drawerOpen.value = false
-}
-
-const inputClass = 'glass-input'
 </script>
 
 <template>
@@ -72,18 +41,25 @@ const inputClass = 'glass-input'
     interactive
     class="scroll-mt-20 space-y-3 transition-shadow"
     :class="highlight && 'ring-2 ring-primary/50'"
-    @click="drawerOpen = true"
+    @click="openDetail"
   >
     <div class="flex items-start justify-between gap-3">
       <div class="min-w-0">
         <p class="truncate font-semibold leading-tight">
           {{ orderTitle }}
         </p>
-        <p v-if="order.client.first_name" class="text-xs text-muted-foreground">
+        <p
+          v-if="order.client.first_name"
+          class="text-xs text-muted-foreground"
+        >
           {{ locale.t.agent.fromLabel }}: {{ order.client.first_name }}
         </p>
       </div>
-      <Badge v-if="order.my_offer" :variant="offerStatusVariant(order.my_offer.status)" class="shrink-0">
+      <Badge
+        v-if="order.my_offer"
+        :variant="offerStatusVariant(order.my_offer.status)"
+        class="shrink-0"
+      >
         {{ locale.t.orders.offerStatus[order.my_offer.status] }}
       </Badge>
     </div>
@@ -93,7 +69,10 @@ const inputClass = 'glass-input'
     </p>
 
     <div class="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-      <span v-if="deadlineLabel" class="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 font-medium text-primary">
+      <span
+        v-if="deadlineLabel"
+        class="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 font-medium text-primary"
+      >
         <Clock class="size-3.5" />
         {{ deadlineLabel }}
       </span>
@@ -107,91 +86,4 @@ const inputClass = 'glass-input'
       </span>
     </div>
   </GlassCard>
-
-  <!-- Full order detail — everything the compact card only previews. -->
-  <Drawer v-model:open="drawerOpen" :title="orderTitle">
-    <div class="space-y-4 pb-5">
-      <p v-if="order.client.first_name" class="text-sm text-muted-foreground">
-        {{ locale.t.agent.fromLabel }}: <span class="font-medium text-foreground">{{ order.client.first_name }}</span>
-      </p>
-
-      <p class="whitespace-pre-line text-sm leading-relaxed text-foreground">
-        {{ order.description }}
-      </p>
-
-      <div class="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-        <span v-if="deadlineLabel" class="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 font-medium text-primary">
-          <Clock class="size-3.5" />
-          {{ deadlineLabel }}
-        </span>
-        <span class="inline-flex items-center gap-1.5">
-          <Eye class="size-3.5" />
-          {{ order.views_count ?? 0 }} {{ locale.t.orders.viewsSuffix }}
-        </span>
-        <span class="inline-flex items-center gap-1.5">
-          <MessageSquareQuote class="size-3.5" />
-          {{ order.offers_count ?? 0 }} {{ locale.t.orders.offersSuffix }}
-        </span>
-      </div>
-
-      <div
-        v-if="order.attachment_files?.length"
-        class="space-y-2"
-      >
-        <p class="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-          {{ locale.t.orders.attachedFiles }}
-        </p>
-        <a
-          v-for="file in order.attachment_files"
-          :key="file.id"
-          :href="file.url"
-          target="_blank"
-          rel="noopener"
-          class="inline-flex w-full items-center gap-2 text-sm font-medium text-primary"
-        >
-          <FileText class="size-4 shrink-0" />
-          <span class="truncate">{{ file.original_name }}</span>
-        </a>
-      </div>
-
-      <!-- Already offered -->
-      <div
-        v-if="order.my_offer"
-        class="rounded-2xl bg-muted px-4 py-3 text-sm dark:bg-white/5"
-      >
-        <span class="text-muted-foreground">{{ locale.t.agent.yourOffer }}</span>
-        <span class="ml-1 font-semibold text-primary">{{ formatPrice(order.my_offer.price) }}</span>
-      </div>
-
-      <!-- Offer form -->
-      <template v-else>
-        <div v-if="showForm" class="space-y-2.5">
-          <input
-            :value="form.priceDisplay"
-            type="text"
-            inputmode="numeric"
-            autocomplete="off"
-            :placeholder="locale.t.agent.pricePlaceholder"
-            :class="inputClass"
-            @input="onPriceInput"
-          >
-          <textarea v-model="form.comment" rows="3" :placeholder="locale.t.agent.pitchPlaceholder" :class="cn(inputClass, 'resize-none')" />
-          <div class="flex gap-2">
-            <Button class="h-11 flex-1 rounded-2xl" :disabled="!canSubmit || submitting" @click="send">
-              <Loader2 v-if="submitting" class="size-4 animate-spin" />
-              <Send v-else class="size-4" />
-              {{ locale.t.agent.sendOffer }}
-            </Button>
-            <Button variant="outline" class="h-11 rounded-2xl" @click="showForm = false">
-              {{ locale.t.agent.cancel }}
-            </Button>
-          </div>
-        </div>
-        <Button v-else class="h-11 w-full rounded-2xl" @click="showForm = true">
-          <Send class="size-4" />
-          {{ locale.t.agent.sendAnOffer }}
-        </Button>
-      </template>
-    </div>
-  </Drawer>
 </template>

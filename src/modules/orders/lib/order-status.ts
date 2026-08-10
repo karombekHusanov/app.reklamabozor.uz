@@ -30,9 +30,28 @@ export function offerStatusVariant(status: OfferStatus): BadgeVariant {
   return OFFER_VARIANTS[status] ?? 'default'
 }
 
-/** Locale-aware price formatting in UZS. */
-export function formatPrice(value: string | number): string {
+/** Locale-aware price formatting in UZS. Null/empty → empty string (callers show Interest badge). */
+export function formatPrice(value: string | number | null | undefined): string {
+  if (value == null || value === '') return ''
   const n = typeof value === 'string' ? Number(value) : value
   if (Number.isNaN(n)) return String(value)
   return new Intl.NumberFormat('uz-UZ').format(n) + ' so‘m'
+}
+
+type InterestLike = {
+  is_interest?: boolean
+  price?: string | number | null
+  status?: string
+  can_accept?: boolean
+}
+
+/** Interest (otklik) when flagged, or when price was never set. */
+export function isInterestOffer(offer: InterestLike): boolean {
+  return offer.is_interest ?? (offer.price == null || offer.price === '')
+}
+
+/** Accept only when backend allows it; fallback: priced + pending. */
+export function canAcceptOffer(offer: InterestLike): boolean {
+  if (offer.can_accept != null) return offer.can_accept
+  return offer.price != null && offer.price !== '' && offer.status === 'pending'
 }

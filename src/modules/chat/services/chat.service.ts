@@ -44,6 +44,13 @@ export async function sendMessage(orderId: number, body: string, fileIds: number
 
 // ---- Direct client ↔ agency chat ----
 
+/** Client opens (or returns) order-scoped chat from an offer card. */
+export async function openOrderChat(offerId: number): Promise<Chat> {
+  const { data } = await api.post<ApiSuccess<Chat>>(`/api/v1/offers/${offerId}/chat`)
+
+  return data.data
+}
+
 export async function openDirectChat(agentProfileId: number): Promise<Chat> {
   const { data } = await api.post<ApiSuccess<Chat>>(`/api/v1/agents/${agentProfileId}/direct-chat`)
 
@@ -77,6 +84,20 @@ export async function sendDirectMessage(chatId: number, body: string, fileIds: n
     `/api/v1/direct-chats/${chatId}/messages`,
     { body: body || undefined, file_ids: fileIds.length > 0 ? fileIds : undefined },
   )
+
+  return data.data
+}
+
+/** Soft-end conversation (client or agent). */
+export async function blockDirectChat(chatId: number): Promise<Chat> {
+  const { data } = await api.post<ApiSuccess<Chat>>(`/api/v1/direct-chats/${chatId}/block`)
+
+  return data.data
+}
+
+/** Reopen — only the participant who ended it. */
+export async function unblockDirectChat(chatId: number): Promise<Chat> {
+  const { data } = await api.delete<ApiSuccess<Chat>>(`/api/v1/direct-chats/${chatId}/block`)
 
   return data.data
 }

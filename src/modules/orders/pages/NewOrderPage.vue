@@ -12,10 +12,12 @@ import { useAuthStore } from '@/modules/auth/stores/auth.store'
 import { ROUTES } from '@/modules/shell/constants/routes'
 import OrderWizard from '@/modules/orders/components/OrderWizard.vue'
 import { fetchCategories } from '@/modules/orders/services/orders.service'
+import { fetchRegions } from '@/modules/orders/services/regions.service'
 import { useOrdersStore } from '@/modules/orders/stores/orders.store'
 import { fetchPublicAgent } from '@/modules/marketplace/services/agents.service'
 import type { Category } from '@/modules/agent/types/agent'
 import type { CreateOrderPayload, Order } from '@/modules/orders/types/order'
+import type { Region } from '@/modules/orders/types/region'
 
 const route = useRoute()
 const router = useRouter()
@@ -37,6 +39,7 @@ const targetAgentId = computed(() => {
 })
 
 const categories = ref<Category[]>([])
+const regions = ref<Region[]>([])
 const targetAgent = ref<{ id: number, company_name: string } | null>(null)
 const loadingCategories = ref(false)
 const submitted = ref(false)
@@ -47,22 +50,34 @@ const headerSubtitle = computed(() => {
   return serviceType.value === 'designer' ? locale.t.orders.findDesigner : locale.t.orders.findAgency
 })
 
-async function loadCategories() {
+async function loadCatalog() {
   if (!auth.isAuthenticated) return
   loadingCategories.value = true
   try {
+    const regionsPromise = fetchRegions().catch(() => [] as Region[])
+
     if (targetAgentId.value !== null) {
       // Directed order — prefer the agency's categories; fall back to the full
       // catalog when the profile has none configured yet.
       const agent = await fetchPublicAgent(targetAgentId.value)
       targetAgent.value = { id: agent.id, company_name: agent.display_name }
-      categories.value = agent.categories.length > 0
-        ? agent.categories
-        : await fetchCategories(agent.provider_type)
+      const [cats, regs] = await Promise.all([
+        agent.categories.length > 0
+          ? Promise.resolve(agent.categories)
+          : fetchCategories(agent.provider_type),
+        regionsPromise,
+      ])
+      categories.value = cats
+      regions.value = regs
     }
     else {
       targetAgent.value = null
-      categories.value = await fetchCategories(serviceType.value)
+      const [cats, regs] = await Promise.all([
+        fetchCategories(serviceType.value),
+        regionsPromise,
+      ])
+      categories.value = cats
+      regions.value = regs
     }
   }
   finally {
@@ -70,8 +85,8 @@ async function loadCategories() {
   }
 }
 
-onMounted(loadCategories)
-watch([() => auth.isAuthenticated, serviceType, targetAgentId], loadCategories)
+onMounted(loadCatalog)
+watch([() => auth.isAuthenticated, serviceType, targetAgentId], loadCatalog)
 
 async function handleSubmit(payload: CreateOrderPayload) {
   haptic('light')
@@ -159,6 +174,7 @@ async function handleSubmit(payload: CreateOrderPayload) {
       <template v-else>
         <OrderWizard
           :categories="categories"
+          :regions="regions"
           :submitting="orders.isSubmitting"
           :target-agent="targetAgent"
           @submit="handleSubmit"

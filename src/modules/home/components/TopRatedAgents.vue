@@ -43,60 +43,76 @@ function openAgent(id: number) {
 </script>
 
 <template>
-  <div v-if="props.loading || props.agents.length" class="home-card overflow-hidden p-4">
-    <div class="flex items-center justify-between pb-1">
+  <div v-if="props.loading || props.agents.length">
+    <div class="app-section__header">
       <template v-if="props.loading">
         <Skeleton class="top-agents-skeleton--strong h-5 w-32 rounded-md" />
         <Skeleton class="top-agents-skeleton h-4 w-20 rounded-md" />
       </template>
       <template v-else>
-        <h2 class="text-base font-bold text-foreground">
+        <h2 class="app-section__title">
           {{ props.title }}
         </h2>
         <button
           type="button"
-          class="pressable inline-flex items-center gap-0.5 text-sm font-medium text-muted-foreground transition active:text-foreground"
+          class="app-section__link pressable"
           @click="router.push(props.viewAllRoute)"
         >
           {{ locale.t.home.viewAllAgents }}
-          <ChevronRight class="size-4" />
+          <ChevronRight class="size-3.5" />
         </button>
       </template>
     </div>
 
-    <div v-if="props.loading" class="top-agents-list">
-      <HomeAgentCardSkeleton v-for="n in 4" :key="n" />
+    <div
+      v-if="props.loading"
+      class="app-list"
+    >
+      <HomeAgentCardSkeleton
+        v-for="n in 4"
+        :key="n"
+        class="px-4"
+      />
     </div>
 
-    <div v-else class="top-agents-list">
+    <div
+      v-else
+      class="app-list"
+    >
       <button
         v-for="(agent, index) in props.agents"
         :key="agent.id"
         type="button"
-        class="top-agents-row"
+        class="app-list-row pressable"
         @click="openAgent(agent.id)"
       >
         <span :class="rankClass(index + 1)">
           {{ index + 1 }}
         </span>
 
-        <Avatar
-          :src="agent.company_logo ?? agent.avatar"
-          :name="agent.display_name"
-          size="md"
-          class="top-agents-avatar"
-        />
+        <span class="app-list-row__body">
+          <span class="flex min-w-0 items-center gap-2.5">
+            <Avatar
+              :src="agent.company_logo ?? agent.avatar"
+              :name="agent.display_name"
+              size="md"
+              class="top-agents-avatar shrink-0"
+            />
+            <span class="min-w-0">
+              <span class="app-list-row__label block truncate">
+                {{ agent.display_name }}
+              </span>
+              <span
+                v-if="agentCategory(agent)"
+                class="app-list-row__hint block truncate"
+              >
+                {{ agentCategory(agent) }}
+              </span>
+            </span>
+          </span>
+        </span>
 
-        <div class="min-w-0 flex-1">
-          <p class="truncate text-sm font-bold text-foreground">
-            {{ agent.display_name }}
-          </p>
-          <p v-if="agentCategory(agent)" class="truncate text-xs text-muted-foreground">
-            {{ agentCategory(agent) }}
-          </p>
-        </div>
-
-        <div class="flex shrink-0 flex-col items-end gap-1">
+        <span class="app-list-row__meta flex-col items-end !gap-0.5">
           <span class="inline-flex items-center gap-1 text-sm font-bold text-foreground">
             <Star class="size-3.5 fill-amber-400 text-amber-400 dark:fill-amber-300 dark:text-amber-300" />
             {{ agentRating(agent) }}
@@ -104,7 +120,7 @@ function openAgent(id: number) {
           <span class="text-[11px] font-medium text-muted-foreground">
             {{ locale.t.home.ordersDone.replace('{count}', String(agent.completed_orders_count)) }}
           </span>
-        </div>
+        </span>
       </button>
     </div>
   </div>

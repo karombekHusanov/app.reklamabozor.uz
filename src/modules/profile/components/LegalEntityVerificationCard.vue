@@ -125,7 +125,7 @@ async function submit() {
             inputmode="numeric"
             maxlength="20"
             placeholder="123456789"
-            class="glass-input h-11 w-full rounded-xl px-3 text-sm"
+            class="glass-input h-11 w-full rounded-xl px-3"
           >
         </label>
 
@@ -134,7 +134,7 @@ async function submit() {
           <input
             v-model="form.company_name"
             type="text"
-            class="glass-input h-11 w-full rounded-xl px-3 text-sm"
+            class="glass-input h-11 w-full rounded-xl px-3"
           >
         </label>
 

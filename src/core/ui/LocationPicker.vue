@@ -131,10 +131,10 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="space-y-2">
-    <div class="overflow-hidden z-0!  rounded-2xl border border-white/40 dark:border-white/10">
+    <div class="z-0! overflow-hidden rounded-xl border border-input dark:border-white/18">
       <div
         ref="mapEl"
-        class="h-52 w-full bg-white/40 dark:bg-white/5 z-0!"
+        class="z-0! h-52 w-full bg-background dark:bg-white/5"
       >
         <!-- Leaflet gives its own container `position: relative` once initialised,
              so these overlays anchor to it without us adding any position/z-index. -->

@@ -11,6 +11,8 @@ import {
   markGlobalChatRead,
   sendDirectMessage,
   sendMessage as sendMessageRequest,
+  blockDirectChat,
+  unblockDirectChat,
 } from '@/modules/chat/services/chat.service'
 import type { Chat, ChatMessage } from '@/modules/chat/types/chat'
 
@@ -219,6 +221,32 @@ export const useChatStore = defineStore('chat', () => {
     }
   }
 
+  async function blockDirect(chatId: number) {
+    error.value = null
+    try {
+      const updated = await blockDirectChat(chatId)
+      currentChat.value = { ...currentChat.value, ...updated } as Chat
+      return true
+    }
+    catch (e) {
+      error.value = getApiErrorMessage(e)
+      return false
+    }
+  }
+
+  async function unblockDirect(chatId: number) {
+    error.value = null
+    try {
+      const updated = await unblockDirectChat(chatId)
+      currentChat.value = { ...currentChat.value, ...updated } as Chat
+      return true
+    }
+    catch (e) {
+      error.value = getApiErrorMessage(e)
+      return false
+    }
+  }
+
   function reset() {
     chats.value = []
     currentChat.value = null
@@ -250,6 +278,8 @@ export const useChatStore = defineStore('chat', () => {
     pollDirect,
     send,
     sendDirect,
+    blockDirect,
+    unblockDirect,
     reset,
   }
 })

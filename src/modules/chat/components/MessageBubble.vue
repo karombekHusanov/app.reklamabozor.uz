@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { Check, CheckCheck, FileText } from '@lucide/vue'
 import { computed } from 'vue'
-import { useLocaleStore } from '@/core/i18n/locale.store'
 import { formatMessageTime } from '@/core/lib/date'
 import type { ChatAttachment } from '@/modules/chat/types/chat'
 
@@ -42,8 +41,6 @@ function handleSenderClick() {
   emit('sender-click')
 }
 
-const locale = useLocaleStore()
-
 // One message can mix media: images render as an album, documents as rows.
 const images = computed(() =>
   props.attachments.filter(file => (file.mime_type ?? '').startsWith('image/')),
@@ -58,7 +55,7 @@ function spansFullRow(index: number): boolean {
   return images.value.length > 1 && images.value.length % 2 === 1 && index === 0
 }
 
-const time = computed(() => formatMessageTime(props.createdAt, locale.locale))
+const time = computed(() => formatMessageTime(props.createdAt))
 
 function formatSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`

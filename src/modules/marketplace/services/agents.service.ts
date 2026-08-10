@@ -63,21 +63,36 @@ export interface PublicAgent {
 }
 
 /** Top approved agents (ranked by profile completeness) for the home slider / marketplace. */
+export interface AgentsListFilters {
+  q?: string | null
+  category_ids?: number[] | null
+}
+
 export async function fetchTopAgents(
   limit = 10,
   type?: 'agent' | 'designer',
   providerType?: 'agent' | 'designer',
+  filters: AgentsListFilters = {},
 ): Promise<PublicAgent[]> {
   const { data } = await api.get<ApiSuccess<PublicAgent[]>>('/api/v1/agents', {
-    params: { limit, type, provider_type: providerType },
+    params: {
+      limit,
+      type,
+      provider_type: providerType,
+      ...(filters.q?.trim() ? { q: filters.q.trim() } : {}),
+      ...(filters.category_ids?.length ? { category_ids: filters.category_ids.join(',') } : {}),
+    },
   })
 
   return data.data
 }
 
 /** Approved designers — providers serving at least one designer category. */
-export async function fetchDesigners(limit = 50): Promise<PublicAgent[]> {
-  return fetchTopAgents(limit, 'designer')
+export async function fetchDesigners(
+  limit = 50,
+  filters: AgentsListFilters = {},
+): Promise<PublicAgent[]> {
+  return fetchTopAgents(limit, 'designer', undefined, filters)
 }
 
 /** Approved agents nearest to a point, ordered by distance (for the new-order form). */

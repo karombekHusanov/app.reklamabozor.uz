@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, inject } from 'vue'
 import { categoryName } from '@/core/i18n/category-name'
+import { regionName } from '@/core/i18n/region-name'
 import { formatDate } from '@/core/lib/date'
 import { useLocaleStore } from '@/core/i18n/locale.store'
 import GlassCard from '@/core/ui/GlassCard.vue'
@@ -17,18 +18,35 @@ const serviceLabel = computed(() => {
 })
 
 const deadlineLabel = computed(() =>
-  ctx.draft.deadline_date ? formatDate(ctx.draft.deadline_date, locale.locale) : notSet.value,
+  ctx.draft.deadline_date ? formatDate(ctx.draft.deadline_date) : notSet.value,
 )
 
-const budgetLabel = computed(() =>
-  ctx.draft.budget ? locale.t.orders.wizard.budgets[ctx.draft.budget] : notSet.value,
+const regionLabel = computed(() => {
+  if (ctx.draft.region_id == null) return locale.t.orders.wizard.allUzbekistan
+  const region = ctx.regions.find(r => r.id === ctx.draft.region_id)
+  if (!region) return locale.t.orders.wizard.allUzbekistan
+  const base = regionName(region, locale.locale)
+  if (ctx.draft.district_id == null) return base
+  const district = region.districts.find(d => d.id === ctx.draft.district_id)
+  return district ? `${regionName(district, locale.locale)}, ${base}` : base
+})
+
+const locationLabel = computed(() =>
+  ctx.draft.location_label.trim() || notSet.value,
 )
 
 const rows = computed(() => [
   { label: locale.t.orders.wizard.rowService, value: serviceLabel.value },
   { label: locale.t.orders.wizard.rowProjectName, value: ctx.draft.title.trim() || notSet.value },
+  {
+    label: locale.t.orders.wizard.rowHashtags,
+    value: ctx.draft.hashtags.length
+      ? ctx.draft.hashtags.map(t => `#${t}`).join(' ')
+      : notSet.value,
+  },
   { label: locale.t.orders.wizard.rowDeadline, value: deadlineLabel.value },
-  { label: locale.t.orders.wizard.rowBudget, value: budgetLabel.value },
+  { label: locale.t.orders.wizard.rowRegion, value: regionLabel.value },
+  { label: locale.t.orders.wizard.rowLocation, value: locationLabel.value },
   {
     label: locale.t.orders.wizard.rowFiles,
     value: `${ctx.draft.files.length} ${locale.t.orders.wizard.filesCountSuffix}`,

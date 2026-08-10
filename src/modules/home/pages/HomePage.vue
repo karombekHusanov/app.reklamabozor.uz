@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import {
-  ArrowRight,
-  Bell,
   Building2,
+  ClipboardList,
   Gavel,
   Handshake,
   Loader2,
@@ -11,224 +10,216 @@ import {
   MessagesSquare,
   Palette,
   Radio,
-  Star,
 } from '@lucide/vue'
-import { computed, onMounted, onUnmounted, ref, watch, type Component } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import Autoplay from 'embla-carousel-autoplay'
-import Avatar from '@/core/ui/Avatar.vue'
-import Badge from '@/core/ui/Badge.vue'
-import BrandLogo from '@/core/ui/BrandLogo.vue'
 import { Carousel, CarouselContent, CarouselItem, type CarouselApi } from '@/core/ui/carousel'
 import { usePullToRefresh } from '@/core/composables/usePullToRefresh'
 import { openExternalLink } from '@/core/lib/telegram-init'
 import { useTelegram } from '@/core/composables/useTelegram'
 import { useLocaleStore } from '@/core/i18n/locale.store'
 import { useAuthStore } from '@/modules/auth/stores/auth.store'
-import { useAgentStore } from '@/modules/agent/stores/agent.store'
-import { useNotificationsStore } from '@/modules/notifications/stores/notifications.store'
-import { useChatStore } from '@/modules/chat/stores/chat.store'
-import { useOrdersStore } from '@/modules/orders/stores/orders.store'
 import { useHomeStore } from '@/modules/home/stores/home.store'
 import { trackBannerClick, trackBannerView, type Banner } from '@/modules/home/services/banners.service'
 import HomePageSkeleton from '@/modules/home/components/HomePageSkeleton.vue'
-import HomeMenuDropdown from '@/modules/home/components/HomeMenuDropdown.vue'
-import TopRatedAgents from '@/modules/home/components/TopRatedAgents.vue'
+import HomeTopBar from '@/modules/home/components/HomeTopBar.vue'
+import HomeActionDock, { type HomeActionItem } from '@/modules/home/components/HomeActionDock.vue'
 import LiveOrdersCarousel from '@/modules/home/components/LiveOrdersCarousel.vue'
-import { fetchLiveOrders } from '@/modules/home/services/live-orders.service'
-import { fullName, isBusinessUser, type UserRole } from '@/modules/auth/types/user'
+import TopRatedAgents from '@/modules/home/components/TopRatedAgents.vue'
+import { fetchMyRating } from '@/modules/orders/services/orders.service'
+import { fullName, isBusinessUser } from '@/modules/auth/types/user'
+import type { RatingInfo } from '@/modules/orders/types/order'
 import { ROUTES } from '@/modules/shell/constants/routes'
 
 const auth = useAuthStore()
-const agent = useAgentStore()
-const notifications = useNotificationsStore()
-const chat = useChatStore()
-const orders = useOrdersStore()
 const home = useHomeStore()
 const router = useRouter()
 const locale = useLocaleStore()
 const { user: telegramUser, haptic } = useTelegram()
 
-const isProvider = computed(() => (auth.user ? isBusinessUser(auth.user) : false))
-const isApprovedProvider = computed(() => isProvider.value && agent.isApproved)
+function resolveHomeDisplayName(raw: string, fallback: string): string {
+  const name = raw.trim()
+  if (!name || name.length === 1) return fallback
+  return name
+}
 
 const displayName = computed(() => {
-  if (auth.user) return fullName(auth.user) || 'Reklama Bozor'
-  if (telegramUser.value?.first_name) return telegramUser.value.first_name
+  const fallback = locale.t.home.userFallback
+  if (auth.user) {
+    return resolveHomeDisplayName(fullName(auth.user), fallback)
+  }
+  if (telegramUser.value?.first_name) {
+    const tgName = [telegramUser.value.first_name, telegramUser.value.last_name]
+      .filter(Boolean)
+      .join(' ')
+      .trim()
+    return resolveHomeDisplayName(tgName, fallback)
+  }
   return locale.t.home.guest
 })
 
-/**
- * Home card badges: client always; agent only after KYC approval;
- * designer only after an approved designer profile (no KYC).
- */
-const displayRoleBadges = computed((): UserRole[] => {
-  if (!auth.user) return []
+const avatarSrc = computed(() => auth.user?.avatar ?? null)
 
-  const badges: UserRole[] = ['client']
-  const held = auth.user.roles?.length ? auth.user.roles : [auth.user.role]
-  const profile = agent.profile
-  const verified = agent.isApproved
-  // Agent KYC always stores legal identity; designer profiles do not.
-  const isAgentKyc = Boolean(profile?.inn || profile?.legal_form)
-
-  if (held.includes('agent') && verified && isAgentKyc) {
-    badges.push('agent')
-  }
-  if (held.includes('designer') && verified && !isAgentKyc) {
-    badges.push('designer')
-  }
-
-  return badges
-})
-
-/** Verified agent/designer — even when active role is client. */
-const showOffersQuickLink = computed(() => {
-  if (!auth.user || !agent.isApproved) return false
-  const held = auth.user.roles?.length ? auth.user.roles : [auth.user.role]
-  return held.includes('agent') || held.includes('designer')
-})
-
-const offersOpenCount = computed(() => orders.availableOrders.length)
-
-const ordersCount = computed(() => orders.myOrders.length)
-const activeOrdersCount = computed(() =>
-  orders.myOrders.filter(o => !['completed', 'cancelled'].includes(o.status)).length,
+const isProviderView = computed(() =>
+  Boolean(auth.user && isBusinessUser(auth.user) && home.providerApproved),
 )
 
-const completion = computed(() => agent.profile?.completion_percent ?? 0)
+const myRating = ref<RatingInfo | null>(null)
 
-/** Placeholder rating derived from profile completeness (no scoring backend yet). */
-const ratingDisplay = computed(() => (4.5 + (completion.value / 100) * 0.5).toFixed(1))
+async function loadIdentityRating() {
+  if (!auth.isAuthenticated || !auth.user) {
+    myRating.value = null
+    return
+  }
+  try {
+    myRating.value = await fetchMyRating(auth.user.role)
+  }
+  catch {
+    myRating.value = null
+  }
+}
 
-const hasUnread = computed(() => notifications.hasUnread)
+/**
+ * Personal dock below banner (auth only):
+ * - Offers → /offers (approved provider)
+ * - Orders → /orders
+ * - Chats → /chat/threads
+ */
+const dockActions = computed((): HomeActionItem[] => {
+  if (!auth.isAuthenticated) return []
+
+  const items: HomeActionItem[] = []
+
+  if (isProviderView.value) {
+    items.push({
+      key: 'offers',
+      label: locale.t.home.actionOffers,
+      description: locale.t.home.actionOffersDesc,
+      count: home.offersPending > 0 ? home.offersPending : undefined,
+      icon: Handshake,
+      tone: 'amber',
+      pulse: home.offersPending > 0,
+    })
+  }
+
+  items.push(
+    {
+      key: 'orders',
+      label: locale.t.home.actionOrders,
+      description: locale.t.home.actionOrdersDesc,
+      count: home.myOrdersCount > 0 ? home.myOrdersCount : undefined,
+      icon: ClipboardList,
+      tone: 'sky',
+    },
+    {
+      key: 'chats',
+      label: locale.t.home.actionChats,
+      description: locale.t.home.actionChatsDesc,
+      count: home.unreadChats > 0 ? home.unreadChats : undefined,
+      icon: MessageCircle,
+      tone: 'violet',
+      pulse: home.unreadChats > 0,
+    },
+  )
+
+  return items
+})
+
+/**
+ * Marketplace explore tiles (below banner).
+ */
+const exploreActions = computed((): HomeActionItem[] => [
+  {
+    key: 'live-orders',
+    label: locale.t.home.liveOrdersTitle,
+    description: locale.t.home.liveOrdersHint,
+    count: home.newLiveOrdersCount > 0 ? home.newLiveOrdersCount : undefined,
+    icon: Radio,
+    tone: 'emerald',
+    pulse: home.newLiveOrdersCount > 0,
+  },
+  {
+    key: 'tender',
+    label: locale.t.tender.title,
+    description: locale.t.tender.subtitle,
+    icon: Gavel,
+    tone: 'amber',
+    tag: locale.t.tender.comingSoonBadge,
+  },
+  {
+    key: 'chat',
+    label: locale.t.home.globalChat,
+    description: locale.t.chat.global.entryBody,
+    count: home.unreadGlobal > 0 ? home.unreadGlobal : undefined,
+    icon: MessagesSquare,
+    tone: 'violet',
+    pulse: home.unreadGlobal > 0,
+  },
+  {
+    key: 'map',
+    label: locale.t.home.viewMap,
+    description: locale.t.home.viewMapHint,
+    icon: Map,
+    tone: 'teal',
+  },
+  {
+    key: 'designers',
+    label: locale.t.designers.title,
+    description: locale.t.designers.subtitle,
+    icon: Palette,
+    tone: 'sky',
+  },
+  {
+    key: 'agencies',
+    label: locale.t.home.agencies,
+    description: locale.t.home.browseProvidersHint,
+    icon: Building2,
+    tone: 'indigo',
+  },
+])
+
+const actionRoutes: Record<string, string> = {
+  offers: ROUTES.offers,
+  orders: ROUTES.orders,
+  chats: ROUTES.chatThreads,
+  'live-orders': ROUTES.liveOrders,
+  tender: ROUTES.tender,
+  chat: ROUTES.chat,
+  map: ROUTES.map,
+  designers: ROUTES.designers,
+  agencies: ROUTES.agencies,
+}
+
+function onAction(key: string) {
+  const to = actionRoutes[key]
+  if (to) navigate(to)
+}
+
 const hasBanners = computed(() => home.banners.length > 0)
 const showSkeleton = computed(() => !home.hasLoaded && (home.isLoading || auth.isLoading))
 const providersLoading = computed(() => !home.hasLoaded && home.isLoading)
 
-interface QuickLink {
-  key: string
-  to: string
-  label: string
-  hint: string
-  icon: Component
-  tone: string
-  badge?: number
-  /** Blinking red halo behind the badge — draws the eye to unread messages. */
-  pulse?: boolean
-  /** Small corner ribbon, e.g. "Soon" for not-yet-live features. */
-  tag?: string
-}
-
-/** Unread messages across all agency/order chats (track `chats` directly for Pinia reactivity). */
-const unreadChats = computed(() =>
-  chat.chats.reduce((sum, item) => sum + (Number(item.unread_count) || 0), 0),
-)
-
-/** New messages in the community-wide global chat since the user last opened it. */
-const unreadGlobal = computed(() => Number(chat.globalUnread) || 0)
-
-const quickLinks = computed((): QuickLink[] => {
-  const links: QuickLink[] = []
-
-  // Only my offers is role-gated (verified agent / designer).
-  if (showOffersQuickLink.value) {
-    links.push({
-      key: 'offers',
-      to: ROUTES.offers,
-      label: locale.t.home.quickOffers,
-      hint: locale.t.home.quickOffersHint,
-      icon: Handshake,
-      tone: 'quick-link-tile--sky',
-      badge: offersOpenCount.value > 0 ? offersOpenCount.value : undefined,
-    })
-  }
-
-  links.push(
-    {
-      key: 'tender',
-      to: ROUTES.tender,
-      label: locale.t.tender.title,
-      hint: locale.t.tender.subtitle,
-      icon: Gavel,
-      tone: 'quick-link-tile--amber',
-      tag: locale.t.tender.comingSoonBadge,
-    },
-    {
-      key: 'live-orders',
-      to: ROUTES.liveOrders,
-      label: locale.t.home.liveOrdersTitle,
-      hint: locale.t.home.liveOrdersHint,
-      icon: Radio,
-      tone: 'quick-link-tile--emerald',
-      badge: home.newLiveOrdersCount > 0 ? home.newLiveOrdersCount : undefined,
-      pulse: home.newLiveOrdersCount > 0,
-    },
-    {
-      key: 'agency-chats',
-      to: ROUTES.chatThreads,
-      label: locale.t.home.quickAgencyChats,
-      hint: locale.t.home.quickAgencyChatsHint,
-      icon: MessageCircle,
-      tone: 'quick-link-tile--indigo',
-      badge: unreadChats.value > 0 ? unreadChats.value : undefined,
-      pulse: unreadChats.value > 0,
-    },
-    {
-      key: 'chat',
-      to: ROUTES.chat,
-      label: locale.t.home.globalChat,
-      hint: locale.t.chat.subtitle,
-      icon: MessagesSquare,
-      tone: 'quick-link-tile--violet',
-      badge: unreadGlobal.value > 0 ? unreadGlobal.value : undefined,
-      pulse: unreadGlobal.value > 0,
-    },
-    {
-      key: 'map',
-      to: ROUTES.map,
-      label: locale.t.home.viewMap,
-      hint: locale.t.home.viewMapHint,
-      icon: Map,
-      tone: 'quick-link-tile--teal',
-    },
-    {
-      key: 'designers',
-      to: ROUTES.designers,
-      label: locale.t.designers.title,
-      hint: locale.t.designers.subtitle,
-      icon: Palette,
-      tone: 'quick-link-tile--sky',
-    },
-    {
-      key: 'agencies',
-      to: ROUTES.agencies,
-      label: locale.t.home.agencies,
-      hint: locale.t.home.browseProvidersHint,
-      icon: Building2,
-      tone: 'quick-link-tile--indigo',
-    },
-  )
-
-  return links
-})
-
 const activeBanner = ref(0)
 
 const BANNER_AUTOPLAY_MS = 4500
-const bannerAutoplay = Autoplay({ delay: BANNER_AUTOPLAY_MS, stopOnInteraction: true })
+const bannerAutoplay = Autoplay({
+  delay: BANNER_AUTOPLAY_MS,
+  stopOnInteraction: false,
+  stopOnMouseEnter: true,
+})
 
-const bannerCarouselOpts = computed(() => ({
-  loop: false,
-  align: 'center' as const,
-  containScroll: false as const,
-}))
+/** One full-width slide at a time; loop so autoplay keeps animating. */
+const bannerCarouselOpts = {
+  loop: true,
+  align: 'start' as const,
+  duration: 25,
+}
 
 const bannerCarouselPlugins = computed(() =>
   home.banners.length > 1 ? [bannerAutoplay] : [],
 )
 
-/** Banners already counted this session — impressions fire once per banner. */
 const seenBanners = new Set<number>()
 
 function recordBannerImpression(index: number) {
@@ -254,7 +245,6 @@ function onBannerCarouselInit(api: CarouselApi) {
 const { pullDistance, isPulling } = usePullToRefresh({
   onRefresh: async () => {
     haptic('light')
-    // home.refresh already reloads chat badges via loadUserContext.
     await home.refresh()
   },
 })
@@ -284,8 +274,6 @@ function openBanner(banner: Banner) {
     }
   }
   if (!banner.link_url) return
-  // External URLs open via Telegram's in-app browser; internal deep-links
-  // ("/agents", "/orders/1", …) navigate within the mini app.
   if (/^https?:\/\//i.test(banner.link_url)) {
     openExternalLink(banner.link_url)
     return
@@ -293,20 +281,14 @@ function openBanner(banner: Banner) {
   void router.push(banner.link_url)
 }
 
-/** Keep home tiles live while the page is open (no websocket). */
+/** Badge-only poll — never re-fetch showcase / chat lists from Home. */
 const BADGE_POLL_MS = 15_000
 let badgePollTimer: ReturnType<typeof setInterval> | null = null
 
 function refreshBadges() {
   if (auth.isAuthenticated) {
-    void chat.loadBadges(true)
+    void home.loadActivity(true)
   }
-  // Keep the Live Orders "new" badge in sync while home stays open.
-  void fetchLiveOrders(10)
-    .then((items) => {
-      home.liveOrders = items
-    })
-    .catch(() => {})
 }
 
 function startBadgePoll() {
@@ -330,11 +312,8 @@ function onVisibilityChange() {
 }
 
 onMounted(() => {
-  // Splash already waited for auth.
-  // home.load() no-ops when cached — always force-refresh badges on enter
-  // so chat unread / live-orders "new" aren't stuck stale from the previous visit.
   void home.load()
-  refreshBadges()
+  void loadIdentityRating()
   startBadgePoll()
   document.addEventListener('visibilitychange', onVisibilityChange)
 })
@@ -345,22 +324,20 @@ onUnmounted(() => {
 })
 
 watch(() => auth.isAuthenticated, (authed, wasAuthed) => {
-  // Skip the initial undefined→value observation; only react to real login/logout.
   if (wasAuthed === undefined || authed === wasAuthed) return
   home.reset()
-  chat.reset()
-  orders.reset()
+  myRating.value = null
   void home.load()
-  refreshBadges()
+  void loadIdentityRating()
   startBadgePoll()
 })
 
-// If KYC flips to approved while staying on Home, load offers once (no force storm).
 watch(
-  () => agent.isApproved,
-  (approved, wasApproved) => {
-    if (approved && !wasApproved && auth.isAuthenticated) {
-      void orders.loadAgentWorkspace()
+  () => auth.user?.role,
+  () => {
+    void loadIdentityRating()
+    if (auth.isAuthenticated) {
+      void home.loadActivity(true)
     }
   },
 )
@@ -369,7 +346,10 @@ watch(
 <template>
   <HomePageSkeleton v-if="showSkeleton" />
 
-  <div v-else class="pb-2">
+  <div
+    v-else
+    class="home-page"
+  >
     <div
       class="flex items-center justify-center gap-2 overflow-hidden text-xs font-medium text-muted-foreground transition-[height,opacity] duration-200"
       :class="pullDistance > 0 || isPulling || home.isRefreshing ? 'opacity-100' : 'h-0 opacity-0'"
@@ -382,212 +362,86 @@ watch(
       <span>{{ refreshLabel }}</span>
     </div>
 
-    <!-- Top bar: menu · brand · notifications -->
-    <header class="safe-top relative z-20 flex items-center justify-between gap-3 px-5 pt-3">
-      <HomeMenuDropdown
-        :is-provider="showOffersQuickLink"
-        :offers-count="offersOpenCount"
-        :chats-unread="unreadChats"
-        @navigate="navigate"
-      />
+    <HomeTopBar
+      :display-name="displayName"
+      :avatar-src="avatarSrc"
+      :is-authenticated="auth.isAuthenticated"
+      :notification-count="home.notificationCount"
+      :active-role="auth.user?.role"
+      :rating="myRating"
+      :is-provider="isProviderView"
+      :offers-count="home.offersPending"
+      :chats-unread="home.unreadChats"
+      @profile="navigate(ROUTES.profile)"
+      @notifications="navigate(ROUTES.notifications)"
+      @navigate="navigate"
+    />
 
-      <BrandLogo size="sm" :wordmark="false" />
-
-      <button
-        type="button"
-        class="pressable home-icon-btn relative"
-        :aria-label="locale.t.home.notificationsButton"
-        @click="navigate(ROUTES.notifications)"
-      >
-        <Bell class="size-5" />
-        <span
-          v-if="hasUnread"
-          class="absolute right-2.5 top-2.5 size-2 rounded-full bg-destructive"
-          aria-hidden="true"
-        />
-      </button>
-    </header>
-
-    <!-- Profile card -->
-    <section class="px-5 pt-4">
-      <div class="home-card relative p-4">
-        <div class="flex items-start gap-3.5">
-          <button type="button" class="pressable shrink-0" @click="navigate(ROUTES.profile)">
-            <Avatar
-              :src="auth.user?.avatar"
-              :name="displayName"
-              size="lg"
-              class="ring-4 ring-background"
-            />
-          </button>
-          <div class="min-w-0 flex-1">
-            <p class="text-xs font-medium text-muted-foreground">
-              {{ locale.t.home.welcome }}!
-            </p>
-            <h1 class="mt-1 line-clamp-2 text-lg font-extrabold leading-tight tracking-tight text-foreground">
-              {{ auth.isAuthenticated ? displayName : locale.t.home.guest }}
-            </h1>
-            <p v-if="auth.user?.phone" class="mt-1 truncate text-xs text-muted-foreground">
-              {{ auth.user.phone }}
-            </p>
-          </div>
-          <div
-            v-if="displayRoleBadges.length"
-            class="flex shrink-0 flex-col items-end gap-1"
-          >
-            <Badge
-              v-for="role in displayRoleBadges"
-              :key="role"
-              variant="primary"
-              class="px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.14em]"
-            >
-              {{ locale.t.roles[role] }}
-            </Badge>
-          </div>
-        </div>
-
-        <div class="mt-4 space-y-3">
-          <div class="min-w-0 rounded-2xl bg-muted/55 p-3">
-            <!-- Approved provider: rating & profile completeness -->
-            <template v-if="isApprovedProvider">
-              <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
-                {{ locale.t.home.ratingPortfolio }}
-              </p>
-              <div class="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1">
-                <span class="flex items-center gap-0.5 rounded-full bg-card px-2.5 py-1 shadow-sm">
-                  <Star
-                    v-for="n in 5"
-                    :key="n"
-                    class="size-3 fill-amber-400 text-amber-400"
-                  />
-                  <span class="ml-1 text-sm font-bold text-foreground">{{ ratingDisplay }}</span>
-                </span>
-                <span class="rounded-full bg-card px-2.5 py-1 text-xs font-semibold text-muted-foreground shadow-sm">
-                  {{ completion }}% {{ locale.t.home.profileComplete }}
-                </span>
-              </div>
-            </template>
-
-            <!-- Client: orders summary -->
-            <template v-else-if="auth.isAuthenticated">
-              <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
-                {{ locale.t.home.ordersCountLabel }}
-              </p>
-              <p class="mt-2 text-sm leading-relaxed text-foreground">
-                <template v-if="ordersCount > 0">
-                  {{ locale.t.home.clientStatusLine.replace('{count}', String(ordersCount)) }}
-                  <template v-if="activeOrdersCount > 0">
-                    · {{ locale.t.home.clientStatusActive.replace('{count}', String(activeOrdersCount)) }}
-                  </template>
-                </template>
-                <template v-else>
-                  {{ locale.t.home.noOrdersYet }}
-                </template>
-              </p>
-            </template>
-
-            <!-- Guest -->
-            <template v-else>
-              <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
-                {{ locale.t.home.signInTitle }}
-              </p>
-              <p class="mt-2 text-sm leading-relaxed text-foreground">
-                {{ locale.t.home.signInBody }}
-              </p>
-            </template>
-          </div>
-
-          <button
-            type="button"
-            class="btn-accent inline-flex h-11 w-full items-center justify-center gap-1.5 rounded-full px-4 text-sm font-semibold"
-            @click="navigate(ROUTES.profile)"
-          >
-            {{ auth.isAuthenticated ? locale.t.home.goToProfile : locale.t.home.signInCta }}
-            <ArrowRight class="size-4" />
-          </button>
-        </div>
-      </div>
-    </section>
-
-    <!-- Banner slider -->
-    <div v-if="hasBanners" class="home-banner-carousel overflow-x-hidden pt-4">
+    <div
+      v-if="hasBanners"
+      class="home-banner-carousel px-5 pt-3"
+    >
       <Carousel
+        class="home-banner-carousel__viewport relative overflow-hidden rounded-[1.35rem]"
         :opts="bannerCarouselOpts"
         :plugins="bannerCarouselPlugins"
         @init-api="onBannerCarouselInit"
       >
-        <CarouselContent class="-ml-3.5">
+        <CarouselContent class="!ml-0">
           <CarouselItem
             v-for="banner in home.banners"
             :key="banner.id"
+            class="!basis-full !pl-0"
           >
             <button
               type="button"
-              class="pressable relative w-full overflow-hidden rounded-[28px] shadow-sm"
+              class="pressable relative w-full overflow-hidden border border-white/70 shadow-[0_10px_28px_-16px_rgba(11,107,203,0.35)]"
               :class="!banner.image && 'bg-muted'"
               :style="banner.image ? { backgroundImage: `url(${banner.image})`, backgroundSize: 'cover', backgroundPosition: 'center' } : undefined"
               :aria-label="banner.title ?? locale.t.home.bannerAd"
               @click="openBanner(banner)"
             >
-              <div class="min-h-[154px]" aria-hidden="true" />
+              <div
+                class="min-h-[154px]"
+                aria-hidden="true"
+              />
             </button>
           </CarouselItem>
         </CarouselContent>
+
+        <div
+          v-if="home.banners.length > 1"
+          class="home-banner-carousel__dots"
+          aria-hidden="true"
+        >
+          <span
+            v-for="(banner, i) in home.banners"
+            :key="banner.id"
+            class="home-banner-carousel__dot"
+            :class="i === activeBanner && 'home-banner-carousel__dot--active'"
+          />
+        </div>
       </Carousel>
-      <div v-if="home.banners.length > 1" class="mt-2.5 flex items-center justify-center gap-1.5">
-        <span
-          v-for="(banner, i) in home.banners"
-          :key="banner.id"
-          class="h-1.5 rounded-full transition-all"
-          :class="i === activeBanner ? 'w-4 bg-primary' : 'w-1.5 bg-muted-foreground/30'"
-        />
-      </div>
     </div>
 
-    <!-- Quick links grid -->
-    <section class="grid grid-cols-2 gap-4 px-5 pt-4">
-      <button
-        v-for="link in quickLinks"
-        :key="link.key"
-        type="button"
-        class="pressable quick-link-tile relative min-h-[148px] rounded-[28px] p-4 text-left"
-        :class="link.tone"
-        @click="navigate(link.to)"
-      >
-        <span
-          v-if="link.tag"
-          class="absolute right-3 top-3 rounded-full bg-amber-400/20 px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wide text-amber-600 dark:bg-amber-400/15 dark:text-amber-300"
-        >
-          {{ link.tag }}
-        </span>
-        <div class="flex h-full flex-col items-start justify-between">
-          <span class="quick-link-tile__icon-wrap relative">
-            <component :is="link.icon" class="size-7" />
-            <span
-              v-if="link.badge != null && link.badge > 0"
-              class="absolute -right-1.5 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-bold leading-none text-white shadow-sm"
-            >
-              <span
-                v-if="link.pulse"
-                class="absolute inset-0 rounded-full bg-destructive animate-ping opacity-70"
-                aria-hidden="true"
-              />
-              <span class="relative">{{ link.badge > 99 ? '99+' : link.badge }}</span>
-            </span>
-          </span>
-          <div class="w-full">
-            <p class="text-[1.02rem] font-bold leading-tight text-foreground">
-              {{ link.label }}
-            </p>
-            <p class="mt-1.5 line-clamp-2 text-[11px] leading-snug text-muted-foreground">
-              {{ link.hint }}
-            </p>
-          </div>
-        </div>
-      </button>
+    <HomeActionDock
+      :actions="dockActions"
+      aria-label="Orders and chats"
+      @action="onAction"
+    />
+
+    <HomeActionDock
+      layout="grid"
+      :actions="exploreActions"
+      :aria-label="locale.t.home.quickAction"
+      @action="onAction"
+    />
+
+    <section class="home-stack overflow-x-hidden px-5">
+      <LiveOrdersCarousel />
     </section>
 
-    <section class="px-5 pt-4">
+    <section class="home-stack px-5">
       <TopRatedAgents
         :title="locale.t.home.topAgencies"
         :agents="home.topAgents"
@@ -596,17 +450,13 @@ watch(
       />
     </section>
 
-    <section class="px-5 pt-4">
+    <section class="home-stack px-5 pb-2">
       <TopRatedAgents
         :title="locale.t.home.topDesigners"
         :agents="home.topDesigners"
         :view-all-route="ROUTES.designers"
         :loading="providersLoading"
       />
-    </section>
-
-    <section class="overflow-x-hidden px-5 pt-4">
-      <LiveOrdersCarousel />
     </section>
   </div>
 </template>
