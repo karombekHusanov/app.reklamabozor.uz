@@ -35,7 +35,10 @@ const uz = {
     terms: {
       title: 'Foydalanish shartlari',
       body: "Tizimga kirish orqali siz ilovaning maxfiylik siyosati hamda foydalanish qoidalariga to'liq rozilik bildirasiz va ularga rioya qilishni zimmangizga olasiz.",
-      agree: 'Roziman',
+      consentLabel: 'Rozilik',
+      agreeBefore: 'Roziman ',
+      agreeLink: 'ommaviy oferta',
+      agreeAfter: ' shartlariga',
       updatedTitle: 'Shartlar yangilandi',
       updatedBody: "Foydalanish shartlarimiz yangilandi. Davom etish uchun yangi shartlarni o'qib, roziligingizni bildiring.",
     },
@@ -54,6 +57,33 @@ const uz = {
       legalEntityHint: 'Kompaniya nomidan (keyin tasdiqlanadi)',
       skip: 'Keyinroq',
     },
+  },
+  legal: {
+    offerTitle: 'Ommaviy oferta',
+    offerVersionLabel: 'Foydalanish shartlari · v1',
+    offerIntro: 'Ushbu ommaviy oferta («Shartlar») Reklama Bozor platformasi (reklamabozor.uz) foydalanuvchilariga tatbiq etiladi. Platformadan foydalanish va rozilikni belgilash orqali siz joriy versiyadagi shartlarni qabul qilasiz.',
+    offerSections: [
+      {
+        title: 'Platformaning roli',
+        body: 'Reklama Bozor — marketplace operatori va to‘lov operatori (vositachi). Platforma reklama xizmatining bajarilishi uchun principal emas; xizmat javobgarligi tanlangan agentlik yoki dizayner zimmasida.',
+      },
+      {
+        title: 'Foydalanuvchilar',
+        body: 'Platformada mijoz, agentlik, dizayner va sotuvchi rollari mavjud. Provayderlar (agentlik) KYC va platforma shartnomasini imzolamaguncha buyurtmalarga otklik yubora olmaydi.',
+      },
+      {
+        title: 'Buyurtmalar va otkliklar',
+        body: 'Mijoz buyurtma joylaydi, mos provayderlar otklik (qiziqish) yuboradi. Narx va shartlar keyin kelishiladi. Mijoz narxlangan taklifni qabul qilganda shartnoma tuziladi; rasmiy PDF keyin dalil sifatida yaratiladi.',
+      },
+      {
+        title: 'To‘lov',
+        body: 'To‘lov platforma orqali amalga oshiriladi. Platforma komissiyasi 7%. Mijoz to‘lovi avval platforma hisobiga tushadi, so‘ng agentlikka oldindan va yakuniy to‘lov tartibida o‘tkaziladi.',
+      },
+      {
+        title: 'Shartlarning o‘zgarishi',
+        body: 'Shartlar yangilanganda versiya yangilanadi va davom etish uchun qayta rozilik so‘raladi. Oxirgi qabul qilingan versiya va vaqt profilingizda saqlanadi.',
+      },
+    ],
   },
   personType: {
     individual: 'Jismoniy shaxs',
@@ -448,8 +478,9 @@ const uz = {
       projectNameLabel: 'Loyiha nomi',
       projectNamePlaceholder: 'Masalan, Coffee House banner',
       hashtagsLabel: 'Hashtaglar',
-      hashtagsHint: 'Buyurtmangiz ko‘plab agentliklarga ko‘rinishi uchun muhim kalit so‘zlarni kiriting (masalan banner, led). Enter yoki vergul.',
+      hashtagsHint: 'Kalit so‘zlarni kiriting (masalan banner, led). Vergul, bo‘sh joy yoki ✓ — har bir so‘z alohida hashtag bo‘ladi.',
       hashtagsPlaceholder: '#banner, #led…',
+      hashtagAdd: 'Qo‘shish',
       hashtagRemove: 'Olib tashlash',
       errHashtagsMax: 'Ko\'pi bilan 5 ta hashtag.',
       descriptionLabel: 'Tavsif',
@@ -773,6 +804,8 @@ const uz = {
     settingsSubtitle: 'Ilova va hisob sozlamalari',
     settingsLanguageSection: 'Til',
     settingsThemeSection: 'Ko\'rinish',
+    settingsLegalSection: 'Hujjatlar',
+    settingsPublicOffer: 'Ommaviy oferta',
     settingsThemeLight: 'Yorug\'',
     settingsThemeLightHint: 'Kunduzgi rejim',
     settingsThemeAuto: 'Avtomatik',
@@ -1055,7 +1088,10 @@ const ru: typeof uz = {
     terms: {
       title: 'Условия использования',
       body: 'Входя в систему, вы полностью соглашаетесь с политикой конфиденциальности и правилами использования приложения и обязуетесь их соблюдать.',
-      agree: 'Согласен',
+      consentLabel: 'Согласие',
+      agreeBefore: 'Согласен с условиями ',
+      agreeLink: 'публичной оферты',
+      agreeAfter: '',
       updatedTitle: 'Условия обновлены',
       updatedBody: 'Наши условия использования обновились. Чтобы продолжить, ознакомьтесь с новыми условиями и подтвердите согласие.',
     },
@@ -1074,6 +1110,33 @@ const ru: typeof uz = {
       legalEntityHint: 'От имени компании (подтвердите позже)',
       skip: 'Позже',
     },
+  },
+  legal: {
+    offerTitle: 'Публичная оферта',
+    offerVersionLabel: 'Условия использования · v1',
+    offerIntro: 'Настоящая публичная оферта («Условия») действует для пользователей платформы Reklama Bozor (reklamabozor.uz). Пользуясь платформой и отмечая согласие, вы принимаете действующую версию условий.',
+    offerSections: [
+      {
+        title: 'Роль платформы',
+        body: 'Reklama Bozor — оператор маркетплейса и платёжный оператор (посредник). Платформа не является принципалом по рекламной услуге; ответственность за исполнение лежит на выбранном агентстве или дизайнере.',
+      },
+      {
+        title: 'Пользователи',
+        body: 'На платформе доступны роли клиента, агентства, дизайнера и продавца. Провайдеры (агентства) не могут откликаться на заказы, пока не пройдут KYC и не подпишут договор с платформой.',
+      },
+      {
+        title: 'Заказы и отклики',
+        body: 'Клиент размещает заказ, подходящие провайдеры отправляют отклик. Цена и условия согласовываются отдельно. Договор заключается в момент принятия клиентом предложения с ценой; официальный PDF создаётся позже как доказательство.',
+      },
+      {
+        title: 'Оплата',
+        body: 'Оплата проходит через платформу. Комиссия платформы — 7%. Средства клиента сначала поступают на счёт платформы, затем перечисляются агентству авансом и окончательным платежом.',
+      },
+      {
+        title: 'Изменение условий',
+        body: 'При обновлении условий версия меняется, и для продолжения работы нужно повторное согласие. Последняя принятая версия и время сохраняются в вашем профиле.',
+      },
+    ],
   },
   personType: {
     individual: 'Физ. лицо',
@@ -1468,8 +1531,9 @@ const ru: typeof uz = {
       projectNameLabel: 'Название проекта',
       projectNamePlaceholder: 'Например, Coffee House banner',
       hashtagsLabel: 'Хэштеги',
-      hashtagsHint: 'Чтобы заказ увидели больше агентств, укажите важные ключевые слова (например banner, led). Enter или запятая.',
+      hashtagsHint: 'Введите ключевые слова (например banner, led). Запятая, пробел или ✓ — каждое слово станет отдельным хэштегом.',
       hashtagsPlaceholder: '#banner, #led…',
+      hashtagAdd: 'Добавить',
       hashtagRemove: 'Удалить',
       errHashtagsMax: 'Не больше 5 хэштегов.',
       descriptionLabel: 'Описание',
@@ -1793,6 +1857,8 @@ const ru: typeof uz = {
     settingsSubtitle: 'Настройки приложения и аккаунта',
     settingsLanguageSection: 'Язык',
     settingsThemeSection: 'Оформление',
+    settingsLegalSection: 'Документы',
+    settingsPublicOffer: 'Публичная оферта',
     settingsThemeLight: 'Светлая',
     settingsThemeLightHint: 'Дневной режим',
     settingsThemeAuto: 'Авто',
@@ -2075,7 +2141,10 @@ const en: typeof uz = {
     terms: {
       title: 'Terms of use',
       body: 'By signing in you fully agree to the app’s privacy policy and terms of use and undertake to comply with them.',
-      agree: 'I agree',
+      consentLabel: 'Consent',
+      agreeBefore: 'I agree to the ',
+      agreeLink: 'public offer',
+      agreeAfter: '',
       updatedTitle: 'Terms updated',
       updatedBody: 'Our terms of use have changed. To continue, please review the new terms and confirm your agreement.',
     },
@@ -2094,6 +2163,33 @@ const en: typeof uz = {
       legalEntityHint: 'On behalf of a company (verify later)',
       skip: 'Later',
     },
+  },
+  legal: {
+    offerTitle: 'Public offer',
+    offerVersionLabel: 'Terms of use · v1',
+    offerIntro: 'This public offer (“Terms”) applies to users of the Reklama Bozor platform (reklamabozor.uz). By using the platform and confirming consent, you accept the current version of these terms.',
+    offerSections: [
+      {
+        title: 'Role of the platform',
+        body: 'Reklama Bozor is a marketplace operator and payment operator (intermediary). The platform is not the principal for the advertising service; responsibility for delivery sits with the chosen agency or designer.',
+      },
+      {
+        title: 'Users',
+        body: 'The platform has client, agency, designer, and seller roles. Providers (agencies) cannot respond to orders until they complete KYC and sign the platform agreement.',
+      },
+      {
+        title: 'Orders and interest',
+        body: 'A client posts an order and matching providers send interest. Price and terms are agreed afterwards. A contract is formed when the client accepts a priced offer; an official PDF is generated later as evidence.',
+      },
+      {
+        title: 'Payments',
+        body: 'Payments go through the platform. The platform commission is 7%. Client funds first land on the platform account, then are paid out to the agency as an advance and a final payment.',
+      },
+      {
+        title: 'Changes to the terms',
+        body: 'When the terms change, the version is bumped and you must accept again to continue. The last accepted version and time are stored on your profile.',
+      },
+    ],
   },
   personType: {
     individual: 'Individual',
@@ -2488,8 +2584,9 @@ const en: typeof uz = {
       projectNameLabel: 'Project name',
       projectNamePlaceholder: 'e.g. Coffee House banner',
       hashtagsLabel: 'Hashtags',
-      hashtagsHint: 'Enter important keywords so more agencies can see your order (e.g. banner, led). Press Enter or comma.',
+      hashtagsHint: 'Type keywords (e.g. banner, led). Comma, space, or ✓ — each word becomes its own hashtag.',
       hashtagsPlaceholder: '#banner, #led…',
+      hashtagAdd: 'Add',
       hashtagRemove: 'Remove',
       errHashtagsMax: 'At most 5 hashtags.',
       descriptionLabel: 'Description',
@@ -2813,6 +2910,8 @@ const en: typeof uz = {
     settingsSubtitle: 'App and account preferences',
     settingsLanguageSection: 'Language',
     settingsThemeSection: 'Appearance',
+    settingsLegalSection: 'Legal',
+    settingsPublicOffer: 'Public offer',
     settingsThemeLight: 'Light',
     settingsThemeLightHint: 'Day mode',
     settingsThemeAuto: 'Auto',

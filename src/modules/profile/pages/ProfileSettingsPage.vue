@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Check, ChevronRight, Languages, UserRound } from '@lucide/vue'
+import { Check, ChevronRight, FileText, Languages, UserRound } from '@lucide/vue'
 import { useRouter } from 'vue-router'
 import AppHeader from '@/modules/shell/components/AppHeader.vue'
 import GlassCard from '@/core/ui/GlassCard.vue'
@@ -97,6 +97,27 @@ function navigate(to: string) {
         </h2>
         <GlassCard padding="sm" class="!p-2.5">
           <ThemeSwitcher />
+        </GlassCard>
+      </div>
+
+      <div>
+        <h2 class="profile-settings-section-title">
+          {{ locale.t.profile.settingsLegalSection }}
+        </h2>
+        <GlassCard padding="none" class="overflow-hidden">
+          <button
+            type="button"
+            class="profile-settings-action pressable"
+            @click="navigate(ROUTES.publicOffer)"
+          >
+            <span class="profile-settings-row__icon profile-settings-row__icon--sky">
+              <FileText class="size-3.5" />
+            </span>
+            <span class="min-w-0 flex-1 text-left text-[13px] font-semibold text-foreground">
+              {{ locale.t.profile.settingsPublicOffer }}
+            </span>
+            <ChevronRight class="size-3.5 shrink-0 text-muted-foreground/50" aria-hidden="true" />
+          </button>
         </GlassCard>
       </div>
     </section>

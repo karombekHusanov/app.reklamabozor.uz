@@ -348,16 +348,46 @@
   }
 
   .live-order-card__desc {
-    @apply overflow-hidden text-[12.5px] font-medium leading-[1.4] text-muted-foreground;
+    @apply min-h-[1.4em] overflow-hidden text-[12.5px] font-medium leading-[1.4] text-muted-foreground;
     display: -webkit-box;
     -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
-    line-clamp: 2;
-    max-height: 2.8em;
+    -webkit-line-clamp: 1;
+    line-clamp: 1;
+    max-height: 1.4em;
+  }
+
+  .live-order-card__tags {
+    @apply h-6 overflow-hidden;
+  }
+
+  .live-order-card__tags > * {
+    @apply !flex-nowrap;
+  }
+
+  .order-hashtags {
+    @apply flex flex-wrap gap-1.5;
+  }
+
+  .order-hashtags--compact {
+    @apply flex-nowrap;
+  }
+
+  .order-hashtag {
+    @apply box-border inline-flex h-6 max-w-[8.5rem] shrink-0 items-center truncate rounded-full border border-white/70 bg-white/60 px-2.5 text-[11px] font-semibold leading-none text-muted-foreground;
+    @apply dark:border-white/10 dark:bg-white/10;
+  }
+
+  .order-hashtag--more {
+    @apply max-w-none px-2 font-bold text-foreground/70;
+  }
+
+  .order-hashtag--picked {
+    @apply h-7 max-w-none border-primary/25 bg-primary/12 text-[12px] font-semibold text-primary;
+    @apply dark:border-primary/30 dark:bg-primary/20 dark:text-primary;
   }
 
   .live-order-card__meta {
-    @apply mt-0.5 flex min-w-0 items-center justify-between gap-2 border-t border-border/50 pt-2.5;
+    @apply mt-auto flex min-w-0 shrink-0 items-center justify-between gap-2 border-t border-border/50 pt-2.5;
   }
 
   .live-order-card__stat {

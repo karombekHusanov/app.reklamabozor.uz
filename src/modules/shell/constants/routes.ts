@@ -25,4 +25,5 @@ export const ROUTES = {
   earnings: '/earnings',
   clientDetail: (id: number | string) => `/clients/${id}`,
   settings: '/settings',
+  publicOffer: '/legal/public-offer',
 } as const

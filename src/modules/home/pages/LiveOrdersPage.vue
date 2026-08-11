@@ -1,12 +1,11 @@
 <script setup lang="ts">
-import { Eye, Inbox, ListFilter, MessageSquareQuote, Search } from '@lucide/vue'
+import { Inbox, ListFilter, Search } from '@lucide/vue'
 import { computed, onMounted, ref, watch } from 'vue'
-import { useRouter } from 'vue-router'
 import AppHeader from '@/modules/shell/components/AppHeader.vue'
-import Avatar from '@/core/ui/Avatar.vue'
 import GlassCard from '@/core/ui/GlassCard.vue'
 import EmptyState from '@/core/ui/EmptyState.vue'
 import Skeleton from '@/core/ui/Skeleton.vue'
+import LiveOrderCard from '@/modules/home/components/LiveOrderCard.vue'
 import LiveOrdersFilterDrawer from '@/modules/home/components/LiveOrdersFilterDrawer.vue'
 import {
   datesFromPreset,
@@ -14,24 +13,16 @@ import {
   isFilterActive,
   type LiveOrdersFilterState,
 } from '@/modules/home/lib/live-orders-filters'
-import { categoryName } from '@/core/i18n/category-name'
-import { formatDateTime } from '@/core/lib/date'
 import { useLocaleStore } from '@/core/i18n/locale.store'
 import { useTelegram } from '@/core/composables/useTelegram'
-import { ROUTES } from '@/modules/shell/constants/routes'
 import { useHomeStore } from '@/modules/home/stores/home.store'
-import OrderHashtagChips from '@/modules/orders/components/OrderHashtagChips.vue'
 import { fetchCategories } from '@/modules/orders/services/orders.service'
 import { fetchRegions } from '@/modules/orders/services/regions.service'
-import {
-  fetchLiveOrders,
-  type LiveOrder,
-} from '@/modules/home/services/live-orders.service'
+import { fetchLiveOrders, type LiveOrder } from '@/modules/home/services/live-orders.service'
 import type { Category } from '@/modules/agent/types/agent'
 import type { Region } from '@/modules/orders/types/region'
 
 const locale = useLocaleStore()
-const router = useRouter()
 const home = useHomeStore()
 const { haptic } = useTelegram()
 
@@ -95,23 +86,9 @@ watch([debouncedQuery, filters], () => {
   void loadOrders()
 }, { deep: true })
 
-function categoryLabel(order: LiveOrder): string | null {
-  if (!order.category) return null
-  return categoryName(order.category, locale.locale)
-}
-
 function openFilters() {
   haptic('light')
   filterOpen.value = true
-}
-
-function openDetail(order: LiveOrder) {
-  router.push(ROUTES.liveOrderDetail(order.id))
-}
-
-function openClient(e: Event, clientId: number) {
-  e.stopPropagation()
-  router.push(ROUTES.clientDetail(clientId))
 }
 
 const emptyTitle = computed(() => {
@@ -184,71 +161,11 @@ const emptyTitle = computed(() => {
       </GlassCard>
 
       <template v-else>
-        <article
+        <LiveOrderCard
           v-for="order in orders"
           :key="order.id"
-          class="live-order-card pressable cursor-pointer"
-          @click="openDetail(order)"
-        >
-          <div class="flex items-center gap-2">
-            <button
-              v-if="order.client"
-              type="button"
-              class="flex min-w-0 flex-1 items-center gap-2 text-left"
-              @click.stop="openClient($event, order.client.id)"
-            >
-              <Avatar
-                :src="order.client.avatar"
-                :name="order.client.first_name ?? undefined"
-                size="sm"
-                class="rounded-full"
-              />
-              <span class="truncate text-xs font-semibold text-foreground">
-                {{ order.client.first_name }}
-              </span>
-            </button>
-            <span
-              v-else
-              class="min-w-0 flex-1"
-            />
-            <span class="live-order-card__date">
-              {{ formatDateTime(order.created_at) }}
-            </span>
-          </div>
-
-          <span
-            v-if="categoryLabel(order)"
-            class="live-order-card__chip"
-          >
-            {{ categoryLabel(order) }}
-          </span>
-
-          <h3 class="live-order-card__title">
-            {{ order.title }}
-          </h3>
-
-          <p
-            v-if="order.description"
-            class="live-order-card__desc"
-          >
-            {{ order.description }}
-          </p>
-
-          <OrderHashtagChips :hashtags="order.hashtags" />
-
-          <div class="live-order-card__meta">
-            <span class="live-order-card__stat">
-              <Eye class="size-3.5 shrink-0 opacity-80" />
-              <span class="tabular-nums">{{ order.views_count }}</span>
-              <span class="font-semibold text-muted-foreground">{{ locale.t.orders.viewsSuffix }}</span>
-            </span>
-            <span class="live-order-card__stat live-order-card__stat--offers">
-              <MessageSquareQuote class="size-3.5 shrink-0" />
-              <span class="tabular-nums">{{ order.offers_count }}</span>
-              <span class="font-semibold opacity-90">{{ locale.t.orders.offersSuffix }}</span>
-            </span>
-          </div>
-        </article>
+          :order="order"
+        />
       </template>
     </section>
   </div>

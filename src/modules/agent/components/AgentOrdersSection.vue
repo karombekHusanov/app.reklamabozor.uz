@@ -217,7 +217,7 @@ watch(
     <template v-if="activeTab === 'orders'">
       <template v-if="orders.isLoadingAgent && orders.availableOrders.length === 0">
         <div class="flex flex-col gap-4">
-          <Skeleton v-for="n in 2" :key="n" class="h-40 w-full rounded-3xl" />
+          <Skeleton v-for="n in 2" :key="n" class="h-[140px] w-full rounded-[1.35rem]" />
         </div>
       </template>
 
@@ -243,7 +243,7 @@ watch(
     <template v-else>
       <template v-if="orders.isLoadingAgent && orders.myOffers.length === 0">
         <div class="flex flex-col gap-4">
-          <Skeleton v-for="n in 2" :key="n" class="h-32 w-full rounded-3xl" />
+          <Skeleton v-for="n in 2" :key="n" class="h-[140px] w-full rounded-[1.35rem]" />
         </div>
       </template>
 

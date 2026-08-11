@@ -38,7 +38,7 @@ function openOrder(id: number) {
       show-back
     />
 
-    <section class="space-y-4 px-5">
+    <section class="space-y-3 px-5">
       <template v-if="!auth.isAuthenticated">
         <GlassCard padding="none" class="overflow-hidden">
           <EmptyState
@@ -54,7 +54,7 @@ function openOrder(id: number) {
       </template>
 
       <template v-else-if="orders.isLoading && orders.myOrders.length === 0">
-        <Skeleton v-for="n in 3" :key="n" class="h-28 w-full rounded-3xl" />
+        <Skeleton v-for="n in 3" :key="n" class="h-[140px] w-full rounded-[1.35rem]" />
       </template>
 
       <template v-else-if="orders.myOrders.length === 0">

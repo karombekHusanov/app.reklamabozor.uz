@@ -1,12 +1,10 @@
 <script setup lang="ts">
-import { ChevronRight, Eye, MessageSquareQuote } from '@lucide/vue'
 import { computed } from 'vue'
-import GlassCard from '@/core/ui/GlassCard.vue'
-import OrderStatusBadge from '@/modules/orders/components/OrderStatusBadge.vue'
-import OrderHashtagChips from '@/modules/orders/components/OrderHashtagChips.vue'
+import Badge from '@/core/ui/Badge.vue'
 import { useLocaleStore } from '@/core/i18n/locale.store'
 import { categoryName } from '@/core/i18n/category-name'
-import { formatDateTime } from '@/core/lib/date'
+import { orderStatusVariant } from '@/modules/orders/lib/order-status'
+import OrderPreviewCard from '@/modules/orders/components/OrderPreviewCard.vue'
 import type { Order } from '@/modules/orders/types/order'
 
 const props = defineProps<{ order: Order }>()
@@ -18,61 +16,45 @@ const locale = useLocaleStore()
 const title = computed(() =>
   props.order.title || (props.order.category ? categoryName(props.order.category, locale.locale) : ''),
 )
+
 const categoryLabel = computed(() =>
   props.order.category ? categoryName(props.order.category, locale.locale) : null,
 )
+
 const offersCount = computed(() => props.order.offers_count ?? props.order.offers?.length ?? 0)
+
+const deadlineLabel = computed(() => {
+  if (props.order.deadline === 'this_week') return locale.t.orders.deadlineThisWeek
+  if (props.order.deadline === 'today_tomorrow') return locale.t.orders.deadlineTodayTomorrow
+  return null
+})
 </script>
 
 <template>
-  <GlassCard
-    interactive
-    class="space-y-3"
-    @click="$emit('open')"
+  <OrderPreviewCard
+    :order-id="order.id"
+    :created-at="order.created_at"
+    :category-label="categoryLabel"
+    :title="title"
+    :description="order.description"
+    :hashtags="order.hashtags"
+    :views-count="order.views_count"
+    :offers-count="offersCount"
+    @open="$emit('open')"
   >
-    <div class="min-w-0">
-      <div class="flex items-start justify-between gap-2">
-        <div class="min-w-0">
-          <p class="mb-1 truncate text-[11px] font-bold text-primary">
-            <span class="text-muted-foreground">#{{ order.id }}</span>
-            <template v-if="categoryLabel">
-              <span class="mx-1 text-muted-foreground/60">·</span>{{ categoryLabel }}
-            </template>
-          </p>
-          <p class="truncate font-semibold leading-tight text-foreground">
-            {{ title }}
-          </p>
-        </div>
-        <OrderStatusBadge
-          :status="order.status"
-          class="shrink-0"
-        />
-      </div>
-      <p class="mt-1 line-clamp-2 text-sm text-muted-foreground">
-        {{ order.description }}
-      </p>
-      <OrderHashtagChips
-        v-if="order.hashtags?.length"
-        class="mt-2"
-        :hashtags="order.hashtags"
-      />
-    </div>
-
-    <div class="flex items-center justify-between border-t border-border pt-3 text-xs text-muted-foreground">
-      <div class="inline-flex items-center gap-4">
-        <span class="inline-flex items-center gap-1.5">
-          <Eye class="size-3.5" />
-          {{ order.views_count ?? 0 }}
-        </span>
-        <span class="inline-flex items-center gap-1.5">
-          <MessageSquareQuote class="size-3.5" />
-          {{ offersCount }} {{ locale.t.orders.offersSuffix }}
-        </span>
-      </div>
-      <span class="inline-flex items-center gap-1">
-        {{ formatDateTime(order.created_at) }}
-        <ChevronRight class="size-4" />
+    <template #chips>
+      <span
+        v-if="deadlineLabel"
+        class="live-order-card__chip"
+      >
+        {{ deadlineLabel }}
       </span>
-    </div>
-  </GlassCard>
+      <Badge
+        :variant="orderStatusVariant(order.status)"
+        class="shrink-0 !px-2.5 !py-1 text-[11px] font-bold"
+      >
+        {{ locale.t.orders.status[order.status] }}
+      </Badge>
+    </template>
+  </OrderPreviewCard>
 </template>

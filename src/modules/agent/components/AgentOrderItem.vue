@@ -1,13 +1,12 @@
 <script setup lang="ts">
-import { Clock, Eye, MessageSquareQuote } from '@lucide/vue'
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
-import GlassCard from '@/core/ui/GlassCard.vue'
 import Badge from '@/core/ui/Badge.vue'
 import { useLocaleStore } from '@/core/i18n/locale.store'
 import { categoryName } from '@/core/i18n/category-name'
-import { offerStatusVariant } from '@/modules/orders/lib/order-status'
+import { isInterestOffer, offerStatusVariant } from '@/modules/orders/lib/order-status'
 import { ROUTES } from '@/modules/shell/constants/routes'
+import OrderPreviewCard from '@/modules/orders/components/OrderPreviewCard.vue'
 import type { AgentOrder } from '@/modules/orders/types/order'
 
 const locale = useLocaleStore()
@@ -19,9 +18,13 @@ const props = defineProps<{
   highlight?: boolean
 }>()
 
-const orderTitle = computed(() =>
+const title = computed(() =>
   props.order.title
   || (props.order.category ? categoryName(props.order.category, locale.locale) : ''),
+)
+
+const categoryLabel = computed(() =>
+  props.order.category ? categoryName(props.order.category, locale.locale) : null,
 )
 
 const deadlineLabel = computed(() => {
@@ -33,57 +36,47 @@ const deadlineLabel = computed(() => {
 function openDetail() {
   router.push(ROUTES.offerOpportunity(props.order.id))
 }
+
+function openClient() {
+  if (!props.order.client.id) return
+  router.push(ROUTES.clientDetail(props.order.client.id))
+}
 </script>
 
 <template>
-  <GlassCard
+  <OrderPreviewCard
     :id="`agent-order-${order.id}`"
-    interactive
-    class="scroll-mt-20 space-y-3 transition-shadow"
-    :class="highlight && 'ring-2 ring-primary/50'"
-    @click="openDetail"
+    :highlight="highlight"
+    :client="order.client"
+    :created-at="order.created_at"
+    :category-label="categoryLabel"
+    :title="title"
+    :description="order.description"
+    :hashtags="order.hashtags"
+    :views-count="order.views_count"
+    :offers-count="order.offers_count"
+    @open="openDetail"
+    @open-client="openClient"
   >
-    <div class="flex items-start justify-between gap-3">
-      <div class="min-w-0">
-        <p class="truncate font-semibold leading-tight">
-          {{ orderTitle }}
-        </p>
-        <p
-          v-if="order.client.first_name"
-          class="text-xs text-muted-foreground"
-        >
-          {{ locale.t.agent.fromLabel }}: {{ order.client.first_name }}
-        </p>
-      </div>
+    <template
+      v-if="deadlineLabel || order.my_offer"
+      #chips
+    >
+      <span
+        v-if="deadlineLabel"
+        class="live-order-card__chip"
+      >
+        {{ deadlineLabel }}
+      </span>
       <Badge
         v-if="order.my_offer"
         :variant="offerStatusVariant(order.my_offer.status)"
-        class="shrink-0"
+        class="shrink-0 !px-2.5 !py-1 text-[11px] font-bold"
       >
-        {{ locale.t.orders.offerStatus[order.my_offer.status] }}
+        {{ isInterestOffer(order.my_offer)
+          ? locale.t.orders.interestBadge
+          : locale.t.orders.offerStatus[order.my_offer.status] }}
       </Badge>
-    </div>
-
-    <p class="line-clamp-3 text-sm text-muted-foreground">
-      {{ order.description }}
-    </p>
-
-    <div class="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-      <span
-        v-if="deadlineLabel"
-        class="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 font-medium text-primary"
-      >
-        <Clock class="size-3.5" />
-        {{ deadlineLabel }}
-      </span>
-      <span class="inline-flex items-center gap-1.5">
-        <Eye class="size-3.5" />
-        {{ order.views_count ?? 0 }} {{ locale.t.orders.viewsSuffix }}
-      </span>
-      <span class="inline-flex items-center gap-1.5">
-        <MessageSquareQuote class="size-3.5" />
-        {{ order.offers_count ?? 0 }} {{ locale.t.orders.offersSuffix }}
-      </span>
-    </div>
-  </GlassCard>
+    </template>
+  </OrderPreviewCard>
 </template>

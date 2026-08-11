@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { ArrowRight, Check } from '@lucide/vue'
+import { ArrowRight } from '@lucide/vue'
 import { ref } from 'vue'
 import BrandLogo from '@/core/ui/BrandLogo.vue'
 import { useLocaleStore } from '@/core/i18n/locale.store'
 import { useTelegram } from '@/core/composables/useTelegram'
 import { getApiErrorMessage } from '@/core/api/api-error'
 import { useAuthStore } from '@/modules/auth/stores/auth.store'
+import TermsConsent from './TermsConsent.vue'
 
 const locale = useLocaleStore()
 const auth = useAuthStore()
@@ -48,37 +49,25 @@ async function confirm() {
           {{ locale.t.onboarding.terms.updatedBody }}
         </p>
 
-        <button
-          type="button"
-          class="mx-auto mt-8 flex items-center gap-2.5"
-          @click="agreed = !agreed"
-        >
-          <span
-            class="flex size-5 items-center justify-center rounded-md border transition"
-            :class="agreed ? 'border-primary bg-primary text-white' : 'border-border bg-card'"
-          >
-            <Check
-              v-if="agreed"
-              class="size-3.5"
-            />
-          </span>
-          <span class="text-sm font-medium text-foreground">{{ locale.t.onboarding.terms.agree }}</span>
-        </button>
+        <div class="flex flex-1 items-center py-8">
+          <TermsConsent v-model="agreed" />
+        </div>
 
         <p
           v-if="errorMessage"
-          class="mt-4 rounded-2xl bg-destructive/10 px-3 py-2 text-center text-sm text-destructive"
+          class="mb-4 rounded-2xl bg-destructive/10 px-3 py-2 text-center text-sm text-destructive"
         >
           {{ errorMessage }}
         </p>
 
-        <div class="mt-auto pt-10">
+        <div class="pt-2">
           <button
             type="button"
-            class="btn-brand mx-auto flex h-14 w-full max-w-xs items-center justify-center rounded-2xl"
+            class="btn-brand mx-auto flex h-14 w-full max-w-xs items-center justify-center gap-2 rounded-2xl text-base font-semibold"
             :disabled="!agreed || submitting"
             @click="confirm"
           >
+            {{ locale.t.common.next }}
             <ArrowRight class="size-5" />
           </button>
         </div>

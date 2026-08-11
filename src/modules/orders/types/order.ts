@@ -276,6 +276,7 @@ export interface AgentOrder {
   description: string
   deadline: OrderDeadline | null
   category: Category | null
+  hashtags?: OrderHashtag[]
   attachment_files: OrderAttachment[]
   budget_min: string | null
   budget_max: string | null
@@ -314,8 +315,18 @@ export interface AgentOffer {
   order: {
     id: number
     title: string | null
+    description?: string | null
     status: OrderStatus | null
     category: Category | null
+    hashtags?: OrderHashtag[]
+    views_count?: number | null
+    offers_count?: number | null
+    client?: {
+      id: number | null
+      first_name: string | null
+      avatar: string | null
+    } | null
+    created_at?: string | null
   }
   /** Provider's review of the client on this order (null if not yet reviewed). */
   my_review?: OrderReview | null

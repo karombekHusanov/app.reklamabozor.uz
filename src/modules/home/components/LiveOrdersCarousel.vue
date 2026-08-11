@@ -1,17 +1,14 @@
 <script setup lang="ts">
-import { ChevronRight, Eye, MessageSquareQuote } from '@lucide/vue'
+import { ChevronRight } from '@lucide/vue'
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import Autoplay from 'embla-carousel-autoplay'
 import { Carousel, CarouselContent, CarouselItem } from '@/core/ui/carousel'
-import Avatar from '@/core/ui/Avatar.vue'
 import Skeleton from '@/core/ui/Skeleton.vue'
-import { categoryName } from '@/core/i18n/category-name'
-import { formatDateTime } from '@/core/lib/date'
 import { useLocaleStore } from '@/core/i18n/locale.store'
 import { useHomeStore } from '@/modules/home/stores/home.store'
 import { ROUTES } from '@/modules/shell/constants/routes'
-import type { LiveOrder } from '@/modules/home/services/live-orders.service'
+import LiveOrderCard from '@/modules/home/components/LiveOrderCard.vue'
 
 const locale = useLocaleStore()
 const home = useHomeStore()
@@ -34,25 +31,6 @@ const autoplay = Autoplay({
   stopOnMouseEnter: true,
 })
 const carouselPlugins = computed(() => (orders.value.length > 1 ? [autoplay] : []))
-
-function orderTitle(order: LiveOrder): string {
-  return order.title
-    || (order.category ? categoryName(order.category, locale.locale) : '')
-}
-
-function categoryLabel(order: LiveOrder): string | null {
-  if (!order.category) return null
-  return categoryName(order.category, locale.locale)
-}
-
-function openDetail(order: LiveOrder) {
-  router.push(ROUTES.liveOrderDetail(order.id))
-}
-
-function openClient(e: Event, clientId: number) {
-  e.stopPropagation()
-  router.push(ROUTES.clientDetail(clientId))
-}
 </script>
 
 <template>
@@ -82,7 +60,7 @@ function openClient(e: Event, clientId: number) {
       v-if="loading"
       class="flex"
     >
-      <Skeleton class="h-[9.5rem] w-full rounded-[1.35rem]" />
+      <Skeleton class="h-[140px] w-full rounded-[1.35rem]" />
     </div>
 
     <!-- Carousel -->
@@ -98,56 +76,10 @@ function openClient(e: Event, clientId: number) {
           :key="order.id"
           class="basis-full pl-[4px]"
         >
-          <article
-            class="live-order-card pressable h-full cursor-pointer"
-            @click="openDetail(order)"
-          >
-            <div class="flex shrink-0 items-center gap-2">
-              <span
-                v-if="categoryLabel(order)"
-                class="live-order-card__chip min-w-0"
-              >
-                {{ categoryLabel(order) }}
-              </span>
-              <span class="live-order-card__date">
-                {{ formatDateTime(order.created_at) }}
-              </span>
-            </div>
-
-            <h3 class="live-order-card__title">
-              {{ orderTitle(order) }}
-            </h3>
-
-            <button
-              v-if="order.client"
-              type="button"
-              class="flex shrink-0 items-center gap-2 text-left"
-              @click.stop="openClient($event, order.client.id)"
-            >
-              <Avatar
-                :src="order.client.avatar"
-                :name="order.client.first_name ?? undefined"
-                size="sm"
-                class="rounded-full"
-              />
-              <span class="truncate text-xs font-semibold text-foreground">
-                {{ order.client.first_name }}
-              </span>
-            </button>
-
-            <div class="live-order-card__meta shrink-0">
-              <span class="live-order-card__stat">
-                <Eye class="size-3.5 shrink-0 opacity-80" />
-                <span class="tabular-nums">{{ order.views_count }}</span>
-                <span class="font-semibold text-muted-foreground/80">{{ locale.t.orders.viewsSuffix }}</span>
-              </span>
-              <span class="live-order-card__stat live-order-card__stat--offers">
-                <MessageSquareQuote class="size-3.5 shrink-0" />
-                <span class="tabular-nums">{{ order.offers_count }}</span>
-                <span class="font-semibold opacity-90">{{ locale.t.orders.offersSuffix }}</span>
-              </span>
-            </div>
-          </article>
+          <LiveOrderCard
+            :order="order"
+            class="h-full"
+          />
         </CarouselItem>
       </CarouselContent>
     </Carousel>

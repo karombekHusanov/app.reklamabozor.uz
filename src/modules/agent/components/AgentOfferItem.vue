@@ -1,13 +1,12 @@
 <script setup lang="ts">
-import { Clock } from '@lucide/vue'
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
-import GlassCard from '@/core/ui/GlassCard.vue'
 import Badge from '@/core/ui/Badge.vue'
 import { useLocaleStore } from '@/core/i18n/locale.store'
 import { categoryName } from '@/core/i18n/category-name'
 import { formatPrice, isInterestOffer, offerStatusVariant, orderStatusVariant } from '@/modules/orders/lib/order-status'
 import { ROUTES } from '@/modules/shell/constants/routes'
+import OrderPreviewCard from '@/modules/orders/components/OrderPreviewCard.vue'
 import type { AgentOffer } from '@/modules/orders/types/order'
 
 const locale = useLocaleStore()
@@ -28,6 +27,12 @@ const title = computed(() =>
     : `#${props.offer.order.id}`),
 )
 
+const categoryLabel = computed(() =>
+  props.offer.order.category
+    ? categoryName(props.offer.order.category, locale.locale)
+    : null,
+)
+
 // The badge tracks the deal's lifecycle once accepted; before that (pending /
 // rejected) the offer's own status is what matters to the agent.
 const badge = computed(() => {
@@ -43,64 +48,51 @@ const badge = computed(() => {
   }
 })
 
-const statusNote = computed(() => {
-  if (props.offer.status === 'pending') return locale.t.agent.offerPendingNote
-  if (props.offer.status === 'rejected') return locale.t.agent.offerRejectedNote
-  if (orderStatus.value === 'awaiting_payment') return locale.t.agent.dealAwaitingPayment
-  if (props.offer.status === 'accepted' && orderStatus.value === 'cancelled') {
-    return locale.t.agent.dealCancelledBeforePay
-  }
-  if (orderStatus.value === 'work_submitted') return locale.t.agent.workAwaitingClient
-  if (orderStatus.value === 'completed') return locale.t.agent.offerCompletedNote
-  return null
-})
-
 const interest = computed(() => isInterestOffer(props.offer))
+
+const priceLabel = computed(() =>
+  interest.value ? locale.t.orders.interestBadge : formatPrice(props.offer.price),
+)
 
 function openDetail() {
   router.push(ROUTES.offerDetail(props.offer.id))
 }
+
+function openClient() {
+  const id = props.offer.order.client?.id
+  if (!id) return
+  router.push(ROUTES.clientDetail(id))
+}
 </script>
 
 <template>
-  <GlassCard
+  <OrderPreviewCard
     :id="`agent-offer-${offer.order.id}`"
-    interactive
-    class="scroll-mt-20 space-y-3"
-    :class="highlight && 'ring-2 ring-primary/50'"
-    @click="openDetail"
+    :highlight="highlight"
+    :client="offer.order.client"
+    :created-at="offer.order.created_at ?? offer.created_at"
+    :category-label="categoryLabel"
+    :title="title"
+    :description="offer.order.description"
+    :hashtags="offer.order.hashtags"
+    :views-count="offer.order.views_count"
+    :offers-count="offer.order.offers_count"
+    @open="openDetail"
+    @open-client="openClient"
   >
-    <div class="flex items-start justify-between gap-3">
-      <div class="min-w-0">
-        <p class="truncate font-semibold leading-tight">
-          {{ title }}
-        </p>
-        <p class="text-xs text-muted-foreground">
-          <template v-if="interest">
-            #{{ offer.order.id }} · {{ locale.t.orders.interestBadge }}
-          </template>
-          <template v-else>
-            #{{ offer.order.id }} · {{ locale.t.agent.yourOffer }} {{ formatPrice(offer.price) }}
-          </template>
-        </p>
-      </div>
+    <template #chips>
       <Badge
         :variant="badge.variant"
-        class="shrink-0"
+        class="shrink-0 !px-2.5 !py-1 text-[11px] font-bold"
       >
         {{ badge.label }}
       </Badge>
-    </div>
-
-    <p
-      v-if="statusNote"
-      class="inline-flex items-start gap-1.5 text-sm text-muted-foreground"
-    >
-      <Clock
-        v-if="offer.status === 'pending'"
-        class="mt-0.5 size-4 shrink-0"
-      />
-      <span class="line-clamp-2">{{ statusNote }}</span>
-    </p>
-  </GlassCard>
+      <span
+        class="live-order-card__chip"
+        :class="interest ? '' : 'bg-primary/12'"
+      >
+        {{ priceLabel }}
+      </span>
+    </template>
+  </OrderPreviewCard>
 </template>
