@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { CheckCircle2, CreditCard, Eye, Loader2, MapPinned, MessageCircle, MessageSquareQuote, PartyPopper, Store, XCircle } from '@lucide/vue'
+import { Calendar, CheckCircle2, CreditCard, Eye, Loader2, MapPin, MessageCircle, MessageSquareQuote, MessageSquareText, Paperclip, PartyPopper, Store, Tag, XCircle } from '@lucide/vue'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AppHeader from '@/modules/shell/components/AppHeader.vue'
@@ -193,102 +193,178 @@ async function sendReview(criteria: ReviewCriterionScore[], comment: string | nu
 
       <template v-else-if="order">
         <!-- Summary -->
-        <GlassCard class="space-y-4">
-          <div class="min-w-0 space-y-1.5">
-            <div class="flex items-start justify-between gap-2">
-              <p
-                v-if="categoryLabel"
-                class="min-w-0 truncate text-xs font-bold text-primary"
-              >
-                {{ categoryLabel }}
-              </p>
+        <GlassCard padding="none" class="overflow-hidden">
+          <!-- Hero: identity, status & key stats -->
+          <div class="space-y-3.5 p-5">
+            <div class="flex items-center justify-between gap-2">
               <span
-                v-else
-                class="min-w-0 flex-1"
-              />
+                v-if="categoryLabel"
+                class="inline-flex min-w-0 items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-xs font-bold text-primary"
+              >
+                <Tag class="size-3.5 shrink-0" />
+                <span class="truncate">{{ categoryLabel }}</span>
+              </span>
+              <span v-else />
               <OrderStatusBadge
                 :status="order.status"
-                class="shrink-0"
+                class="shrink-0 !px-3 !py-1"
               />
             </div>
 
-            <h2 class="flex min-w-0 items-baseline gap-2 text-lg font-semibold leading-tight text-foreground">
-              <span class="shrink-0 rounded-md bg-muted px-1.5 py-0.5 text-xs font-semibold tabular-nums text-foreground/70 dark:bg-white/10">
-                #{{ order.id }}
-              </span>
-              <span class="min-w-0 truncate">{{ title }}</span>
-            </h2>
+            <div class="min-w-0 space-y-2">
+              <div class="flex items-start gap-2.5">
+                <span class="mt-0.5 shrink-0 rounded-lg bg-gradient-to-br from-[#0386D9] to-[#014BA4] px-2 py-1 text-xs font-extrabold tabular-nums text-white shadow-sm">
+                  #{{ order.id }}
+                </span>
+                <h1 class="min-w-0 text-xl font-extrabold leading-snug text-foreground">
+                  {{ title }}
+                </h1>
+              </div>
 
-            <p class="text-xs font-medium tabular-nums text-muted-foreground">
-              {{ formatDateTime(order.created_at) }}
-            </p>
+              <p class="flex items-center gap-1.5 text-xs font-medium tabular-nums text-muted-foreground">
+                <Calendar class="size-3.5 shrink-0 opacity-70" />
+                {{ formatDateTime(order.created_at) }}
+              </p>
 
-            <OrderHashtagChips
-              v-if="order.hashtags?.length"
-              class="pt-0.5"
-              :hashtags="order.hashtags"
-            />
-            <p
-              v-if="order.target_agent"
-              class="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary"
+              <OrderHashtagChips
+                v-if="order.hashtags?.length"
+                class="pt-0.5"
+                :hashtags="order.hashtags"
+              />
+
+              <p
+                v-if="order.target_agent"
+                class="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary"
+              >
+                <Store class="size-3.5" />
+                {{ order.target_agent.company_name }}
+              </p>
+            </div>
+
+            <!-- Key stats -->
+            <div class="grid grid-cols-2 gap-2.5">
+              <div class="flex items-center gap-2.5 rounded-2xl bg-muted/60 px-3 py-2.5 dark:bg-white/5">
+                <span class="flex size-9 shrink-0 items-center justify-center rounded-xl bg-card text-muted-foreground shadow-sm dark:bg-white/10">
+                  <Eye class="size-[18px]" />
+                </span>
+                <div class="min-w-0 leading-tight">
+                  <p class="text-base font-extrabold tabular-nums text-foreground">
+                    {{ order.views_count ?? 0 }}
+                  </p>
+                  <p class="truncate text-[11px] font-medium text-muted-foreground">
+                    {{ locale.t.orders.viewsSuffix }}
+                  </p>
+                </div>
+              </div>
+              <div class="flex items-center gap-2.5 rounded-2xl bg-primary/8 px-3 py-2.5">
+                <span class="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary">
+                  <MessageSquareQuote class="size-[18px]" />
+                </span>
+                <div class="min-w-0 leading-tight">
+                  <p class="text-base font-extrabold tabular-nums text-primary">
+                    {{ offers.length }}
+                  </p>
+                  <p class="truncate text-[11px] font-medium text-primary/80">
+                    {{ locale.t.orders.offersSuffix }}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Detail sections -->
+          <div class="space-y-5 border-t border-border/60 p-5">
+            <!-- Comment -->
+            <section
+              v-if="order.description"
+              class="space-y-2.5"
             >
-              <Store class="size-3.5" />
-              {{ order.target_agent.company_name }}
-            </p>
+              <div class="flex items-center gap-2">
+                <span class="flex size-6 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                  <MessageSquareText class="size-3.5" />
+                </span>
+                <h3 class="text-[13px] font-bold text-foreground">
+                  {{ locale.t.orders.commentTitle }}
+                </h3>
+              </div>
+              <div class="rounded-2xl border-l-[3px] border-primary/60 bg-muted/40 py-2.5 pl-3.5 pr-3 dark:bg-white/5">
+                <p class="whitespace-pre-line text-sm leading-relaxed text-foreground/90">
+                  {{ order.description }}
+                </p>
+              </div>
+            </section>
+
+            <!-- Attached files -->
+            <section
+              v-if="attachmentFiles.length"
+              class="space-y-2.5"
+            >
+              <div class="flex items-center gap-2">
+                <span class="flex size-6 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                  <Paperclip class="size-3.5" />
+                </span>
+                <h3 class="text-[13px] font-bold text-foreground">
+                  {{ locale.t.orders.attachedFiles }}
+                </h3>
+              </div>
+              <OrderAttachments
+                :files="attachmentFiles"
+                hide-title
+              />
+            </section>
+
+            <!-- Location -->
+            <section
+              v-if="regionLabel || (order.lat != null && order.lng != null)"
+              class="space-y-2.5"
+            >
+              <div class="flex items-center gap-2">
+                <span class="flex size-6 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                  <MapPin class="size-3.5" />
+                </span>
+                <h3 class="text-[13px] font-bold text-foreground">
+                  {{ locale.t.orders.locationTitle }}
+                </h3>
+              </div>
+              <p
+                v-if="regionLabel"
+                class="text-sm font-medium text-foreground/90"
+              >
+                {{ regionLabel }}
+              </p>
+              <LocationMap
+                v-if="order.lat != null && order.lng != null"
+                :lat="order.lat"
+                :lng="order.lng"
+                :label="order.location_label"
+              />
+            </section>
           </div>
 
-          <p class="text-sm leading-relaxed text-muted-foreground">
-            {{ order.description }}
-          </p>
-
+          <!-- Actions -->
           <div
-            v-if="regionLabel"
-            class="flex items-center gap-2 text-xs text-muted-foreground"
+            v-if="hasChat || canCancel"
+            class="flex flex-col gap-2.5 border-t border-border/60 p-5"
           >
-            <MapPinned class="size-3.5 shrink-0" />
-            <span class="font-medium">{{ regionLabel }}</span>
+            <Button
+              v-if="hasChat"
+              class="h-12 w-full rounded-2xl"
+              @click="openChat"
+            >
+              <MessageCircle class="size-4" />
+              {{ locale.t.chat.openChat }}
+            </Button>
+
+            <button
+              v-if="canCancel"
+              type="button"
+              class="pressable mx-auto inline-flex h-9 items-center justify-center gap-1.5 rounded-full bg-destructive/10 px-5 text-[13px] font-semibold text-destructive transition active:scale-95 active:bg-destructive/15"
+              @click="openCancelDrawer"
+            >
+              <XCircle class="size-4" />
+              {{ locale.t.orders.cancelShort }}
+            </button>
           </div>
-
-          <LocationMap
-            v-if="order.lat != null && order.lng != null"
-            :lat="order.lat"
-            :lng="order.lng"
-            :label="order.location_label"
-          />
-
-          <div class="flex items-center gap-4 text-xs text-muted-foreground">
-            <span class="inline-flex items-center gap-1.5">
-              <Eye class="size-3.5" />
-              {{ order.views_count ?? 0 }} {{ locale.t.orders.viewsSuffix }}
-            </span>
-            <span class="inline-flex items-center gap-1.5">
-              <MessageSquareQuote class="size-3.5" />
-              {{ offers.length }} {{ locale.t.orders.offersSuffix }}
-            </span>
-          </div>
-
-          <OrderAttachments :files="attachmentFiles" />
-
-          <Button
-            v-if="hasChat"
-            variant="outline"
-            class="h-11 w-full rounded-2xl"
-            @click="openChat"
-          >
-            <MessageCircle class="size-4" />
-            {{ locale.t.chat.openChat }}
-          </Button>
-
-          <!-- Compact red button — visible, but not a hero block. -->
-          <button
-            v-if="canCancel"
-            type="button"
-            class="pressable inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-xl bg-destructive px-3 text-xs font-semibold text-white transition active:scale-[0.98] active:brightness-95"
-            @click="openCancelDrawer"
-          >
-            <XCircle class="size-3.5" />
-            {{ locale.t.orders.cancelOrder }}
-          </button>
         </GlassCard>
 
         <!-- Payment: client picked an offer and must pay to start the deal. -->

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { BadgeCheck, ChevronRight, Star } from '@lucide/vue'
+import { BadgeCheck, ChevronRight, ShieldCheck, Star } from '@lucide/vue'
 import Avatar from '@/core/ui/Avatar.vue'
 import { useLocaleStore } from '@/core/i18n/locale.store'
 import type { PublicAgent } from '@/modules/marketplace/services/agents.service'
@@ -50,6 +50,11 @@ const distanceLabel = computed(() => {
           {{ agent.display_name }}
         </h3>
         <BadgeCheck class="size-4 shrink-0 fill-primary text-primary-foreground" />
+        <ShieldCheck
+          v-if="agent.identity_verified"
+          class="size-4 shrink-0 text-emerald-500"
+          :aria-label="locale.t.identityVerify.badge"
+        />
       </div>
       <p v-if="agent.location_label" class="mt-0.5 truncate text-sm text-muted-foreground">
         {{ agent.location_label }}

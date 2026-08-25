@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>MyID camera spike</title>
+<style>
+  :root { color-scheme: light dark; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 16px 14px 48px;
+    font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: #0e1116; color: #e6edf3;
+  }
+  @media (prefers-color-scheme: light) { body { background: #f6f8fa; color: #1f2328; } }
+  h1 { font-size: 18px; margin: 0 0 4px; }
+  p.sub { margin: 0 0 16px; opacity: .7; font-size: 13px; }
+  .card { border: 1px solid rgba(127,127,127,.28); border-radius: 12px; padding: 12px 14px; margin: 0 0 14px; background: rgba(127,127,127,.06); }
+  .card h2 { font-size: 14px; margin: 0 0 8px; text-transform: uppercase; letter-spacing: .04em; opacity: .8; }
+  button { appearance: none; border: 0; border-radius: 10px; padding: 12px 16px; font-size: 15px; font-weight: 600; color: #fff; background: #2f81f7; width: 100%; margin: 6px 0; }
+  button.secondary { background: #6e7681; }
+  video { width: 100%; max-height: 46vh; background: #000; border-radius: 10px; margin-top: 8px; display: none; }
+  iframe { width: 100%; height: 46vh; border: 0; border-radius: 10px; margin-top: 8px; display: none; background:#000; }
+  .row { display: flex; justify-content: space-between; gap: 12px; font-size: 13px; padding: 3px 0; border-bottom: 1px dashed rgba(127,127,127,.2); }
+  .row:last-child { border-bottom: 0; }
+  .row .k { opacity: .7; }
+  .row .v { font-weight: 600; text-align: right; word-break: break-word; }
+  .ok { color: #3fb950; } .bad { color: #f85149; } .warn { color: #d29922; }
+  #log { white-space: pre-wrap; font: 12px/1.45 ui-monospace, SFMono-Regular, Menlo, monospace; background: rgba(127,127,127,.1); border-radius: 10px; padding: 10px; max-height: 30vh; overflow: auto; }
+  .verdict { font-size: 15px; font-weight: 700; padding: 10px 12px; border-radius: 10px; margin-bottom: 14px; }
+</style>
+</head>
+<body>
+  <h1>MyID camera spike</h1>
+  <p class="sub">Open this INSIDE the Telegram Mini App on both iOS and Android. Run each test and copy the log.</p>
+
+  <div id="verdict" class="verdict card">Verdict: run the tests below…</div>
+
+  <div class="card">
+    <h2>Environment</h2>
+    <div id="env"></div>
+  </div>
+
+  <div class="card">
+    <h2>Test A — Direct camera (decisive)</h2>
+    <p class="sub" style="margin:0 0 6px">Top-level <code>getUserMedia</code>. If this fails, the cross-origin MyID iframe cannot work either.</p>
+    <button id="btnA">▶︎ Open front camera</button>
+    <video id="video" playsinline muted autoplay></video>
+  </div>
+
+  <div class="card">
+    <h2>Test B — Cross-origin iframe</h2>
+    <p class="sub" style="margin:0 0 6px">Loads <code>web.myid.uz</code> with <code>allow="camera"</code> to check permission delegation (no session — expect a MyID error screen, but watch for camera/permission errors in the log).</p>
+    <button id="btnB" class="secondary">▶︎ Load MyID iframe</button>
+    <iframe id="frame" allow="camera;microphone;fullscreen" allowfullscreen></iframe>
+  </div>
+
+  <div class="card">
+    <h2>Log</h2>
+    <div id="log"></div>
+    <button id="btnCopy" class="secondary" style="margin-top:10px">⧉ Copy log</button>
+  </div>
+
+<script>
+(function () {
+  var logEl = document.getElementById('log');
+  var lines = [];
+  function log(msg) { lines.push(new Date().toISOString().slice(11,19) + '  ' + msg); logEl.textContent = lines.join('\n'); }
+  function esc(s){ return String(s).replace(/[<>&]/g, function(c){ return {'<':'&lt;','>':'&gt;','&':'&amp;'}[c]; }); }
+
+  // ---- Environment ----
+  var tg = (window.Telegram && window.Telegram.WebApp) || null;
+  var secure = window.isSecureContext;
+  var hasGUM = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+  var env = [
+    ['In Telegram', tg ? 'yes' : 'no (plain browser)', tg ? 'ok' : 'warn'],
+    ['TG platform', tg ? tg.platform : '—', ''],
+    ['TG version', tg ? tg.version : '—', ''],
+    ['Secure context (HTTPS)', secure ? 'yes' : 'NO', secure ? 'ok' : 'bad'],
+    ['mediaDevices.getUserMedia', hasGUM ? 'available' : 'MISSING', hasGUM ? 'ok' : 'bad'],
+    ['User agent', navigator.userAgent, ''],
+  ];
+  document.getElementById('env').innerHTML = env.map(function (r) {
+    return '<div class="row"><span class="k">' + r[0] + '</span><span class="v ' + (r[2]||'') + '">' + esc(r[1]) + '</span></div>';
+  }).join('');
+  log('env: telegram=' + (!!tg) + ' platform=' + (tg?tg.platform:'-') + ' ver=' + (tg?tg.version:'-') + ' secure=' + secure + ' gum=' + hasGUM);
+
+  function verdict(text, cls) {
+    var v = document.getElementById('verdict');
+    v.textContent = 'Verdict: ' + text;
+    v.className = 'verdict card ' + (cls || '');
+  }
+
+  // ---- Black-frame detection (iOS Telegram "black stream" bug) ----
+  function sampleBrightness(video) {
+    try {
+      var c = document.createElement('canvas');
+      c.width = 48; c.height = 48;
+      var ctx = c.getContext('2d');
+      ctx.drawImage(video, 0, 0, 48, 48);
+      var d = ctx.getImageData(0, 0, 48, 48).data;
+      var sum = 0;
+      for (var i = 0; i < d.length; i += 4) sum += (d[i] + d[i+1] + d[i+2]) / 3;
+      return sum / (d.length / 4); // 0..255
+    } catch (e) { return -1; }
+  }
+
+  // ---- Test A ----
+  var currentStream = null;
+  document.getElementById('btnA').addEventListener('click', function () {
+    var video = document.getElementById('video');
+    if (!hasGUM) { log('A: getUserMedia unavailable — cannot test'); verdict('getUserMedia missing → camera impossible here', 'bad'); return; }
+    log('A: requesting camera…');
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false })
+      .then(function (stream) {
+        currentStream = stream;
+        video.srcObject = stream;
+        video.style.display = 'block';
+        var track = stream.getVideoTracks()[0];
+        log('A: stream OK — track "' + (track && track.label ? track.label : 'unnamed') + '"');
+        setTimeout(function () {
+          var b = sampleBrightness(video);
+          if (b < 0) { log('A: brightness sample failed (frame not readable)'); verdict('Camera opened but frame unreadable — inspect manually', 'warn'); }
+          else if (b < 3) { log('A: frame is BLACK (avg brightness ' + b.toFixed(1) + ') → iOS Telegram black-stream bug'); verdict('Camera opens but stream is BLACK → iframe won\'t work', 'bad'); }
+          else { log('A: frame has content (avg brightness ' + b.toFixed(1) + ') → camera truly works'); verdict('Direct camera WORKS ✓ — now run Test B (iframe)', 'ok'); }
+        }, 1200);
+      })
+      .catch(function (err) {
+        log('A: FAILED — ' + err.name + ': ' + err.message);
+        verdict('Direct camera BLOCKED (' + err.name + ') → MyID iframe cannot work here', 'bad');
+      });
+  });
+
+  // ---- Test B ----
+  document.getElementById('btnB').addEventListener('click', function () {
+    var frame = document.getElementById('frame');
+    frame.style.display = 'block';
+    log('B: loading web.myid.uz iframe with allow="camera"…');
+    frame.onload = function () { log('B: iframe loaded (cross-origin content cannot be read — watch for camera prompts / errors)'); };
+    frame.onerror = function () { log('B: iframe error event'); };
+    frame.src = 'https://web.myid.uz/?iframe=true&lang=uz';
+    // Surface permission-policy violations if the browser reports them.
+    if (document.featurePolicy && document.featurePolicy.allowedFeatures) {
+      log('B: page-allowed features include camera=' + (document.featurePolicy.allowsFeature ? document.featurePolicy.allowsFeature('camera') : '?'));
+    }
+  });
+
+  window.addEventListener('message', function (e) {
+    if (e.origin.indexOf('myid') === -1) return;
+    try { log('B: postMessage from ' + e.origin + ': ' + JSON.stringify(e.data)); } catch (_) { log('B: postMessage from ' + e.origin); }
+  });
+
+  window.addEventListener('error', function (e) { log('window error: ' + (e.message || e.type)); });
+
+  document.getElementById('btnCopy').addEventListener('click', function () {
+    var text = lines.join('\n');
+    if (navigator.clipboard) navigator.clipboard.writeText(text).then(function(){ log('log copied'); }, function(){ log('clipboard blocked — select manually'); });
+    else log('clipboard API unavailable — select manually');
+  });
+})();
+</script>
+</body>
+</html>

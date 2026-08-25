@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useRoute } from 'vue-router'
 import AppHeader from '@/modules/shell/components/AppHeader.vue'
 import { useAuthStore } from '@/modules/auth/stores/auth.store'
 import { useLocaleStore } from '@/core/i18n/locale.store'
@@ -10,16 +11,25 @@ import DesignerProfileEditForm from '@/modules/profile/components/edit/DesignerP
 
 const auth = useAuthStore()
 const locale = useLocaleStore()
+const route = useRoute()
+
+// `?as=agent|designer` lets a client open a provider form to BECOME one
+// (submitting it grants the role); otherwise the form follows the active role.
+const target = computed(() => {
+  const as = route.query.as
+  if (as === 'agent' || as === 'designer') return as
+  return auth.user?.role
+})
 
 const editSubtitle = computed(() => {
-  const role = auth.user?.role
+  const role = target.value
   if (role === 'agent' || role === 'seller') return locale.t.profile.editSubtitleAgent
   if (role === 'designer') return locale.t.profile.editSubtitleDesigner
   return locale.t.profile.editSubtitleClient
 })
 
 const editForm = computed(() => {
-  const role = auth.user?.role
+  const role = target.value
   if (role === 'agent' || role === 'seller') return AgentProfileEditForm
   if (role === 'designer') return DesignerProfileEditForm
   return ClientProfileEditForm

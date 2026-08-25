@@ -7,10 +7,12 @@ import GlassCard from '@/core/ui/GlassCard.vue'
 import EmptyState from '@/core/ui/EmptyState.vue'
 import Skeleton from '@/core/ui/Skeleton.vue'
 import { Button } from '@/core/ui/button'
+import Badge from '@/core/ui/Badge.vue'
 import { useAuthStore } from '@/modules/auth/stores/auth.store'
 import { useLocaleStore } from '@/core/i18n/locale.store'
 import { ROUTES } from '@/modules/shell/constants/routes'
-import OrderCard from '@/modules/orders/components/OrderCard.vue'
+import OrderTile from '@/modules/orders/components/OrderTile.vue'
+import { orderStatusVariant } from '@/modules/orders/lib/order-status'
 import { useOrdersStore } from '@/modules/orders/stores/orders.store'
 
 const auth = useAuthStore()
@@ -54,7 +56,7 @@ function openOrder(id: number) {
       </template>
 
       <template v-else-if="orders.isLoading && orders.myOrders.length === 0">
-        <Skeleton v-for="n in 3" :key="n" class="h-[140px] w-full rounded-[1.35rem]" />
+        <Skeleton v-for="n in 3" :key="n" class="h-[220px] w-full rounded-[1.35rem]" />
       </template>
 
       <template v-else-if="orders.myOrders.length === 0">
@@ -77,12 +79,27 @@ function openOrder(id: number) {
           <Plus class="size-4" />
           {{ locale.t.orders.newRequest }}
         </Button>
-        <OrderCard
+        <OrderTile
           v-for="order in orders.myOrders"
           :key="order.id"
-          :order="order"
+          :title="order.title"
+          :description="order.description"
+          :category="order.category"
+          :region="order.region"
+          :created-at="order.created_at"
+          :views-count="order.views_count"
+          :offers-count="order.offers_count"
           @open="openOrder(order.id)"
-        />
+        >
+          <template #badge>
+            <Badge
+              :variant="orderStatusVariant(order.status)"
+              class="shrink-0 !px-2.5 !py-1 text-[11px] font-bold"
+            >
+              {{ locale.t.orders.status[order.status] }}
+            </Badge>
+          </template>
+        </OrderTile>
       </template>
     </section>
   </div>

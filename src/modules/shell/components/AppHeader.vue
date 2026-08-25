@@ -16,10 +16,13 @@ const props = withDefaults(defineProps<{
   subtitle?: string
   /** Show a back affordance (sub-pages). Uses Telegram's native BackButton when available. */
   showBack?: boolean
+  /** Pin `#trailing` to the card's right edge (illustration overlays, text stays in flow). */
+  trailingOverlay?: boolean
 }>(), {
   showBack: false,
   title: undefined,
   subtitle: undefined,
+  trailingOverlay: false,
 })
 
 const locale = useLocaleStore()
@@ -65,8 +68,12 @@ onBeforeUnmount(() => {
         frosted
         padding="xs"
         class="app-header-card"
+        :class="trailingOverlay && $slots.trailing ? 'app-header-card--art !overflow-visible' : ''"
       >
-        <div class="flex items-center gap-2.5">
+        <div
+          class="flex items-center gap-2.5"
+          :class="trailingOverlay && $slots.trailing ? 'pr-16' : ''"
+        >
           <button
             v-if="showBack"
             type="button"
@@ -98,7 +105,9 @@ onBeforeUnmount(() => {
 
           <div
             v-if="$slots.trailing"
-            class="shrink-0"
+            :class="trailingOverlay
+              ? 'pointer-events-none absolute top-1/2 -right-1.5 z-10 -translate-y-1/2'
+              : 'shrink-0'"
           >
             <slot name="trailing" />
           </div>

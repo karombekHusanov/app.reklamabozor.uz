@@ -1,7 +1,7 @@
 import { api } from '@/core/api/client'
 import type { TelegramAuthPayload } from '@/core/lib/telegram-init'
 import type { ApiSuccess, AuthResponse } from '@/core/types/api'
-import type { PersonType, SelectableRole, User } from '@/modules/auth/types/user'
+import type { PersonType, User } from '@/modules/auth/types/user'
 
 type RequestOpts = { skipErrorToast?: boolean }
 
@@ -33,16 +33,6 @@ export async function updateCurrentUser(payload: {
   avatar_file_id?: number | null
 }): Promise<User> {
   const { data } = await api.patch<ApiSuccess<User>>('/api/v1/me', payload)
-
-  return data.data
-}
-
-/**
- * Set the active role — PATCH /api/v1/me/role. The first call picks the onboarding role;
- * later calls switch to an already-held role or acquire a new self-selectable one.
- */
-export async function setUserRole(role: SelectableRole): Promise<User> {
-  const { data } = await api.patch<ApiSuccess<User>>('/api/v1/me/role', { role })
 
   return data.data
 }

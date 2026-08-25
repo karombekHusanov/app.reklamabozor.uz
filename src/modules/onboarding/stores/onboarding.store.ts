@@ -1,10 +1,10 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
-import { setUserPersonType, setUserRole } from '@/modules/auth/services/auth.service'
+import { setUserPersonType } from '@/modules/auth/services/auth.service'
 import { useAuthStore } from '@/modules/auth/stores/auth.store'
-import type { PersonType, SelectableRole } from '@/modules/auth/types/user'
+import type { PersonType } from '@/modules/auth/types/user'
 
-export type OnboardingStep = 'language' | 'terms' | 'role' | 'person_type'
+export type OnboardingStep = 'language' | 'terms' | 'person_type'
 
 export const useOnboardingStore = defineStore('onboarding', () => {
   const auth = useAuthStore()
@@ -49,24 +49,11 @@ export const useOnboardingStore = defineStore('onboarding', () => {
     }
 
     termsAccepted.value = true
-    step.value = 'role'
-  }
-
-  /**
-   * Persist the chosen role. Does NOT finish onboarding — the flow then asks
-   * client/designer users for their person type; agents/sellers skip straight
-   * to completion (their legal nature is fixed by the role).
-   */
-  async function selectRole(role: SelectableRole): Promise<void> {
-    // Keep the flow open after role_selected_at is set (person_type step).
+    // No role step — everyone starts as a client. Keep the flow open through
+    // the final person_type step (setUserPersonType stamps role_selected_at,
+    // which would otherwise flip needsOnboarding mid-flow).
     active.value = true
-
-    // When authenticated, persist the role; in non-Telegram dev contexts without a
-    // session we still let the user through so the flow is testable.
-    if (auth.isAuthenticated) {
-      const user = await setUserRole(role)
-      auth.setUser(user)
-    }
+    step.value = 'person_type'
   }
 
   /** Persist the self-declared legal nature and finish onboarding. */
@@ -90,7 +77,6 @@ export const useOnboardingStore = defineStore('onboarding', () => {
     needsOnboarding,
     goTo,
     acceptTerms,
-    selectRole,
     selectPersonType,
     complete,
   }

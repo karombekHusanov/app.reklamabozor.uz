@@ -9,7 +9,7 @@ import { useTelegram } from '@/core/composables/useTelegram'
 import { getApiErrorMessage } from '@/core/api/api-error'
 import { ROUTES } from '@/modules/shell/constants/routes'
 import { useOnboardingStore } from '@/modules/onboarding/stores/onboarding.store'
-import { roleChoosesPersonType, type PersonType, type SelectableRole } from '@/modules/auth/types/user'
+import type { PersonType } from '@/modules/auth/types/user'
 import TermsConsent from './TermsConsent.vue'
 
 const locale = useLocaleStore()
@@ -20,14 +20,6 @@ const { haptic } = useTelegram()
 const agreed = ref(false)
 const submitting = ref(false)
 const errorMessage = ref<string | null>(null)
-const pickedRole = ref<SelectableRole | null>(null)
-
-const roleOptions: { role: SelectableRole, key: 'client' | 'agent' | 'designer' | 'seller' }[] = [
-  { role: 'client', key: 'client' },
-  { role: 'agent', key: 'agent' },
-  { role: 'designer', key: 'designer' },
-  { role: 'seller', key: 'seller' },
-]
 
 function pickLanguage(value: Locale) {
   haptic('light')
@@ -52,40 +44,6 @@ async function confirmTerms() {
   }
 }
 
-async function pickRole(role: SelectableRole) {
-  if (submitting.value) return
-  submitting.value = true
-  errorMessage.value = null
-  haptic('medium')
-
-  try {
-    await onboarding.selectRole(role)
-    pickedRole.value = role
-
-    // Client/designer self-declare their legal nature next; agents/sellers are
-    // auto legal entities and go straight to their profile.
-    if (roleChoosesPersonType(role)) {
-      onboarding.goTo('person_type')
-      submitting.value = false
-      return
-    }
-
-    onboarding.complete()
-    await router.replace(ROUTES.profile)
-  }
-  catch (e) {
-    errorMessage.value = getApiErrorMessage(e) || locale.t.onboarding.role.error
-    submitting.value = false
-  }
-}
-
-async function finishPersonType() {
-  // Providers (designer) land on their profile; clients drop into the app.
-  if (pickedRole.value && pickedRole.value !== 'client') {
-    await router.replace(ROUTES.profile)
-  }
-}
-
 async function pickPersonType(personType: PersonType) {
   if (submitting.value) return
   submitting.value = true
@@ -93,8 +51,10 @@ async function pickPersonType(personType: PersonType) {
   haptic('medium')
 
   try {
+    // Finishes onboarding (stamps role_selected_at); everyone starts as a
+    // client and drops into the app.
     await onboarding.selectPersonType(personType)
-    await finishPersonType()
+    await router.replace(ROUTES.home)
   }
   catch (e) {
     errorMessage.value = getApiErrorMessage(e) || locale.t.onboarding.role.error
@@ -102,10 +62,10 @@ async function pickPersonType(personType: PersonType) {
   }
 }
 
-async function skipPersonType() {
+function skipPersonType() {
   haptic('light')
   onboarding.complete()
-  await finishPersonType()
+  void router.replace(ROUTES.home)
 }
 </script>
 
@@ -169,42 +129,6 @@ async function skipPersonType() {
             <ArrowRight class="size-5" />
           </button>
         </div>
-      </div>
-
-      <!-- ============ ROLE ============ -->
-      <div
-        v-else-if="onboarding.step === 'role'"
-        class="mt-12 flex flex-1 flex-col"
-      >
-        <p class="text-center text-sm text-muted-foreground">
-          {{ locale.t.onboarding.role.title }}
-        </p>
-
-        <div class="mt-8 space-y-3">
-          <button
-            v-for="option in roleOptions"
-            :key="option.role"
-            type="button"
-            class="btn-brand h-14 w-full rounded-2xl text-base font-semibold"
-            :disabled="submitting"
-            @click="pickRole(option.role)"
-          >
-            {{ locale.t.roles[option.key] }}
-          </button>
-        </div>
-
-        <p
-          v-if="submitting"
-          class="mt-4 text-center text-sm text-muted-foreground"
-        >
-          {{ locale.t.onboarding.role.saving }}
-        </p>
-        <p
-          v-if="errorMessage"
-          class="mt-4 rounded-2xl bg-destructive/10 px-3 py-2 text-center text-sm text-destructive"
-        >
-          {{ errorMessage }}
-        </p>
       </div>
 
       <!-- ============ PERSON TYPE ============ -->

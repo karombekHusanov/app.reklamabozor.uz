@@ -60,7 +60,7 @@ const carouselPlugins = computed(() => (orders.value.length > 1 ? [autoplay] : [
       v-if="loading"
       class="flex"
     >
-      <Skeleton class="h-[140px] w-full rounded-[1.35rem]" />
+      <Skeleton class="h-[228px] w-full rounded-[1.25rem]" />
     </div>
 
     <!-- Carousel -->

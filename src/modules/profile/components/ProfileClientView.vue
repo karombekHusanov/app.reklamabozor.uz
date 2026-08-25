@@ -13,8 +13,8 @@ import ClientAboutSection from '@/modules/profile/components/client-sections/Cli
 import ClientOrderHistorySection from '@/modules/profile/components/client-sections/ClientOrderHistorySection.vue'
 import ClientProfileHeaderSection from '@/modules/profile/components/client-sections/ClientProfileHeaderSection.vue'
 import ClientProfileShortcuts from '@/modules/profile/components/client-sections/ClientProfileShortcuts.vue'
-import ProfileSwitcher from '@/modules/profile/components/ProfileSwitcher.vue'
 import LegalEntityVerificationCard from '@/modules/profile/components/LegalEntityVerificationCard.vue'
+import IdentityVerificationCard from '@/modules/profile/components/IdentityVerificationCard.vue'
 import type { ClientProfileStat } from '@/modules/profile/components/client-sections/ClientProfileHeaderSection.vue'
 
 const props = defineProps<{
@@ -134,13 +134,14 @@ function openOrder(id: number) {
         :is-verified="isVerified"
         show-back
       >
-        <template #top>
-          <ProfileSwitcher class="mb-3" />
-        </template>
+        <template #top>        </template>
       </ClientProfileHeaderSection>
 
       <!-- Zone B — at most one primary -->
       <LegalEntityVerificationCard v-if="showLegalCard" />
+
+      <!-- Optional MyID identity badge (self-manages visibility). -->
+      <IdentityVerificationCard />
 
       <!-- Zone C — Account -->
       <ClientProfileShortcuts

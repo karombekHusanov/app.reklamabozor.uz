@@ -6,6 +6,7 @@ import GlassCard from '@/core/ui/GlassCard.vue'
 import EmptyState from '@/core/ui/EmptyState.vue'
 import Skeleton from '@/core/ui/Skeleton.vue'
 import LiveOrderCard from '@/modules/home/components/LiveOrderCard.vue'
+import LiveOrdersHeaderArt from '@/modules/home/components/LiveOrdersHeaderArt.vue'
 import LiveOrdersFilterDrawer from '@/modules/home/components/LiveOrdersFilterDrawer.vue'
 import {
   datesFromPreset,
@@ -105,10 +106,17 @@ const emptyTitle = computed(() => {
       :title="locale.t.home.liveOrdersTitle"
       :subtitle="locale.t.home.liveOrdersSubtitle"
       show-back
-    />
+      trailing-overlay
+    >
+      <template #trailing>
+        <div class="size-[5.5rem] -rotate-[10deg] drop-shadow-[0_8px_14px_rgba(106,164,216,0.28)]">
+          <LiveOrdersHeaderArt />
+        </div>
+      </template>
+    </AppHeader>
 
     <section class="flex items-center gap-2 px-5 pb-1 pt-2">
-      <div class="glass-input flex h-11 min-w-0 flex-1 items-center gap-2.5 !py-0">
+      <div class="glass-input flex h-11 min-w-0 flex-1 items-center gap-2.5 !rounded-2xl !bg-card !py-0 shadow-[0_8px_20px_-16px_rgba(15,23,42,0.35)]">
         <Search class="size-4 shrink-0 text-muted-foreground" />
         <input
           v-model="searchQuery"
@@ -119,7 +127,7 @@ const emptyTitle = computed(() => {
       </div>
       <button
         type="button"
-        class="relative flex size-11 shrink-0 items-center justify-center rounded-2xl border border-border/60 bg-card text-foreground transition active:scale-95"
+        class="relative flex size-11 shrink-0 items-center justify-center rounded-2xl border border-border/60 bg-card text-foreground shadow-[0_8px_20px_-16px_rgba(15,23,42,0.35)] transition active:scale-95"
         :class="filtersActive ? 'border-primary/40 bg-primary/10 text-primary' : ''"
         :aria-label="locale.t.home.liveOrdersFilterTitle"
         @click="openFilters"
@@ -144,7 +152,7 @@ const emptyTitle = computed(() => {
         <Skeleton
           v-for="n in 5"
           :key="n"
-          class="h-[140px] w-full rounded-2xl"
+          class="h-[228px] w-full rounded-[1.25rem]"
         />
       </template>
 
