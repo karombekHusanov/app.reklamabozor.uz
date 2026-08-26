@@ -29,3 +29,9 @@ export async function authorizeIdentity(): Promise<string> {
   const { data } = await api.post<ApiSuccess<{ authorization_url: string }>>('/api/v1/me/identity/authorize')
   return data.data.authorization_url
 }
+
+/** Dev/test only: grant a simulated verified identity without calling MyID. */
+export async function simulateIdentity(): Promise<IdentityVerification> {
+  const { data } = await api.post<ApiSuccess<IdentityVerification>>('/api/v1/me/identity/simulate')
+  return data.data
+}

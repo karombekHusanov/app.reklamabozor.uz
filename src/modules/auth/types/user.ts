@@ -40,8 +40,10 @@ export interface User {
   identity_verified: boolean
   /** MyID verification state for the badge/CTA; null = never attempted. */
   identity_status: IdentityStatus | null
-  /** Whether MyID is configured on the backend — the CTA shows only when true. */
+  /** Whether MyID is available (real or dev/test simulate) — CTA shows when true. */
   identity_verification_enabled: boolean
+  /** Dev/test: "verify" grants a fake badge instead of the real MyID flow. */
+  identity_simulate?: boolean
   is_active: boolean
   created_at: string
   updated_at: string

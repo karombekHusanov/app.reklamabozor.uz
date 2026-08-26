@@ -7,7 +7,7 @@ import { useLocaleStore } from '@/core/i18n/locale.store'
 import { useAuthStore } from '@/modules/auth/stores/auth.store'
 import { getApiErrorMessage } from '@/core/api/api-error'
 import { openExternalLink } from '@/core/lib/telegram-init'
-import { authorizeIdentity } from '@/modules/profile/services/identity.service'
+import { authorizeIdentity, simulateIdentity } from '@/modules/profile/services/identity.service'
 
 const auth = useAuthStore()
 const locale = useLocaleStore()
@@ -64,6 +64,12 @@ async function verify() {
   error.value = null
   starting.value = true
   try {
+    // Dev/test simulate mode: grant the badge directly, no external MyID window.
+    if (auth.user?.identity_simulate) {
+      await simulateIdentity()
+      await auth.refreshUser()
+      return
+    }
     const url = await authorizeIdentity()
     openExternalLink(url)
     startPolling()
