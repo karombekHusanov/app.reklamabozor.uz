@@ -9,6 +9,8 @@ import type {
   AgentOrder,
   CreateOfferPayload,
   CreateOrderPayload,
+  Amendment,
+  AmendmentInput,
   Offer,
   Order,
   OrderReview,
@@ -205,11 +207,55 @@ export async function updateOfferPrice(
 export async function setOfferPricelist(
   offerId: number,
   items: PricelistItemInput[],
+  deadlineDays: number,
 ): Promise<AgentOfferDetail> {
   const { data } = await api.put<ApiSuccess<AgentOfferDetail>>(
     `/api/v1/agent/offers/${offerId}/pricelist`,
-    { items },
+    { items, deadline_days: deadlineDays },
   )
+
+  return data.data
+}
+
+// --- Additional agreements (Qo'shimcha kelishuv) --------------------------
+
+/** All amendments on an order (client, agent, or admin view). */
+export async function fetchAmendments(orderId: number): Promise<Amendment[]> {
+  const { data } = await api.get<ApiSuccess<Amendment[]>>(`/api/v1/orders/${orderId}/amendments`)
+
+  return data.data
+}
+
+/** Either party proposes a change to the active deal's pricelist + deadline. */
+export async function proposeAmendment(orderId: number, payload: AmendmentInput): Promise<Amendment> {
+  const { data } = await api.post<ApiSuccess<Amendment>>(
+    `/api/v1/orders/${orderId}/amendments`,
+    payload,
+  )
+
+  return data.data
+}
+
+/** Record the current user's approval of an amendment. */
+export async function approveAmendment(amendmentId: number): Promise<Amendment> {
+  const { data } = await api.post<ApiSuccess<Amendment>>(`/api/v1/amendments/${amendmentId}/approve`)
+
+  return data.data
+}
+
+/** Decline an amendment (client, agent, or operator). */
+export async function rejectAmendment(amendmentId: number, reason?: string): Promise<Amendment> {
+  const { data } = await api.post<ApiSuccess<Amendment>>(
+    `/api/v1/amendments/${amendmentId}/reject`,
+    reason ? { reason } : {},
+  )
+
+  return data.data
+}
+
+/** Initiator withdraws their own pending amendment. */
+export async function cancelAmendment(amendmentId: number): Promise<Amendment> {
+  const { data } = await api.post<ApiSuccess<Amendment>>(`/api/v1/amendments/${amendmentId}/cancel`)
 
   return data.data
 }

@@ -57,6 +57,44 @@ export interface PricelistItemInput {
   unit_price: number | string
 }
 
+export type AmendmentStatus = 'pending' | 'approved' | 'applied' | 'rejected' | 'cancelled' | 'expired'
+
+/** Snapshot of a deal's terms before/after an amendment. */
+export interface AmendmentSnapshot {
+  items: OfferItem[]
+  deadline_days: number | null
+  total: string
+}
+
+/** An "Additional agreement" (Qo'shimcha kelishuv) on an active deal. */
+export interface Amendment {
+  id: number
+  order_id: number
+  status: AmendmentStatus
+  initiator_role: 'client' | 'agent'
+  reason: string | null
+  before: AmendmentSnapshot
+  after: AmendmentSnapshot
+  extra_amount: string | number
+  requires_operator: boolean
+  requires_formal_doc: boolean
+  approvals: { client: boolean, agent: boolean, operator: boolean }
+  rejection_reason: string | null
+  can_approve: boolean
+  can_cancel: boolean
+  payment?: { status: string, checkout_url: string | null }
+  pdf_url: string | null
+  applied_at: string | null
+  created_at: string
+}
+
+/** Payload for proposing an amendment. */
+export interface AmendmentInput {
+  items: PricelistItemInput[]
+  deadline_days: number
+  reason?: string | null
+}
+
 export const MAX_PRICELIST_ITEMS = 50
 
 export interface OfferAgent {
@@ -74,6 +112,7 @@ export interface Offer {
   /** Null when the response is interest-only (no priced bid yet). */
   price: string | number | null
   comment: string | null
+  deadline_days?: number | null
   status: OfferStatus
   /** True when price/comment were never set (otklik). Prefer over price==null when present. */
   is_interest?: boolean
@@ -338,6 +377,7 @@ export interface AgentOfferDetail {
   id: number
   price: string | number | null
   comment: string | null
+  deadline_days?: number | null
   status: OfferStatus
   is_interest?: boolean
   can_accept?: boolean

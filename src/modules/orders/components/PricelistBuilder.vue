@@ -10,10 +10,13 @@ import type { OfferItem, PricelistItemInput } from '@/modules/orders/types/order
 
 const props = defineProps<{
   initialItems?: OfferItem[]
+  initialDeadlineDays?: number | null
   submitting?: boolean
 }>()
 
-const emit = defineEmits<{ submit: [items: PricelistItemInput[]] }>()
+const emit = defineEmits<{
+  submit: [payload: { items: PricelistItemInput[], deadlineDays: number }]
+}>()
 
 const locale = useLocaleStore()
 
@@ -31,6 +34,21 @@ function emptyRow(): Row {
 }
 
 const rows = ref<Row[]>([emptyRow()])
+
+const deadlineDays = ref<number | null>(props.initialDeadlineDays ?? null)
+const deadlineDisplay = ref(props.initialDeadlineDays ? String(props.initialDeadlineDays) : '')
+
+watch(() => props.initialDeadlineDays, (v) => {
+  deadlineDays.value = v ?? null
+  deadlineDisplay.value = v ? String(v) : ''
+})
+
+function onDeadlineInput(event: Event) {
+  const raw = (event.target as HTMLInputElement).value.replace(/[^\d]/g, '')
+  deadlineDisplay.value = raw
+  const n = Number(raw)
+  deadlineDays.value = Number.isFinite(n) && n > 0 ? n : null
+}
 
 function seedFromItems() {
   if (props.initialItems?.length) {
@@ -88,16 +106,21 @@ const validRows = computed(() =>
 
 const total = computed(() => validRows.value.reduce((s, r) => s + lineTotal(r), 0))
 
-const canSubmit = computed(() => validRows.value.length > 0 && !props.submitting)
+const canSubmit = computed(() =>
+  validRows.value.length > 0 && !!deadlineDays.value && deadlineDays.value > 0 && !props.submitting,
+)
 
 function submit() {
-  if (!canSubmit.value) return
-  emit('submit', validRows.value.map<PricelistItemInput>(r => ({
-    name: r.name.trim(),
-    unit: r.unit.trim() || locale.t.orders.pricelist.unit,
-    quantity: r.qty,
-    unit_price: r.price,
-  })))
+  if (!canSubmit.value || !deadlineDays.value) return
+  emit('submit', {
+    items: validRows.value.map<PricelistItemInput>(r => ({
+      name: r.name.trim(),
+      unit: r.unit.trim() || locale.t.orders.pricelist.unit,
+      quantity: r.qty,
+      unit_price: r.price,
+    })),
+    deadlineDays: deadlineDays.value,
+  })
 }
 </script>
 
@@ -173,6 +196,26 @@ function submit() {
       <Plus class="size-4" />
       {{ locale.t.agent.pricelistAddItem }}
     </Button>
+
+    <div class="glass-field space-y-2 rounded-2xl p-3">
+      <label class="text-xs font-semibold text-foreground">
+        {{ locale.t.agent.pricelistDeadlineLabel }}
+      </label>
+      <div class="flex items-center gap-2">
+        <input
+          :value="deadlineDisplay"
+          type="text"
+          inputmode="numeric"
+          :placeholder="locale.t.agent.pricelistDeadlinePlaceholder"
+          class="glass-input w-24 text-sm tabular-nums"
+          @input="onDeadlineInput"
+        >
+        <span class="text-sm text-muted-foreground">{{ locale.t.agent.pricelistDeadlineUnit }}</span>
+      </div>
+      <p class="text-[11px] leading-relaxed text-muted-foreground">
+        {{ locale.t.agent.pricelistDeadlineHint }}
+      </p>
+    </div>
 
     <div class="flex items-center justify-between gap-3 rounded-2xl bg-primary/10 px-4 py-3">
       <span class="text-sm font-semibold text-foreground">

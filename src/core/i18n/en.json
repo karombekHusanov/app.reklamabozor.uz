@@ -370,6 +370,7 @@
     "attachedFiles": "Attached files",
     "locationTitle": "Location",
     "offersHeading": "Offers",
+    "selectedOfferHeading": "Selected agency",
     "noOffersTitle": "No offers yet",
     "noOffersBody": "Agencies will send their proposals here soon.",
     "notFoundTitle": "Order not found",
@@ -723,7 +724,11 @@
     "noAdvantagesCatalog": "Advantages catalog is not available yet.",
     "advantagesSelectedCount": "{count}/{max} selected",
     "saving": "Saving…",
-    "saveProfile": "Save profile"
+    "saveProfile": "Save profile",
+    "pricelistDeadlineLabel": "Delivery deadline",
+    "pricelistDeadlinePlaceholder": "e.g. 14",
+    "pricelistDeadlineUnit": "days",
+    "pricelistDeadlineHint": "How many days you commit to deliver the work in. This is written into the contract."
   },
   "designer": {
     "createCategories": "Your directions",
@@ -1069,5 +1074,43 @@
     "errLocation": "Could not get your location.",
     "errMapContainer": "Map container is unavailable.",
     "errMapLoad": "Failed to load the map."
+  },
+  "amendments": {
+    "sectionTitle": "Additional agreements",
+    "title": "Additional agreement",
+    "propose": "Change terms",
+    "proposeTitle": "Change deal terms",
+    "proposeHint": "Adjust the pricelist and delivery deadline. The change takes effect only after both sides (and, when flagged, the operator) approve.",
+    "emptyHint": "No changes proposed yet.",
+    "reasonLabel": "Reason (optional)",
+    "reasonPlaceholder": "Why the terms need to change",
+    "byClient": "Proposed by client",
+    "byAgent": "Proposed by agency",
+    "total": "Total",
+    "deadline": "Deadline",
+    "days": "days",
+    "extraPayment": "Extra to pay",
+    "partyClient": "Client",
+    "partyAgent": "Agency",
+    "partyOperator": "Operator",
+    "formalDocNote": "This change affects the deadline or goes beyond the original pricelist — a formal signed document is recommended in addition to this approval.",
+    "rejectedReason": "Reason",
+    "downloadPdf": "Download agreement",
+    "payExtra": "Pay extra",
+    "approve": "Approve",
+    "reject": "Decline",
+    "cancel": "Withdraw",
+    "proposedToast": "Change proposed",
+    "approvedToast": "Approved",
+    "rejectedToast": "Declined",
+    "cancelledToast": "Withdrawn",
+    "status": {
+      "pending": "Awaiting approval",
+      "approved": "Awaiting payment",
+      "applied": "Applied",
+      "rejected": "Declined",
+      "cancelled": "Withdrawn",
+      "expired": "Expired"
+    }
   }
 }

@@ -370,6 +370,7 @@
     "attachedFiles": "Прикреплённые файлы",
     "locationTitle": "Местоположение",
     "offersHeading": "Предложения",
+    "selectedOfferHeading": "Выбранное агентство",
     "noOffersTitle": "Предложений пока нет",
     "noOffersBody": "Агентства скоро пришлют свои предложения.",
     "notFoundTitle": "Заказ не найден",
@@ -723,7 +724,11 @@
     "noAdvantagesCatalog": "Список преимуществ пока недоступен.",
     "advantagesSelectedCount": "Выбрано {count}/{max}",
     "saving": "Сохранение…",
-    "saveProfile": "Сохранить профиль"
+    "saveProfile": "Сохранить профиль",
+    "pricelistDeadlineLabel": "Срок выполнения",
+    "pricelistDeadlinePlaceholder": "например 14",
+    "pricelistDeadlineUnit": "дней",
+    "pricelistDeadlineHint": "За сколько дней вы обязуетесь сдать работу. Это указывается в договоре."
   },
   "designer": {
     "createCategories": "Ваши направления",
@@ -1069,5 +1074,43 @@
     "errLocation": "Не удалось определить местоположение.",
     "errMapContainer": "Контейнер карты недоступен.",
     "errMapLoad": "Не удалось загрузить карту."
+  },
+  "amendments": {
+    "sectionTitle": "Дополнительные соглашения",
+    "title": "Дополнительное соглашение",
+    "propose": "Изменить условия",
+    "proposeTitle": "Изменение условий сделки",
+    "proposeHint": "Измените прайслист и срок выполнения. Изменение вступает в силу только после подтверждения обеими сторонами (и оператором, если требуется).",
+    "emptyHint": "Изменения пока не предложены.",
+    "reasonLabel": "Причина (необязательно)",
+    "reasonPlaceholder": "Почему нужно изменить условия",
+    "byClient": "Предложено клиентом",
+    "byAgent": "Предложено агентством",
+    "total": "Итого",
+    "deadline": "Срок",
+    "days": "дней",
+    "extraPayment": "Доплата",
+    "partyClient": "Клиент",
+    "partyAgent": "Агентство",
+    "partyOperator": "Оператор",
+    "formalDocNote": "Это изменение затрагивает срок или выходит за рамки исходного прайслиста — помимо электронного подтверждения рекомендуется оформить официальный подписанный документ.",
+    "rejectedReason": "Причина",
+    "downloadPdf": "Скачать соглашение",
+    "payExtra": "Доплатить",
+    "approve": "Подтвердить",
+    "reject": "Отклонить",
+    "cancel": "Отозвать",
+    "proposedToast": "Изменение предложено",
+    "approvedToast": "Подтверждено",
+    "rejectedToast": "Отклонено",
+    "cancelledToast": "Отозвано",
+    "status": {
+      "pending": "Ожидает подтверждения",
+      "approved": "Ожидает оплаты",
+      "applied": "Применено",
+      "rejected": "Отклонено",
+      "cancelled": "Отозвано",
+      "expired": "Истекло"
+    }
   }
 }

@@ -370,6 +370,7 @@
     "attachedFiles": "Biriktirilgan fayllar",
     "locationTitle": "Manzil",
     "offersHeading": "Takliflar",
+    "selectedOfferHeading": "Tanlangan agentlik",
     "noOffersTitle": "Hozircha takliflar yo'q",
     "noOffersBody": "Agentliklar tez orada takliflarini yuboradi.",
     "notFoundTitle": "Buyurtma topilmadi",
@@ -723,7 +724,11 @@
     "noAdvantagesCatalog": "Hozircha afzalliklar ro'yxati mavjud emas.",
     "advantagesSelectedCount": "{count}/{max} tanlangan",
     "saving": "Saqlanmoqda…",
-    "saveProfile": "Profilni saqlash"
+    "saveProfile": "Profilni saqlash",
+    "pricelistDeadlineLabel": "Bajarish muddati",
+    "pricelistDeadlinePlaceholder": "masalan 14",
+    "pricelistDeadlineUnit": "kun",
+    "pricelistDeadlineHint": "Ishni necha kunda topshirishga majburiyat olasiz. Bu shartnomaga yoziladi."
   },
   "designer": {
     "createCategories": "Yo'nalishlaringiz",
@@ -1069,5 +1074,43 @@
     "errLocation": "Joylashuvni aniqlab bo'lmadi.",
     "errMapContainer": "Xarita konteyneri mavjud emas.",
     "errMapLoad": "Xaritani yuklab bo'lmadi."
+  },
+  "amendments": {
+    "sectionTitle": "Qo'shimcha kelishuvlar",
+    "title": "Qo'shimcha kelishuv",
+    "propose": "Shartlarni o'zgartirish",
+    "proposeTitle": "Shartlarni o'zgartirish",
+    "proposeHint": "Narxlar ro'yxati va bajarish muddatini o'zgartiring. O'zgarish faqat ikkala tomon (kerak bo'lsa operator) tasdiqlagach kuchga kiradi.",
+    "emptyHint": "Hozircha o'zgarish taklif qilinmagan.",
+    "reasonLabel": "Sabab (ixtiyoriy)",
+    "reasonPlaceholder": "Nega shartlar o'zgarishi kerak",
+    "byClient": "Mijoz tomonidan",
+    "byAgent": "Agentlik tomonidan",
+    "total": "Jami",
+    "deadline": "Muddat",
+    "days": "kun",
+    "extraPayment": "Qo'shimcha to'lov",
+    "partyClient": "Mijoz",
+    "partyAgent": "Agentlik",
+    "partyOperator": "Operator",
+    "formalDocNote": "Bu o'zgarish muddatga ta'sir qiladi yoki dastlabki tarifnoma doirasidan chiqadi — elektron tasdiqdan tashqari rasmiy imzolangan hujjat tavsiya etiladi.",
+    "rejectedReason": "Sabab",
+    "downloadPdf": "Kelishuvni yuklab olish",
+    "payExtra": "Qo'shimcha to'lash",
+    "approve": "Tasdiqlash",
+    "reject": "Rad etish",
+    "cancel": "Bekor qilish",
+    "proposedToast": "O'zgarish taklif qilindi",
+    "approvedToast": "Tasdiqlandi",
+    "rejectedToast": "Rad etildi",
+    "cancelledToast": "Bekor qilindi",
+    "status": {
+      "pending": "Tasdiq kutilmoqda",
+      "approved": "To'lov kutilmoqda",
+      "applied": "Qo'llanildi",
+      "rejected": "Rad etildi",
+      "cancelled": "Bekor qilindi",
+      "expired": "Muddati o'tgan"
+    }
   }
 }

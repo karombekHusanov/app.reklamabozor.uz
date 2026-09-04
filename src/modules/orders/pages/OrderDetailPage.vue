@@ -20,6 +20,7 @@ import OrderHashtagChips from '@/modules/orders/components/OrderHashtagChips.vue
 import OrderAttachments from '@/modules/orders/components/OrderAttachments.vue'
 import OfferCard from '@/modules/orders/components/OfferCard.vue'
 import ContractDownloadCard from '@/modules/orders/components/ContractDownloadCard.vue'
+import AmendmentsSection from '@/modules/orders/components/AmendmentsSection.vue'
 import CriteriaReviewForm from '@/modules/orders/components/CriteriaReviewForm.vue'
 import ReviewDisplay from '@/modules/orders/components/ReviewDisplay.vue'
 import { formatPrice } from '@/modules/orders/lib/order-status'
@@ -38,6 +39,12 @@ const { haptic } = useTelegram()
 
 const order = computed(() => orders.currentOrder)
 const offers = computed(() => order.value?.offers ?? [])
+// Once the client picks an offer, the losing bids are no longer relevant —
+// show only the accepted one so the order detail focuses on the chosen agency.
+const acceptedOffer = computed(() => offers.value.find(o => o.status === 'accepted') ?? null)
+const visibleOffers = computed(() =>
+  acceptedOffer.value ? [acceptedOffer.value] : offers.value,
+)
 const title = computed(() =>
   order.value?.title
   || (order.value?.category ? categoryName(order.value.category, locale.locale) : '')
@@ -66,6 +73,9 @@ const awaitingConfirmation = computed(() => order.value?.status === 'work_submit
 const hasChat = computed(() =>
   order.value ? ['in_progress', 'work_submitted', 'completed'].includes(order.value.status) : false,
 )
+
+// Additional agreements (Qo'shimcha kelishuv): allowed while the deal is active.
+const isActiveDeal = computed(() => order.value?.status === 'in_progress')
 
 // Rating: offered once the order completes, until a review is stored.
 const hasReview = computed(() => Boolean(order.value?.review))
@@ -451,6 +461,15 @@ async function sendReview(criteria: ReviewCriterionScore[], comment: string | nu
           :contract="order.contract"
         />
 
+        <!-- Additional agreements (Qo'shimcha kelishuv) on the active deal. -->
+        <AmendmentsSection
+          v-if="acceptedOffer"
+          :order-id="order.id"
+          :is-active="isActiveDeal"
+          :initial-items="acceptedOffer.items ?? []"
+          :initial-deadline-days="acceptedOffer.deadline_days ?? null"
+        />
+
         <!-- Rating: once completed, ask the client to rate the agency (criteria-based). -->
         <CriteriaReviewForm
           v-if="canRate"
@@ -480,7 +499,8 @@ async function sendReview(criteria: ReviewCriterionScore[], comment: string | nu
           <div class="flex items-center gap-2 px-1">
             <MessageSquareQuote class="size-4 text-primary" />
             <h3 class="text-base font-semibold text-foreground">
-              {{ locale.t.orders.offersHeading }} ({{ offers.length }})
+              {{ acceptedOffer ? locale.t.orders.selectedOfferHeading : locale.t.orders.offersHeading }}
+              <template v-if="!acceptedOffer">({{ offers.length }})</template>
             </h3>
           </div>
 
@@ -498,7 +518,7 @@ async function sendReview(criteria: ReviewCriterionScore[], comment: string | nu
 
           <template v-else>
             <OfferCard
-              v-for="offer in offers"
+              v-for="offer in visibleOffers"
               :key="offer.id"
               :offer="offer"
               :selectable="selectable"
