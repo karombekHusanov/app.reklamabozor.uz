@@ -1,35 +1,25 @@
 <script setup lang="ts">
-import {
-  Building2,
-  ClipboardList,
-  Gavel,
-  Handshake,
-  Loader2,
-  Map,
-  MessageCircle,
-  MessagesSquare,
-  Palette,
-  Radio,
-} from '@lucide/vue'
+import { Loader2 } from '@lucide/vue'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import Autoplay from 'embla-carousel-autoplay'
-import { Carousel, CarouselContent, CarouselItem, type CarouselApi } from '@/core/ui/carousel'
 import { usePullToRefresh } from '@/core/composables/usePullToRefresh'
-import { openExternalLink } from '@/core/lib/telegram-init'
 import { useTelegram } from '@/core/composables/useTelegram'
 import { useLocaleStore } from '@/core/i18n/locale.store'
 import { useAuthStore } from '@/modules/auth/stores/auth.store'
 import { useHomeStore } from '@/modules/home/stores/home.store'
-import { trackBannerClick, trackBannerView, type Banner } from '@/modules/home/services/banners.service'
 import HomePageSkeleton from '@/modules/home/components/HomePageSkeleton.vue'
-import HomeTopBar from '@/modules/home/components/HomeTopBar.vue'
-import HomeActionDock, { type HomeActionItem } from '@/modules/home/components/HomeActionDock.vue'
-import LiveOrdersCarousel from '@/modules/home/components/LiveOrdersCarousel.vue'
-import TopRatedAgents from '@/modules/home/components/TopRatedAgents.vue'
-import { fetchMyRating } from '@/modules/orders/services/orders.service'
-import { fullName, isBusinessUser } from '@/modules/auth/types/user'
-import type { RatingInfo } from '@/modules/orders/types/order'
+import HomeHero from '@/modules/home/components/HomeHero.vue'
+import HomeStatCards from '@/modules/home/components/HomeStatCards.vue'
+import HomeFeatureTiles from '@/modules/home/components/HomeFeatureTiles.vue'
+import HomeSteps from '@/modules/home/components/HomeSteps.vue'
+import HomeServiceRail from '@/modules/home/components/HomeServiceRail.vue'
+import HomeAgencyRail from '@/modules/home/components/HomeAgencyRail.vue'
+import HomeLiveRequests from '@/modules/home/components/HomeLiveRequests.vue'
+import { fetchLiveStats, type LiveStats } from '@/modules/home/services/live-stats.service'
+import { fetchCategories } from '@/modules/orders/services/orders.service'
+import { fullName } from '@/modules/auth/types/user'
+import type { LiveOrder } from '@/modules/home/services/live-orders.service'
+import type { Category } from '@/modules/agent/types/agent'
 import { ROUTES } from '@/modules/shell/constants/routes'
 
 const auth = useAuthStore()
@@ -61,191 +51,68 @@ const displayName = computed(() => {
 
 const avatarSrc = computed(() => auth.user?.avatar ?? null)
 
-const isProviderView = computed(() =>
-  Boolean(auth.user && isBusinessUser(auth.user) && home.providerApproved),
-)
+/** Live platform pulse for the glowing stat cards. */
+const liveStats = ref<LiveStats | null>(null)
 
-const myRating = ref<RatingInfo | null>(null)
-
-async function loadIdentityRating() {
-  if (!auth.isAuthenticated || !auth.user) {
-    myRating.value = null
-    return
-  }
+async function loadLiveStats() {
   try {
-    myRating.value = await fetchMyRating(auth.user.role)
+    liveStats.value = await fetchLiveStats()
   }
   catch {
-    myRating.value = null
+    // Non-critical — keep the last value on transient errors.
   }
 }
 
-/**
- * Personal dock below banner (auth only):
- * - Offers → /offers (approved provider)
- * - Orders → /orders
- * - Chats → /chat/threads
- */
-const dockActions = computed((): HomeActionItem[] => {
-  if (!auth.isAuthenticated) return []
+/** Public service catalogue for the "Browse by service" rail. */
+const categories = ref<Category[]>([])
 
-  const items: HomeActionItem[] = []
-
-  if (isProviderView.value) {
-    items.push({
-      key: 'offers',
-      label: locale.t.home.actionOffers,
-      description: locale.t.home.actionOffersDesc,
-      count: home.offersPending > 0 ? home.offersPending : undefined,
-      icon: Handshake,
-      tone: 'amber',
-      pulse: home.offersPending > 0,
-    })
+async function loadCategories() {
+  try {
+    const list = await fetchCategories()
+    categories.value = list
+      .filter(c => c.is_active)
+      .sort((a, b) => a.sort_order - b.sort_order)
   }
-
-  items.push(
-    {
-      key: 'orders',
-      label: locale.t.home.actionOrders,
-      description: locale.t.home.actionOrdersDesc,
-      count: home.myOrdersCount > 0 ? home.myOrdersCount : undefined,
-      icon: ClipboardList,
-      tone: 'sky',
-    },
-    {
-      key: 'chats',
-      label: locale.t.home.actionChats,
-      description: locale.t.home.actionChatsDesc,
-      count: home.unreadChats > 0 ? home.unreadChats : undefined,
-      icon: MessageCircle,
-      tone: 'violet',
-      pulse: home.unreadChats > 0,
-    },
-  )
-
-  return items
-})
-
-/**
- * Marketplace explore tiles (below banner).
- */
-const exploreActions = computed((): HomeActionItem[] => [
-  {
-    key: 'live-orders',
-    label: locale.t.home.liveOrdersTitle,
-    description: locale.t.home.liveOrdersHint,
-    count: home.newLiveOrdersCount > 0 ? home.newLiveOrdersCount : undefined,
-    icon: Radio,
-    tone: 'emerald',
-    pulse: home.newLiveOrdersCount > 0,
-  },
-  {
-    key: 'tender',
-    label: locale.t.tender.title,
-    description: locale.t.tender.subtitle,
-    icon: Gavel,
-    tone: 'amber',
-    tag: locale.t.tender.comingSoonBadge,
-  },
-  {
-    key: 'chat',
-    label: locale.t.home.globalChat,
-    description: locale.t.chat.global.entryBody,
-    count: home.unreadGlobal > 0 ? home.unreadGlobal : undefined,
-    icon: MessagesSquare,
-    tone: 'violet',
-    pulse: home.unreadGlobal > 0,
-  },
-  {
-    key: 'map',
-    label: locale.t.home.viewMap,
-    description: locale.t.home.viewMapHint,
-    icon: Map,
-    tone: 'teal',
-  },
-  {
-    key: 'designers',
-    label: locale.t.designers.title,
-    description: locale.t.designers.subtitle,
-    icon: Palette,
-    tone: 'sky',
-  },
-  {
-    key: 'agencies',
-    label: locale.t.home.agencies,
-    description: locale.t.home.browseProvidersHint,
-    icon: Building2,
-    tone: 'indigo',
-  },
-])
-
-const actionRoutes: Record<string, string> = {
-  offers: ROUTES.offers,
-  orders: ROUTES.orders,
-  chats: ROUTES.chatThreads,
-  'live-orders': ROUTES.liveOrders,
-  tender: ROUTES.tender,
-  chat: ROUTES.chat,
-  map: ROUTES.map,
-  designers: ROUTES.designers,
-  agencies: ROUTES.agencies,
+  catch {
+    categories.value = []
+  }
 }
 
-function onAction(key: string) {
-  const to = actionRoutes[key]
-  if (to) navigate(to)
-}
-
-const hasBanners = computed(() => home.banners.length > 0)
 const showSkeleton = computed(() => !home.hasLoaded && (home.isLoading || auth.isLoading))
 const providersLoading = computed(() => !home.hasLoaded && home.isLoading)
 
-const activeBanner = ref(0)
-
-const BANNER_AUTOPLAY_MS = 4500
-const bannerAutoplay = Autoplay({
-  delay: BANNER_AUTOPLAY_MS,
-  stopOnInteraction: false,
-  stopOnMouseEnter: true,
-})
-
-/** One full-width slide at a time; loop so autoplay keeps animating. */
-const bannerCarouselOpts = {
-  loop: true,
-  align: 'start' as const,
-  duration: 25,
+function navigate(to: string) {
+  haptic('light')
+  void router.push(to)
 }
 
-const bannerCarouselPlugins = computed(() =>
-  home.banners.length > 1 ? [bannerAutoplay] : [],
-)
-
-const seenBanners = new Set<number>()
-
-function recordBannerImpression(index: number) {
-  const banner = home.banners[index]
-  if (!banner || seenBanners.has(banner.id)) return
-  seenBanners.add(banner.id)
-  trackBannerView(banner.id)
+function onSearch(query: string) {
+  haptic('light')
+  void router.push({ path: ROUTES.agencies, query: query ? { q: query } : {} })
 }
 
-function onBannerCarouselInit(api: CarouselApi) {
-  if (!api) return
+function onSelectCategory(category: Category) {
+  haptic('light')
+  void router.push({
+    path: ROUTES.agencies,
+    query: { category: String(category.id), type: category.type },
+  })
+}
 
-  const syncActive = () => {
-    activeBanner.value = api.selectedScrollSnap()
-    recordBannerImpression(activeBanner.value)
-  }
+function openLiveOrder(order: LiveOrder) {
+  haptic('light')
+  void router.push(ROUTES.liveOrderDetail(order.id))
+}
 
-  api.on('select', syncActive)
-  api.on('reInit', syncActive)
-  syncActive()
+function openLiveOrders() {
+  void home.markLiveOrdersSeen()
+  navigate(ROUTES.liveOrders)
 }
 
 const { pullDistance, isPulling } = usePullToRefresh({
   onRefresh: async () => {
     haptic('light')
-    await home.refresh()
+    await Promise.all([home.refresh(), loadLiveStats(), loadCategories()])
   },
 })
 
@@ -255,37 +122,12 @@ const refreshLabel = computed(() =>
     : locale.t.home.pullToRefresh,
 )
 
-function navigate(to: string) {
-  haptic('light')
-  void router.push(to)
-}
-
-function openBanner(banner: Banner) {
-  haptic('light')
-  trackBannerClick(banner.id)
-  if (banner.target_id) {
-    if (banner.type === 'agent') {
-      void router.push(`/agents/${banner.target_id}`)
-      return
-    }
-    if (banner.type === 'product') {
-      void router.push(`/products/${banner.target_id}`)
-      return
-    }
-  }
-  if (!banner.link_url) return
-  if (/^https?:\/\//i.test(banner.link_url)) {
-    openExternalLink(banner.link_url)
-    return
-  }
-  void router.push(banner.link_url)
-}
-
 /** Badge-only poll — never re-fetch showcase / chat lists from Home. */
 const BADGE_POLL_MS = 15_000
 let badgePollTimer: ReturnType<typeof setInterval> | null = null
 
 function refreshBadges() {
+  void loadLiveStats()
   if (auth.isAuthenticated) {
     void home.loadActivity(true)
   }
@@ -313,7 +155,8 @@ function onVisibilityChange() {
 
 onMounted(() => {
   void home.load()
-  void loadIdentityRating()
+  void loadLiveStats()
+  void loadCategories()
   startBadgePoll()
   document.addEventListener('visibilitychange', onVisibilityChange)
 })
@@ -326,21 +169,9 @@ onUnmounted(() => {
 watch(() => auth.isAuthenticated, (authed, wasAuthed) => {
   if (wasAuthed === undefined || authed === wasAuthed) return
   home.reset()
-  myRating.value = null
   void home.load()
-  void loadIdentityRating()
   startBadgePoll()
 })
-
-watch(
-  () => auth.user?.role,
-  () => {
-    void loadIdentityRating()
-    if (auth.isAuthenticated) {
-      void home.loadActivity(true)
-    }
-  },
-)
 </script>
 
 <template>
@@ -362,101 +193,107 @@ watch(
       <span>{{ refreshLabel }}</span>
     </div>
 
-    <HomeTopBar
+    <HomeHero
       :display-name="displayName"
       :avatar-src="avatarSrc"
-      :is-authenticated="auth.isAuthenticated"
       :notification-count="home.notificationCount"
-      :active-role="auth.user?.role"
-      :rating="myRating"
-      :is-provider="isProviderView"
-      :offers-count="home.offersPending"
-      :chats-unread="home.unreadChats"
-      @profile="navigate(ROUTES.profile)"
+      @search="onSearch"
       @notifications="navigate(ROUTES.notifications)"
-      @navigate="navigate"
+      @profile="navigate(ROUTES.profile)"
     />
 
-    <div
-      v-if="hasBanners"
-      class="home-banner-carousel px-5 pt-3"
-    >
-      <Carousel
-        class="home-banner-carousel__viewport relative overflow-hidden rounded-[1.35rem]"
-        :opts="bannerCarouselOpts"
-        :plugins="bannerCarouselPlugins"
-        @init-api="onBannerCarouselInit"
-      >
-        <CarouselContent class="!ml-0">
-          <CarouselItem
-            v-for="banner in home.banners"
-            :key="banner.id"
-            class="!basis-full !pl-0"
-          >
-            <button
-              type="button"
-              class="pressable relative w-full overflow-hidden border border-white/70 shadow-[0_10px_28px_-16px_rgba(11,107,203,0.35)]"
-              :class="!banner.image && 'bg-muted'"
-              :style="banner.image ? { backgroundImage: `url(${banner.image})`, backgroundSize: 'cover', backgroundPosition: 'center' } : undefined"
-              :aria-label="banner.title ?? locale.t.home.bannerAd"
-              @click="openBanner(banner)"
-            >
-              <div
-                class="min-h-[154px]"
-                aria-hidden="true"
-              />
-            </button>
-          </CarouselItem>
-        </CarouselContent>
+    <div class="home-sheet">
+      <span
+        class="home-sheet__grip"
+        aria-hidden="true"
+      />
 
-        <div
-          v-if="home.banners.length > 1"
-          class="home-banner-carousel__dots"
-          aria-hidden="true"
-        >
-          <span
-            v-for="(banner, i) in home.banners"
-            :key="banner.id"
-            class="home-banner-carousel__dot"
-            :class="i === activeBanner && 'home-banner-carousel__dot--active'"
-          />
-        </div>
-      </Carousel>
+      <div class="home-stats">
+        <HomeStatCards :stats="liveStats" />
+      </div>
+
+      <div class="home-block px-[18px]">
+        <HomeFeatureTiles
+          :nearby="liveStats?.agencies_total"
+          :online="liveStats?.users_online"
+          @map="navigate(ROUTES.map)"
+          @chat="navigate(ROUTES.chat)"
+        />
+      </div>
+
+      <div class="home-block px-[18px]">
+        <HomeSteps />
+      </div>
+
+      <div class="home-block">
+        <HomeServiceRail
+          :categories="categories"
+          @select="onSelectCategory"
+          @view-all="navigate(ROUTES.agencies)"
+        />
+      </div>
+
+      <div class="home-block">
+        <HomeAgencyRail
+          :title="locale.t.home.topAgencies"
+          :agents="home.topAgents"
+          :view-all-route="ROUTES.agencies"
+          :loading="providersLoading"
+        />
+      </div>
+
+      <div class="home-block">
+        <HomeAgencyRail
+          :title="locale.t.home.topDesigners"
+          :agents="home.topDesigners"
+          :view-all-route="ROUTES.designers"
+          :loading="providersLoading"
+        />
+      </div>
+
+      <div class="home-block pb-2">
+        <HomeLiveRequests
+          :orders="home.liveOrders"
+          @open="openLiveOrder"
+          @view-all="openLiveOrders"
+        />
+      </div>
     </div>
-
-    <HomeActionDock
-      :actions="dockActions"
-      aria-label="Orders and chats"
-      @action="onAction"
-    />
-
-    <HomeActionDock
-      layout="grid"
-      :actions="exploreActions"
-      :aria-label="locale.t.home.quickAction"
-      @action="onAction"
-    />
-
-    <section class="home-stack overflow-x-hidden px-5">
-      <LiveOrdersCarousel />
-    </section>
-
-    <section class="home-stack px-5">
-      <TopRatedAgents
-        :title="locale.t.home.topAgencies"
-        :agents="home.topAgents"
-        :view-all-route="ROUTES.agencies"
-        :loading="providersLoading"
-      />
-    </section>
-
-    <section class="home-stack px-5 pb-2">
-      <TopRatedAgents
-        :title="locale.t.home.topDesigners"
-        :agents="home.topDesigners"
-        :view-all-route="ROUTES.designers"
-        :loading="providersLoading"
-      />
-    </section>
   </div>
 </template>
+
+<style scoped>
+.home-page {
+  display: flex;
+  min-height: 100%;
+  flex-direction: column;
+}
+
+.home-sheet {
+  position: relative;
+  z-index: 2;
+  margin-top: -2rem;
+  background: var(--background);
+  border-radius: 26px 26px 0 0;
+  padding-bottom: 1.5rem;
+}
+.home-sheet__grip {
+  display: block;
+  width: 40px;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--border);
+  margin: 10px auto 0;
+}
+
+.home-stats {
+  position: relative;
+  z-index: 4;
+  padding: 0 18px;
+  margin-top: -1.75rem;
+}
+
+.home-block {
+  padding-top: 1.6rem;
+}
+</style>

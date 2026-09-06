@@ -1,5 +1,5 @@
 
-@import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Archivo:wght@700;800;900&display=swap');
 
 @import "tailwindcss";
 
@@ -105,6 +105,42 @@
     --sidebar-accent-foreground: #0b4f91;
     --sidebar-border: #e4e9f0;
     --sidebar-ring: #0b6bcb;
+
+    /* ============================================================
+     * Reklama Bozor — Design System v1  (see DESIGN_SYSTEM.md)
+     * Redesign tokens. Components MUST prefer these over literals.
+     * Blue brand lives in --primary / --brand-gradient.
+     * ============================================================ */
+    --rb-font-display: "Archivo", "Geist", system-ui, sans-serif;
+
+    /* Accents */
+    --rb-cta: #f26b21;            /* single warm call-to-action (FAB, badges) */
+    --rb-cta-strong: #dc5a13;
+    --rb-on-cta: #ffffff;
+    --rb-glow: #38bdf8;           /* cyan — running borders, seals, glows */
+    --rb-glow-soft: #9becff;
+    --rb-rating: #f5a524;         /* stars */
+    --rb-hero-grad: linear-gradient(158deg, #02305c 0%, #014ba4 55%, #0386d9 125%);
+
+    /* Radii */
+    --rb-r-card: 20px;
+    --rb-r-tile: 18px;
+    --rb-r-field: 16px;
+    --rb-r-icon: 16px;
+    --rb-r-chip: 999px;
+
+    /* Elevation */
+    --rb-elev-1: 0 4px 18px rgba(9, 40, 78, 0.07);      /* resting card */
+    --rb-elev-2: 0 14px 34px -14px rgba(2, 48, 92, 0.22); /* raised / overlay */
+    --rb-elev-cta: 0 12px 24px -8px rgba(242, 107, 33, 0.55);
+    --rb-elev-bar: 0 -6px 22px -14px rgba(2, 48, 92, 0.22);
+
+    /* Rhythm & motion */
+    --rb-gutter: 18px;
+    --rb-section-gap: 1.6rem;
+    --rb-dur: 180ms;
+    --rb-dur-slow: 300ms;
+    --rb-ease: cubic-bezier(0.22, 0.72, 0.3, 1);
 }
 
 .dark {
@@ -150,6 +186,11 @@
     --sidebar-accent-foreground: #b9d6f5;
     --sidebar-border: rgba(255, 255, 255, 0.08);
     --sidebar-ring: #4da3ff;
+
+    /* Design System v1 — dark elevation overrides (see DESIGN_SYSTEM.md) */
+    --rb-elev-1: 0 6px 22px rgba(0, 0, 0, 0.4);
+    --rb-elev-2: 0 16px 40px -16px rgba(0, 0, 0, 0.6);
+    --rb-elev-bar: 0 -6px 22px -14px rgba(0, 0, 0, 0.5);
 }
 
 @layer base {
@@ -2025,8 +2066,7 @@
   }
 
   .tab-bar-dock {
-    @apply pointer-events-none fixed inset-x-4 z-50 flex justify-center;
-    bottom: max(env(safe-area-inset-bottom), 1rem);
+    @apply pointer-events-none fixed inset-x-0 bottom-0 z-50 flex justify-center;
   }
 
   .wizard-action-dock {
