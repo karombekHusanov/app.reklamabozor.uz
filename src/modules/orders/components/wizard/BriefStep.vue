@@ -152,7 +152,7 @@ function focusTagInput() {
 <template>
   <div class="space-y-6">
     <div class="space-y-1">
-      <h2 class="text-lg font-bold text-foreground">
+      <h2 class="rb-font-display text-lg font-extrabold tracking-[-0.015em] text-foreground">
         {{ locale.t.orders.wizard.briefTitle }}
       </h2>
       <p class="text-sm text-muted-foreground">

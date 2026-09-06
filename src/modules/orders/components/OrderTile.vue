@@ -106,7 +106,7 @@ const offersLabel = computed(() =>
     </div>
 
     <div class="min-w-0 space-y-1">
-      <h3 class="line-clamp-2 text-[15px] font-bold leading-snug text-foreground">
+      <h3 class="rb-font-display line-clamp-2 text-[15.5px] font-extrabold leading-snug tracking-[-0.01em] text-foreground">
         {{ displayTitle }}
       </h3>
       <p class="live-order-tile__desc">

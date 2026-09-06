@@ -15,7 +15,7 @@ const locale = useLocaleStore()
       :key="index"
       class="space-y-1.5"
     >
-      <h2 class="text-[15px] font-semibold text-foreground">
+      <h2 class="rb-font-display text-[16px] font-extrabold tracking-[-0.01em] text-foreground">
         {{ section.title }}
       </h2>
       <p class="text-muted-foreground">

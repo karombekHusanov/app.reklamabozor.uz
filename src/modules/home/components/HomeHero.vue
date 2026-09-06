@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { Bell, ArrowRight, Search } from '@lucide/vue'
+import { ArrowRight, Bell, Search } from '@lucide/vue'
 import Avatar from '@/core/ui/Avatar.vue'
+import BillboardAd from '@/modules/home/components/BillboardAd.vue'
 import { useLocaleStore } from '@/core/i18n/locale.store'
 
 defineProps<{
@@ -19,9 +20,6 @@ const emit = defineEmits<{
 const locale = useLocaleStore()
 const query = ref('')
 
-/** Public asset (served from /public) — bound so Vite leaves it as a runtime URL. */
-const billboardSrc = `${import.meta.env.BASE_URL}images/billboard.jpg`
-
 function submit() {
   emit('search', query.value.trim())
 }
@@ -38,23 +36,13 @@ function submit() {
       aria-hidden="true"
     />
 
-    <!-- billboard advertising itself -->
+    <!-- real billboard, floating on the hero -->
     <span
       class="bbglow"
       aria-hidden="true"
     />
-    <div
-      class="bb"
-      aria-hidden="true"
-    >
-      <img
-        :src="billboardSrc"
-        alt=""
-        loading="lazy"
-        decoding="async"
-      >
-      <span class="bb__ad"><b class="bb__ad-1">Reklama</b><b class="bb__ad-2">Bozor</b></span>
-      <span class="bb__sweep" />
+    <div class="bb">
+      <BillboardAd />
     </div>
 
     <!-- greeting -->
@@ -138,36 +126,17 @@ function submit() {
 .hero__glow--a { top: -40px; right: -50px; width: 200px; height: 200px; background: radial-gradient(circle, rgba(56, 189, 248, 0.5) 0%, transparent 70%); animation: heroGlow 13s ease-in-out infinite; }
 .hero__glow--b { top: 40px; left: -70px; width: 180px; height: 180px; background: radial-gradient(circle, rgba(3, 134, 217, 0.5) 0%, transparent 72%); animation: heroGlow 16s ease-in-out infinite reverse; }
 
-/* billboard photo card */
+/* floating billboard */
 .bbglow {
   position: absolute; top: 116px; right: 22px; width: 150px; height: 110px;
   border-radius: 50%; filter: blur(30px); z-index: 0; pointer-events: none;
   background: radial-gradient(circle, rgba(56, 189, 248, 0.45), transparent 70%);
 }
 .bb {
-  position: absolute; top: 92px; right: 6px;
-  width: 156px; height: 114px; border-radius: 16px; overflow: hidden;
-  transform: rotate(-5deg); z-index: 1; pointer-events: none;
-  border: 1px solid rgba(255, 255, 255, 0.24);
-  box-shadow: 0 24px 42px -16px rgba(0, 0, 0, 0.6);
+  position: absolute; top: 90px; right: 4px; width: 162px; z-index: 1;
+  transform: rotate(-5deg); pointer-events: none;
+  border-radius: 16px; box-shadow: 0 24px 42px -16px rgba(0, 0, 0, 0.6);
   animation: bbFloat 9s ease-in-out infinite;
-}
-.bb img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.bb__ad {
-  position: absolute; z-index: 2; top: 25%; left: 17%; width: 60%;
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
-  padding: 5px 4px 6px; border-radius: 4px;
-  background: linear-gradient(150deg, #02305c 0%, #0b6bcb 100%);
-  box-shadow: 0 3px 9px rgba(0, 0, 0, 0.38), inset 0 0 0 1px rgba(255, 255, 255, 0.16);
-  transform: perspective(290px) rotateY(20deg) rotate(-3deg);
-}
-.bb__ad b { font-family: var(--rb-font-display); font-weight: 900; line-height: 1.02; letter-spacing: 0.01em; font-size: 11px; }
-.bb__ad-1 { color: #fff; }
-.bb__ad-2 { color: #7cc0ff; }
-.bb__sweep {
-  position: absolute; inset: 0; z-index: 3;
-  background: linear-gradient(114deg, transparent 38%, rgba(255, 255, 255, 0.55) 50%, transparent 62%);
-  transform: translateX(-135%); animation: bbSweep 7.5s ease-in-out infinite 1.4s;
 }
 
 /* greeting */
@@ -211,10 +180,9 @@ function submit() {
 
 @keyframes titleShine { from { background-position: 0% center; } to { background-position: 200% center; } }
 @keyframes bbFloat { 0%, 100% { transform: rotate(-5deg) translateY(0); } 50% { transform: rotate(-3.6deg) translateY(-12px); } }
-@keyframes bbSweep { 0% { transform: translateX(-135%); } 55%, 100% { transform: translateX(140%); } }
 @keyframes heroGlow { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(-16px, 14px); } }
 
 @media (prefers-reduced-motion: reduce) {
-  .hero__title, .bb, .bb__sweep, .hero__glow--a, .hero__glow--b { animation: none !important; }
+  .hero__title, .bb, .hero__glow--a, .hero__glow--b { animation: none !important; }
 }
 </style>

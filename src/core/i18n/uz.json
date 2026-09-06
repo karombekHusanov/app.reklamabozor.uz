@@ -93,17 +93,6 @@
     "innRequired": "STIR majburiy",
     "success": "Ariza yuborildi"
   },
-  "identityVerify": {
-    "title": "Shaxsni tasdiqlash",
-    "badge": "Shaxs tasdiqlangan",
-    "desc": "MyID orqali shaxsingizni tasdiqlang. O'tganingizdan so'ng profilingizda tasdiqlangan nishon paydo bo'ladi.",
-    "verified": "Shaxsingiz tasdiqlangan.",
-    "waiting": "Ochilgan MyID oynasida tasdiqlashni yakunlang va qayting — holat avtomatik yangilanadi.",
-    "failed": "Tasdiqlash o'tmadi. Qayta urinib ko'rishingiz mumkin.",
-    "verify": "MyID bilan tasdiqlash",
-    "retry": "Qayta urinish",
-    "starting": "MyID ochilmoqda…"
-  },
   "shell": {
     "tabs": {
       "home": "Asosiy",

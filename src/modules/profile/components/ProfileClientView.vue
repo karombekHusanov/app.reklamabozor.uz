@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import { CheckCircle2, RefreshCw, ShoppingBag } from '@lucide/vue'
+import { ArrowRight, Briefcase, CheckCircle2, RefreshCw, ShoppingBag } from '@lucide/vue'
 import { computed, onMounted, ref } from 'vue'
 import { memberDuration } from '@/core/lib/date'
+import GlassCard from '@/core/ui/GlassCard.vue'
+import { Button } from '@/core/ui/button'
 import { ROUTES } from '@/modules/shell/constants/routes'
 import type { User } from '@/modules/auth/types/user'
 import type { OrderStatus } from '@/modules/orders/types/order'
@@ -14,7 +16,6 @@ import ClientOrderHistorySection from '@/modules/profile/components/client-secti
 import ClientProfileHeaderSection from '@/modules/profile/components/client-sections/ClientProfileHeaderSection.vue'
 import ClientProfileShortcuts from '@/modules/profile/components/client-sections/ClientProfileShortcuts.vue'
 import LegalEntityVerificationCard from '@/modules/profile/components/LegalEntityVerificationCard.vue'
-import IdentityVerificationCard from '@/modules/profile/components/IdentityVerificationCard.vue'
 import type { ClientProfileStat } from '@/modules/profile/components/client-sections/ClientProfileHeaderSection.vue'
 
 const props = defineProps<{
@@ -118,6 +119,12 @@ onMounted(() => {
 function openOrder(id: number) {
   emit('navigate', `${ROUTES.orders}/${id}`)
 }
+
+// Client → provider: open the agent KYC application form (`?as=agent` renders
+// the agent edit/application form; submitting it starts the KYC review).
+function becomeAgent() {
+  emit('navigate', `${ROUTES.profileEdit}?as=agent`)
+}
 </script>
 
 <template>
@@ -140,8 +147,30 @@ function openOrder(id: number) {
       <!-- Zone B — at most one primary -->
       <LegalEntityVerificationCard v-if="showLegalCard" />
 
-      <!-- Optional MyID identity badge (self-manages visibility). -->
-      <IdentityVerificationCard />
+
+      <!-- Become a provider: entry point into the agent KYC application. -->
+      <GlassCard class="space-y-3">
+        <div class="flex items-start gap-3">
+          <div class="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+            <Briefcase class="size-5" />
+          </div>
+          <div class="min-w-0">
+            <p class="font-semibold leading-tight">
+              {{ locale.t.profile.becomeAgentTitle }}
+            </p>
+            <p class="mt-0.5 text-xs leading-relaxed text-muted-foreground">
+              {{ locale.t.profile.becomeAgentBody }}
+            </p>
+          </div>
+        </div>
+        <Button
+          class="h-11 w-full rounded-2xl"
+          @click="becomeAgent"
+        >
+          {{ locale.t.profile.becomeAgentCta }}
+          <ArrowRight class="size-4" />
+        </Button>
+      </GlassCard>
 
       <!-- Zone C — Account -->
       <ClientProfileShortcuts

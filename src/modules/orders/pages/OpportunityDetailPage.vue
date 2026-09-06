@@ -174,7 +174,7 @@ watch(() => props.id, loadOrder)
             >
               {{ categoryLabel }}
             </p>
-            <h2 class="text-lg font-semibold leading-tight text-foreground">
+            <h2 class="rb-font-display text-lg font-extrabold leading-tight tracking-[-0.015em] text-foreground">
               {{ title }}
             </h2>
             <p class="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">

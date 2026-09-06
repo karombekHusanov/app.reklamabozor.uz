@@ -128,7 +128,6 @@ function orderFromAgency() {
       :workflow-steps="agent.workflow_steps ?? []"
       :person-type="agent.person_type"
       :person-type-verified="agent.person_type_verified"
-      :identity-verified="agent.identity_verified"
       :locale="locale"
     >
       <template #actions>

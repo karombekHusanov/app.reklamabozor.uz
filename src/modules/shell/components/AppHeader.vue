@@ -89,12 +89,12 @@ onBeforeUnmount(() => {
               <div class="min-w-0">
                 <p
                   v-if="subtitle"
-                  class="truncate text-xs font-medium text-muted-foreground"
+                  class="truncate text-[11px] font-semibold uppercase tracking-[0.1em] text-muted-foreground"
                 >
                   {{ subtitle }}
                 </p>
                 <h1
-                  class="truncate text-lg font-bold leading-tight tracking-tight text-foreground"
+                  class="rb-font-display truncate text-[19px] font-extrabold leading-tight tracking-[-0.02em] text-foreground"
                   :class="subtitle && 'mt-0.5'"
                 >
                   {{ title }}

@@ -144,7 +144,7 @@ function formatSize(bytes: number): string {
 
       <!-- Title -->
       <div>
-        <h1 class="text-lg font-extrabold leading-tight tracking-tight text-foreground">
+        <h1 class="rb-font-display text-lg font-extrabold leading-tight tracking-[-0.015em] text-foreground">
           {{ item.title }}
         </h1>
       </div>

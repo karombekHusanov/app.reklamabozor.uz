@@ -205,8 +205,8 @@ onBeforeUnmount(() => {
           <p class="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
             {{ t.available }}
           </p>
-          <p class="mt-1 text-2xl font-bold text-foreground">
-            {{ money(balance.available_som) }} <span class="text-base font-semibold text-muted-foreground">{{ balance.currency }}</span>
+          <p class="rb-font-display mt-1 text-[28px] font-extrabold tabular-nums tracking-[-0.02em] text-foreground">
+            {{ money(balance.available_som) }} <span class="text-base font-bold text-muted-foreground">{{ balance.currency }}</span>
           </p>
         </div>
 
@@ -290,7 +290,7 @@ onBeforeUnmount(() => {
 
       <!-- History -->
       <div>
-        <h2 class="mb-2 px-1 text-[13px] font-bold text-foreground">{{ t.history }}</h2>
+        <h2 class="rb-sec__title mb-3 px-1 !text-[16px]">{{ t.history }}</h2>
 
         <div v-if="loading" class="space-y-2">
           <Skeleton v-for="i in 3" :key="i" class="h-16 w-full rounded-2xl" />
@@ -340,8 +340,8 @@ onBeforeUnmount(() => {
   width: 32px;
   align-items: center;
   justify-content: center;
-  border-radius: 10px;
-  background: var(--color-primary, #6d28d9);
-  color: white;
+  border-radius: var(--rb-r-icon);
+  background: var(--primary);
+  color: var(--primary-foreground);
 }
 </style>

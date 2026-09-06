@@ -30,8 +30,6 @@ export interface PublicAgent {
   /** Legal nature of the provider (agents are verified legal; designers may vary). */
   person_type: 'individual' | 'legal_entity' | null
   person_type_verified: boolean
-  /** Passed optional MyID biometric identity verification (trust badge). */
-  identity_verified: boolean
   company_logo: string | null
   bio: string | null
   location_label: string | null

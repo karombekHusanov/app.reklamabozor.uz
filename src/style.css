@@ -441,9 +441,14 @@
   }
 
   .live-order-tile {
-    @apply relative flex flex-col gap-3 overflow-hidden rounded-[1.25rem] border border-border/50 bg-card p-3.5 pl-4 shadow-[0_10px_28px_-18px_rgba(11,107,203,0.22)];
-    @apply dark:border-white/10 dark:bg-[#12263c];
+    @apply relative flex flex-col gap-3 overflow-hidden border border-border bg-card p-3.5 pl-4;
+    @apply dark:border-white/10;
+    border-radius: var(--rb-r-tile);
+    box-shadow: var(--rb-elev-1);
+    transition: transform var(--rb-dur) var(--rb-ease), border-color var(--rb-dur) var(--rb-ease);
   }
+  .live-order-tile:hover { transform: translateY(-2px); border-color: var(--primary); }
+  .live-order-tile:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
 
   .live-order-tile__accent {
     @apply absolute inset-y-3 left-0 w-[3px] rounded-full bg-primary;
@@ -2063,6 +2068,158 @@
   }
   .offers-filter.is-active .offers-filter__count {
     @apply bg-white/20 text-primary-foreground;
+  }
+
+  /* ============================================================
+   * Design System v1 — shared component vocabulary (see DESIGN_SYSTEM.md)
+   * Token-driven primitives so every page composes like the Home screen.
+   * Prefer these over re-declaring scoped section/card/chip styles.
+   * ============================================================ */
+
+  /* Display font (Archivo) — for any headline not covered by a title class */
+  .rb-font-display { font-family: var(--rb-font-display); }
+
+  /* Page gutter + vertical rhythm helpers */
+  .rb-gutter { padding-inline: var(--rb-gutter); }
+  .rb-stack > * + * { margin-top: var(--rb-section-gap); }
+
+  /* Eyebrow + big Archivo page/section titles */
+  .rb-eyebrow {
+    font-family: var(--rb-font-display);
+    font-weight: 800;
+    font-size: 10.5px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--primary);
+  }
+  .rb-page-title {
+    font-family: var(--rb-font-display);
+    font-weight: 800;
+    font-size: 26px;
+    line-height: 1.08;
+    letter-spacing: -0.025em;
+    text-wrap: balance;
+    color: var(--foreground);
+    margin: 0;
+  }
+  .rb-page-sub {
+    margin: 6px 0 0;
+    font-size: 13.5px;
+    line-height: 1.5;
+    color: var(--muted-foreground);
+  }
+
+  /* Section header row (title + "view all →") */
+  .rb-sec {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 13px;
+  }
+  .rb-sec__title {
+    font-family: var(--rb-font-display);
+    font-weight: 800;
+    font-size: 18px;
+    letter-spacing: -0.015em;
+    margin: 0;
+    color: var(--foreground);
+  }
+  .rb-sec__link {
+    font-size: 12.5px;
+    font-weight: 700;
+    color: var(--primary);
+    background: none;
+    border: 0;
+    cursor: pointer;
+    padding: 0;
+    white-space: nowrap;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .rb-sec__link:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; border-radius: 4px; }
+
+  /* Card recipe — resting surface + lift-on-interaction */
+  .rb-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--rb-r-tile);
+    box-shadow: var(--rb-elev-1);
+    transition: transform var(--rb-dur) var(--rb-ease), border-color var(--rb-dur) var(--rb-ease), box-shadow var(--rb-dur) var(--rb-ease);
+  }
+  .rb-card--lg { border-radius: var(--rb-r-card); }
+  .rb-card--interactive { cursor: pointer; }
+  .rb-card--interactive:hover { transform: translateY(-2px); border-color: var(--primary); }
+  .rb-card--interactive:active { transform: scale(0.99); }
+  .rb-card--interactive:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+
+  /* Chips / pills */
+  .rb-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 10.5px;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: var(--rb-r-chip);
+    background: var(--secondary);
+    color: var(--secondary-foreground);
+    white-space: nowrap;
+  }
+  .rb-chip--vf { background: color-mix(in srgb, var(--success) 15%, var(--card)); color: var(--success); }
+  .rb-chip--rating { background: color-mix(in srgb, var(--rb-rating) 16%, var(--card)); color: color-mix(in srgb, var(--rb-rating) 78%, #7a4a00); font-variant-numeric: tabular-nums; }
+
+  /* Cyan verified seal (overlaps an avatar corner) */
+  .rb-seal {
+    position: absolute; right: -5px; bottom: -5px; width: 22px; height: 22px;
+    border-radius: 999px; display: grid; place-items: center; color: #fff;
+    background: linear-gradient(150deg, var(--rb-glow), #0b6bcb);
+    border: 2.5px solid var(--card); box-shadow: 0 2px 6px rgba(2, 48, 92, 0.4);
+  }
+
+  /* Icon tile (category / feature glyph holder) */
+  .rb-icon-tile {
+    display: grid; place-items: center; flex-shrink: 0;
+    width: 46px; height: 46px; border-radius: var(--rb-r-icon);
+    background: var(--secondary); color: var(--primary);
+  }
+
+  /* Coral primary action (the ONE warm CTA) */
+  .rb-cta-btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    font-family: var(--rb-font-display); font-weight: 800; font-size: 15px;
+    color: var(--rb-on-cta); border: 0; cursor: pointer;
+    background: linear-gradient(150deg, var(--rb-cta), var(--rb-cta-strong));
+    border-radius: var(--rb-r-field); box-shadow: var(--rb-elev-cta);
+    padding: 0 18px; min-height: 52px;
+    transition: transform var(--rb-dur) var(--rb-ease), filter var(--rb-dur) var(--rb-ease);
+  }
+  .rb-cta-btn:active { transform: scale(0.98); }
+  .rb-cta-btn:disabled { opacity: 0.55; box-shadow: none; cursor: not-allowed; }
+  .rb-cta-btn:focus-visible { outline: 2px solid var(--rb-cta); outline-offset: 3px; }
+
+  /* Blue gradient primary (secondary weight to coral) */
+  .rb-primary-btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    font-family: var(--rb-font-display); font-weight: 800; font-size: 15px;
+    color: #fff; border: 0; cursor: pointer;
+    background: linear-gradient(150deg, #0b6bcb 0%, #014ba4 100%);
+    border-radius: var(--rb-r-field); box-shadow: 0 12px 24px -12px rgba(11, 107, 203, 0.6);
+    padding: 0 18px; min-height: 52px;
+    transition: transform var(--rb-dur) var(--rb-ease);
+  }
+  .rb-primary-btn:active { transform: scale(0.98); }
+  .rb-primary-btn:disabled { opacity: 0.55; box-shadow: none; cursor: not-allowed; }
+  .rb-primary-btn:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; }
+
+  /* Staggered page-load reveal — one calm entrance, not scattered effects */
+  .rb-reveal { animation: rbReveal var(--rb-dur-slow) var(--rb-ease) both; }
+  .rb-reveal-1 { animation-delay: 40ms; }
+  .rb-reveal-2 { animation-delay: 90ms; }
+  .rb-reveal-3 { animation-delay: 140ms; }
+  .rb-reveal-4 { animation-delay: 190ms; }
+  @keyframes rbReveal { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+  @media (prefers-reduced-motion: reduce) {
+    .rb-reveal { animation: none; }
   }
 
   .tab-bar-dock {

@@ -433,7 +433,7 @@ watch(() => props.id, loadOffer)
               <p class="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
                 {{ locale.t.agent.opportunityDetailTitle }}
               </p>
-              <h2 class="mt-1 truncate text-base font-semibold leading-tight text-foreground">
+              <h2 class="rb-font-display mt-1 truncate text-base font-extrabold leading-tight tracking-[-0.01em] text-foreground">
                 {{ title }}
               </h2>
             </div>

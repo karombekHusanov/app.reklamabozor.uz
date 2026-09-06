@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { BadgeCheck, ChevronRight, ShieldCheck, Star } from '@lucide/vue'
+import { Check, MapPin, Star } from '@lucide/vue'
 import Avatar from '@/core/ui/Avatar.vue'
+import { categoryName } from '@/core/i18n/category-name'
 import { useLocaleStore } from '@/core/i18n/locale.store'
 import type { PublicAgent } from '@/modules/marketplace/services/agents.service'
 
@@ -20,14 +21,7 @@ const ratingLabel = computed(() => {
 
 const reviewCount = computed(() => props.agent.stars_count || props.agent.rating_count)
 
-const gradeColor = computed(() => {
-  const g = props.agent.grade
-  if (g == null) return null
-  if (g >= 80) return 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
-  if (g >= 60) return 'bg-primary/10 text-primary'
-  if (g >= 40) return 'bg-amber-500/15 text-amber-600 dark:text-amber-400'
-  return 'bg-destructive/10 text-destructive'
-})
+const chips = computed(() => props.agent.categories.slice(0, 2).map(c => categoryName(c, locale.locale)))
 
 const distanceLabel = computed(() => {
   const m = props.agent.distance_m
@@ -39,48 +33,68 @@ const distanceLabel = computed(() => {
 <template>
   <button
     type="button"
-    class="pressable flex w-full items-center gap-3 rounded-2xl border border-border bg-card p-3.5 text-left shadow-sm"
+    class="rb-card rb-card--interactive flex w-full flex-col gap-3 p-4 text-left"
     @click="$emit('open')"
   >
-    <Avatar :src="agent.company_logo ?? agent.avatar" :name="agent.display_name" size="md" class="shrink-0 rounded-xl" />
-
-    <div class="min-w-0 flex-1">
-      <div class="flex items-center gap-1.5">
-        <h3 class="truncate font-semibold leading-tight">
-          {{ agent.display_name }}
-        </h3>
-        <BadgeCheck class="size-4 shrink-0 fill-primary text-primary-foreground" />
-        <ShieldCheck
-          v-if="agent.identity_verified"
-          class="size-4 shrink-0 text-emerald-500"
-          :aria-label="locale.t.identityVerify.badge"
+    <div class="flex items-center gap-3">
+      <div class="relative size-[54px] shrink-0">
+        <Avatar
+          :src="agent.company_logo ?? agent.avatar"
+          :name="agent.display_name"
+          size="md"
+          class="size-[54px] rounded-2xl"
         />
+        <span
+          class="rb-seal"
+          :title="locale.t.home.verifiedLabel"
+        >
+          <Check class="size-3" />
+        </span>
       </div>
-      <p v-if="agent.location_label" class="mt-0.5 truncate text-sm text-muted-foreground">
-        {{ agent.location_label }}
-      </p>
-      <div class="mt-1.5 flex flex-wrap items-center gap-2">
-        <span
-          v-if="ratingLabel"
-          class="inline-flex items-center gap-1 text-xs font-medium text-warning"
-        >
-          <Star class="size-3 fill-warning" />
-          {{ ratingLabel }}
-          <span class="text-muted-foreground">({{ reviewCount }})</span>
-        </span>
-        <span
-          v-if="agent.grade != null && agent.grade_label"
-          class="inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold"
-          :class="gradeColor"
-        >
-          {{ agent.grade_label }}
-        </span>
-        <span v-if="distanceLabel" class="text-xs text-muted-foreground">
-          {{ locale.t.marketplace.distanceFrom }} {{ distanceLabel }}
-        </span>
+
+      <div class="min-w-0 flex-1">
+        <div class="flex items-center gap-1.5">
+          <h3 class="rb-font-display min-w-0 truncate text-[16px] font-extrabold tracking-[-0.01em] text-foreground">
+            {{ agent.display_name }}
+          </h3>
+        </div>
+        <div class="mt-1 flex items-center gap-1.5 text-[12.5px] text-muted-foreground">
+          <span
+            v-if="ratingLabel"
+            class="inline-flex items-center gap-1 font-extrabold tabular-nums text-foreground"
+          >
+            <Star class="size-[13px]" :style="{ color: 'var(--rb-rating)', fill: 'var(--rb-rating)' }" />
+            {{ ratingLabel }}
+            <span class="font-medium text-muted-foreground">({{ reviewCount }})</span>
+          </span>
+          <span v-if="ratingLabel" class="opacity-40">·</span>
+          <span>{{ locale.t.home.jobsCount.replace('{count}', String(agent.completed_orders_count)) }}</span>
+        </div>
       </div>
     </div>
 
-    <ChevronRight class="size-5 shrink-0 text-muted-foreground" />
+    <p
+      v-if="agent.bio"
+      class="line-clamp-2 min-h-[36px] text-[12.5px] leading-[1.45] text-muted-foreground"
+    >
+      {{ agent.bio }}
+    </p>
+
+    <div class="flex flex-wrap items-center gap-1.5">
+      <span class="rb-chip rb-chip--vf"><Check class="size-[11px]" />{{ locale.t.home.verifiedLabel }}</span>
+      <span
+        v-if="agent.grade != null && agent.grade_label"
+        class="rb-chip"
+      >{{ agent.grade_label }}</span>
+      <span
+        v-for="(chip, i) in chips"
+        :key="i"
+        class="rb-chip"
+      >{{ chip }}</span>
+      <span
+        v-if="distanceLabel"
+        class="rb-chip inline-flex items-center gap-1"
+      ><MapPin class="size-[11px]" />{{ distanceLabel }}</span>
+    </div>
   </button>
 </template>

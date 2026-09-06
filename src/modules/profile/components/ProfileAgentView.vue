@@ -15,7 +15,6 @@ import type { RatingInfo } from '@/modules/orders/types/order'
 import AgentProfileShortcuts from '@/modules/profile/components/agent-sections/AgentProfileShortcuts.vue'
 import AgentProfileCompletionBar from '@/modules/profile/components/edit/AgentProfileCompletionBar.vue'
 import LegalEntityVerificationCard from '@/modules/profile/components/LegalEntityVerificationCard.vue'
-import IdentityVerificationCard from '@/modules/profile/components/IdentityVerificationCard.vue'
 import { ROUTES } from '@/modules/shell/constants/routes'
 
 const props = defineProps<{
@@ -330,7 +329,7 @@ const statusLabel = computed(() => {
         type="button"
         class="agent-verify-cta pressable"
         :class="verifyMeta.tone"
-        @click="emit('navigate', ROUTES.profileEdit)"
+        @click="emit('navigate', `${ROUTES.profileEdit}?as=agent`)"
       >
         <span class="agent-verify-cta__icon">
           <span
@@ -365,8 +364,6 @@ const statusLabel = computed(() => {
         <AgentProfileCompletionBar :percent="completion" />
       </button>
 
-      <!-- Optional MyID identity badge (independent; self-manages visibility). -->
-      <IdentityVerificationCard />
 
       <!-- Zone C — Account list -->
       <AgentProfileShortcuts

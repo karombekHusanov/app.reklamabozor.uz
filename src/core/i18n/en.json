@@ -93,17 +93,6 @@
     "innRequired": "Tax ID is required",
     "success": "Request submitted"
   },
-  "identityVerify": {
-    "title": "Identity verification",
-    "badge": "Identity verified",
-    "desc": "Confirm your identity through MyID. Once you pass, a verified badge appears on your profile.",
-    "verified": "Your identity is verified.",
-    "waiting": "Complete verification in the opened MyID window, then come back — we'll update automatically.",
-    "failed": "Verification didn't pass. You can try again.",
-    "verify": "Verify with MyID",
-    "retry": "Try again",
-    "starting": "Opening MyID…"
-  },
   "shell": {
     "tabs": {
       "home": "Home",

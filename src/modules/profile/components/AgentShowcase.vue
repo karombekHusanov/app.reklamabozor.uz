@@ -13,7 +13,6 @@ import type { PublicReview } from '@/modules/marketplace/services/agents.service
 import AppHeader from '@/modules/shell/components/AppHeader.vue'
 import Avatar from '@/core/ui/Avatar.vue'
 import PersonTypeBadge from '@/core/ui/PersonTypeBadge.vue'
-import IdentityBadge from '@/core/ui/IdentityBadge.vue'
 import AgentAdvantagesSection from '@/modules/profile/components/agent-sections/AgentAdvantagesSection.vue'
 import AgentContactSection from '@/modules/profile/components/agent-sections/AgentContactSection.vue'
 import AgentPortfolioSection from '@/modules/profile/components/agent-sections/AgentPortfolioSection.vue'
@@ -55,7 +54,6 @@ const props = defineProps<{
   workflowSteps: WorkflowStep[]
   personType?: PersonType | null
   personTypeVerified?: boolean
-  identityVerified?: boolean
   locale: ReturnType<typeof useLocaleStore>
 }>()
 
@@ -160,15 +158,13 @@ const showAboutSection = computed(() =>
             </p>
 
             <div
-              v-if="personType || identityVerified"
+              v-if="personType"
               class="mt-1.5 flex flex-wrap items-center gap-1.5"
             >
               <PersonTypeBadge
-                v-if="personType"
                 :type="personType"
                 :verified="personTypeVerified"
               />
-              <IdentityBadge :verified="identityVerified" />
             </div>
 
             <div

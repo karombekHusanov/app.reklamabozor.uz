@@ -226,7 +226,7 @@ async function sendReview(criteria: ReviewCriterionScore[], comment: string | nu
                 <span class="mt-0.5 shrink-0 rounded-lg bg-gradient-to-br from-[#0386D9] to-[#014BA4] px-2 py-1 text-xs font-extrabold tabular-nums text-white shadow-sm">
                   #{{ order.id }}
                 </span>
-                <h1 class="min-w-0 text-xl font-extrabold leading-snug text-foreground">
+                <h1 class="rb-font-display min-w-0 text-xl font-extrabold leading-snug tracking-[-0.02em] text-foreground">
                   {{ title }}
                 </h1>
               </div>

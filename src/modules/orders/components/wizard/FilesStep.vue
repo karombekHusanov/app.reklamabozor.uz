@@ -50,7 +50,7 @@ function onShowFilesChange(value: boolean | 'indeterminate') {
 <template>
   <div class="space-y-4">
     <div class="space-y-1">
-      <h2 class="text-lg font-bold text-foreground">
+      <h2 class="rb-font-display text-lg font-extrabold tracking-[-0.015em] text-foreground">
         {{ locale.t.orders.wizard.filesTitle }}
       </h2>
       <p class="text-sm text-muted-foreground">

@@ -66,19 +66,27 @@ function openOrder(id: number) {
             :title="locale.t.orders.emptyTitle"
             :description="locale.t.orders.emptyBody"
           >
-            <Button class="mt-1 rounded-2xl" @click="router.push(ROUTES.newOrder)">
-              <Plus class="size-4" />
+            <button
+              type="button"
+              class="rb-cta-btn mt-1 !min-h-[46px] !text-[14px]"
+              @click="router.push(ROUTES.newOrder)"
+            >
+              <Plus class="size-[18px]" />
               {{ locale.t.orders.newRequest }}
-            </Button>
+            </button>
           </EmptyState>
         </GlassCard>
       </template>
 
       <template v-else>
-        <Button class="h-11 w-full rounded-2xl" @click="router.push(ROUTES.newOrder)">
-          <Plus class="size-4" />
+        <button
+          type="button"
+          class="rb-cta-btn w-full"
+          @click="router.push(ROUTES.newOrder)"
+        >
+          <Plus class="size-[18px]" />
           {{ locale.t.orders.newRequest }}
-        </Button>
+        </button>
         <OrderTile
           v-for="order in orders.myOrders"
           :key="order.id"

@@ -108,7 +108,7 @@ defineProps<{
       </svg>
     </div>
 
-    <p class="mt-6 text-lg font-semibold tracking-tight text-foreground">
+    <p class="rb-font-display mt-6 text-xl font-extrabold tracking-[-0.02em] text-foreground">
       {{ title }}
     </p>
   </div>
