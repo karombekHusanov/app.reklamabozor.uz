@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Check, ChevronRight, CloudUpload, FileText, ImageIcon, Loader2, MapPin, Search, Send, X } from '@lucide/vue'
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import Drawer from '@/core/ui/Drawer.vue'
 import GlassCard from '@/core/ui/GlassCard.vue'
 import LocationPicker from '@/core/ui/LocationPicker.vue'
@@ -14,6 +14,7 @@ import { categoryName } from '@/core/i18n/category-name'
 import { regionName } from '@/core/i18n/region-name'
 import { useLocaleStore } from '@/core/i18n/locale.store'
 import { formatFileSize, isImageFile } from '@/modules/orders/lib/wizard'
+import { useOrderDraftStore } from '@/modules/orders/stores/order-draft.store'
 import type { Category } from '@/modules/agent/types/agent'
 import type { CreateOrderPayload } from '@/modules/orders/types/order'
 import type { Region } from '@/modules/orders/types/region'
@@ -35,6 +36,7 @@ const MAX_FILES = 5
 const locale = useLocaleStore()
 const { haptic } = useTelegram()
 const { isUploading, upload } = useFileUpload()
+const orderDraft = useOrderDraftStore()
 const toast = useToast()
 
 interface DraftFile { id: number, url: string, name: string, mime: string | null, size: number }
@@ -69,6 +71,18 @@ const filteredCategories = computed(() => {
     category.name_uz.toLowerCase().includes(query)
     || category.name_ru.toLowerCase().includes(query),
   )
+})
+
+// A draft handed over by the AI assistant pre-fills the form once; the client
+// still reviews and sends it themselves.
+onMounted(() => {
+  const draft = orderDraft.consume()
+  if (!draft) return
+
+  description.value = draft.description
+  if (draft.category_id !== null && props.categories.some(category => category.id === draft.category_id)) {
+    categoryId.value = draft.category_id
+  }
 })
 
 function pickCategory(id: number | null) {

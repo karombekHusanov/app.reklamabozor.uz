@@ -2,9 +2,11 @@ import type { RouteRecordRaw } from 'vue-router'
 
 export const assistantRoutes: RouteRecordRaw[] = [
   {
-    // Tab root for the upcoming AI assistant. Currently a "coming soon" page.
+    // Full-screen chat: the tab bar would eat the composer's room and the
+    // conversation is a place you enter, not a surface you skim.
     path: 'assistant',
     name: 'assistant',
+    meta: { hideTabBar: true },
     component: () => import('@/modules/assistant/pages/AssistantPage.vue'),
   },
 ]
