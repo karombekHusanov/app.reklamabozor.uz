@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Calendar, CheckCircle2, CreditCard, Eye, Loader2, MapPin, MessageCircle, MessageSquareQuote, MessageSquareText, Paperclip, PartyPopper, Store, Tag, XCircle } from '@lucide/vue'
+import { CheckCircle2, CreditCard, Loader2, MessageCircle, MessageSquareQuote, XCircle } from '@lucide/vue'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AppHeader from '@/modules/shell/components/AppHeader.vue'
@@ -15,15 +15,14 @@ import { useLocaleStore } from '@/core/i18n/locale.store'
 import { categoryName } from '@/core/i18n/category-name'
 import { formatDateTime } from '@/core/lib/date'
 import { ROUTES } from '@/modules/shell/constants/routes'
-import OrderStatusBadge from '@/modules/orders/components/OrderStatusBadge.vue'
 import OrderHashtagChips from '@/modules/orders/components/OrderHashtagChips.vue'
 import OrderAttachments from '@/modules/orders/components/OrderAttachments.vue'
 import OfferCard from '@/modules/orders/components/OfferCard.vue'
+import OrderStateCard from '@/modules/orders/components/OrderStateCard.vue'
 import ContractDownloadCard from '@/modules/orders/components/ContractDownloadCard.vue'
 import AmendmentsSection from '@/modules/orders/components/AmendmentsSection.vue'
 import CriteriaReviewForm from '@/modules/orders/components/CriteriaReviewForm.vue'
 import ReviewDisplay from '@/modules/orders/components/ReviewDisplay.vue'
-import { formatPrice } from '@/modules/orders/lib/order-status'
 import { formatOrderRegion } from '@/modules/orders/lib/region-label'
 import { useOrdersStore } from '@/modules/orders/stores/orders.store'
 import type { ReviewCriterionScore } from '@/modules/orders/types/order'
@@ -190,8 +189,8 @@ async function sendReview(criteria: ReviewCriterionScore[], comment: string | nu
 <template>
   <div>
     <AppHeader
-      :title="locale.t.orders.detailTitle"
-      :subtitle="locale.t.orders.detailSubtitle"
+      :title="order ? (title || locale.t.orders.detailTitle) : locale.t.orders.detailTitle"
+      :subtitle="order ? `${locale.t.orders.detailTitle} #${order.id}` : locale.t.orders.detailSubtitle"
       show-back
     />
 
@@ -202,257 +201,162 @@ async function sendReview(criteria: ReviewCriterionScore[], comment: string | nu
       </template>
 
       <template v-else-if="order">
-        <!-- Summary -->
-        <GlassCard padding="none" class="overflow-hidden">
-          <!-- Hero: identity, status & key stats -->
-          <div class="space-y-3.5 p-5">
-            <div class="flex items-center justify-between gap-2">
-              <span
-                v-if="categoryLabel"
-                class="inline-flex min-w-0 items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-xs font-bold text-primary"
-              >
-                <Tag class="size-3.5 shrink-0" />
-                <span class="truncate">{{ categoryLabel }}</span>
-              </span>
-              <span v-else />
-              <OrderStatusBadge
-                :status="order.status"
-                class="shrink-0 !px-3 !py-1"
-              />
-            </div>
-
-            <div class="min-w-0 space-y-2">
-              <div class="flex items-start gap-2.5">
-                <span class="mt-0.5 shrink-0 rounded-lg bg-gradient-to-br from-[#0386D9] to-[#014BA4] px-2 py-1 text-xs font-extrabold tabular-nums text-white shadow-sm">
-                  #{{ order.id }}
-                </span>
-                <h1 class="rb-font-display min-w-0 text-xl font-extrabold leading-snug tracking-[-0.02em] text-foreground">
-                  {{ title }}
-                </h1>
-              </div>
-
-              <p class="flex items-center gap-1.5 text-xs font-medium tabular-nums text-muted-foreground">
-                <Calendar class="size-3.5 shrink-0 opacity-70" />
-                {{ formatDateTime(order.created_at) }}
-              </p>
-
-              <OrderHashtagChips
-                v-if="order.hashtags?.length"
-                class="pt-0.5"
-                :hashtags="order.hashtags"
-              />
-
-              <p
-                v-if="order.target_agent"
-                class="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary"
-              >
-                <Store class="size-3.5" />
-                {{ order.target_agent.company_name }}
-              </p>
-            </div>
-
-            <!-- Key stats -->
-            <div class="grid grid-cols-2 gap-2.5">
-              <div class="flex items-center gap-2.5 rounded-2xl bg-muted/60 px-3 py-2.5 dark:bg-white/5">
-                <span class="flex size-9 shrink-0 items-center justify-center rounded-xl bg-card text-muted-foreground shadow-sm dark:bg-white/10">
-                  <Eye class="size-[18px]" />
-                </span>
-                <div class="min-w-0 leading-tight">
-                  <p class="text-base font-extrabold tabular-nums text-foreground">
-                    {{ order.views_count ?? 0 }}
-                  </p>
-                  <p class="truncate text-[11px] font-medium text-muted-foreground">
-                    {{ locale.t.orders.viewsSuffix }}
-                  </p>
-                </div>
-              </div>
-              <div class="flex items-center gap-2.5 rounded-2xl bg-primary/8 px-3 py-2.5">
-                <span class="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary">
-                  <MessageSquareQuote class="size-[18px]" />
-                </span>
-                <div class="min-w-0 leading-tight">
-                  <p class="text-base font-extrabold tabular-nums text-primary">
-                    {{ offers.length }}
-                  </p>
-                  <p class="truncate text-[11px] font-medium text-primary/80">
-                    {{ locale.t.orders.offersSuffix }}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Detail sections -->
-          <div class="space-y-5 border-t border-border/60 p-5">
-            <!-- Comment -->
-            <section
-              v-if="order.description"
-              class="space-y-2.5"
-            >
-              <div class="flex items-center gap-2">
-                <span class="flex size-6 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                  <MessageSquareText class="size-3.5" />
-                </span>
-                <h3 class="text-[13px] font-bold text-foreground">
-                  {{ locale.t.orders.commentTitle }}
-                </h3>
-              </div>
-              <div class="rounded-2xl border-l-[3px] border-primary/60 bg-muted/40 py-2.5 pl-3.5 pr-3 dark:bg-white/5">
-                <p class="whitespace-pre-line text-sm leading-relaxed text-foreground/90">
-                  {{ order.description }}
-                </p>
-              </div>
-            </section>
-
-            <!-- Attached files -->
-            <section
-              v-if="attachmentFiles.length"
-              class="space-y-2.5"
-            >
-              <div class="flex items-center gap-2">
-                <span class="flex size-6 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                  <Paperclip class="size-3.5" />
-                </span>
-                <h3 class="text-[13px] font-bold text-foreground">
-                  {{ locale.t.orders.attachedFiles }}
-                </h3>
-              </div>
-              <OrderAttachments
-                :files="attachmentFiles"
-                hide-title
-              />
-            </section>
-
-            <!-- Location -->
-            <section
-              v-if="regionLabel || (order.lat != null && order.lng != null)"
-              class="space-y-2.5"
-            >
-              <div class="flex items-center gap-2">
-                <span class="flex size-6 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                  <MapPin class="size-3.5" />
-                </span>
-                <h3 class="text-[13px] font-bold text-foreground">
-                  {{ locale.t.orders.locationTitle }}
-                </h3>
-              </div>
-              <p
-                v-if="regionLabel"
-                class="text-sm font-medium text-foreground/90"
-              >
-                {{ regionLabel }}
-              </p>
-              <LocationMap
-                v-if="order.lat != null && order.lng != null"
-                :lat="order.lat"
-                :lng="order.lng"
-                :label="order.location_label"
-              />
-            </section>
-          </div>
-
-          <!-- Actions -->
-          <div
-            v-if="hasChat || canCancel"
-            class="flex flex-col gap-2.5 border-t border-border/60 p-5"
-          >
+        <!-- Where the work is, and — kept apart — where the money is. -->
+        <OrderStateCard :order="order">
+          <template #action>
+            <!-- Each state shows exactly one primary action. -->
             <Button
-              v-if="hasChat"
-              class="h-12 w-full rounded-2xl"
-              @click="openChat"
-            >
-              <MessageCircle class="size-4" />
-              {{ locale.t.chat.openChat }}
-            </Button>
-
-            <button
-              v-if="canCancel"
-              type="button"
-              class="pressable mx-auto inline-flex h-9 items-center justify-center gap-1.5 rounded-full bg-destructive/10 px-5 text-[13px] font-semibold text-destructive transition active:scale-95 active:bg-destructive/15"
-              @click="openCancelDrawer"
-            >
-              <XCircle class="size-4" />
-              {{ locale.t.orders.cancelShort }}
-            </button>
-          </div>
-        </GlassCard>
-
-        <!-- Payment: client picked an offer and must pay to start the deal. -->
-        <GlassCard
-          v-if="awaitingPayment"
-          class="space-y-3"
-        >
-          <div class="flex items-center gap-2">
-            <CreditCard class="size-5 text-primary" />
-            <h3 class="text-base font-semibold">
-              {{ locale.t.orders.payTitle }}
-            </h3>
-          </div>
-          <p class="text-sm text-muted-foreground">
-            {{ locale.t.orders.payBody }}
-          </p>
-          <Button
-            class="h-11 w-full rounded-2xl"
-            :disabled="orders.isSubmitting"
-            @click="payNow"
-          >
-            <Loader2
-              v-if="orders.isSubmitting"
-              class="size-4 animate-spin"
-            />
-            <CreditCard
-              v-else
-              class="size-4"
-            />
-            {{ locale.t.orders.payNow }}
-            <span v-if="order.payment"> · {{ formatPrice(order.payment.amount_som) }}</span>
-          </Button>
-        </GlassCard>
-
-        <!-- Completion handshake: the agent delivered, the client decides. -->
-        <GlassCard
-          v-if="awaitingConfirmation"
-          class="space-y-3"
-        >
-          <div class="flex items-center gap-2">
-            <PartyPopper class="size-5 text-primary" />
-            <h3 class="text-base font-semibold">
-              {{ locale.t.orders.workReadyTitle }}
-            </h3>
-          </div>
-
-          <p class="text-sm text-muted-foreground">
-            {{ locale.t.orders.workReadyBody }}
-          </p>
-          <p class="text-xs text-muted-foreground">
-            {{ locale.t.orders.workReadyAutoNote }}
-          </p>
-
-          <div class="flex gap-2">
-            <Button
-              class="h-11 flex-1 rounded-2xl"
+              v-if="awaitingPayment"
+              class="h-12 w-full rounded-2xl text-[15px]"
               :disabled="orders.isSubmitting"
-              @click="confirmWork"
+              @click="payNow"
             >
               <Loader2
                 v-if="orders.isSubmitting"
                 class="size-4 animate-spin"
               />
-              <CheckCircle2
+              <CreditCard
                 v-else
                 class="size-4"
               />
-              {{ locale.t.orders.acceptWork }}
+              {{ locale.t.orders.payNow }}
             </Button>
-            <Button
-              variant="outline"
-              class="h-11 rounded-2xl text-destructive"
-              :disabled="orders.isSubmitting"
-              @click="disputeWork"
+
+            <div
+              v-else-if="awaitingConfirmation"
+              class="space-y-2"
             >
-              {{ locale.t.orders.disputeWork }}
+              <div class="flex gap-2">
+                <Button
+                  class="h-12 flex-1 rounded-2xl"
+                  :disabled="orders.isSubmitting"
+                  @click="confirmWork"
+                >
+                  <Loader2
+                    v-if="orders.isSubmitting"
+                    class="size-4 animate-spin"
+                  />
+                  <CheckCircle2
+                    v-else
+                    class="size-4"
+                  />
+                  {{ locale.t.orders.acceptWork }}
+                </Button>
+                <Button
+                  variant="outline"
+                  class="h-12 rounded-2xl text-destructive"
+                  :disabled="orders.isSubmitting"
+                  @click="disputeWork"
+                >
+                  {{ locale.t.orders.disputeWork }}
+                </Button>
+              </div>
+              <p class="text-[11.5px] leading-snug text-muted-foreground">
+                {{ locale.t.orders.workReadyAutoNote }}
+              </p>
+            </div>
+
+            <Button
+              v-else-if="hasChat"
+              class="h-12 w-full rounded-2xl text-[15px]"
+              @click="openChat"
+            >
+              <MessageCircle class="size-4" />
+              {{ locale.t.chat.openChat }}
             </Button>
+          </template>
+        </OrderStateCard>
+
+        <!-- Facts: label/value rows, scannable at a glance -->
+        <GlassCard class="space-y-3">
+          <p class="section-label">
+            {{ locale.t.orders.factsTitle }}
+          </p>
+
+          <dl class="facts">
+            <div class="fact">
+              <dt>{{ locale.t.orders.factCategory }}</dt>
+              <dd :class="categoryLabel ? '' : 'fact__empty'">
+                {{ categoryLabel ?? locale.t.orders.factNotSet }}
+              </dd>
+            </div>
+            <div class="fact">
+              <dt>{{ locale.t.orders.factRegion }}</dt>
+              <dd :class="regionLabel ? '' : 'fact__empty'">
+                {{ regionLabel ?? locale.t.orders.factNotSet }}
+              </dd>
+            </div>
+            <div
+              v-if="order.target_agent"
+              class="fact"
+            >
+              <dt>{{ locale.t.orders.wizard.directedTo }}</dt>
+              <dd>{{ order.target_agent.company_name }}</dd>
+            </div>
+            <div class="fact">
+              <dt>{{ locale.t.orders.factCreated }}</dt>
+              <dd class="tabular-nums">
+                {{ formatDateTime(order.created_at) }}
+              </dd>
+            </div>
+            <div class="fact">
+              <dt>{{ locale.t.orders.factActivity }}</dt>
+              <dd class="tabular-nums">
+                {{ order.views_count ?? 0 }} · <span class="text-primary">{{ offers.length }}</span>
+              </dd>
+            </div>
+          </dl>
+        </GlassCard>
+
+        <!-- The request itself -->
+        <GlassCard
+          v-if="order.description || order.hashtags?.length || attachmentFiles.length"
+          class="space-y-3"
+        >
+          <p class="section-label">
+            {{ locale.t.orders.commentTitle }}
+          </p>
+
+          <p
+            v-if="order.description"
+            class="whitespace-pre-line text-sm leading-relaxed text-foreground"
+          >
+            {{ order.description }}
+          </p>
+
+          <OrderHashtagChips
+            v-if="order.hashtags?.length"
+            :hashtags="order.hashtags"
+          />
+
+          <OrderAttachments
+            v-if="attachmentFiles.length"
+            :files="attachmentFiles"
+            hide-title
+          />
+        </GlassCard>
+
+        <!-- Location -->
+        <GlassCard
+          v-if="regionLabel || (order.lat != null && order.lng != null)"
+          padding="none"
+          class="overflow-hidden"
+        >
+          <div class="flex items-center justify-between gap-3 p-4 pb-3">
+            <p class="section-label">
+              {{ locale.t.orders.locationTitle }}
+            </p>
+            <span
+              v-if="regionLabel"
+              class="truncate text-[12.5px] font-semibold text-foreground"
+            >{{ regionLabel }}</span>
           </div>
+          <LocationMap
+            v-if="order.lat != null && order.lng != null"
+            :lat="order.lat"
+            :lng="order.lng"
+            :label="order.location_label"
+          />
         </GlassCard>
 
         <!-- Service contract (generated once the deal started). -->
@@ -500,7 +404,9 @@ async function sendReview(criteria: ReviewCriterionScore[], comment: string | nu
             <MessageSquareQuote class="size-4 text-primary" />
             <h3 class="text-base font-semibold text-foreground">
               {{ acceptedOffer ? locale.t.orders.selectedOfferHeading : locale.t.orders.offersHeading }}
-              <template v-if="!acceptedOffer">({{ offers.length }})</template>
+              <template v-if="!acceptedOffer">
+                ({{ offers.length }})
+              </template>
             </h3>
           </div>
 
@@ -534,6 +440,21 @@ async function sendReview(criteria: ReviewCriterionScore[], comment: string | nu
         >
           {{ orders.error }}
         </p>
+
+        <!-- Quiet danger zone, always last -->
+        <div
+          v-if="canCancel"
+          class="flex justify-center pb-2 pt-1"
+        >
+          <button
+            type="button"
+            class="pressable inline-flex h-9 items-center justify-center gap-1.5 rounded-full px-5 text-[13px] font-semibold text-destructive transition active:scale-95 active:bg-destructive/10"
+            @click="openCancelDrawer"
+          >
+            <XCircle class="size-4" />
+            {{ locale.t.orders.cancelShort }}
+          </button>
+        </div>
       </template>
 
       <GlassCard
@@ -593,3 +514,44 @@ async function sendReview(criteria: ReviewCriterionScore[], comment: string | nu
     </Drawer>
   </div>
 </template>
+<style scoped>
+.section-label {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+}
+
+.facts { margin: 0; display: flex; flex-direction: column; }
+
+.fact {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 9px 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 65%, transparent);
+}
+.fact:last-child { border-bottom: 0; padding-bottom: 0; }
+.fact:first-child { padding-top: 0; }
+
+.fact dt {
+  flex-shrink: 0;
+  font-size: 13px;
+  color: var(--muted-foreground);
+}
+.fact dd {
+  margin: 0;
+  min-width: 0;
+  font-size: 13.5px;
+  font-weight: 600;
+  text-align: right;
+  color: var(--foreground);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.fact__empty { font-weight: 500; color: var(--muted-foreground); }
+</style>

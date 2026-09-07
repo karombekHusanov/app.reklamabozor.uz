@@ -10,7 +10,7 @@ import { useTelegram } from '@/core/composables/useTelegram'
 import { useLocaleStore } from '@/core/i18n/locale.store'
 import { useAuthStore } from '@/modules/auth/stores/auth.store'
 import { ROUTES } from '@/modules/shell/constants/routes'
-import OrderWizard from '@/modules/orders/components/OrderWizard.vue'
+import OrderForm from '@/modules/orders/components/OrderForm.vue'
 import { fetchCategories } from '@/modules/orders/services/orders.service'
 import { fetchRegions } from '@/modules/orders/services/regions.service'
 import { useOrdersStore } from '@/modules/orders/stores/orders.store'
@@ -170,9 +170,9 @@ async function handleSubmit(payload: CreateOrderPayload) {
         <Skeleton class="h-56 w-full rounded-3xl" />
       </template>
 
-      <!-- Wizard -->
+      <!-- Single-page request form -->
       <template v-else>
-        <OrderWizard
+        <OrderForm
           :categories="categories"
           :regions="regions"
           :submitting="orders.isSubmitting"

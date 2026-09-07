@@ -250,12 +250,13 @@ export type OrderBudget = 'lt_1m' | 'from_1_3m' | 'from_3_5m' | 'from_5_10m' | '
 
 /** Payload for POST /api/v1/orders. */
 export interface CreateOrderPayload {
-  category_id: number
+  /** Optional: omitted = broadcast, every approved provider sees the order. */
+  category_id?: number
   description: string
   attachment_file_ids: number[]
-  /** Client location (map pin). */
-  lat: number
-  lng: number
+  /** Optional map pin — send both coordinates or neither. */
+  lat?: number
+  lng?: number
   location_label?: string | null
   /** Optional catalog region; omit/null = all Uzbekistan. */
   region_id?: number | null
