@@ -16,8 +16,12 @@ export interface ClientProfileStat {
   value: number
   label: string
   icon: typeof ShoppingBag
-  tone?: 'default' | 'success' | 'danger'
+  tone?: 'default' | 'success' | 'danger' | 'warning'
+  /** When set the tile is a button into that route. */
+  to?: string
 }
+
+const emit = defineEmits<{ select: [to: string] }>()
 
 const props = withDefaults(defineProps<{
   user: Pick<User, 'avatar'> & Partial<Pick<User, 'person_type' | 'person_type_verified' | 'legal_entity_status'>>
@@ -105,7 +109,13 @@ const statsGridClass = computed(() => {
 function statIconClass(tone?: ClientProfileStat['tone']) {
   if (tone === 'success') return 'text-emerald-600 dark:text-emerald-400'
   if (tone === 'danger') return 'text-red-600 dark:text-red-400'
+  if (tone === 'warning') return 'text-accent-foreground'
   return 'text-muted-foreground'
+}
+
+function statValueClass(tone?: ClientProfileStat['tone']) {
+  if (tone === 'warning') return 'text-accent-foreground'
+  return 'text-foreground'
 }
 </script>
 
@@ -201,23 +211,30 @@ function statIconClass(tone?: ClientProfileStat['tone']) {
         class="mt-3 grid gap-1.5 border-t border-border/60 pt-3"
         :class="statsGridClass"
       >
-        <div
+        <component
+          :is="item.to ? 'button' : 'div'"
           v-for="item in stats"
           :key="item.label"
-          class="rounded-2xl border border-border/60 bg-muted/20 px-2 py-2.5 text-center"
+          :type="item.to ? 'button' : undefined"
+          class="rounded-2xl border border-border/60 bg-muted/20 px-2 py-2.5 text-center transition"
+          :class="item.to ? 'pressable active:scale-[0.97]' : ''"
+          @click="item.to && emit('select', item.to)"
         >
           <component
             :is="item.icon"
             class="mx-auto size-3.5"
             :class="statIconClass(item.tone)"
           />
-          <p class="mt-1 text-sm font-bold tabular-nums leading-none text-foreground">
+          <p
+            class="rb-font-display mt-1 text-[19px] font-extrabold tabular-nums leading-none"
+            :class="statValueClass(item.tone)"
+          >
             {{ item.value }}
           </p>
-          <p class="mt-0.5 line-clamp-2 text-[10px] leading-snug text-muted-foreground">
+          <p class="mt-1 line-clamp-2 text-[10.5px] font-medium leading-snug text-muted-foreground">
             {{ item.label }}
           </p>
-        </div>
+        </component>
       </div>
     </div>
   </div>

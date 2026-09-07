@@ -2079,6 +2079,11 @@
   /* Display font (Archivo) — for any headline not covered by a title class */
   .rb-font-display { font-family: var(--rb-font-display); }
 
+  /* Small uppercase section label used across the profile cards. */
+  .profile-eyebrow {
+    @apply m-0 text-[11px] font-bold uppercase tracking-[0.08em] text-muted-foreground;
+  }
+
   /* Page gutter + vertical rhythm helpers */
   .rb-gutter { padding-inline: var(--rb-gutter); }
   .rb-stack > * + * { margin-top: var(--rb-section-gap); }

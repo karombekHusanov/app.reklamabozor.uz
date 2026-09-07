@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ChevronRight, CircleX, Clock, LayoutGrid, Shield, ShieldCheck, Star } from '@lucide/vue'
+import { ChevronRight, CircleX, Clock, LayoutGrid, ShieldCheck, Star } from '@lucide/vue'
 import { computed, onMounted, ref, watch } from 'vue'
 import AppHeader from '@/modules/shell/components/AppHeader.vue'
 import Avatar from '@/core/ui/Avatar.vue'
@@ -13,8 +13,10 @@ import type { useLocaleStore } from '@/core/i18n/locale.store'
 import { fetchMyRating } from '@/modules/orders/services/orders.service'
 import type { RatingInfo } from '@/modules/orders/types/order'
 import AgentProfileShortcuts from '@/modules/profile/components/agent-sections/AgentProfileShortcuts.vue'
-import AgentProfileCompletionBar from '@/modules/profile/components/edit/AgentProfileCompletionBar.vue'
 import LegalEntityVerificationCard from '@/modules/profile/components/LegalEntityVerificationCard.vue'
+import ProviderBalanceCard from '@/modules/profile/components/ProviderBalanceCard.vue'
+import ProviderPortfolioCard from '@/modules/profile/components/ProviderPortfolioCard.vue'
+import ProviderPublicPageCard from '@/modules/profile/components/ProviderPublicPageCard.vue'
 import { ROUTES } from '@/modules/shell/constants/routes'
 
 const props = defineProps<{
@@ -68,7 +70,6 @@ const subtitle = computed(() => {
   return props.locale.t.profile.agentFallbackBody
 })
 
-const completion = computed(() => props.profile?.completion_percent ?? 0)
 const isApproved = computed(() => props.profile?.status === 'approved')
 const needsVerification = computed(() => !props.profile || props.profile.status !== 'approved')
 
@@ -86,10 +87,6 @@ const starsDisplay = computed(() => {
   return typeof stars === 'number' && Number.isFinite(stars) ? stars.toFixed(1) : null
 })
 
-const filledStars = computed(() => (starsDisplay.value ? Math.floor(Number(starsDisplay.value)) : 0))
-const hasHalfStar = computed(() =>
-  starsDisplay.value ? Number(starsDisplay.value) % 1 >= 0.25 : false,
-)
 
 const grade = computed(() => {
   if (!hasRatedReviews.value) return null
@@ -106,37 +103,6 @@ function gradeChip(g: number) {
   if (g >= 40) return 'bg-amber-500/15 text-amber-600 dark:text-amber-400'
   return 'bg-destructive/10 text-destructive'
 }
-
-const stats = computed(() => {
-  const items = [
-    {
-      value: String(props.profile?.categories.length ?? 0),
-      label: props.locale.t.profile.agentStatsServices,
-      icon: LayoutGrid,
-    },
-    {
-      value: `${completion.value}%`,
-      label: props.locale.t.profile.agentStatsProfile,
-      icon: Shield,
-    },
-  ]
-
-  if (starsDisplay.value) {
-    items.push({
-      value: starsDisplay.value,
-      label: props.locale.t.profile.agentStatRating,
-      icon: Star,
-    })
-  }
-
-  return items
-})
-
-const statsGridClass = computed(() => {
-  const n = stats.value.length
-  if (n <= 2) return 'grid-cols-2'
-  return 'grid-cols-3'
-})
 
 const verifyMeta = computed(() => {
   const status = props.profile?.status
@@ -176,12 +142,6 @@ const showLegalCard = computed(() =>
   !showKycCta.value
   && props.user.person_type === 'legal_entity'
   && !props.user.person_type_verified,
-)
-const showCompletionBar = computed(() =>
-  !showKycCta.value
-  && !showLegalCard.value
-  && isApproved.value
-  && completion.value < 100,
 )
 
 const publicPagePath = computed(() =>
@@ -256,72 +216,61 @@ const statusLabel = computed(() => {
               :status="user.legal_entity_status"
               class="mt-1.5"
             />
-
-            <div
-              v-if="starsDisplay"
-              class="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] font-semibold text-foreground"
-            >
-              <span class="inline-flex items-center gap-1">
-                <span class="flex items-center">
-                  <Star
-                    v-for="n in 5"
-                    :key="n"
-                    class="size-3.5"
-                    :class="[
-                      n <= filledStars
-                        ? 'fill-amber-400 text-amber-400'
-                        : n === filledStars + 1 && hasHalfStar
-                          ? 'fill-amber-400/45 text-amber-400'
-                          : 'fill-muted/30 text-muted/30',
-                    ]"
-                  />
-                </span>
-                <span>{{ starsDisplay }}</span>
-                <span
-                  v-if="myRating?.stars_count"
-                  class="font-medium text-muted-foreground"
-                >
-                  {{ locale.t.profile.agentReviewCount.replace('{count}', String(myRating.stars_count)) }}
-                </span>
-              </span>
-
-              <span
-                v-if="grade != null"
-                class="inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-bold"
-                :class="gradeChip(grade)"
-              >
-                {{ grade }}
-                <span
-                  v-if="gradeLabel"
-                  class="ml-0.5 font-semibold opacity-80"
-                >{{ gradeLabel }}</span>
-              </span>
-            </div>
           </div>
         </div>
 
+        <!-- Reputation: two numbers, each with what it measures -->
         <div
-          class="mt-3 grid gap-1.5"
-          :class="statsGridClass"
+          v-if="starsDisplay || grade != null"
+          class="mt-3 grid grid-cols-2 gap-2 border-t border-border/60 pt-3"
         >
           <div
-            v-for="item in stats"
-            :key="item.label"
-            class="rounded-2xl border border-border/60 bg-muted/20 px-2 py-2.5 text-center"
+            v-if="starsDisplay"
+            class="space-y-0.5"
           >
-            <component
-              :is="item.icon"
-              class="mx-auto size-3.5 text-muted-foreground"
-            />
-            <p class="mt-1 text-sm font-bold tabular-nums text-foreground">
-              {{ item.value }}
+            <p class="flex items-center gap-1.5">
+              <Star class="size-[15px] fill-amber-400 text-amber-400" />
+              <span class="rb-font-display text-[18px] font-extrabold tabular-nums leading-none text-foreground">{{ starsDisplay }}</span>
+              <span
+                v-if="myRating?.stars_count"
+                class="text-[11.5px] text-muted-foreground"
+              >{{ locale.t.profile.agentReviewCount.replace('{count}', String(myRating.stars_count)) }}</span>
             </p>
-            <p class="mt-0.5 text-[10px] leading-snug text-muted-foreground">
-              {{ item.label }}
+            <p class="text-[11px] text-muted-foreground">
+              {{ locale.t.profile.reputationRating }}
+            </p>
+          </div>
+
+          <div
+            v-if="grade != null"
+            class="space-y-0.5"
+          >
+            <p class="flex items-center gap-1.5">
+              <span class="rb-font-display text-[18px] font-extrabold tabular-nums leading-none text-foreground">{{ grade }}</span>
+              <span
+                v-if="gradeLabel"
+                class="inline-flex h-5 items-center rounded-full px-2 text-[10.5px] font-bold"
+                :class="gradeChip(grade)"
+              >{{ gradeLabel }}</span>
+            </p>
+            <p class="text-[11px] text-muted-foreground">
+              {{ locale.t.profile.reputationGrade }}
             </p>
           </div>
         </div>
       </div>
+
+      <!-- Portfolio and money — what a provider opens this page for -->
+      <ProviderPortfolioCard
+        v-if="isApproved && profile"
+        :items="profile.portfolio"
+        @navigate="emit('navigate', $event)"
+      />
+
+      <ProviderBalanceCard
+        v-if="isApproved"
+        @navigate="emit('navigate', $event)"
+      />
 
       <!-- Zone B — at most one primary next action -->
       <button
@@ -355,14 +304,12 @@ const statusLabel = computed(() => {
 
       <LegalEntityVerificationCard v-else-if="showLegalCard" />
 
-      <button
-        v-else-if="showCompletionBar"
-        type="button"
-        class="w-full text-left pressable"
-        @click="emit('navigate', ROUTES.profileEdit)"
-      >
-        <AgentProfileCompletionBar :percent="completion" />
-      </button>
+      <ProviderPublicPageCard
+        v-else-if="isApproved && profile"
+        :profile="profile"
+        :public-path="publicPagePath"
+        @navigate="emit('navigate', $event)"
+      />
 
 
       <!-- Zone C — Account list -->

@@ -1,9 +1,7 @@
 <script setup lang="ts">
-import { ArrowRight, Briefcase, CheckCircle2, RefreshCw, ShoppingBag } from '@lucide/vue'
+import { Briefcase, CheckCircle2, ChevronRight, CreditCard, RefreshCw } from '@lucide/vue'
 import { computed, onMounted, ref } from 'vue'
 import { memberDuration } from '@/core/lib/date'
-import GlassCard from '@/core/ui/GlassCard.vue'
-import { Button } from '@/core/ui/button'
 import { ROUTES } from '@/modules/shell/constants/routes'
 import type { User } from '@/modules/auth/types/user'
 import type { OrderStatus } from '@/modules/orders/types/order'
@@ -15,6 +13,7 @@ import ClientAboutSection from '@/modules/profile/components/client-sections/Cli
 import ClientOrderHistorySection from '@/modules/profile/components/client-sections/ClientOrderHistorySection.vue'
 import ClientProfileHeaderSection from '@/modules/profile/components/client-sections/ClientProfileHeaderSection.vue'
 import ClientProfileShortcuts from '@/modules/profile/components/client-sections/ClientProfileShortcuts.vue'
+import ClientAttentionCard from '@/modules/profile/components/client-sections/ClientAttentionCard.vue'
 import LegalEntityVerificationCard from '@/modules/profile/components/LegalEntityVerificationCard.vue'
 import type { ClientProfileStat } from '@/modules/profile/components/client-sections/ClientProfileHeaderSection.vue'
 
@@ -33,39 +32,54 @@ const emit = defineEmits<{
 const orders = useOrdersStore()
 const myRating = ref<RatingInfo | null>(null)
 
-const IN_PROGRESS_STATUSES: OrderStatus[] = [
+const ACTIVE_STATUSES: OrderStatus[] = [
+  'new',
   'offers_sent',
   'client_selected',
   'in_progress',
   'work_submitted',
 ]
 
+/** The order that is waiting on the client right now, most recent first. */
+const ATTENTION_STATUSES: OrderStatus[] = ['awaiting_payment', 'work_submitted']
+
 const orderList = computed(() => orders.myOrders)
 
-const totalOrders = computed(() => orderList.value.length)
-const inProgressCount = computed(() =>
-  orderList.value.filter(order => IN_PROGRESS_STATUSES.includes(order.status)).length,
+const activeCount = computed(() =>
+  orderList.value.filter(order => ACTIVE_STATUSES.includes(order.status)).length,
+)
+const awaitingPaymentCount = computed(() =>
+  orderList.value.filter(order => order.status === 'awaiting_payment').length,
 )
 const completedCount = computed(() =>
   orderList.value.filter(order => order.status === 'completed').length,
 )
 
+const attentionOrder = computed(() =>
+  orderList.value.find(order => ATTENTION_STATUSES.includes(order.status)) ?? null,
+)
+
+// The counters double as navigation — every number opens the order list.
 const stats = computed<ClientProfileStat[]>(() => [
   {
-    value: totalOrders.value,
-    label: props.locale.t.profile.clientStatTotal,
-    icon: ShoppingBag,
+    value: activeCount.value,
+    label: props.locale.t.profile.statActive,
+    icon: RefreshCw,
+    to: ROUTES.orders,
   },
   {
-    value: inProgressCount.value,
-    label: props.locale.t.profile.clientStatInProgress,
-    icon: RefreshCw,
+    value: awaitingPaymentCount.value,
+    label: props.locale.t.profile.statAwaitingPayment,
+    icon: CreditCard,
+    tone: awaitingPaymentCount.value > 0 ? 'warning' : 'default',
+    to: ROUTES.orders,
   },
   {
     value: completedCount.value,
-    label: props.locale.t.profile.clientStatCompleted,
+    label: props.locale.t.profile.statCompletedShort,
     icon: CheckCircle2,
     tone: 'success',
+    to: ROUTES.orders,
   },
 ])
 
@@ -141,36 +155,42 @@ function becomeAgent() {
         :is-verified="isVerified"
         show-back
       >
-        <template #top>        </template>
+        <template #top />
       </ClientProfileHeaderSection>
+
+      <!-- What is waiting on the client right now -->
+      <ClientAttentionCard
+        v-if="attentionOrder"
+        :order="attentionOrder"
+        @open="openOrder"
+      />
 
       <!-- Zone B — at most one primary -->
       <LegalEntityVerificationCard v-if="showLegalCard" />
 
 
-      <!-- Become a provider: entry point into the agent KYC application. -->
-      <GlassCard class="space-y-3">
-        <div class="flex items-start gap-3">
-          <div class="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-            <Briefcase class="size-5" />
-          </div>
-          <div class="min-w-0">
-            <p class="font-semibold leading-tight">
-              {{ locale.t.profile.becomeAgentTitle }}
-            </p>
-            <p class="mt-0.5 text-xs leading-relaxed text-muted-foreground">
-              {{ locale.t.profile.becomeAgentBody }}
-            </p>
-          </div>
-        </div>
-        <Button
-          class="h-11 w-full rounded-2xl"
-          @click="becomeAgent"
-        >
-          {{ locale.t.profile.becomeAgentCta }}
-          <ArrowRight class="size-4" />
-        </Button>
-      </GlassCard>
+      <!-- Become a provider: one quiet row, not a competing block. -->
+      <button
+        type="button"
+        class="app-list-row pressable rounded-[var(--rb-r-card)] bg-card shadow-[var(--rb-elev-1)]"
+        @click="becomeAgent"
+      >
+        <span class="app-list-row__icon app-list-row__icon--amber">
+          <Briefcase class="size-4" />
+        </span>
+        <span class="app-list-row__body">
+          <span class="app-list-row__label">
+            {{ locale.t.profile.becomeAgentTitle }}
+          </span>
+          <span class="app-list-row__hint">
+            {{ locale.t.profile.becomeAgentCta }}
+          </span>
+        </span>
+        <ChevronRight
+          class="app-list-row__chevron"
+          aria-hidden="true"
+        />
+      </button>
 
       <!-- Zone C — Account -->
       <ClientProfileShortcuts
