@@ -30,12 +30,6 @@
       "updatedTitle": "Shartlar yangilandi",
       "updatedBody": "Foydalanish shartlarimiz yangilandi. Davom etish uchun yangi shartlarni o'qib, roziligingizni bildiring."
     },
-    "role": {
-      "title": "Siz — Kimsiz?",
-      "subtitle": "Tizimga qaysi rolda kirmoqchisiz?",
-      "saving": "Saqlanmoqda…",
-      "error": "Rolni saqlashda xatolik. Qayta urinib ko'ring."
-    },
     "personType": {
       "title": "Huquqiy maqomingiz",
       "body": "Bu ma'lumot kelajakda yuridik shaxslar uchun imtiyozlarda ishlatiladi.",
@@ -43,7 +37,7 @@
       "individualHint": "Shaxsiy tartibda foydalanaman",
       "legalEntity": "Yuridik shaxs",
       "legalEntityHint": "Kompaniya nomidan (keyin tasdiqlanadi)",
-      "skip": "Keyinroq"
+      "error": "Ma'lumotni saqlashda xatolik. Qayta urinib ko'ring."
     }
   },
   "legal": {
@@ -103,15 +97,19 @@
       "providers": "Ijrochilar",
       "map": "Xarita",
       "chat": "Chat",
-      "myProducts": "Mahsulot",
-      "create": "Yaratish",
-      "myOrders": "Buyurtma"
+      "create": "E'lon berish",
+      "myOrders": "Buyurtmalar",
+      "assistant": "AI yordamchi"
     },
     "language": "Til"
   },
   "home": {
-    "heroTitle": "Bir so'rov — agentliklar keladi.",
-    "heroSubtitle": "Nima reklama qilmoqchisiz — tasdiqlangan agentliklar bir necha soatda takliflar yuboradi.",
+    "heroTitle": "Reklama kerakmi? E'lon qoldiring",
+    "heroSubtitle": "Agentliklar bog'lanadi, siz tanlaysiz.",
+    "providerInviteTitle": "Reklama agentligingiz bormi?",
+    "providerInviteBody": "PRBda agent sifatida ro'yxatdan o'ting — mijoz buyurtmalarini oling va ishlashni bugundan boshlang.",
+    "providerInviteCta": "Agent sifatida ro'yxatdan o'tish",
+    "providerInviteDismiss": "Yopish",
     "heroSearchPlaceholder": "Agentlik yoki xizmat qidiring…",
     "heroStatAgencies": "Tasdiqlangan agentlik",
     "heroStatToday": "Faol so'rovlar",
@@ -357,6 +355,31 @@
     "subtitle": "Yangiliklar va eslatmalar",
     "emptyTitle": "Hozircha bildirishnomalar yo'q",
     "emptyBody": "Buyurtmalar, takliflar va chat xabarlari haqidagi yangiliklar shu yerda ko'rinadi."
+  },
+  "assistant": {
+    "title": "AI yordamchi",
+    "comingSoonTitle": "Tez orada"
+  },
+  "search": {
+    "title": "Qidiruv",
+    "placeholder": "Agentlik, dizayner yoki xizmat",
+    "hint": "Qidirish uchun kamida 2 ta harf kiriting",
+    "agencies": "Agentliklar",
+    "designers": "Dizaynerlar",
+    "services": "Xizmatlar",
+    "empty": "Hech narsa topilmadi",
+    "emptyHint": "Boshqa so'z bilan urinib ko'ring",
+    "viewAll": "Barcha natijalar",
+    "clear": "Tozalash",
+    "close": "Yopish",
+    "error": "Qidiruvda xatolik. Qayta urinib ko'ring."
+  },
+  "categoryDetail": {
+    "subtitle": "Shu xizmat bo'yicha ishlaydigan ijrochilar",
+    "providersCount": "{count} ta ijrochi",
+    "empty": "Ijrochi topilmadi",
+    "emptyBody": "Bu xizmat bo'yicha hozircha tasdiqlangan ijrochi yo'q.",
+    "notFound": "Xizmat topilmadi"
   },
   "products": {
     "title": "Mahsulot",

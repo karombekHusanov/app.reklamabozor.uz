@@ -15,11 +15,19 @@ import HomeSteps from '@/modules/home/components/HomeSteps.vue'
 import HomeServiceRail from '@/modules/home/components/HomeServiceRail.vue'
 import HomeAgencyRail from '@/modules/home/components/HomeAgencyRail.vue'
 import HomeLiveRequests from '@/modules/home/components/HomeLiveRequests.vue'
+import HomeProviderInvite from '@/modules/home/components/HomeProviderInvite.vue'
+import GlobalSearchDrawer from '@/modules/search/components/GlobalSearchDrawer.vue'
 import { fetchLiveStats, type LiveStats } from '@/modules/home/services/live-stats.service'
 import { fetchCategories } from '@/modules/orders/services/orders.service'
-import { fullName } from '@/modules/auth/types/user'
+import { fullName, isBusinessUser } from '@/modules/auth/types/user'
 import type { LiveOrder } from '@/modules/home/services/live-orders.service'
 import type { Category } from '@/modules/agent/types/agent'
+import type { PublicAgent } from '@/modules/marketplace/services/agents.service'
+import {
+  dismissProviderInvite,
+  hydrateProviderInviteDismissed,
+  isProviderInviteDismissed,
+} from '@/modules/home/lib/provider-invite'
 import { ROUTES } from '@/modules/shell/constants/routes'
 
 const auth = useAuthStore()
@@ -63,6 +71,43 @@ async function loadLiveStats() {
   }
 }
 
+/**
+ * "Do you run an agency?" invite. Clients only, hidden for good once dismissed
+ * (per user id) — the same offer stays permanently on the profile page.
+ */
+const inviteDismissed = ref(true)
+
+const showProviderInvite = computed(() => {
+  const user = auth.user
+  if (!user || inviteDismissed.value) return false
+  if (isBusinessUser(user)) return false
+
+  // An application already under review is not a candidate for the invite
+  // (`/me/activity` reports it before the agent role is granted on approval).
+  return !home.activity?.provider?.has_profile
+})
+
+async function syncProviderInvite() {
+  const user = auth.user
+  if (!user) {
+    inviteDismissed.value = true
+    return
+  }
+
+  inviteDismissed.value = isProviderInviteDismissed(user.id)
+    || await hydrateProviderInviteDismissed(user.id)
+}
+
+function applyAsProvider() {
+  haptic('medium')
+  void router.push({ path: ROUTES.profileEdit, query: { as: 'agent' } })
+}
+
+function closeProviderInvite() {
+  if (auth.user) dismissProviderInvite(auth.user.id)
+  inviteDismissed.value = true
+}
+
 /** Public service catalogue for the "Browse by service" rail. */
 const categories = ref<Category[]>([])
 
@@ -86,9 +131,24 @@ function navigate(to: string) {
   void router.push(to)
 }
 
-function onSearch(query: string) {
+/** The hero field is a trigger — searching happens inside the drawer. */
+const searchOpen = ref(false)
+
+function onSearch() {
   haptic('light')
-  void router.push({ path: ROUTES.agencies, query: query ? { q: query } : {} })
+  searchOpen.value = true
+}
+
+function openSearchProvider(agent: PublicAgent) {
+  void router.push(`/agents/${agent.id}`)
+}
+
+function openSearchService(category: Category) {
+  void router.push(ROUTES.categoryDetail(category.id))
+}
+
+function openSearchResults(query: string) {
+  void router.push({ path: ROUTES.agencies, query: { q: query } })
 }
 
 function onSelectCategory(category: Category) {
@@ -157,6 +217,7 @@ onMounted(() => {
   void home.load()
   void loadLiveStats()
   void loadCategories()
+  void syncProviderInvite()
   startBadgePoll()
   document.addEventListener('visibilitychange', onVisibilityChange)
 })
@@ -170,7 +231,13 @@ watch(() => auth.isAuthenticated, (authed, wasAuthed) => {
   if (wasAuthed === undefined || authed === wasAuthed) return
   home.reset()
   void home.load()
+  void syncProviderInvite()
   startBadgePoll()
+})
+
+// A user id can arrive after mount (session restore) — re-check the flag then.
+watch(() => auth.user?.id, () => {
+  void syncProviderInvite()
 })
 </script>
 
@@ -212,7 +279,7 @@ watch(() => auth.isAuthenticated, (authed, wasAuthed) => {
         <HomeStatCards :stats="liveStats" />
       </div>
 
-      <div class="home-block px-[18px]">
+      <div class="home-block home-gutter">
         <HomeFeatureTiles
           :nearby="liveStats?.agencies_total"
           :online="liveStats?.users_online"
@@ -221,8 +288,18 @@ watch(() => auth.isAuthenticated, (authed, wasAuthed) => {
         />
       </div>
 
-      <div class="home-block px-[18px]">
+      <div class="home-block home-gutter">
         <HomeSteps />
+      </div>
+
+      <div
+        v-if="showProviderInvite"
+        class="home-block home-gutter"
+      >
+        <HomeProviderInvite
+          @apply="applyAsProvider"
+          @dismiss="closeProviderInvite"
+        />
       </div>
 
       <div class="home-block">
@@ -259,6 +336,14 @@ watch(() => auth.isAuthenticated, (authed, wasAuthed) => {
         />
       </div>
     </div>
+
+    <GlobalSearchDrawer
+      v-model:open="searchOpen"
+      :categories="categories"
+      @provider="openSearchProvider"
+      @service="openSearchService"
+      @view-all="openSearchResults"
+    />
   </div>
 </template>
 
@@ -289,11 +374,20 @@ watch(() => auth.isAuthenticated, (authed, wasAuthed) => {
 .home-stats {
   position: relative;
   z-index: 4;
-  padding: 0 18px;
+  padding-inline: var(--home-gutter);
   margin-top: -1.75rem;
 }
 
 .home-block {
   padding-top: 1.6rem;
+}
+
+/* One page container: hero, sheet sections and rails share this gutter. */
+.home-page {
+  --home-gutter: 24px;
+}
+
+.home-gutter {
+  padding-inline: var(--home-gutter);
 }
 </style>

@@ -1,8 +1,7 @@
 <script setup lang="ts">
-import { ref } from 'vue'
 import { ArrowRight, Bell, Search } from '@lucide/vue'
 import Avatar from '@/core/ui/Avatar.vue'
-import BillboardAd from '@/modules/home/components/BillboardAd.vue'
+// import BillboardAd from '@/modules/home/components/BillboardAd.vue'
 import { useLocaleStore } from '@/core/i18n/locale.store'
 
 defineProps<{
@@ -12,17 +11,13 @@ defineProps<{
 }>()
 
 const emit = defineEmits<{
-  search: [query: string]
+  /** Opens the global search drawer — the hero field is a trigger, not an input. */
+  search: []
   notifications: []
   profile: []
 }>()
 
 const locale = useLocaleStore()
-const query = ref('')
-
-function submit() {
-  emit('search', query.value.trim())
-}
 </script>
 
 <template>
@@ -36,7 +31,7 @@ function submit() {
       aria-hidden="true"
     />
 
-    <!-- real billboard, floating on the hero -->
+    <!-- real billboard, floating on the hero — hidden for now, headline is centered instead
     <span
       class="bbglow"
       aria-hidden="true"
@@ -44,6 +39,7 @@ function submit() {
     <div class="bb">
       <BillboardAd />
     </div>
+    -->
 
     <!-- greeting -->
     <div class="hero__greet">
@@ -89,28 +85,22 @@ function submit() {
       {{ locale.t.home.heroSubtitle }}
     </p>
 
-    <!-- search -->
-    <form
+    <!-- search — opens the global search drawer -->
+    <button
+      type="button"
       class="hero__search"
-      role="search"
-      @submit.prevent="submit"
+      :aria-label="locale.t.search.title"
+      @click="emit('search')"
     >
       <Search class="hero__search-ic size-[19px]" />
-      <input
-        v-model="query"
-        type="search"
-        :placeholder="locale.t.home.heroSearchPlaceholder"
-        :aria-label="locale.t.home.heroSearchPlaceholder"
-        autocomplete="off"
-      >
-      <button
-        type="submit"
+      <span class="hero__search-ph">{{ locale.t.home.heroSearchPlaceholder }}</span>
+      <span
         class="hero__search-go"
-        :aria-label="locale.t.marketplace.searchPlaceholder"
+        aria-hidden="true"
       >
         <ArrowRight class="size-[17px]" />
-      </button>
-    </form>
+      </span>
+    </button>
   </header>
 </template>
 
@@ -118,7 +108,7 @@ function submit() {
 .hero {
   position: relative;
   overflow: hidden;
-  padding: calc(max(env(safe-area-inset-top), 0.5rem) + 0.4rem) 1.25rem 4.5rem;
+  padding: calc(max(env(safe-area-inset-top), 0.5rem) + 0.4rem) 1.5rem 4.5rem;
   color: #fff;
 }
 
@@ -128,12 +118,12 @@ function submit() {
 
 /* floating billboard */
 .bbglow {
-  position: absolute; top: 116px; right: 22px; width: 150px; height: 110px;
+  position: absolute; top: 112px; right: 52px; width: 128px; height: 94px;
   border-radius: 50%; filter: blur(30px); z-index: 0; pointer-events: none;
   background: radial-gradient(circle, rgba(56, 189, 248, 0.45), transparent 70%);
 }
 .bb {
-  position: absolute; top: 90px; right: 4px; width: 162px; z-index: 1;
+  position: absolute; top: 92px; right: 32px; width: 138px; z-index: 1;
   transform: rotate(-5deg); pointer-events: none;
   border-radius: 16px; box-shadow: 0 24px 42px -16px rgba(0, 0, 0, 0.6);
   animation: bbFloat 9s ease-in-out infinite;
@@ -156,27 +146,29 @@ function submit() {
 /* headline with animated colour gradient */
 .hero__title {
   position: relative; z-index: 2;
-  font-family: var(--rb-font-display); font-weight: 800; font-size: 28px;
-  line-height: 1.07; letter-spacing: -0.025em; margin: 4px 0 0; max-width: 13ch; text-wrap: balance;
+  font-family: var(--rb-font-display); font-weight: 800; font-size: 26px;
+  line-height: 1.12; letter-spacing: -0.022em; margin: 10px 0 0;
+  text-align: center; text-wrap: balance;
   background-image: linear-gradient(102deg, #ffffff 0%, #6ee7ff 16%, var(--rb-glow) 33%, #a78bfa 54%, #ffbf6b 76%, #ffffff 100%);
   background-size: 200% auto;
   -webkit-background-clip: text; background-clip: text;
   -webkit-text-fill-color: transparent; color: transparent;
   animation: titleShine 7s linear infinite;
 }
-.hero__sub { position: relative; z-index: 2; margin: 12px 0 0; font-size: 13.5px; line-height: 1.5; color: rgba(255, 255, 255, 0.82); max-width: 22ch; }
+.hero__sub { position: relative; z-index: 2; margin: 10px 0 0; font-size: 13.5px; line-height: 1.5; color: rgba(255, 255, 255, 0.82); text-align: center; text-wrap: balance; }
 
 /* search */
 .hero__search {
   position: relative; z-index: 2; margin-top: 24px;
-  display: flex; align-items: center; gap: 10px; height: 54px; padding: 0 7px 0 16px;
+  display: flex; width: 100%; align-items: center; gap: 10px; height: 54px; padding: 0 7px 0 16px;
   border-radius: 16px; background: #fff; box-shadow: 0 18px 32px -16px rgba(0, 0, 0, 0.6);
 }
+.hero__search { border: 0; cursor: pointer; text-align: left; font-family: inherit; transition: transform var(--rb-dur) var(--rb-ease); }
+.hero__search:active { transform: scale(0.985); }
+.hero__search:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
 .hero__search-ic { color: #7a8699; flex-shrink: 0; }
-.hero__search input { border: 0; outline: 0; background: transparent; flex: 1; min-width: 0; font-family: inherit; font-size: 14.5px; color: #14233b; }
-.hero__search input::placeholder { color: #94a0b2; }
-.hero__search-go { flex-shrink: 0; width: 38px; height: 38px; border-radius: 11px; border: 0; cursor: pointer; background: linear-gradient(150deg, #0b6bcb 0%, #014ba4 100%); color: #fff; display: grid; place-items: center; transition: transform .12s ease; }
-.hero__search-go:active { transform: scale(0.9); }
+.hero__search-ph { flex: 1; min-width: 0; font-size: 14.5px; color: #94a0b2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hero__search-go { flex-shrink: 0; width: 38px; height: 38px; border-radius: 11px; background: linear-gradient(150deg, #0b6bcb 0%, #014ba4 100%); color: #fff; display: grid; place-items: center; }
 
 @keyframes titleShine { from { background-position: 0% center; } to { background-position: 200% center; } }
 @keyframes bbFloat { 0%, 100% { transform: rotate(-5deg) translateY(0); } 50% { transform: rotate(-3.6deg) translateY(-12px); } }

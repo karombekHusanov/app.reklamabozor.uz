@@ -7,6 +7,13 @@ export const marketplaceRoutes: RouteRecordRaw[] = [
     component: () => import('@/modules/marketplace/pages/AgenciesPage.vue'),
   },
   {
+    // Service detail: every approved provider serving this category.
+    path: 'categories/:id',
+    name: 'category-detail',
+    component: () => import('@/modules/marketplace/pages/CategoryDetailPage.vue'),
+    props: true,
+  },
+  {
     path: 'agents/:id',
     name: 'agent-detail',
     component: () => import('@/modules/marketplace/pages/AgentDetailPage.vue'),

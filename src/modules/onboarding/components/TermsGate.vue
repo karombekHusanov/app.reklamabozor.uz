@@ -26,7 +26,7 @@ async function confirm() {
     await auth.acceptTerms()
   }
   catch (e) {
-    errorMessage.value = getApiErrorMessage(e) || locale.t.onboarding.role.error
+    errorMessage.value = getApiErrorMessage(e) || locale.t.onboarding.personType.error
   }
   finally {
     submitting.value = false

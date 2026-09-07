@@ -21,7 +21,7 @@ const locale = useLocaleStore()
     v-if="categories.length"
     aria-label="Browse by service"
   >
-    <div class="sec-head px-[18px]">
+    <div class="sec-head">
       <h2 class="sec-title">
         {{ locale.t.home.browseByService }}
       </h2>
@@ -55,11 +55,17 @@ const locale = useLocaleStore()
 </template>
 
 <style scoped>
-.sec-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 13px; }
+.sec-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 13px; padding-inline: var(--home-gutter, 18px); }
 .sec-title { font-family: var(--rb-font-display); font-weight: 800; font-size: 18px; letter-spacing: -0.015em; margin: 0; color: var(--foreground); }
 .sec-link { font-size: 12.5px; font-weight: 700; color: var(--primary); background: none; border: 0; cursor: pointer; padding: 0; white-space: nowrap; -webkit-tap-highlight-color: transparent; }
 
-.rail { display: flex; gap: 10px; overflow-x: auto; padding: 2px 18px 4px; scroll-snap-type: x proximity; scrollbar-width: none; }
+.rail {
+  display: flex; gap: 10px; overflow-x: auto;
+  padding: 2px var(--home-gutter, 18px) 4px;
+  /* without this the snap point ignores the gutter and eats the left padding */
+  scroll-padding-inline: var(--home-gutter, 18px);
+  scroll-snap-type: x proximity; scrollbar-width: none;
+}
 .rail::-webkit-scrollbar { display: none; }
 .cat { scroll-snap-align: start; flex: 0 0 auto; width: 80px; display: flex; flex-direction: column; align-items: center; gap: 8px; background: none; border: 0; cursor: pointer; -webkit-tap-highlight-color: transparent; }
 .cat__ic { width: 66px; height: 66px; border-radius: 20px; display: grid; place-items: center; background: var(--card); border: 1px solid var(--border); color: var(--primary); box-shadow: var(--rb-elev-1); transition: transform var(--rb-dur) var(--rb-ease), border-color var(--rb-dur) var(--rb-ease); }

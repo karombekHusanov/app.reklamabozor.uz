@@ -1,4 +1,5 @@
 import type { RouteRecordRaw } from 'vue-router'
+import { assistantRoutes } from '@/modules/assistant/routes'
 import { chatRoutes } from '@/modules/chat/routes'
 import { designersRoutes } from '@/modules/designers'
 import { homeRoutes } from '@/modules/home/routes'
@@ -25,6 +26,7 @@ export const shellRoutes: RouteRecordRaw[] = [
       ...notificationsRoutes,
       ...ordersRoutes,
       ...productsRoutes,
+      ...assistantRoutes,
       ...profileRoutes,
       ...legalRoutes,
     ],

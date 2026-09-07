@@ -27,7 +27,7 @@ function metaText(order: LiveOrder): string {
     v-if="orders.length"
     aria-label="Live requests"
   >
-    <div class="sec-head px-[18px]">
+    <div class="sec-head">
       <div>
         <span class="sec-eyebrow"><span class="live-dot" />{{ locale.t.home.happeningNow }}</span>
         <h2 class="sec-title">
@@ -80,13 +80,13 @@ function metaText(order: LiveOrder): string {
 </template>
 
 <style scoped>
-.sec-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 13px; }
+.sec-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 13px; padding-inline: var(--home-gutter, 18px); }
 .sec-eyebrow { font-size: 10.5px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted-foreground); display: flex; align-items: center; gap: 6px; margin-bottom: 3px; }
 .live-dot { width: 6px; height: 6px; border-radius: 999px; background: var(--success); box-shadow: 0 0 0 0 rgba(18, 183, 106, .6); animation: liveDot 2s ease-out infinite; }
 .sec-title { font-family: var(--rb-font-display); font-weight: 800; font-size: 18px; letter-spacing: -0.015em; margin: 0; color: var(--foreground); }
 .sec-link { font-size: 12.5px; font-weight: 700; color: var(--primary); background: none; border: 0; cursor: pointer; padding: 0; white-space: nowrap; -webkit-tap-highlight-color: transparent; }
 
-.feed { display: flex; flex-direction: column; gap: 10px; padding: 0 18px; }
+.feed { display: flex; flex-direction: column; gap: 10px; padding-inline: var(--home-gutter, 18px); }
 .fcard { display: flex; align-items: center; gap: 12px; padding: 13px; border-radius: 17px; background: var(--card); border: 1px solid var(--border); box-shadow: var(--rb-elev-1); }
 .fcard__ic { width: 44px; height: 44px; border-radius: 13px; flex-shrink: 0; display: grid; place-items: center; background: color-mix(in srgb, var(--primary) 11%, var(--card)); color: var(--primary); }
 .fcard__main { flex: 1; min-width: 0; }

@@ -6,7 +6,9 @@ export const ROUTES = {
   agencies: '/agencies',
   agentPortfolio: (agentId: number | string, itemId: number | string) =>
     `/agents/${agentId}/portfolio/${itemId}`,
+  categoryDetail: (id: number | string) => `/categories/${id}`,
   products: '/products',
+  assistant: '/assistant',
   designers: '/designers',
   tender: '/tender',
   map: '/map',

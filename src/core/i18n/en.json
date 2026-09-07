@@ -30,12 +30,6 @@
       "updatedTitle": "Terms updated",
       "updatedBody": "Our terms of use have changed. To continue, please review the new terms and confirm your agreement."
     },
-    "role": {
-      "title": "Who are you?",
-      "subtitle": "Which role do you want to sign in as?",
-      "saving": "Saving…",
-      "error": "Could not save your role. Please try again."
-    },
     "personType": {
       "title": "Your legal status",
       "body": "We'll use this for legal-entity benefits in the future.",
@@ -43,7 +37,7 @@
       "individualHint": "Using it personally",
       "legalEntity": "Legal entity",
       "legalEntityHint": "On behalf of a company (verify later)",
-      "skip": "Later"
+      "error": "Couldn't save. Please try again."
     }
   },
   "legal": {
@@ -103,15 +97,19 @@
       "providers": "Providers",
       "map": "Map",
       "chat": "Chat",
-      "myProducts": "Products",
-      "create": "Create",
-      "myOrders": "Orders"
+      "create": "Post request",
+      "myOrders": "My orders",
+      "assistant": "AI assistant"
     },
     "language": "Language"
   },
   "home": {
-    "heroTitle": "Post once. Agencies come to you.",
-    "heroSubtitle": "Describe what you want to advertise — verified agencies send offers within hours.",
+    "heroTitle": "Need advertising? Post a request",
+    "heroSubtitle": "Agencies write, you choose.",
+    "providerInviteTitle": "Do you run an ad agency?",
+    "providerInviteBody": "Register on PRB as an agency — receive client orders and start working today.",
+    "providerInviteCta": "Register as an agency",
+    "providerInviteDismiss": "Dismiss",
     "heroSearchPlaceholder": "Search agencies or services…",
     "heroStatAgencies": "Verified agencies",
     "heroStatToday": "Live requests",
@@ -357,6 +355,31 @@
     "subtitle": "Updates and reminders",
     "emptyTitle": "No notifications yet",
     "emptyBody": "Updates about orders, offers, and chat messages will appear here."
+  },
+  "assistant": {
+    "title": "AI assistant",
+    "comingSoonTitle": "Coming soon"
+  },
+  "search": {
+    "title": "Search",
+    "placeholder": "Agency, designer or service",
+    "hint": "Type at least 2 characters",
+    "agencies": "Agencies",
+    "designers": "Designers",
+    "services": "Services",
+    "empty": "Nothing found",
+    "emptyHint": "Try a different query",
+    "viewAll": "See all results",
+    "clear": "Clear",
+    "close": "Close",
+    "error": "Search failed. Please try again."
+  },
+  "categoryDetail": {
+    "subtitle": "Providers working in this service",
+    "providersCount": "{count} providers",
+    "empty": "No providers found",
+    "emptyBody": "No approved provider serves this service yet.",
+    "notFound": "Service not found"
   },
   "products": {
     "title": "Products",

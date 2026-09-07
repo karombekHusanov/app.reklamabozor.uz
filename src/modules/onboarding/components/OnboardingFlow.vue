@@ -8,12 +8,14 @@ import { LOCALES, type Locale } from '@/core/i18n/messages'
 import { useTelegram } from '@/core/composables/useTelegram'
 import { getApiErrorMessage } from '@/core/api/api-error'
 import { ROUTES } from '@/modules/shell/constants/routes'
+import { useAuthStore } from '@/modules/auth/stores/auth.store'
 import { useOnboardingStore } from '@/modules/onboarding/stores/onboarding.store'
 import type { PersonType } from '@/modules/auth/types/user'
 import TermsConsent from './TermsConsent.vue'
 
 const locale = useLocaleStore()
 const onboarding = useOnboardingStore()
+const auth = useAuthStore()
 const router = useRouter()
 const { haptic } = useTelegram()
 
@@ -24,7 +26,9 @@ const errorMessage = ref<string | null>(null)
 function pickLanguage(value: Locale) {
   haptic('light')
   locale.setLocale(value)
-  onboarding.goTo('terms')
+  // Someone who already accepted the current offer (e.g. left the app before
+  // finishing) shouldn't have to re-accept it every launch.
+  onboarding.goTo(auth.user?.needs_terms === false ? 'person_type' : 'terms')
 }
 
 async function confirmTerms() {
@@ -37,7 +41,7 @@ async function confirmTerms() {
     await onboarding.acceptTerms()
   }
   catch (e) {
-    errorMessage.value = getApiErrorMessage(e) || locale.t.onboarding.role.error
+    errorMessage.value = getApiErrorMessage(e) || locale.t.onboarding.personType.error
   }
   finally {
     submitting.value = false
@@ -57,16 +61,11 @@ async function pickPersonType(personType: PersonType) {
     await router.replace(ROUTES.home)
   }
   catch (e) {
-    errorMessage.value = getApiErrorMessage(e) || locale.t.onboarding.role.error
+    errorMessage.value = getApiErrorMessage(e) || locale.t.onboarding.personType.error
     submitting.value = false
   }
 }
 
-function skipPersonType() {
-  haptic('light')
-  onboarding.complete()
-  void router.replace(ROUTES.home)
-}
 </script>
 
 <template>
@@ -164,15 +163,6 @@ function skipPersonType() {
             <span class="text-[12px] text-muted-foreground">{{ locale.t.onboarding.personType.legalEntityHint }}</span>
           </button>
         </div>
-
-        <button
-          type="button"
-          class="mx-auto mt-6 text-[13px] font-medium text-muted-foreground underline-offset-2 hover:underline"
-          :disabled="submitting"
-          @click="skipPersonType"
-        >
-          {{ locale.t.onboarding.personType.skip }}
-        </button>
 
         <p
           v-if="errorMessage"

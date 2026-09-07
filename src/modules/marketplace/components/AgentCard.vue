@@ -63,11 +63,17 @@ const distanceLabel = computed(() => {
             v-if="ratingLabel"
             class="inline-flex items-center gap-1 font-extrabold tabular-nums text-foreground"
           >
-            <Star class="size-[13px]" :style="{ color: 'var(--rb-rating)', fill: 'var(--rb-rating)' }" />
+            <Star
+              class="size-[13px]"
+              :style="{ color: 'var(--rb-rating)', fill: 'var(--rb-rating)' }"
+            />
             {{ ratingLabel }}
             <span class="font-medium text-muted-foreground">({{ reviewCount }})</span>
           </span>
-          <span v-if="ratingLabel" class="opacity-40">·</span>
+          <span
+            v-if="ratingLabel"
+            class="opacity-40"
+          >·</span>
           <span>{{ locale.t.home.jobsCount.replace('{count}', String(agent.completed_orders_count)) }}</span>
         </div>
       </div>

@@ -78,15 +78,8 @@ function openOrder(id: number) {
         </GlassCard>
       </template>
 
+      <!-- The persistent coral action lives in the bottom dock — no second CTA here. -->
       <template v-else>
-        <button
-          type="button"
-          class="rb-cta-btn w-full"
-          @click="router.push(ROUTES.newOrder)"
-        >
-          <Plus class="size-[18px]" />
-          {{ locale.t.orders.newRequest }}
-        </button>
         <OrderTile
           v-for="order in orders.myOrders"
           :key="order.id"

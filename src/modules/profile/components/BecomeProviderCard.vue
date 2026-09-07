@@ -10,7 +10,7 @@ import { isBusinessUser } from '@/modules/auth/types/user'
 
 // Entry to becoming a provider — replaces the old role-switch flow. Submitting
 // the target form grants the role (designer) or starts KYC (agent); there is no
-// PATCH /me/role. Hidden once the user already runs a provider profile.
+// its own onboarding flow. Hidden once the user already runs a provider profile.
 const auth = useAuthStore()
 const locale = useLocaleStore()
 const router = useRouter()

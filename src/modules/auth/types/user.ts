@@ -16,7 +16,7 @@ export interface User {
   avatar: string | null
   /** The currently active role — all gating is based on this. */
   role: UserRole
-  /** Every role the user holds; switching between them is instant via PATCH /me/role. */
+  /** Every capability the user holds. Roles are acquired via their own flows — never switched. */
   roles: UserRole[]
   /** Timestamp the user chose their role at onboarding; null = not yet selected. */
   role_selected_at: string | null

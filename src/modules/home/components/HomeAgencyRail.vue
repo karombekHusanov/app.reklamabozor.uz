@@ -33,7 +33,7 @@ function openAgent(id: number) {
 
 <template>
   <div v-if="loading || agents.length">
-    <div class="sec-head px-[18px]">
+    <div class="sec-head">
       <h2 class="sec-title">
         {{ title }}
       </h2>
@@ -135,11 +135,17 @@ function openAgent(id: number) {
 </template>
 
 <style scoped>
-.sec-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 13px; }
+.sec-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 13px; padding-inline: var(--home-gutter, 18px); }
 .sec-title { font-family: var(--rb-font-display); font-weight: 800; font-size: 18px; letter-spacing: -0.015em; margin: 0; color: var(--foreground); }
 .sec-link { font-size: 12.5px; font-weight: 700; color: var(--primary); background: none; border: 0; cursor: pointer; padding: 0; white-space: nowrap; -webkit-tap-highlight-color: transparent; }
 
-.arail { display: flex; gap: 13px; overflow-x: auto; padding: 2px 18px 6px; scroll-snap-type: x mandatory; scrollbar-width: none; }
+.arail {
+  display: flex; gap: 13px; overflow-x: auto;
+  padding: 2px var(--home-gutter, 18px) 6px;
+  /* without this the snap point ignores the gutter and eats the left padding */
+  scroll-padding-inline: var(--home-gutter, 18px);
+  scroll-snap-type: x mandatory; scrollbar-width: none;
+}
 .arail::-webkit-scrollbar { display: none; }
 .acard {
   scroll-snap-align: start; flex: 0 0 80%;
