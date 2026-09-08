@@ -10,7 +10,9 @@ import type {
   CreateOfferPayload,
   CreateOrderPayload,
   Amendment,
+  AmendmentDocument,
   AmendmentInput,
+  ContractDocument,
   Offer,
   Order,
   OrderReview,
@@ -51,15 +53,62 @@ export async function createOrder(payload: CreateOrderPayload): Promise<Order> {
   return data.data
 }
 
-export async function acceptOffer(offerId: number): Promise<AcceptOfferResult> {
-  const { data } = await api.post<ApiSuccess<AcceptOfferResult>>(`/api/v1/offers/${offerId}/accept`)
+/**
+ * Client accepts a priced offer. Accepting is also accepting the three-party
+ * contract, so the confirmed document's hash travels with the request.
+ */
+export async function acceptOffer(offerId: number, contractHash?: string | null): Promise<AcceptOfferResult> {
+  const { data } = await api.post<ApiSuccess<AcceptOfferResult>>(`/api/v1/offers/${offerId}/accept`, {
+    accept_contract: true,
+    contract_hash: contractHash ?? null,
+  })
 
   return data.data
 }
 
-/** (Re)start the Multicard checkout for an order awaiting payment. */
-export async function startOrderPayment(orderId: number): Promise<Payment> {
-  const { data } = await api.post<ApiSuccess<Payment>>(`/api/v1/orders/${orderId}/pay`)
+/** The contract the client is asked to confirm before accepting an offer. */
+export async function fetchOfferContract(offerId: number): Promise<ContractDocument> {
+  const { data } = await api.get<ApiSuccess<ContractDocument>>(`/api/v1/offers/${offerId}/contract-preview`)
+
+  return data.data
+}
+
+/**
+ * (Re)start the Multicard payment for an active unpaid order.
+ * `checkout` redirects the client now; `invoice` returns a long-lived link
+ * (QR / SMS) they can pay later from any wallet.
+ */
+export async function startOrderPayment(
+  orderId: number,
+  mode: 'checkout' | 'invoice' = 'checkout',
+  sendSms = false,
+): Promise<Payment> {
+  const { data } = await api.post<ApiSuccess<Payment>>(`/api/v1/orders/${orderId}/pay`, {
+    mode,
+    send_sms: sendSms,
+  })
+
+  return data.data
+}
+
+/**
+ * Ask for an invoice the client pays outside the gateway (cash at the
+ * platform's desk or a bank transfer); a manager confirms the money later.
+ */
+export async function startOfflinePayment(
+  orderId: number,
+  method: 'cash' | 'bank_transfer',
+): Promise<Payment> {
+  const { data } = await api.post<ApiSuccess<Payment>>(`/api/v1/orders/${orderId}/pay/offline`, {
+    method,
+  })
+
+  return data.data
+}
+
+/** Every payment attempt on an order (online, invoice, cash, bank). */
+export async function fetchOrderPayments(orderId: number): Promise<Payment[]> {
+  const { data } = await api.get<ApiSuccess<Payment[]>>(`/api/v1/orders/${orderId}/payments`)
 
   return data.data
 }
@@ -203,7 +252,25 @@ export async function updateOfferPrice(
   return data.data
 }
 
-/** Agent sends (or replaces) the pricelist on a pending offer — the priced contract step. */
+/** The contract built from the pricelist the agent is composing (stores nothing). */
+export async function previewAgentContract(
+  offerId: number,
+  items: PricelistItemInput[],
+  deadlineDays: number,
+): Promise<ContractDocument> {
+  const { data } = await api.post<ApiSuccess<ContractDocument>>(
+    `/api/v1/agent/offers/${offerId}/contract-preview`,
+    { items, deadline_days: deadlineDays },
+  )
+
+  return data.data
+}
+
+/**
+ * Agent sends (or replaces) the pricelist on a pending offer — the priced
+ * contract step. Sending is the agent's acceptance of the contract, so it only
+ * runs after they confirmed it in the drawer.
+ */
 export async function setOfferPricelist(
   offerId: number,
   items: PricelistItemInput[],
@@ -211,7 +278,7 @@ export async function setOfferPricelist(
 ): Promise<AgentOfferDetail> {
   const { data } = await api.put<ApiSuccess<AgentOfferDetail>>(
     `/api/v1/agent/offers/${offerId}/pricelist`,
-    { items, deadline_days: deadlineDays },
+    { items, deadline_days: deadlineDays, accept_contract: true },
   )
 
   return data.data
@@ -227,18 +294,44 @@ export async function fetchAmendments(orderId: number): Promise<Amendment[]> {
 }
 
 /** Either party proposes a change to the active deal's pricelist + deadline. */
-export async function proposeAmendment(orderId: number, payload: AmendmentInput): Promise<Amendment> {
-  const { data } = await api.post<ApiSuccess<Amendment>>(
-    `/api/v1/orders/${orderId}/amendments`,
+/** The addendum text for a draft proposal — read before sending it. */
+export async function previewAmendment(
+  orderId: number,
+  payload: AmendmentInput,
+): Promise<AmendmentDocument> {
+  const { data } = await api.post<ApiSuccess<AmendmentDocument>>(
+    `/api/v1/orders/${orderId}/amendments/preview`,
     payload,
   )
 
   return data.data
 }
 
+/** The stored addendum's text — read before approving it. */
+export async function fetchAmendmentDocument(amendmentId: number): Promise<AmendmentDocument> {
+  const { data } = await api.get<ApiSuccess<AmendmentDocument>>(
+    `/api/v1/amendments/${amendmentId}/document`,
+  )
+
+  return data.data
+}
+
+export async function proposeAmendment(orderId: number, payload: AmendmentInput): Promise<Amendment> {
+  const { data } = await api.post<ApiSuccess<Amendment>>(
+    `/api/v1/orders/${orderId}/amendments`,
+    // Sending the proposal is the initiator's acceptance of the addendum text.
+    { ...payload, accept_contract: true },
+  )
+
+  return data.data
+}
+
 /** Record the current user's approval of an amendment. */
-export async function approveAmendment(amendmentId: number): Promise<Amendment> {
-  const { data } = await api.post<ApiSuccess<Amendment>>(`/api/v1/amendments/${amendmentId}/approve`)
+export async function approveAmendment(amendmentId: number, documentHash?: string | null): Promise<Amendment> {
+  const { data } = await api.post<ApiSuccess<Amendment>>(`/api/v1/amendments/${amendmentId}/approve`, {
+    accept_contract: true,
+    document_hash: documentHash ?? null,
+  })
 
   return data.data
 }

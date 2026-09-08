@@ -12,6 +12,8 @@ const props = defineProps<{
   initialItems?: OfferItem[]
   initialDeadlineDays?: number | null
   submitting?: boolean
+  /** CTA copy — the offer flow continues to the contract step, so it can differ. */
+  submitLabel?: string
 }>()
 
 const emit = defineEmits<{
@@ -242,7 +244,7 @@ function submit() {
         v-if="submitting"
         class="size-4 animate-spin"
       />
-      {{ locale.t.agent.pricelistSave }}
+      {{ submitLabel ?? locale.t.agent.pricelistSave }}
     </Button>
   </div>
 </template>

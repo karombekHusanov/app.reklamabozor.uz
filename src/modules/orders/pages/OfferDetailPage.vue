@@ -39,16 +39,23 @@ import OrderAttachments from '@/modules/orders/components/OrderAttachments.vue'
 import ContractDownloadCard from '@/modules/orders/components/ContractDownloadCard.vue'
 import AmendmentsSection from '@/modules/orders/components/AmendmentsSection.vue'
 import PricelistBuilder from '@/modules/orders/components/PricelistBuilder.vue'
+import ContractAgreementDrawer from '@/modules/orders/components/ContractAgreementDrawer.vue'
 import PricelistTable from '@/modules/orders/components/PricelistTable.vue'
 import { formatPrice, isInterestOffer, offerStatusVariant, orderStatusVariant } from '@/modules/orders/lib/order-status'
 import { formatOrderRegion } from '@/modules/orders/lib/region-label'
 import {
   fetchAgentOffer,
   openOfferChat,
+  previewAgentContract,
   setOfferPricelist,
 } from '@/modules/orders/services/orders.service'
 import { useOrdersStore } from '@/modules/orders/stores/orders.store'
-import type { AgentOfferDetail, PricelistItemInput, ReviewCriterionScore } from '@/modules/orders/types/order'
+import type {
+  AgentOfferDetail,
+  ContractDocument,
+  PricelistItemInput,
+  ReviewCriterionScore,
+} from '@/modules/orders/types/order'
 
 const props = defineProps<{ id: string }>()
 
@@ -64,6 +71,13 @@ const error = ref<string | null>(null)
 const chatLoading = ref(false)
 const pricelistDrawerOpen = ref(false)
 const pricelistSaving = ref(false)
+// Contract step: the pricelist is only sent after the agent confirms the
+// contract built from it.
+const contractDrawerOpen = ref(false)
+const contractDoc = ref<ContractDocument | null>(null)
+const contractLoading = ref(false)
+const contractError = ref<string | null>(null)
+const draftPricelist = ref<{ items: PricelistItemInput[], deadlineDays: number } | null>(null)
 const orderExpanded = ref(false)
 
 const order = computed(() => offer.value?.order ?? null)
@@ -254,15 +268,45 @@ async function handleOpenChat() {
   }
 }
 
-async function handleSavePricelist(payload: { items: PricelistItemInput[], deadlineDays: number }) {
+/**
+ * Step 1 — the agent finished the pricelist: show the contract built from those
+ * exact lines. Nothing is stored until they accept it.
+ */
+async function handlePricelistReady(payload: { items: PricelistItemInput[], deadlineDays: number }) {
   if (!offer.value || pricelistSaving.value) return
+
+  draftPricelist.value = payload
+  contractDoc.value = null
+  contractError.value = null
+  contractLoading.value = true
+  pricelistDrawerOpen.value = false
+  contractDrawerOpen.value = true
+  haptic('light')
+
+  try {
+    contractDoc.value = await previewAgentContract(offer.value.id, payload.items, payload.deadlineDays)
+  }
+  catch (e) {
+    contractError.value = getApiErrorMessage(e)
+  }
+  finally {
+    contractLoading.value = false
+  }
+}
+
+/** Step 2 — the agent accepted the contract: send the priced offer. */
+async function handleAcceptContract() {
+  const payload = draftPricelist.value
+  if (!offer.value || !payload || pricelistSaving.value) return
+
   pricelistSaving.value = true
   haptic('light')
   try {
     offer.value = await setOfferPricelist(offer.value.id, payload.items, payload.deadlineDays)
     haptic('medium')
-    toast.success(locale.t.agent.pricelistSentToast)
-    pricelistDrawerOpen.value = false
+    toast.success(locale.t.orders.contract.agentSentToast)
+    contractDrawerOpen.value = false
+    draftPricelist.value = null
   }
   catch (e) {
     toast.error(getApiErrorMessage(e))
@@ -379,6 +423,7 @@ watch(() => props.id, loadOffer)
           :is-active="orderStatus === 'in_progress'"
           :initial-items="pricelistItems"
           :initial-deadline-days="offer.deadline_days ?? null"
+          :window="order.amendment_window ?? null"
         />
 
         <!-- 2. Status strip (only when it carries meaning) -->
@@ -604,9 +649,21 @@ watch(() => props.id, loadOffer)
         :initial-items="pricelistItems"
         :initial-deadline-days="offer?.deadline_days ?? null"
         :submitting="pricelistSaving"
-        @submit="handleSavePricelist"
+        :submit-label="locale.t.common.next"
+        @submit="handlePricelistReady"
       />
     </Drawer>
+
+    <ContractAgreementDrawer
+      v-model:open="contractDrawerOpen"
+      party="agent"
+      :document="contractDoc"
+      :loading="contractLoading"
+      :submitting="pricelistSaving"
+      :acceptances="offer?.contract ?? null"
+      :error="contractError"
+      @accept="handleAcceptContract"
+    />
   </div>
 </template>
 

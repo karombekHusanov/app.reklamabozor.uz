@@ -480,7 +480,24 @@
     },
     "contract": {
       "title": "Contract",
-      "download": "Download contract"
+      "download": "Download contract",
+      "agreementTitle": "Three-party contract",
+      "agreementSubtitle": "Client ↔ Provider ↔ Operator",
+      "reviewHint": "Read the contract terms before confirming. Tapping confirm counts as an electronic acceptance and is stored.",
+      "consentLabel": "I have read and agree to the contract terms",
+      "acceptAgent": "Confirm and send the offer",
+      "acceptClient": "Confirm the contract and start",
+      "partyAgent": "Provider",
+      "partyClient": "Client",
+      "partyOperator": "Operator",
+      "acceptedByAgent": "Provider accepted",
+      "acceptedByClient": "Client accepted",
+      "awaitingClient": "Waiting for the client to confirm",
+      "notSpecified": "Not provided",
+      "deadlineLabel": "Deadline",
+      "docNumber": "Contract No.",
+      "loadError": "Could not load the contract",
+      "agentSentToast": "Contract confirmed — offer sent"
     },
     "status": {
       "new": "New",
@@ -665,7 +682,36 @@
       "offerError": "Failed to submit your offer.",
       "errPrice": "Enter a price.",
       "errComment": "Add a comment."
-    }
+    },
+    "pay": {
+      "title": "Choose how to pay",
+      "amountDue": "Amount due",
+      "onlineTitle": "Pay online (card)",
+      "onlineHint": "Pay now by card or wallet — opens the Multicard page.",
+      "invoiceTitle": "Invoice (link / QR)",
+      "invoiceHint": "A link and QR code to pay later from any app.",
+      "invoiceBody": "Scan the QR code or open the link — payable via Payme, Click, Uzum, Oson and other apps. The order is marked paid as soon as the money arrives.",
+      "cashTitle": "Cash",
+      "cashHint": "Pay cash at the platform's desk — a manager confirms it.",
+      "cashBody": "Download the invoice and hand the amount to the platform's cash desk. A manager confirms the payment in the system.",
+      "bankTitle": "Bank transfer",
+      "bankHint": "Invoice and bank requisites for companies.",
+      "bankBody": "Download the invoice and transfer the amount to the requisites shown. A manager confirms the payment once the money arrives.",
+      "offlinePending": "Status: waiting for the manager to confirm.",
+      "downloadInvoice": "Download invoice",
+      "copyLink": "Copy link",
+      "linkCopied": "Link copied",
+      "linkCopyFailed": "Could not copy the link",
+      "sendSms": "Send SMS",
+      "smsSent": "SMS sent",
+      "payNowInstead": "Pay now instead",
+      "otherMethod": "Choose another method",
+      "payButton": "Pay",
+      "overdue": "Payment overdue",
+      "dueLabel": "Payment due"
+    },
+    "cancelPaidConfirmBody": "The order will be cancelled and the payment refunded. For cash or bank transfers the operator returns the money.",
+    "cancelWindowLabel": "Cancellation window"
   },
   "agent": {
     "b2bBadge": "B2B onboarding",
@@ -1243,6 +1289,30 @@
       "rejected": "Declined",
       "cancelled": "Withdrawn",
       "expired": "Expired"
-    }
+    },
+    "drawer": {
+      "title": "Additional agreement",
+      "sendAction": "Confirm and send",
+      "approveAction": "Confirm",
+      "newTotal": "New total",
+      "delta": "Change",
+      "deltaNone": "unchanged",
+      "reason": "Reason",
+      "chargeNote": "Once it takes effect the difference is added to the order — you can pay it in the app.",
+      "refundNote": "Once it takes effect the excess is returned — the operator will be in touch.",
+      "partyAgent": "Provider",
+      "partyClient": "Client",
+      "partyOperator": "Operator",
+      "hint": "This document becomes an addendum to the main contract. Tapping confirm counts as an electronic acceptance and is stored.",
+      "consent": "I have read and agree to the terms of this agreement"
+    },
+    "windowOpenUntil": "You can propose changes until",
+    "windowClosed": "A third of the delivery time has passed — the provider proposes changes from here. Agree it in chat.",
+    "windowPending": "There is an open agreement — answer it first.",
+    "chargeDue": "Extra payment",
+    "refundDue": "To be refunded",
+    "refundPaid": "Refunded",
+    "awaitingOperator": "Waiting for the operator",
+    "answerBy": "Answer by"
   }
 }

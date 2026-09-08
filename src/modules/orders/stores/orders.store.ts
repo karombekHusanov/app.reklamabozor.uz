@@ -13,6 +13,7 @@ import {
   fetchMyOrders,
   fetchOrder,
   fetchOrderPayment,
+  startOfflinePayment as startOfflinePaymentRequest,
   startOrderPayment as startOrderPaymentRequest,
   submitOffer as submitOfferRequest,
   submitProviderReview as submitProviderReviewRequest,
@@ -103,11 +104,15 @@ export const useOrdersStore = defineStore('orders', () => {
     }
   }
 
-  async function accept(offerId: number) {
+  /**
+   * Client picks a winning offer. The contract drawer must have been confirmed
+   * first — its hash travels along so a revised document is refused.
+   */
+  async function accept(offerId: number, contractHash?: string | null) {
     isSubmitting.value = true
     error.value = null
     try {
-      const result = await acceptOfferRequest(offerId)
+      const result = await acceptOfferRequest(offerId, contractHash)
       // Gateway on: the client must pay before the deal activates — send them
       // to the Multicard checkout in the same Telegram webview so the gateway's
       // return_url brings them back into the mini app afterwards.
@@ -126,7 +131,7 @@ export const useOrdersStore = defineStore('orders', () => {
     }
   }
 
-  /** (Re)start checkout for an order awaiting payment (retry button). */
+  /** Pay now: mint a checkout and send the client straight to the gateway. */
   async function payForOrder(orderId: number) {
     isSubmitting.value = true
     error.value = null
@@ -138,6 +143,43 @@ export const useOrdersStore = defineStore('orders', () => {
     catch (e) {
       error.value = getApiErrorMessage(e)
       return false
+    }
+    finally {
+      isSubmitting.value = false
+    }
+  }
+
+  /**
+   * Pay later: a shareable Multicard invoice (link + QR, optionally texted).
+   * The money still lands in the gateway, so the webhook settles it as usual.
+   */
+  async function requestInvoice(orderId: number, sendSms = false) {
+    isSubmitting.value = true
+    error.value = null
+    try {
+      return await startOrderPaymentRequest(orderId, 'invoice', sendSms)
+    }
+    catch (e) {
+      error.value = getApiErrorMessage(e)
+      return null
+    }
+    finally {
+      isSubmitting.value = false
+    }
+  }
+
+  /** Cash desk / bank transfer: an invoice a manager confirms once paid. */
+  async function requestOfflineInvoice(orderId: number, method: 'cash' | 'bank_transfer') {
+    isSubmitting.value = true
+    error.value = null
+    try {
+      const payment = await startOfflinePaymentRequest(orderId, method)
+      if (currentOrder.value?.id === orderId) await loadOrder(orderId)
+      return payment
+    }
+    catch (e) {
+      error.value = getApiErrorMessage(e)
+      return null
     }
     finally {
       isSubmitting.value = false
@@ -343,6 +385,8 @@ export const useOrdersStore = defineStore('orders', () => {
     create,
     accept,
     payForOrder,
+    requestInvoice,
+    requestOfflineInvoice,
     refreshPayment,
     confirmCompletion,
     disputeCompletion,

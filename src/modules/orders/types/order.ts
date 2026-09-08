@@ -17,20 +17,37 @@ export type OfferStatus = 'pending' | 'accepted' | 'rejected'
 
 export type PaymentStatus = 'draft' | 'progress' | 'success' | 'error' | 'revert' | 'hold'
 
+/**
+ * How the client pays. `multicard` covers every gateway route (in-app checkout,
+ * invoice link, QR, SMS); cash and bank transfers are settled offline by a
+ * manager.
+ */
+export type PaymentMethod = 'multicard' | 'cash' | 'bank_transfer'
+
 export interface Payment {
   id: number
   uuid: string
   purpose: 'order'
+  method: PaymentMethod
   status: PaymentStatus
   amount: number // tiyin
   amount_som: number
   currency: string
   checkout_url: string | null
+  /** Short link when Multicard issued one, else the checkout URL — QR source. */
+  share_url: string | null
+  /** Generated invoice (hisob-faktura) for offline payments. */
+  invoice_url: string | null
+  reference: string | null
+  confirmed_at: string | null
   card_pan: string | null
   ps: string | null
   paid_at: string | null
   created_at: string
 }
+
+/** Where an active deal stands on money (separate from the work status). */
+export type OrderPaymentState = 'not_required' | 'unpaid' | 'paid' | 'refunded'
 
 /** Response of POST /offers/{id}/accept. */
 export interface AcceptOfferResult {
@@ -66,10 +83,62 @@ export interface AmendmentSnapshot {
   total: string
 }
 
+/** One clause block of the addendum document. */
+export interface AmendmentSection {
+  key: string
+  heading: string
+  /** `items_after` / `items_before` render a pricelist, `parties` the requisites. */
+  type: 'text' | 'items_after' | 'items_before' | 'parties'
+  paragraphs: string[]
+}
+
+/**
+ * The addendum as both parties read it before accepting — same text the PDF
+ * carries, with the parent contract named in the preamble.
+ */
+export interface AmendmentDocument {
+  version: string
+  number: string
+  contract_number: string | null
+  contract_date: string | null
+  title: string
+  subtitle: string
+  order_id: number | null
+  initiator_role: 'client' | 'agent'
+  initiator_label: string
+  reason: string | null
+  agent: Record<string, string | null>
+  client: Record<string, string | boolean | null>
+  platform: Record<string, string | number | null>
+  before: AmendmentSnapshot
+  after: AmendmentSnapshot
+  delta: string
+  delta_direction: 'charge' | 'refund' | 'none'
+  deadline_changed: boolean
+  requires_operator: boolean
+  sections: AmendmentSection[]
+  generated_at: string
+  hash: string
+}
+
 /** An "Additional agreement" (Qo'shimcha kelishuv) on an active deal. */
 export interface Amendment {
   id: number
   order_id: number
+  /** Addendum number, e.g. RB-35-2026/DS1 (null on legacy rows). */
+  number: string | null
+  contract_number: string | null
+  document_hash: string | null
+  expires_at: string | null
+  refund: {
+    state: 'none' | 'due' | 'refunded' | 'waived'
+    amount: string
+    method: string | null
+    reference: string | null
+    note: string | null
+    refunded_at: string | null
+  }
+  acceptances: { client: string | null, agent: string | null, operator: string | null }
   status: AmendmentStatus
   initiator_role: 'client' | 'agent'
   reason: string | null
@@ -88,11 +157,18 @@ export interface Amendment {
   created_at: string
 }
 
-/** Payload for proposing an amendment. */
+/** Payload for proposing an amendment (click-wrap confirmation included). */
 export interface AmendmentInput {
   items: PricelistItemInput[]
   deadline_days: number
   reason?: string | null
+}
+
+/** Who may propose an amendment right now, and until when. */
+export interface AmendmentWindow {
+  can_propose: boolean
+  reason: 'ok' | 'not_active' | 'not_participant' | 'pending_exists' | 'window_closed'
+  ends_at: string | null
 }
 
 export const MAX_PRICELIST_ITEMS = 50
@@ -121,10 +197,61 @@ export interface Offer {
   /** Pricelist lines (present once the agent sent a priced contract). */
   items?: OfferItem[]
   price_updated_at?: string | null
+  /** Click-wrap consent on the per-order contract (ISO timestamps or null). */
+  contract?: OfferContractState | null
   chat_id?: number | null
   agent: OfferAgent
   created_at: string
   updated_at: string
+}
+
+/** Which parties have accepted the per-order contract for an offer. */
+export interface OfferContractState {
+  agent_accepted_at: string | null
+  client_accepted_at: string | null
+}
+
+/** One clause block of the contract shown in the accept drawer. */
+export interface ContractSection {
+  key: string
+  heading: string
+  /** `items` renders the pricelist table, `parties` the requisites block. */
+  type: 'text' | 'items' | 'parties'
+  paragraphs: string[]
+}
+
+/**
+ * The three-party contract (client ↔ agent ↔ platform as operator) exactly as
+ * the accepting party sees it. `hash` is sent back on accept so a document the
+ * agent has revised meanwhile cannot be accepted by mistake.
+ */
+export interface ContractDocument {
+  version: string
+  terms_version: string
+  number: string
+  title: string
+  subtitle: string
+  order_id: number | null
+  offer_id: number
+  agent: Record<string, string | null>
+  client: Record<string, string | boolean | null>
+  platform: Record<string, string | number | null>
+  items: ContractLine[]
+  total: string
+  deadline_days: number | null
+  deadline_label: string | null
+  intro: string
+  sections: ContractSection[]
+  generated_at: string
+  hash: string
+}
+
+export interface ContractLine {
+  name: string
+  unit: string
+  quantity: string
+  unit_price: string
+  line_total: string
 }
 
 /** Per-order service contract (generated once the deal starts). */
@@ -236,8 +363,20 @@ export interface Order {
   provider_review?: OrderReview | null
   /** Per-order service contract (present once the deal started). */
   contract?: OrderContract | null
-  /** Latest payment for the order (checkout_url / status). Null when gateway off. */
+  /** Latest payment attempt (checkout / invoice / offline). Null when gateway off. */
   payment?: Payment | null
+  /** Money track: the deal runs from contract acceptance, payment may be owed. */
+  payment_state?: OrderPaymentState | null
+  payment_due_at?: string | null
+  paid_at?: string | null
+  /** Who may propose an additional agreement, and until when (client window). */
+  amendment_window?: AmendmentWindow | null
+  outstanding_som?: number
+  activated_at?: string | null
+  /** Whether the client may still cancel (unpaid: always; paid: within window). */
+  can_cancel?: boolean
+  /** End of the cooling-off window on a paid deal. */
+  cancel_deadline_at?: string | null
   offers?: Offer[]
   offers_count?: number
   views_count?: number
@@ -387,6 +526,7 @@ export interface AgentOfferDetail {
   price_edits_remaining?: number
   max_price_edits?: number
   can_edit_price?: boolean
+  contract?: OfferContractState | null
   items?: OfferItem[]
   chat?: { id: number, blocked: boolean } | null
   my_review?: OrderReview | null
@@ -405,6 +545,8 @@ export interface AgentOfferDetail {
     category: Category | null
     attachment_files: OrderAttachment[]
     contract?: OrderContract | null
+    amendment_window?: AmendmentWindow | null
+    outstanding_som?: number
     views_count?: number | null
     offers_count?: number | null
     client: {

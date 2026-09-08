@@ -6,6 +6,7 @@ import Badge from '@/core/ui/Badge.vue'
 import { Button } from '@/core/ui/button'
 import { useLocaleStore } from '@/core/i18n/locale.store'
 import { openCheckout } from '@/core/lib/telegram-init'
+import { formatDateTime } from '@/core/lib/date'
 import { formatPrice } from '@/modules/orders/lib/order-status'
 import type { Amendment } from '@/modules/orders/types/order'
 
@@ -39,9 +40,31 @@ function deadlineLabel(days: number | null): string {
   return days == null ? '—' : `${days} ${locale.t.amendments.days}`
 }
 
-// Extra payment is due once approved but not yet applied and a checkout exists.
+// Extra payment is due once approved but not yet applied and a checkout exists
+// (legacy rows only — new amendments put the extra on the order's balance).
 const showPayCta = computed(() =>
   a.value.status === 'approved' && !!a.value.payment?.checkout_url,
+)
+
+/** Money outcome of an applied addendum, in the reader's own terms. */
+const moneyNote = computed(() => {
+  if (a.value.status !== 'applied') return null
+  if (a.value.refund?.state === 'refunded') {
+    return `${locale.t.amendments.refundPaid}: ${formatPrice(a.value.refund.amount)}`
+  }
+  if (a.value.refund?.state === 'due') {
+    return `${locale.t.amendments.refundDue}: ${formatPrice(a.value.refund.amount)}`
+  }
+  if (extra.value > 0) {
+    return `${locale.t.amendments.chargeDue}: ${formatPrice(extra.value)}`
+  }
+  return null
+})
+
+const moneyTone = computed(() =>
+  a.value.refund?.state === 'due' || a.value.refund?.state === 'refunded'
+    ? 'bg-amber-500/10 text-amber-700 dark:text-amber-300'
+    : 'bg-primary/10 text-primary',
 )
 
 function pay() {
@@ -58,7 +81,7 @@ function pay() {
         </span>
         <div class="leading-tight">
           <p class="text-[13px] font-bold text-foreground">
-            {{ locale.t.amendments.title }}
+            {{ a.number ?? locale.t.amendments.title }}
           </p>
           <p class="text-[11px] text-muted-foreground">
             {{ a.initiator_role === 'agent' ? locale.t.amendments.byAgent : locale.t.amendments.byClient }}
@@ -75,6 +98,29 @@ function pay() {
       class="rounded-xl bg-muted/50 px-3 py-2 text-xs leading-relaxed text-muted-foreground dark:bg-white/5"
     >
       {{ a.reason }}
+    </p>
+
+    <!-- What the change costs (or gives back) once it is in force -->
+    <div
+      v-if="moneyNote"
+      class="rounded-xl px-3 py-2 text-[11.5px] font-medium leading-relaxed"
+      :class="moneyTone"
+    >
+      {{ moneyNote }}
+    </div>
+
+    <p
+      v-if="a.status === 'pending' && a.expires_at"
+      class="text-[11px] text-muted-foreground"
+    >
+      {{ locale.t.amendments.answerBy }}: {{ formatDateTime(a.expires_at) }}
+    </p>
+
+    <p
+      v-if="a.status === 'pending' && a.requires_operator && a.approvals.client && a.approvals.agent"
+      class="text-[11px] font-medium text-amber-600 dark:text-amber-400"
+    >
+      {{ locale.t.amendments.awaitingOperator }}
     </p>
 
     <!-- Terms change summary -->

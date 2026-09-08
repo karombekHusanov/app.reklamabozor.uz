@@ -20,12 +20,16 @@ import OrderAttachments from '@/modules/orders/components/OrderAttachments.vue'
 import OfferCard from '@/modules/orders/components/OfferCard.vue'
 import OrderStateCard from '@/modules/orders/components/OrderStateCard.vue'
 import ContractDownloadCard from '@/modules/orders/components/ContractDownloadCard.vue'
+import ContractAgreementDrawer from '@/modules/orders/components/ContractAgreementDrawer.vue'
+import PaymentMethodsDrawer from '@/modules/orders/components/PaymentMethodsDrawer.vue'
 import AmendmentsSection from '@/modules/orders/components/AmendmentsSection.vue'
 import CriteriaReviewForm from '@/modules/orders/components/CriteriaReviewForm.vue'
 import ReviewDisplay from '@/modules/orders/components/ReviewDisplay.vue'
 import { formatOrderRegion } from '@/modules/orders/lib/region-label'
+import { getApiErrorMessage } from '@/core/api/api-error'
+import { fetchOfferContract } from '@/modules/orders/services/orders.service'
 import { useOrdersStore } from '@/modules/orders/stores/orders.store'
-import type { ReviewCriterionScore } from '@/modules/orders/types/order'
+import type { ContractDocument, Offer, ReviewCriterionScore } from '@/modules/orders/types/order'
 
 const props = defineProps<{ id: string }>()
 
@@ -63,8 +67,30 @@ const selectable = computed(() =>
   order.value ? ['new', 'offers_sent'].includes(order.value.status) : false,
 )
 // Client picked an offer but hasn't paid yet — show the checkout prompt.
+// (Legacy flow: orders parked in awaiting_payment before deals activated on
+// contract acceptance.)
 const awaitingPayment = computed(() => order.value?.status === 'awaiting_payment')
-const canCancel = computed(() => selectable.value || awaitingPayment.value)
+// The backend decides: open orders and unpaid active deals any time, a paid
+// deal only inside the cooling-off window (cancel_deadline_at).
+const canCancel = computed(() =>
+  order.value?.can_cancel ?? (selectable.value || awaitingPayment.value),
+)
+const cancelRefunds = computed(() => order.value?.payment_state === 'paid')
+const cancelDeadlineLabel = computed(() =>
+  order.value?.cancel_deadline_at ? formatDateTime(order.value.cancel_deadline_at) : null,
+)
+
+// The deal is running and the money is still owed — the client picks how to pay.
+const needsPayment = computed(() =>
+  order.value?.payment_state === 'unpaid' || awaitingPayment.value,
+)
+const paymentOverdue = computed(() => {
+  const due = order.value?.payment_due_at
+  return Boolean(needsPayment.value && due && new Date(due).getTime() < Date.now())
+})
+const amountDue = computed(() =>
+  acceptedOffer.value?.price ?? order.value?.payment?.amount_som ?? null,
+)
 // The agent delivered — the client decides: accept or report a problem.
 const awaitingConfirmation = computed(() => order.value?.status === 'work_submitted')
 
@@ -95,10 +121,20 @@ const providerRole = computed<'agent' | 'designer'>(() => {
 // Confirm in a bottom drawer before killing a live request.
 const cancelDrawerOpen = ref(false)
 
+// Payment method picker for an active, unpaid deal.
+const paymentDrawerOpen = ref(false)
+
+// Contract confirmation before accepting an offer.
+const contractDrawerOpen = ref(false)
+const contractOffer = ref<Offer | null>(null)
+const contractDoc = ref<ContractDocument | null>(null)
+const contractLoading = ref(false)
+const contractError = ref<string | null>(null)
+
 // When the client returns from the checkout page (tab becomes visible again),
 // re-check the payment so the order flips to in_progress without a manual reload.
 async function recheckPayment() {
-  if (document.visibilityState !== 'visible' || !awaitingPayment.value || !order.value) return
+  if (document.visibilityState !== 'visible' || !needsPayment.value || !order.value) return
   const payment = await orders.refreshPayment(order.value.id)
   if (payment?.status === 'success') {
     haptic('medium')
@@ -121,16 +157,48 @@ onMounted(() => {
 
 onUnmounted(() => document.removeEventListener('visibilitychange', recheckPayment))
 
-async function acceptOffer(offerId: number) {
+/**
+ * Picking an agency is signing the three-party contract, so the accept button
+ * opens the contract first — the deal only starts once the client confirms it.
+ */
+async function reviewOfferContract(offer: Offer) {
+  contractOffer.value = offer
+  contractDoc.value = null
+  contractError.value = null
+  contractLoading.value = true
+  contractDrawerOpen.value = true
   haptic('light')
-  const ok = await orders.accept(offerId)
-  if (ok) haptic('medium')
+
+  try {
+    contractDoc.value = await fetchOfferContract(offer.id)
+  }
+  catch (e) {
+    contractError.value = getApiErrorMessage(e)
+  }
+  finally {
+    contractLoading.value = false
+  }
 }
 
-async function payNow() {
-  if (!order.value) return
+async function acceptContract() {
+  const offer = contractOffer.value
+  if (!offer || orders.isSubmitting) return
+
   haptic('light')
-  await orders.payForOrder(order.value.id)
+  const ok = await orders.accept(offer.id, contractDoc.value?.hash ?? null)
+  if (ok) {
+    haptic('medium')
+    contractDrawerOpen.value = false
+    contractOffer.value = null
+  }
+  else if (orders.error) {
+    contractError.value = orders.error
+  }
+}
+
+function openPaymentOptions() {
+  haptic('light')
+  paymentDrawerOpen.value = true
 }
 
 async function confirmWork() {
@@ -205,22 +273,34 @@ async function sendReview(criteria: ReviewCriterionScore[], comment: string | nu
         <OrderStateCard :order="order">
           <template #action>
             <!-- Each state shows exactly one primary action. -->
-            <Button
-              v-if="awaitingPayment"
-              class="h-12 w-full rounded-2xl text-[15px]"
-              :disabled="orders.isSubmitting"
-              @click="payNow"
+            <div
+              v-if="needsPayment"
+              class="space-y-2"
             >
-              <Loader2
-                v-if="orders.isSubmitting"
-                class="size-4 animate-spin"
-              />
-              <CreditCard
-                v-else
-                class="size-4"
-              />
-              {{ locale.t.orders.payNow }}
-            </Button>
+              <Button
+                class="h-12 w-full rounded-2xl text-[15px]"
+                :disabled="orders.isSubmitting"
+                @click="openPaymentOptions"
+              >
+                <Loader2
+                  v-if="orders.isSubmitting"
+                  class="size-4 animate-spin"
+                />
+                <CreditCard
+                  v-else
+                  class="size-4"
+                />
+                {{ locale.t.orders.pay.payButton }}
+              </Button>
+              <!-- The due date itself lives in the state card; only the
+                   overdue warning needs the extra emphasis here. -->
+              <p
+                v-if="paymentOverdue"
+                class="text-center text-[11.5px] font-semibold text-destructive"
+              >
+                {{ locale.t.orders.pay.overdue }}
+              </p>
+            </div>
 
             <div
               v-else-if="awaitingConfirmation"
@@ -372,6 +452,7 @@ async function sendReview(criteria: ReviewCriterionScore[], comment: string | nu
           :is-active="isActiveDeal"
           :initial-items="acceptedOffer.items ?? []"
           :initial-deadline-days="acceptedOffer.deadline_days ?? null"
+          :window="order.amendment_window ?? null"
         />
 
         <!-- Rating: once completed, ask the client to rate the agency (criteria-based). -->
@@ -429,7 +510,7 @@ async function sendReview(criteria: ReviewCriterionScore[], comment: string | nu
               :offer="offer"
               :selectable="selectable"
               :accepting="orders.isSubmitting"
-              @accept="acceptOffer(offer.id)"
+              @accept="reviewOfferContract(offer)"
             />
           </template>
         </div>
@@ -480,7 +561,17 @@ async function sendReview(criteria: ReviewCriterionScore[], comment: string | nu
             <XCircle class="size-7" />
           </span>
           <p class="text-sm leading-relaxed text-muted-foreground">
-            {{ awaitingPayment ? locale.t.orders.cancelPayConfirmBody : locale.t.orders.cancelConfirmBody }}
+            {{ cancelRefunds
+              ? locale.t.orders.cancelPaidConfirmBody
+              : awaitingPayment
+                ? locale.t.orders.cancelPayConfirmBody
+                : locale.t.orders.cancelConfirmBody }}
+          </p>
+          <p
+            v-if="cancelRefunds && cancelDeadlineLabel"
+            class="text-[12px] font-medium text-muted-foreground"
+          >
+            {{ locale.t.orders.cancelWindowLabel }}: {{ cancelDeadlineLabel }}
           </p>
         </div>
 
@@ -512,6 +603,25 @@ async function sendReview(criteria: ReviewCriterionScore[], comment: string | nu
         </div>
       </div>
     </Drawer>
+
+    <PaymentMethodsDrawer
+      v-if="order"
+      v-model:open="paymentDrawerOpen"
+      :order-id="order.id"
+      :amount="amountDue"
+      :payment="order.payment ?? null"
+    />
+
+    <ContractAgreementDrawer
+      v-model:open="contractDrawerOpen"
+      party="client"
+      :document="contractDoc"
+      :loading="contractLoading"
+      :submitting="orders.isSubmitting"
+      :acceptances="contractOffer?.contract ?? null"
+      :error="contractError"
+      @accept="acceptContract"
+    />
   </div>
 </template>
 <style scoped>

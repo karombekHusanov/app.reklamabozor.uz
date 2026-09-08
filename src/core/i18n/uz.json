@@ -480,7 +480,24 @@
     },
     "contract": {
       "title": "Shartnoma",
-      "download": "Shartnomani yuklab olish"
+      "download": "Shartnomani yuklab olish",
+      "agreementTitle": "Uch tomonlama shartnoma",
+      "agreementSubtitle": "Buyurtmachi ↔ Ijrochi ↔ Operator",
+      "reviewHint": "Tasdiqlashdan oldin shartnoma shartlarini o'qib chiqing. Tasdiqlash tugmasi elektron imzoga tenglashtiriladi va saqlanadi.",
+      "consentLabel": "Shartnoma shartlarini o'qib chiqdim va roziman",
+      "acceptAgent": "Tasdiqlash va taklifni yuborish",
+      "acceptClient": "Shartnomani tasdiqlab, ishni boshlash",
+      "partyAgent": "Ijrochi",
+      "partyClient": "Buyurtmachi",
+      "partyOperator": "Operator",
+      "acceptedByAgent": "Ijrochi tasdiqladi",
+      "acceptedByClient": "Buyurtmachi tasdiqladi",
+      "awaitingClient": "Buyurtmachining tasdig'i kutilmoqda",
+      "notSpecified": "Kiritilmagan",
+      "deadlineLabel": "Muddat",
+      "docNumber": "Shartnoma №",
+      "loadError": "Shartnomani yuklab bo'lmadi",
+      "agentSentToast": "Shartnoma tasdiqlandi va taklif yuborildi"
     },
     "status": {
       "new": "Yangi",
@@ -665,7 +682,36 @@
       "offerError": "Taklif yuborishda xatolik yuz berdi.",
       "errPrice": "Narxni kiriting.",
       "errComment": "Izoh yozing."
-    }
+    },
+    "pay": {
+      "title": "To'lov usulini tanlang",
+      "amountDue": "To'lanadigan summa",
+      "onlineTitle": "Online to'lov (karta)",
+      "onlineHint": "Karta yoki hamyon orqali hoziroq to'lash — Multicard sahifasi ochiladi.",
+      "invoiceTitle": "Hisob (havola / QR)",
+      "invoiceHint": "Keyinroq istalgan ilova orqali to'lash uchun havola va QR kod.",
+      "invoiceBody": "QR kodni skanerlang yoki havolani oching — to'lovni Payme, Click, Uzum, Oson va boshqa ilovalar orqali amalga oshirish mumkin. To'lov kelib tushishi bilan buyurtma «to'langan» bo'ladi.",
+      "cashTitle": "Naqd pul",
+      "cashHint": "Platforma kassasiga naqd topshirish — operator tasdiqlaydi.",
+      "cashBody": "Hisobni yuklab oling va summani platforma kassasiga topshiring. To'lovni operator tizimda tasdiqlaydi.",
+      "bankTitle": "Bank o'tkazmasi",
+      "bankHint": "Yuridik shaxslar uchun hisob-faktura va bank rekvizitlari.",
+      "bankBody": "Hisob-fakturani yuklab oling va summani ko'rsatilgan bank rekvizitlariga o'tkazing. Pul kelib tushgach operator to'lovni tasdiqlaydi.",
+      "offlinePending": "Holat: operator tasdig'i kutilmoqda.",
+      "downloadInvoice": "Hisobni yuklab olish",
+      "copyLink": "Havolani nusxalash",
+      "linkCopied": "Havola nusxalandi",
+      "linkCopyFailed": "Havolani nusxalab bo'lmadi",
+      "sendSms": "SMS yuborish",
+      "smsSent": "SMS yuborildi",
+      "payNowInstead": "Hoziroq to'lash",
+      "otherMethod": "Boshqa usulni tanlash",
+      "payButton": "To'lash",
+      "overdue": "To'lov muddati o'tdi",
+      "dueLabel": "To'lash muddati"
+    },
+    "cancelPaidConfirmBody": "Buyurtma bekor qilinadi va to'lov qaytariladi. Naqd yoki bank orqali to'langan bo'lsa, pulni operator qaytaradi.",
+    "cancelWindowLabel": "Bekor qilish muddati"
   },
   "agent": {
     "b2bBadge": "B2B ro'yxatdan o'tish",
@@ -1243,6 +1289,30 @@
       "rejected": "Rad etildi",
       "cancelled": "Bekor qilindi",
       "expired": "Muddati o'tgan"
-    }
+    },
+    "drawer": {
+      "title": "Qo'shimcha kelishuv",
+      "sendAction": "Tasdiqlash va yuborish",
+      "approveAction": "Tasdiqlash",
+      "newTotal": "Yangi umumiy summa",
+      "delta": "O'zgarish",
+      "deltaNone": "o'zgarmadi",
+      "reason": "Sabab",
+      "chargeNote": "Kelishuv kuchga kirgach, farq buyurtma hisobiga qo'shiladi — ilovadan to'lashingiz mumkin.",
+      "refundNote": "Kelishuv kuchga kirgach, ortiqcha summa qaytariladi — operator bog'lanadi.",
+      "partyAgent": "Ijrochi",
+      "partyClient": "Buyurtmachi",
+      "partyOperator": "Operator",
+      "hint": "Bu hujjat asosiy shartnomaga ilova bo'ladi. Tasdiqlash tugmasi elektron imzoga tenglashtiriladi va saqlanadi.",
+      "consent": "Kelishuv shartlarini o'qib chiqdim va roziman"
+    },
+    "windowOpenUntil": "O'zgartirish taklif qilish muddati",
+    "windowClosed": "Muddatning 1/3 qismi o'tdi — o'zgartirishni endi Ijrochi taklif qiladi. Chatda kelishing.",
+    "windowPending": "Ochiq kelishuv bor — avval unga javob bering.",
+    "chargeDue": "Qo'shimcha to'lov",
+    "refundDue": "Sizga qaytariladi",
+    "refundPaid": "Qaytarildi",
+    "awaitingOperator": "Operator tasdig'i kutilmoqda",
+    "answerBy": "Javob muddati"
   }
 }

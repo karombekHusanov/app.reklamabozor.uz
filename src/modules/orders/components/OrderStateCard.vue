@@ -61,21 +61,36 @@ const paymentLabel = computed(() => {
 })
 
 const amountLabel = computed(() => {
+  // Before any payment attempt exists, the sum owed is the accepted offer's.
   const amount = props.order.payment?.amount_som
-  return amount != null ? formatPrice(amount) : null
+    ?? props.order.offers?.find(o => o.status === 'accepted')?.price
+  return amount != null && amount !== '' ? formatPrice(amount) : null
 })
 
-/** Card + paid-at once the money cleared; the invoice's shelf life before that. */
+/** Card + paid-at once the money cleared; what is expected before that. */
 const paymentMeta = computed(() => {
   const p = props.order.payment
-  if (!p) return locale.t.orders.paymentNoneHint
 
   if (payment.value === 'paid') {
-    const parts = [p.paid_at ? formatDateTime(p.paid_at) : null, p.card_pan]
+    const parts = [
+      (p?.paid_at ?? props.order.paid_at) ? formatDateTime(p?.paid_at ?? props.order.paid_at) : null,
+      p?.card_pan,
+    ]
     return parts.filter(Boolean).join(' · ') || null
   }
 
-  return payment.value === 'unpaid' ? locale.t.orders.paymentDeadlineHint : null
+  // Cash / bank transfer already requested — a manager has to confirm it.
+  if (payment.value === 'pending' && p && p.method !== 'multicard') {
+    return locale.t.orders.pay.offlinePending
+  }
+
+  if (payment.value === 'unpaid') {
+    return props.order.payment_due_at
+      ? `${locale.t.orders.pay.dueLabel}: ${formatDateTime(props.order.payment_due_at)}`
+      : locale.t.orders.paymentDeadlineHint
+  }
+
+  return p ? null : locale.t.orders.paymentNoneHint
 })
 
 const TONE_CLASS: Record<StateTone, string> = {

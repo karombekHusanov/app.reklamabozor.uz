@@ -5,11 +5,13 @@ import { getApiErrorMessage } from '@/core/api/api-error'
 import {
   approveAmendment,
   cancelAmendment,
+  fetchAmendmentDocument,
   fetchAmendments,
+  previewAmendment,
   proposeAmendment,
   rejectAmendment,
 } from '@/modules/orders/services/orders.service'
-import type { Amendment, AmendmentInput } from '@/modules/orders/types/order'
+import type { Amendment, AmendmentDocument, AmendmentInput } from '@/modules/orders/types/order'
 
 /**
  * Shared state + actions for the "Additional agreement" (Qo'shimcha kelishuv)
@@ -24,9 +26,54 @@ export function useAmendments() {
   const loading = ref(false)
   const submitting = ref(false)
 
-  /** The single open (pending/approved-awaiting-payment) amendment, if any. */
+  /** Addendum text currently shown in the accept drawer. */
+  const document = ref<AmendmentDocument | null>(null)
+  const documentLoading = ref(false)
+  const documentError = ref<string | null>(null)
+
+  /** Build the addendum from draft rows (before anything is stored). */
+  async function preview(orderId: number, payload: AmendmentInput): Promise<boolean> {
+    document.value = null
+    documentError.value = null
+    documentLoading.value = true
+    try {
+      document.value = await previewAmendment(orderId, payload)
+      return true
+    }
+    catch (e) {
+      documentError.value = getApiErrorMessage(e)
+      return false
+    }
+    finally {
+      documentLoading.value = false
+    }
+  }
+
+  /** Load the stored addendum's text before approving it. */
+  async function loadDocument(amendmentId: number): Promise<boolean> {
+    document.value = null
+    documentError.value = null
+    documentLoading.value = true
+    try {
+      document.value = await fetchAmendmentDocument(amendmentId)
+      return true
+    }
+    catch (e) {
+      documentError.value = getApiErrorMessage(e)
+      return false
+    }
+    finally {
+      documentLoading.value = false
+    }
+  }
+
+  /**
+   * The single proposal still awaiting decisions. Only `pending` counts — the
+   * backend blocks a new proposal on exactly that, and `approved` is a legacy
+   * state (an old amendment parked on its extra payment).
+   */
   const openAmendment = computed(() =>
-    amendments.value.find(a => a.status === 'pending' || a.status === 'approved') ?? null,
+    amendments.value.find(a => a.status === 'pending') ?? null,
   )
 
   async function load(orderId: number) {
@@ -66,11 +113,11 @@ export function useAmendments() {
     }
   }
 
-  async function approve(id: number): Promise<boolean> {
+  async function approve(id: number, documentHash?: string | null): Promise<boolean> {
     if (submitting.value) return false
     submitting.value = true
     try {
-      upsert(await approveAmendment(id))
+      upsert(await approveAmendment(id, documentHash))
       toast.success(locale.t.amendments.approvedToast)
       return true
     }
@@ -117,5 +164,20 @@ export function useAmendments() {
     }
   }
 
-  return { amendments, openAmendment, loading, submitting, load, propose, approve, reject, cancel }
+  return {
+    amendments,
+    openAmendment,
+    loading,
+    submitting,
+    document,
+    documentLoading,
+    documentError,
+    load,
+    preview,
+    loadDocument,
+    propose,
+    approve,
+    reject,
+    cancel,
+  }
 }

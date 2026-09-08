@@ -50,7 +50,19 @@ const PAYMENT_VIEWS: Record<PaymentStatus, PaymentView> = {
   revert: 'reverted',
 }
 
-export function paymentView(order: Pick<Order, 'payment' | 'status'>): PaymentView {
+export function paymentView(order: Pick<Order, 'payment' | 'status' | 'payment_state'>): PaymentView {
+  // The order's own money track wins: a deal can be active and still unpaid.
+  if (order.payment_state === 'paid') return 'paid'
+  if (order.payment_state === 'refunded') return 'reverted'
+
+  if (order.payment_state === 'unpaid') {
+    // An offline invoice (cash / bank) sits pending until a manager confirms it.
+    return order.payment && order.payment.method !== 'multicard'
+      && ['draft', 'progress'].includes(order.payment.status)
+      ? 'pending'
+      : 'unpaid'
+  }
+
   if (!order.payment) {
     return order.status === 'awaiting_payment' ? 'unpaid' : 'none'
   }
