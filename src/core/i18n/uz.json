@@ -711,7 +711,8 @@
       "dueLabel": "To'lash muddati"
     },
     "cancelPaidConfirmBody": "Buyurtma bekor qilinadi va to'lov qaytariladi. Naqd yoki bank orqali to'langan bo'lsa, pulni operator qaytaradi.",
-    "cancelWindowLabel": "Bekor qilish muddati"
+    "cancelWindowLabel": "Bekor qilish muddati",
+    "cancelWindowLeft": "Bekor qilish uchun {minutes} daqiqa qoldi"
   },
   "agent": {
     "b2bBadge": "B2B ro'yxatdan o'tish",

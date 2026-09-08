@@ -711,7 +711,8 @@
       "dueLabel": "Payment due"
     },
     "cancelPaidConfirmBody": "The order will be cancelled and the payment refunded. For cash or bank transfers the operator returns the money.",
-    "cancelWindowLabel": "Cancellation window"
+    "cancelWindowLabel": "Cancellation window",
+    "cancelWindowLeft": "{minutes} min left to cancel"
   },
   "agent": {
     "b2bBadge": "B2B onboarding",

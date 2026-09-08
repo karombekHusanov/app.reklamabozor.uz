@@ -711,7 +711,8 @@
       "dueLabel": "Срок оплаты"
     },
     "cancelPaidConfirmBody": "Заказ будет отменён, а оплата возвращена. При оплате наличными или переводом деньги вернёт оператор.",
-    "cancelWindowLabel": "Срок отмены"
+    "cancelWindowLabel": "Срок отмены",
+    "cancelWindowLeft": "На отмену осталось {minutes} мин."
   },
   "agent": {
     "b2bBadge": "B2B регистрация",

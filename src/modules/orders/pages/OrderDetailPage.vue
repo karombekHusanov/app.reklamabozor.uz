@@ -76,8 +76,17 @@ const canCancel = computed(() =>
   order.value?.can_cancel ?? (selectable.value || awaitingPayment.value),
 )
 const cancelRefunds = computed(() => order.value?.payment_state === 'paid')
+// The window is short (an hour by default), so a countdown reads better than a
+// timestamp: "42 daqiqa qoldi".
+const cancelMinutesLeft = computed(() => {
+  const deadline = order.value?.cancel_deadline_at
+  if (!deadline) return null
+  return Math.max(0, Math.ceil((new Date(deadline).getTime() - Date.now()) / 60000))
+})
 const cancelDeadlineLabel = computed(() =>
-  order.value?.cancel_deadline_at ? formatDateTime(order.value.cancel_deadline_at) : null,
+  cancelMinutesLeft.value === null
+    ? null
+    : locale.t.orders.cancelWindowLeft.replace('{minutes}', String(cancelMinutesLeft.value)),
 )
 
 // The deal is running and the money is still owed — the client picks how to pay.
@@ -571,7 +580,7 @@ async function sendReview(criteria: ReviewCriterionScore[], comment: string | nu
             v-if="cancelRefunds && cancelDeadlineLabel"
             class="text-[12px] font-medium text-muted-foreground"
           >
-            {{ locale.t.orders.cancelWindowLabel }}: {{ cancelDeadlineLabel }}
+            {{ cancelDeadlineLabel }}
           </p>
         </div>
 

@@ -61,9 +61,10 @@ const paymentLabel = computed(() => {
 })
 
 const amountLabel = computed(() => {
-  // Before any payment attempt exists, the sum owed is the accepted offer's.
-  const amount = props.order.payment?.amount_som
-    ?? props.order.offers?.find(o => o.status === 'accepted')?.price
+  // The deal's own total — a single payment row can be a part payment or an
+  // amendment top-up, so it must not stand in for the whole deal.
+  const amount = props.order.offers?.find(o => o.status === 'accepted')?.price
+    ?? props.order.payment?.amount_som
   return amount != null && amount !== '' ? formatPrice(amount) : null
 })
 
