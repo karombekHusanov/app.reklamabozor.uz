@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
-import { CreditCard, Wallet } from '@lucide/vue'
+import { AlertTriangle, Building2, CreditCard, Wallet } from '@lucide/vue'
 import AppHeader from '@/modules/shell/components/AppHeader.vue'
 import GlassCard from '@/core/ui/GlassCard.vue'
 import EmptyState from '@/core/ui/EmptyState.vue'
@@ -21,6 +21,7 @@ import {
 import type {
   EarningsBalance,
   Payout,
+  PayoutDestination,
   Withdrawal,
 } from '@/modules/profile/types/earnings'
 
@@ -33,6 +34,7 @@ const t = computed(() => earningsStrings(locale.locale))
 const loading = ref(true)
 const balance = ref<EarningsBalance | null>(null)
 const payouts = ref<Payout[]>([])
+const destination = ref<PayoutDestination | null>(null)
 
 // Active withdrawal flow.
 const withdrawal = ref<Withdrawal | null>(null)
@@ -41,6 +43,11 @@ const otp = ref('')
 let poll: ReturnType<typeof setInterval> | null = null
 
 const canWithdraw = computed(() => (balance.value?.available ?? 0) > 0)
+
+// Earnings are transferred to the agent's bank account by a manager; the card
+// cash-out only appears where the platform has it switched on.
+const cardWithdrawal = computed(() => destination.value?.card_withdrawal_enabled === true)
+const bank = computed(() => destination.value?.bank ?? null)
 
 function money(som: number): string {
   return new Intl.NumberFormat('ru-RU').format(Math.round(som))
@@ -52,6 +59,7 @@ async function load() {
     const res = await fetchEarnings()
     balance.value = res.balance
     payouts.value = res.items
+    destination.value = res.payout
   }
   catch {
     toast.error(t.value.genericError)
@@ -203,7 +211,7 @@ onBeforeUnmount(() => {
       <GlassCard v-else-if="balance" class="space-y-4">
         <div>
           <p class="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-            {{ t.available }}
+            {{ cardWithdrawal ? t.available : t.owed }}
           </p>
           <p class="rb-font-display mt-1 text-[28px] font-extrabold tabular-nums tracking-[-0.02em] text-foreground">
             {{ money(balance.available_som) }} <span class="text-base font-bold text-muted-foreground">{{ balance.currency }}</span>
@@ -221,7 +229,7 @@ onBeforeUnmount(() => {
           </div>
         </div>
 
-        <template v-if="!withdrawal">
+        <template v-if="cardWithdrawal && !withdrawal">
           <Button
             size="lg"
             class="w-full"
@@ -232,6 +240,38 @@ onBeforeUnmount(() => {
             {{ t.withdrawCta }}
           </Button>
           <p class="text-center text-[11px] text-muted-foreground">{{ t.withdrawHint }}</p>
+        </template>
+
+        <!-- Bank channel: no self-service cash-out, just where it lands -->
+        <template v-else-if="!cardWithdrawal">
+          <div class="glass-chip flex items-start gap-3 rounded-xl px-3 py-3">
+            <span class="earnings-flow-icon shrink-0"><Building2 class="size-4" /></span>
+            <div class="min-w-0">
+              <p class="text-[13px] font-bold text-foreground">{{ t.bankTitle }}</p>
+              <p class="mt-0.5 text-[11px] leading-snug text-muted-foreground">{{ t.bankHint }}</p>
+
+              <div v-if="bank?.complete" class="mt-2 space-y-0.5">
+                <p class="text-[12px] font-semibold text-foreground">{{ bank.bank_name }}</p>
+                <p class="text-[11px] tabular-nums text-muted-foreground">
+                  {{ t.bankAccount }}: {{ bank.bank_account }}
+                </p>
+                <p class="text-[11px] tabular-nums text-muted-foreground">
+                  {{ t.bankMfo }}: {{ bank.mfo }}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Requisites come from KYC and are admin-managed after approval. -->
+          <div
+            v-if="bank && !bank.complete"
+            class="flex items-start gap-2 rounded-xl bg-amber-500/12 px-3 py-2.5 text-amber-700 dark:text-amber-300"
+          >
+            <AlertTriangle class="mt-0.5 size-4 shrink-0" />
+            <span class="text-[11px] leading-snug">
+              {{ t.bankMissing }} — <span class="font-semibold">{{ t.bankMissingCta }}</span>
+            </span>
+          </div>
         </template>
       </GlassCard>
 

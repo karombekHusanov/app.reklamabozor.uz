@@ -27,7 +27,20 @@ export interface EarningsBalance {
   currency: string
 }
 
+/** Where the agent's earnings are headed, and how they get there. */
+export interface PayoutDestination {
+  channel: 'bank' | 'card'
+  card_withdrawal_enabled: boolean
+  bank: {
+    bank_name: string | null
+    bank_account: string | null
+    mfo: string | null
+    complete: boolean
+  }
+}
+
 export interface EarningsResponse {
+  payout: PayoutDestination
   balance: EarningsBalance
   items: Payout[]
   meta: { current_page: number, last_page: number, per_page: number, total: number }

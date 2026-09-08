@@ -9,10 +9,19 @@ export interface EarningsStrings {
   title: string
   subtitle: string
   available: string
+  /** Same balance, worded for the bank channel (nothing to "withdraw"). */
+  owed: string
   processing: string
   paid: string
   withdrawCta: string
   withdrawHint: string
+  // bank destination (the default channel: a manager transfers the money)
+  bankTitle: string
+  bankHint: string
+  bankAccount: string
+  bankMfo: string
+  bankMissing: string
+  bankMissingCta: string
   history: string
   empty: string
   emptyHint: string
@@ -36,10 +45,17 @@ const uz: EarningsStrings = {
   title: 'Daromadlarim',
   subtitle: 'Balans va toʻlovlar tarixi',
   available: 'Yechib olish mumkin',
+  owed: 'Oʻtkazish kutilmoqda',
   processing: 'Jarayonda',
   paid: 'Toʻlangan',
   withdrawCta: 'Kartaga yechib olish',
   withdrawHint: 'Uzcard yoki Humo kartangizga oʻtkazamiz',
+  bankTitle: 'Bank hisobingizga oʻtkaziladi',
+  bankHint: 'Mijoz toʻlagach, ish bosqichiga qarab hisobingizga oʻtkazamiz',
+  bankAccount: 'Hisob raqam',
+  bankMfo: 'MFO',
+  bankMissing: 'Bank rekvizitlaringiz toʻliq emas — oʻtkazma amalga oshmaydi',
+  bankMissingCta: 'Menejerga murojaat qiling',
   history: 'Toʻlovlar tarixi',
   empty: 'Hali toʻlov yoʻq',
   emptyHint: 'Buyurtmalar yakunlangach shu yerda koʻrinadi',
@@ -65,10 +81,17 @@ const ru: EarningsStrings = {
   title: 'Мои доходы',
   subtitle: 'Баланс и история выплат',
   available: 'Доступно к выводу',
+  owed: 'Ожидает перевода',
   processing: 'В обработке',
   paid: 'Выплачено',
   withdrawCta: 'Вывести на карту',
   withdrawHint: 'Переведём на вашу карту Uzcard или Humo',
+  bankTitle: 'Переведём на ваш банковский счёт',
+  bankHint: 'После оплаты клиентом переводим по этапам работы',
+  bankAccount: 'Расчётный счёт',
+  bankMfo: 'МФО',
+  bankMissing: 'Банковские реквизиты неполные — перевод невозможен',
+  bankMissingCta: 'Обратитесь к менеджеру',
   history: 'История выплат',
   empty: 'Выплат пока нет',
   emptyHint: 'Появятся здесь после завершения заказов',
@@ -94,10 +117,17 @@ const en: EarningsStrings = {
   title: 'My earnings',
   subtitle: 'Balance and payout history',
   available: 'Available to withdraw',
+  owed: 'Awaiting transfer',
   processing: 'Processing',
   paid: 'Paid out',
   withdrawCta: 'Withdraw to card',
   withdrawHint: 'We transfer to your Uzcard or Humo card',
+  bankTitle: 'Paid to your bank account',
+  bankHint: 'Once the client pays, we transfer it as the work progresses',
+  bankAccount: 'Account',
+  bankMfo: 'MFO',
+  bankMissing: 'Your bank requisites are incomplete — the transfer cannot be made',
+  bankMissingCta: 'Contact your manager',
   history: 'Payout history',
   empty: 'No payouts yet',
   emptyHint: 'They appear here once orders are completed',
