@@ -60,6 +60,19 @@ function openAgent(id: number) {
       show-back
     />
 
+    <!-- Category illustration (when the admin uploaded one) -->
+    <div
+      v-if="category?.image"
+      class="mb-4 px-4"
+    >
+      <img
+        :src="category.image"
+        alt=""
+        class="h-[132px] w-full rounded-[var(--rb-r-card)] border border-border object-cover"
+        style="box-shadow: var(--rb-elev-1)"
+      >
+    </div>
+
     <section class="space-y-3 px-4">
       <template v-if="loading">
         <Skeleton

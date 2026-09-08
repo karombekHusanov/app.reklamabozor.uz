@@ -9,7 +9,7 @@ import { Button } from '@/core/ui/button'
 import { useFileUpload } from '@/core/composables/useFileUpload'
 import { useTelegram } from '@/core/composables/useTelegram'
 import { useToast } from '@/core/composables/useToast'
-import { categoryIcon } from '@/modules/orders/lib/category-icon'
+import CategoryThumb from '@/modules/orders/components/CategoryThumb.vue'
 import { categoryName } from '@/core/i18n/category-name'
 import { regionName } from '@/core/i18n/region-name'
 import { useLocaleStore } from '@/core/i18n/locale.store'
@@ -219,10 +219,7 @@ function submit() {
           v-if="selectedCategory"
           class="picker__icon"
         >
-          <component
-            :is="categoryIcon(selectedCategory)"
-            class="size-[18px]"
-          />
+          <CategoryThumb :category="selectedCategory" :size="18" />
         </span>
         <span
           class="picker__value"
@@ -453,10 +450,7 @@ function submit() {
           @click="pickCategory(category.id)"
         >
           <span class="option__icon">
-            <component
-              :is="categoryIcon(category)"
-              class="size-[18px]"
-            />
+            <CategoryThumb :category="category" :size="18" />
           </span>
           <span class="option__label">{{ categoryName(category, locale.locale) }}</span>
           <Check
@@ -551,6 +545,7 @@ function submit() {
 .picker__icon {
   display: grid;
   place-items: center;
+  overflow: hidden;
   width: 32px;
   height: 32px;
   flex-shrink: 0;
@@ -588,6 +583,7 @@ function submit() {
 .option__icon {
   display: grid;
   place-items: center;
+  overflow: hidden;
   width: 34px;
   height: 34px;
   flex-shrink: 0;

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useLocaleStore } from '@/core/i18n/locale.store'
 import { categoryName } from '@/core/i18n/category-name'
-import { categoryIcon } from '@/modules/orders/lib/category-icon'
+import CategoryThumb from '@/modules/orders/components/CategoryThumb.vue'
 import type { Category } from '@/modules/agent/types/agent'
 
 defineProps<{
@@ -43,10 +43,7 @@ const locale = useLocaleStore()
         @click="emit('select', cat)"
       >
         <span class="cat__ic">
-          <component
-            :is="categoryIcon(cat)"
-            class="size-[26px]"
-          />
+          <CategoryThumb :category="cat" :size="26" />
         </span>
         <span class="cat__l">{{ categoryName(cat, locale.locale) }}</span>
       </button>
@@ -68,7 +65,7 @@ const locale = useLocaleStore()
 }
 .rail::-webkit-scrollbar { display: none; }
 .cat { scroll-snap-align: start; flex: 0 0 auto; width: 80px; display: flex; flex-direction: column; align-items: center; gap: 8px; background: none; border: 0; cursor: pointer; -webkit-tap-highlight-color: transparent; }
-.cat__ic { width: 66px; height: 66px; border-radius: 20px; display: grid; place-items: center; background: var(--card); border: 1px solid var(--border); color: var(--primary); box-shadow: var(--rb-elev-1); transition: transform var(--rb-dur) var(--rb-ease), border-color var(--rb-dur) var(--rb-ease); }
+.cat__ic { width: 66px; height: 66px; border-radius: 20px; overflow: hidden; display: grid; place-items: center; background: var(--card); border: 1px solid var(--border); color: var(--primary); box-shadow: var(--rb-elev-1); transition: transform var(--rb-dur) var(--rb-ease), border-color var(--rb-dur) var(--rb-ease); }
 .cat:active .cat__ic { transform: scale(0.93); }
 .cat:focus-visible { outline: none; }
 .cat:focus-visible .cat__ic { outline: 2px solid var(--primary); outline-offset: 2px; }

@@ -1459,7 +1459,7 @@
   }
 
   .agent-category-tile__icon {
-    @apply relative z-[1] flex size-10 items-center justify-center rounded-xl border;
+    @apply relative z-[1] flex size-10 items-center justify-center overflow-hidden rounded-xl border;
   }
 
   .agent-category-tile__icon--sm {
@@ -1503,7 +1503,7 @@
   }
 
   .agent-category-chip__icon {
-    @apply flex size-7 items-center justify-center rounded-full border;
+    @apply flex size-7 items-center justify-center overflow-hidden rounded-full border;
   }
 
   .agent-portfolio-bento {

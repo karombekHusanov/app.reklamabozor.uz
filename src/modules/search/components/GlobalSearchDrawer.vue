@@ -3,7 +3,7 @@ import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import { ArrowRight, Loader2, Search, SearchX, Star, X } from '@lucide/vue'
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@/core/ui/drawer'
 import Avatar from '@/core/ui/Avatar.vue'
-import { categoryIcon } from '@/modules/orders/lib/category-icon'
+import CategoryThumb from '@/modules/orders/components/CategoryThumb.vue'
 import { categoryName } from '@/core/i18n/category-name'
 import { useLocaleStore } from '@/core/i18n/locale.store'
 import { useTelegram } from '@/core/composables/useTelegram'
@@ -300,10 +300,7 @@ function providerStars(agent: PublicAgent): string | null {
               @click="pickService(category)"
             >
               <span class="search-row__tile">
-                <component
-                  :is="categoryIcon(category)"
-                  class="size-[19px]"
-                />
+                <CategoryThumb :category="category" :size="19" />
               </span>
               <span class="search-row__body">
                 <span class="search-row__name">{{ categoryName(category, locale.locale) }}</span>
@@ -374,6 +371,7 @@ input[type='search']::-webkit-search-decoration {
 .search-row__tile {
   display: grid;
   place-items: center;
+  overflow: hidden;
   width: 44px;
   height: 44px;
   flex-shrink: 0;

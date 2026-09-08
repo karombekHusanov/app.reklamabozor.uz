@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useLocaleStore } from '@/core/i18n/locale.store'
-import { categoryIcon } from '@/modules/orders/lib/category-icon'
+import CategoryThumb from '@/modules/orders/components/CategoryThumb.vue'
 import type { LiveOrder } from '@/modules/home/services/live-orders.service'
 
 defineProps<{
@@ -50,10 +50,7 @@ function metaText(order: LiveOrder): string {
         class="fcard"
       >
         <span class="fcard__ic">
-          <component
-            :is="categoryIcon(order.category)"
-            class="size-[21px]"
-          />
+          <CategoryThumb :category="order.category" :size="21" />
         </span>
         <div class="fcard__main">
           <p class="fcard__t">
@@ -88,7 +85,7 @@ function metaText(order: LiveOrder): string {
 
 .feed { display: flex; flex-direction: column; gap: 10px; padding-inline: var(--home-gutter, 18px); }
 .fcard { display: flex; align-items: center; gap: 12px; padding: 13px; border-radius: 17px; background: var(--card); border: 1px solid var(--border); box-shadow: var(--rb-elev-1); }
-.fcard__ic { width: 44px; height: 44px; border-radius: 13px; flex-shrink: 0; display: grid; place-items: center; background: color-mix(in srgb, var(--primary) 11%, var(--card)); color: var(--primary); }
+.fcard__ic { width: 44px; height: 44px; border-radius: 13px; overflow: hidden; flex-shrink: 0; display: grid; place-items: center; background: color-mix(in srgb, var(--primary) 11%, var(--card)); color: var(--primary); }
 .fcard__main { flex: 1; min-width: 0; }
 .fcard__t { font-weight: 700; font-size: 13.5px; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--foreground); }
 .fcard__meta { margin: 3px 0 0; font-size: 11.5px; color: var(--muted-foreground); display: flex; align-items: center; gap: 6px; }

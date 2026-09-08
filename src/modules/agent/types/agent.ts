@@ -62,6 +62,8 @@ export interface Category {
   name_uz: string
   name_ru: string
   type: 'agent' | 'designer'
+  /** Admin-uploaded illustration; null = fall back to the generated icon. */
+  image?: string | null
   is_active: boolean
   is_other?: boolean
   sort_order: number

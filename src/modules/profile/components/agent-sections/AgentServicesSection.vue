@@ -4,7 +4,7 @@ import type { Category } from '@/modules/agent/types/agent'
 import { categoryName } from '@/core/i18n/category-name'
 import { useLocaleStore } from '@/core/i18n/locale.store'
 import EmptyState from '@/core/ui/EmptyState.vue'
-import { categoryIcon } from '@/modules/orders/lib/category-icon'
+import CategoryThumb from '@/modules/orders/components/CategoryThumb.vue'
 import AgentProfileSectionShell from '@/modules/profile/components/agent-sections/AgentProfileSectionShell.vue'
 import { categoryAccent, categoryLayoutMode } from '@/modules/profile/lib/category-accent'
 
@@ -53,9 +53,9 @@ const cloudCategories = computed(() => sortedCategories.value)
         class="agent-category-tile__icon agent-category-tile__icon--lg"
         :class="categoryAccent(featuredCategory).icon"
       >
-        <component
-          :is="categoryIcon(featuredCategory)"
-          class="size-6"
+        <CategoryThumb
+          :category="featuredCategory"
+          :size="24"
         />
       </span>
       <div class="min-w-0 flex-1">
@@ -87,9 +87,9 @@ const cloudCategories = computed(() => sortedCategories.value)
           class="agent-category-tile__icon"
           :class="categoryAccent(category, index).icon"
         >
-          <component
-            :is="categoryIcon(category)"
-            class="size-[1.15rem]"
+          <CategoryThumb
+            :category="category"
+            :size="18"
           />
         </span>
         <p class="mt-3 text-[12px] font-bold leading-snug text-foreground">
@@ -115,9 +115,9 @@ const cloudCategories = computed(() => sortedCategories.value)
           class="agent-category-tile__icon agent-category-tile__icon--md"
           :class="categoryAccent(featuredCategory).icon"
         >
-          <component
-            :is="categoryIcon(featuredCategory)"
-            class="size-5"
+          <CategoryThumb
+            :category="featuredCategory"
+            :size="20"
           />
         </span>
         <div class="min-w-0 flex-1">
@@ -141,9 +141,9 @@ const cloudCategories = computed(() => sortedCategories.value)
             class="agent-category-tile__icon agent-category-tile__icon--sm"
             :class="categoryAccent(category, index + 1).icon"
           >
-            <component
-              :is="categoryIcon(category)"
-              class="size-3.5"
+            <CategoryThumb
+              :category="category"
+              :size="14"
             />
           </span>
           <p class="mt-2 text-[11px] font-bold leading-snug text-foreground">
@@ -175,9 +175,9 @@ const cloudCategories = computed(() => sortedCategories.value)
           class="agent-category-tile__icon"
           :class="categoryAccent(category, index).icon"
         >
-          <component
-            :is="categoryIcon(category)"
-            class="size-[1.15rem]"
+          <CategoryThumb
+            :category="category"
+            :size="18"
           />
         </span>
         <p class="mt-2.5 text-[12px] font-bold leading-snug text-foreground">
@@ -202,9 +202,9 @@ const cloudCategories = computed(() => sortedCategories.value)
           class="agent-category-chip__icon"
           :class="categoryAccent(category, index).icon"
         >
-          <component
-            :is="categoryIcon(category)"
-            class="size-3.5"
+          <CategoryThumb
+            :category="category"
+            :size="14"
           />
         </span>
         <span class="text-[11px] font-semibold leading-none text-foreground">
