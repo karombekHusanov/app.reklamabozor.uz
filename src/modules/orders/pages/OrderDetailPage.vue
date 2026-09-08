@@ -20,6 +20,7 @@ import OrderAttachments from '@/modules/orders/components/OrderAttachments.vue'
 import OfferCard from '@/modules/orders/components/OfferCard.vue'
 import OrderStateCard from '@/modules/orders/components/OrderStateCard.vue'
 import ContractDownloadCard from '@/modules/orders/components/ContractDownloadCard.vue'
+import OrderActsCard from '@/modules/orders/components/OrderActsCard.vue'
 import ContractAgreementDrawer from '@/modules/orders/components/ContractAgreementDrawer.vue'
 import PaymentMethodsDrawer from '@/modules/orders/components/PaymentMethodsDrawer.vue'
 import AmendmentsSection from '@/modules/orders/components/AmendmentsSection.vue'
@@ -452,6 +453,12 @@ async function sendReview(criteria: ReviewCriterionScore[], comment: string | nu
         <ContractDownloadCard
           v-if="order.contract"
           :contract="order.contract"
+        />
+
+        <!-- Acts closing the deal (bookkeeping). -->
+        <OrderActsCard
+          v-if="order.documents?.length"
+          :documents="order.documents"
         />
 
         <!-- Additional agreements (Qo'shimcha kelishuv) on the active deal. -->

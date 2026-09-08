@@ -264,6 +264,18 @@ export interface OrderContract {
   generated_at: string | null
 }
 
+/** Accounting act generated when the order completed. */
+export interface OrderDocument {
+  id: number
+  type: 'work_act' | 'commission_act'
+  title: string
+  number: string
+  total: string | number
+  pdf_url: string | null
+  hash: string | null
+  generated_at: string | null
+}
+
 export type OrderDeadline = 'today_tomorrow' | 'this_week'
 
 export type ReviewDirection = 'client_to_provider' | 'provider_to_client'
@@ -363,6 +375,7 @@ export interface Order {
   provider_review?: OrderReview | null
   /** Per-order service contract (present once the deal started). */
   contract?: OrderContract | null
+  documents?: OrderDocument[]
   /** Latest payment attempt (checkout / invoice / offline). Null when gateway off. */
   payment?: Payment | null
   /** Money track: the deal runs from contract acceptance, payment may be owed. */
@@ -545,6 +558,7 @@ export interface AgentOfferDetail {
     category: Category | null
     attachment_files: OrderAttachment[]
     contract?: OrderContract | null
+  documents?: OrderDocument[]
     amendment_window?: AmendmentWindow | null
     outstanding_som?: number
     views_count?: number | null

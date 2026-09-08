@@ -712,7 +712,15 @@
     },
     "cancelPaidConfirmBody": "The order will be cancelled and the payment refunded. For cash or bank transfers the operator returns the money.",
     "cancelWindowLabel": "Cancellation window",
-    "cancelWindowLeft": "{minutes} min left to cancel"
+    "cancelWindowLeft": "{minutes} min left to cancel",
+    "acts": {
+      "title": "Accounting documents",
+      "hint": "Acts for the closed deal",
+      "types": {
+        "work_act": "Act of completed work",
+        "commission_act": "Commission act"
+      }
+    }
   },
   "agent": {
     "b2bBadge": "B2B onboarding",

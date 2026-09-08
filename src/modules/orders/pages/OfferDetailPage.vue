@@ -37,6 +37,7 @@ import CriteriaReviewForm from '@/modules/orders/components/CriteriaReviewForm.v
 import ReviewDisplay from '@/modules/orders/components/ReviewDisplay.vue'
 import OrderAttachments from '@/modules/orders/components/OrderAttachments.vue'
 import ContractDownloadCard from '@/modules/orders/components/ContractDownloadCard.vue'
+import OrderActsCard from '@/modules/orders/components/OrderActsCard.vue'
 import AmendmentsSection from '@/modules/orders/components/AmendmentsSection.vue'
 import PricelistBuilder from '@/modules/orders/components/PricelistBuilder.vue'
 import ContractAgreementDrawer from '@/modules/orders/components/ContractAgreementDrawer.vue'
@@ -414,6 +415,12 @@ watch(() => props.id, loadOffer)
         <ContractDownloadCard
           v-if="order.contract"
           :contract="order.contract"
+        />
+
+        <!-- Acts closing the deal: the agent gets the commission act too. -->
+        <OrderActsCard
+          v-if="order.documents?.length"
+          :documents="order.documents"
         />
 
         <!-- Additional agreements (Qo'shimcha kelishuv) on the active deal. -->

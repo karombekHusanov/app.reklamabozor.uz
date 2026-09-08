@@ -712,7 +712,15 @@
     },
     "cancelPaidConfirmBody": "Buyurtma bekor qilinadi va to'lov qaytariladi. Naqd yoki bank orqali to'langan bo'lsa, pulni operator qaytaradi.",
     "cancelWindowLabel": "Bekor qilish muddati",
-    "cancelWindowLeft": "Bekor qilish uchun {minutes} daqiqa qoldi"
+    "cancelWindowLeft": "Bekor qilish uchun {minutes} daqiqa qoldi",
+    "acts": {
+      "title": "Buxgalteriya hujjatlari",
+      "hint": "Yakunlangan bitim bo‘yicha dalolatnomalar",
+      "types": {
+        "work_act": "Bajarilgan ishlar dalolatnomasi",
+        "commission_act": "Vositachilik xizmati dalolatnomasi"
+      }
+    }
   },
   "agent": {
     "b2bBadge": "B2B ro'yxatdan o'tish",
