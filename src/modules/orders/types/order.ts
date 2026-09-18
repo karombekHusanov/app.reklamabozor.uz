@@ -13,7 +13,7 @@ export type OrderStatus
     | 'completed'
     | 'cancelled'
 
-export type OfferStatus = 'pending' | 'accepted' | 'rejected'
+export type OfferStatus = 'pending' | 'accepted' | 'rejected' | 'withdrawn'
 
 export type PaymentStatus = 'draft' | 'progress' | 'success' | 'error' | 'revert' | 'hold'
 
@@ -44,6 +44,10 @@ export interface Payment {
   ps: string | null
   paid_at: string | null
   created_at: string
+  /** Share of the outstanding amount this payment covers (offline payments only). */
+  percent: number | null
+  /** How this payment was reconciled against the ledger (offline payments only). */
+  matched_via: 'auto' | 'admin' | null
 }
 
 /** Where an active deal stands on money (separate from the work status). */
@@ -390,6 +394,14 @@ export interface Order {
   can_cancel?: boolean
   /** End of the cooling-off window on a paid deal. */
   cancel_deadline_at?: string | null
+  /** Escalation state once the client flags a stalled deal or a rejected delivery to ops. */
+  problem_state?: 'none' | 'flagged' | 'resolved' | null
+  /** Deadline given to the provider to fix things once a problem is open (set while flagged). */
+  correction_deadline_at?: string | null
+  /** Whether the client may report that the winning agency hasn't started the paid work. */
+  can_report_no_start?: boolean
+  /** When the no-start report unlocks, if `can_report_no_start` is still false. */
+  no_start_report_eligible_at?: string | null
   offers?: Offer[]
   offers_count?: number
   views_count?: number
@@ -504,6 +516,7 @@ export interface AgentOffer {
   status: OfferStatus
   is_interest?: boolean
   can_accept?: boolean
+  can_withdraw?: boolean
   order: {
     id: number
     title: string | null
@@ -534,6 +547,7 @@ export interface AgentOfferDetail {
   status: OfferStatus
   is_interest?: boolean
   can_accept?: boolean
+  can_withdraw?: boolean
   price_updated_at?: string | null
   price_edit_count?: number
   price_edits_remaining?: number

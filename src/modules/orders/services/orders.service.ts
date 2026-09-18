@@ -98,9 +98,11 @@ export async function startOrderPayment(
 export async function startOfflinePayment(
   orderId: number,
   method: 'cash' | 'bank_transfer',
+  percent: 100 | 50 = 100,
 ): Promise<Payment> {
   const { data } = await api.post<ApiSuccess<Payment>>(`/api/v1/orders/${orderId}/pay/offline`, {
     method,
+    percent,
   })
 
   return data.data
@@ -137,6 +139,17 @@ export async function disputeCompletion(orderId: number): Promise<Order> {
 /** Client cancels their own order — only while it is still open for offers. */
 export async function cancelOrder(orderId: number): Promise<Order> {
   const { data } = await api.post<ApiSuccess<Order>>(`/api/v1/orders/${orderId}/cancel`)
+
+  return data.data
+}
+
+/**
+ * Client reports that the winning agency hasn't started the paid work yet.
+ * Flags the order for ops review (`problem_state`); 422 if it's too early or
+ * already flagged.
+ */
+export async function reportNoStart(orderId: number): Promise<Order> {
+  const { data } = await api.post<ApiSuccess<Order>>(`/api/v1/orders/${orderId}/report-no-start`)
 
   return data.data
 }
@@ -235,6 +248,13 @@ export async function fetchAgentOffer(offerId: number): Promise<AgentOfferDetail
 /** Open (or return) direct chat with the client from a pending offer. */
 export async function openOfferChat(offerId: number): Promise<{ id: number }> {
   const { data } = await api.post<ApiSuccess<{ id: number }>>(`/api/v1/agent/offers/${offerId}/chat`)
+
+  return data.data
+}
+
+/** Agent pulls back their own pending offer/interest — cannot be re-offered after. */
+export async function withdrawOffer(offerId: number): Promise<AgentOffer> {
+  const { data } = await api.post<ApiSuccess<AgentOffer>>(`/api/v1/agent/offers/${offerId}/withdraw`)
 
   return data.data
 }

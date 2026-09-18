@@ -13,6 +13,7 @@ import {
   MapPinned,
   MessageCircle,
   MessageSquareQuote,
+  XCircle,
 } from '@lucide/vue'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
@@ -49,6 +50,7 @@ import {
   openOfferChat,
   previewAgentContract,
   setOfferPricelist,
+  withdrawOffer,
 } from '@/modules/orders/services/orders.service'
 import { useOrdersStore } from '@/modules/orders/stores/orders.store'
 import type {
@@ -80,6 +82,8 @@ const contractLoading = ref(false)
 const contractError = ref<string | null>(null)
 const draftPricelist = ref<{ items: PricelistItemInput[], deadlineDays: number } | null>(null)
 const orderExpanded = ref(false)
+const withdrawDrawerOpen = ref(false)
+const withdrawing = ref(false)
 
 const order = computed(() => offer.value?.order ?? null)
 const orderStatus = computed(() => order.value?.status ?? null)
@@ -117,6 +121,7 @@ const badge = computed(() => {
 
 const statusNote = computed(() => {
   if (!offer.value) return null
+  if (offer.value.status === 'withdrawn') return locale.t.agent.offerWithdrawnNote
   if (offer.value.status === 'pending') return locale.t.agent.offerPendingNote
   if (offer.value.status === 'rejected') return locale.t.agent.offerRejectedNote
   if (orderStatus.value === 'awaiting_payment') return locale.t.agent.dealAwaitingPayment
@@ -159,6 +164,8 @@ const hasProviderReview = computed(() => Boolean(offer.value?.my_review))
 const offerIsInterest = computed(() =>
   offer.value ? isInterestOffer(offer.value) : false,
 )
+
+const canWithdraw = computed(() => offer.value?.can_withdraw === true)
 
 const pricelistItems = computed(() => offer.value?.items ?? [])
 const offerHasItems = computed(() => pricelistItems.value.length > 0)
@@ -314,6 +321,36 @@ async function handleAcceptContract() {
   }
   finally {
     pricelistSaving.value = false
+  }
+}
+
+function openWithdrawDrawer() {
+  if (!canWithdraw.value) return
+  haptic('light')
+  withdrawDrawerOpen.value = true
+}
+
+async function handleWithdrawOffer() {
+  if (!offer.value || !canWithdraw.value || withdrawing.value) return
+  withdrawing.value = true
+  haptic('light')
+  try {
+    const updated = await withdrawOffer(offer.value.id)
+    offer.value = {
+      ...offer.value,
+      status: updated.status,
+      can_withdraw: updated.can_withdraw ?? false,
+      can_accept: updated.can_accept ?? false,
+    }
+    haptic('medium')
+    withdrawDrawerOpen.value = false
+    toast.success(locale.t.agent.withdrawnToast)
+  }
+  catch (e) {
+    toast.error(getApiErrorMessage(e))
+  }
+  finally {
+    withdrawing.value = false
   }
 }
 
@@ -578,6 +615,21 @@ watch(() => props.id, loadOffer)
           {{ error }}
         </p>
 
+        <!-- Quiet danger zone, always last -->
+        <div
+          v-if="canWithdraw"
+          class="flex justify-center pb-2 pt-1"
+        >
+          <button
+            type="button"
+            class="pressable inline-flex h-9 items-center justify-center gap-1.5 rounded-full px-5 text-[13px] font-semibold text-destructive transition active:scale-95 active:bg-destructive/10"
+            @click="openWithdrawDrawer"
+          >
+            <XCircle class="size-4" />
+            {{ locale.t.agent.withdrawOffer }}
+          </button>
+        </div>
+
         <!-- Sticky CTAs: one primary job -->
         <StickyActionBar class="bottom-4">
           <div class="flex flex-col gap-2 rounded-[1.5rem] border border-border/80 bg-background/95 p-2 shadow-[0_8px_28px_rgba(2,48,92,0.1)] backdrop-blur-md dark:bg-card/95">
@@ -671,6 +723,52 @@ watch(() => props.id, loadOffer)
       :error="contractError"
       @accept="handleAcceptContract"
     />
+
+    <Drawer
+      v-model:open="withdrawDrawerOpen"
+      :title="locale.t.agent.withdrawConfirmTitle"
+    >
+      <div class="space-y-4 pb-2">
+        <div class="flex flex-col items-center gap-3 px-2 pt-1 text-center">
+          <span class="flex size-14 items-center justify-center rounded-full bg-destructive/12 text-destructive dark:bg-destructive/20">
+            <XCircle class="size-7" />
+          </span>
+          <p class="text-sm leading-relaxed text-muted-foreground">
+            {{ locale.t.agent.withdrawConfirmBody }}
+          </p>
+          <p class="text-[12px] font-medium text-destructive">
+            {{ locale.t.agent.withdrawWarning }}
+          </p>
+        </div>
+
+        <div class="flex flex-col gap-2">
+          <Button
+            variant="destructive"
+            class="h-12 w-full rounded-2xl text-base"
+            :disabled="withdrawing"
+            @click="handleWithdrawOffer"
+          >
+            <Loader2
+              v-if="withdrawing"
+              class="size-4 animate-spin"
+            />
+            <XCircle
+              v-else
+              class="size-4"
+            />
+            {{ locale.t.agent.withdrawConfirm }}
+          </Button>
+          <Button
+            variant="outline"
+            class="h-12 w-full rounded-2xl"
+            :disabled="withdrawing"
+            @click="withdrawDrawerOpen = false"
+          >
+            {{ locale.t.agent.withdrawKeep }}
+          </Button>
+        </div>
+      </div>
+    </Drawer>
   </div>
 </template>
 

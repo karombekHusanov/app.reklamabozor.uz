@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { CheckCircle2, CreditCard, Loader2, MessageCircle, MessageSquareQuote, XCircle } from '@lucide/vue'
+import { AlertTriangle, CheckCircle2, CreditCard, Loader2, MessageCircle, MessageSquareQuote, ShieldAlert, XCircle } from '@lucide/vue'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AppHeader from '@/modules/shell/components/AppHeader.vue'
@@ -104,6 +104,37 @@ const amountDue = computed(() =>
 // The agent delivered — the client decides: accept or report a problem.
 const awaitingConfirmation = computed(() => order.value?.status === 'work_submitted')
 
+// The deal is paid and running, but the agency hasn't delivered yet — the
+// client may escalate a stalled start to ops (separate from the delivery
+// dispute above, which only applies once work has been submitted).
+const workNotStarted = computed(() =>
+  order.value?.status === 'in_progress'
+  && order.value?.payment_state === 'paid'
+  && !order.value?.work_submitted_at,
+)
+const problemState = computed(() => order.value?.problem_state ?? 'none')
+// Once it's flagged OR resolved, the banner below already communicates the
+// status — no need to show the report control on top of it (and it can
+// never be reported again regardless of the stale eligibility date).
+const showNoStartReport = computed(() => workNotStarted.value && problemState.value === 'none')
+const noStartEligibleDays = computed(() => {
+  const at = order.value?.no_start_report_eligible_at
+  if (!at) return null
+  const ms = new Date(at).getTime() - Date.now()
+  return ms > 0 ? Math.ceil(ms / (24 * 60 * 60 * 1000)) : 0
+})
+const noStartEligibleLabel = computed(() =>
+  noStartEligibleDays.value !== null
+    ? locale.t.orders.problem.eligibleIn.replace('{days}', String(noStartEligibleDays.value))
+    : null,
+)
+// The correction window a flagged problem gives the provider (dispute or
+// no-start report) — shown whenever the backend has one open.
+const correctionDeadlineLabel = computed(() => {
+  const at = order.value?.correction_deadline_at
+  return at ? locale.t.orders.problem.correctionDeadline.replace('{date}', formatDateTime(at)) : null
+})
+
 // A deal exists (and so does its chat) from activation onwards.
 const hasChat = computed(() =>
   order.value ? ['in_progress', 'work_submitted', 'completed'].includes(order.value.status) : false,
@@ -130,6 +161,9 @@ const providerRole = computed<'agent' | 'designer'>(() => {
 
 // Confirm in a bottom drawer before killing a live request.
 const cancelDrawerOpen = ref(false)
+
+// Confirm in a bottom drawer before escalating a stalled deal to ops.
+const noStartDrawerOpen = ref(false)
 
 // Payment method picker for an active, unpaid deal.
 const paymentDrawerOpen = ref(false)
@@ -226,6 +260,26 @@ async function disputeWork() {
   haptic('light')
   const ok = await orders.disputeCompletion(order.value.id)
   if (ok) toast.success(locale.t.orders.disputeToast)
+}
+
+function openNoStartDrawer() {
+  if (!order.value?.can_report_no_start) return
+  haptic('light')
+  noStartDrawerOpen.value = true
+}
+
+async function confirmNoStartReport() {
+  if (!order.value || orders.isSubmitting) return
+  haptic('light')
+  const ok = await orders.reportNoStart(order.value.id)
+  if (ok) {
+    haptic('medium')
+    noStartDrawerOpen.value = false
+    toast.success(locale.t.orders.problem.reportToast)
+  }
+  else if (orders.error) {
+    toast.error(orders.error)
+  }
 }
 
 function openChat() {
@@ -346,16 +400,76 @@ async function sendReview(criteria: ReviewCriterionScore[], comment: string | nu
               </p>
             </div>
 
-            <Button
+            <div
               v-else-if="hasChat"
-              class="h-12 w-full rounded-2xl text-[15px]"
-              @click="openChat"
+              class="space-y-2"
             >
-              <MessageCircle class="size-4" />
-              {{ locale.t.chat.openChat }}
-            </Button>
+              <Button
+                class="h-12 w-full rounded-2xl text-[15px]"
+                @click="openChat"
+              >
+                <MessageCircle class="size-4" />
+                {{ locale.t.chat.openChat }}
+              </Button>
+
+              <!-- Secondary, lower-emphasis escalation — never competes with
+                   the primary chat action above. -->
+              <template v-if="showNoStartReport">
+                <Button
+                  variant="outline"
+                  class="h-10 w-full rounded-2xl text-[13px]"
+                  :disabled="!order.can_report_no_start"
+                  @click="openNoStartDrawer"
+                >
+                  <AlertTriangle class="size-4" />
+                  {{ locale.t.orders.problem.reportButton }}
+                </Button>
+                <p
+                  v-if="!order.can_report_no_start && noStartEligibleLabel"
+                  class="text-center text-[11.5px] leading-snug text-muted-foreground"
+                >
+                  {{ noStartEligibleLabel }}
+                </p>
+              </template>
+            </div>
           </template>
         </OrderStateCard>
+
+        <!-- Escalation status: visible whenever a problem is open or was
+             resolved, from either the no-start report or the delivery dispute. -->
+        <GlassCard
+          v-if="problemState !== 'none'"
+          class="flex items-start gap-3"
+          :class="problemState === 'flagged' ? 'bg-accent/40' : 'bg-success/10'"
+        >
+          <span
+            class="flex size-9 shrink-0 items-center justify-center rounded-full"
+            :class="problemState === 'flagged' ? 'bg-accent text-accent-foreground' : 'bg-success/15 text-success'"
+          >
+            <ShieldAlert
+              v-if="problemState === 'flagged'"
+              class="size-[18px]"
+            />
+            <CheckCircle2
+              v-else
+              class="size-[18px]"
+            />
+          </span>
+          <div class="space-y-1">
+            <p class="text-[13.5px] font-semibold text-foreground">
+              {{ problemState === 'flagged' ? locale.t.orders.problem.flaggedTitle : locale.t.orders.problem.resolvedTitle }}
+            </p>
+            <p class="text-[12.5px] leading-snug text-muted-foreground">
+              {{ problemState === 'flagged' ? locale.t.orders.problem.flaggedBody : locale.t.orders.problem.resolvedBody }}
+            </p>
+            <p
+              v-if="correctionDeadlineLabel"
+              class="text-[12.5px] font-medium text-foreground"
+            >
+              {{ correctionDeadlineLabel }}
+            </p>
+          </div>
+        </GlassCard>
 
         <!-- Facts: label/value rows, scannable at a glance -->
         <GlassCard class="space-y-3">
@@ -615,6 +729,49 @@ async function sendReview(criteria: ReviewCriterionScore[], comment: string | nu
             @click="cancelDrawerOpen = false"
           >
             {{ locale.t.orders.cancelKeep }}
+          </Button>
+        </div>
+      </div>
+    </Drawer>
+
+    <Drawer
+      v-model:open="noStartDrawerOpen"
+      :title="locale.t.orders.problem.confirmTitle"
+    >
+      <div class="space-y-4 pb-2">
+        <div class="flex flex-col items-center gap-3 px-2 pt-1 text-center">
+          <span class="flex size-14 items-center justify-center rounded-full bg-accent text-accent-foreground">
+            <AlertTriangle class="size-7" />
+          </span>
+          <p class="text-sm leading-relaxed text-muted-foreground">
+            {{ locale.t.orders.problem.confirmBody }}
+          </p>
+        </div>
+
+        <div class="flex flex-col gap-2">
+          <Button
+            variant="secondary"
+            class="h-12 w-full rounded-2xl text-base"
+            :disabled="orders.isSubmitting"
+            @click="confirmNoStartReport"
+          >
+            <Loader2
+              v-if="orders.isSubmitting"
+              class="size-4 animate-spin"
+            />
+            <AlertTriangle
+              v-else
+              class="size-4"
+            />
+            {{ locale.t.orders.problem.confirmSubmit }}
+          </Button>
+          <Button
+            variant="outline"
+            class="h-12 w-full rounded-2xl"
+            :disabled="orders.isSubmitting"
+            @click="noStartDrawerOpen = false"
+          >
+            {{ locale.t.orders.problem.confirmCancel }}
           </Button>
         </div>
       </div>

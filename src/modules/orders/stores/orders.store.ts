@@ -13,8 +13,8 @@ import {
   fetchMyOrders,
   fetchOrder,
   fetchOrderPayment,
+  reportNoStart as reportNoStartRequest,
   startOfflinePayment as startOfflinePaymentRequest,
-  startOrderPayment as startOrderPaymentRequest,
   submitOffer as submitOfferRequest,
   submitProviderReview as submitProviderReviewRequest,
   submitReview as submitReviewRequest,
@@ -131,49 +131,12 @@ export const useOrdersStore = defineStore('orders', () => {
     }
   }
 
-  /** Pay now: mint a checkout and send the client straight to the gateway. */
-  async function payForOrder(orderId: number) {
-    isSubmitting.value = true
-    error.value = null
-    try {
-      const payment = await startOrderPaymentRequest(orderId)
-      if (payment.checkout_url) openCheckout(payment.checkout_url)
-      return true
-    }
-    catch (e) {
-      error.value = getApiErrorMessage(e)
-      return false
-    }
-    finally {
-      isSubmitting.value = false
-    }
-  }
-
-  /**
-   * Pay later: a shareable Multicard invoice (link + QR, optionally texted).
-   * The money still lands in the gateway, so the webhook settles it as usual.
-   */
-  async function requestInvoice(orderId: number, sendSms = false) {
-    isSubmitting.value = true
-    error.value = null
-    try {
-      return await startOrderPaymentRequest(orderId, 'invoice', sendSms)
-    }
-    catch (e) {
-      error.value = getApiErrorMessage(e)
-      return null
-    }
-    finally {
-      isSubmitting.value = false
-    }
-  }
-
   /** Cash desk / bank transfer: an invoice a manager confirms once paid. */
-  async function requestOfflineInvoice(orderId: number, method: 'cash' | 'bank_transfer') {
+  async function requestOfflineInvoice(orderId: number, method: 'cash' | 'bank_transfer', percent: 100 | 50 = 100) {
     isSubmitting.value = true
     error.value = null
     try {
-      const payment = await startOfflinePaymentRequest(orderId, method)
+      const payment = await startOfflinePaymentRequest(orderId, method, percent)
       if (currentOrder.value?.id === orderId) await loadOrder(orderId)
       return payment
     }
@@ -226,6 +189,27 @@ export const useOrdersStore = defineStore('orders', () => {
     error.value = null
     try {
       currentOrder.value = await disputeCompletionRequest(orderId)
+      return true
+    }
+    catch (e) {
+      error.value = getApiErrorMessage(e)
+      return false
+    }
+    finally {
+      isSubmitting.value = false
+    }
+  }
+
+  /**
+   * Client reports that the winning agency hasn't started the paid work yet —
+   * flags the order for ops review. 422 (too early / already flagged) surfaces
+   * via `error`.
+   */
+  async function reportNoStart(orderId: number) {
+    isSubmitting.value = true
+    error.value = null
+    try {
+      currentOrder.value = await reportNoStartRequest(orderId)
       return true
     }
     catch (e) {
@@ -384,12 +368,11 @@ export const useOrdersStore = defineStore('orders', () => {
     loadOrder,
     create,
     accept,
-    payForOrder,
-    requestInvoice,
     requestOfflineInvoice,
     refreshPayment,
     confirmCompletion,
     disputeCompletion,
+    reportNoStart,
     cancelOrder,
     submitReview,
     submitProviderReview,

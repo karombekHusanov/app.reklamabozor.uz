@@ -20,6 +20,7 @@ const OFFER_VARIANTS: Record<OfferStatus, BadgeVariant> = {
   pending: 'default',
   accepted: 'success',
   rejected: 'default',
+  withdrawn: 'default',
 }
 
 export function orderStatusVariant(status: OrderStatus): BadgeVariant {

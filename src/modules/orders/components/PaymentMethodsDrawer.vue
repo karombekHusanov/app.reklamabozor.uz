@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { Banknote, Building2, Check, Copy, CreditCard, Download, Loader2, QrCode, Send } from '@lucide/vue'
-import { computed, ref, watch } from 'vue'
-import QRCode from 'qrcode'
+import { Banknote, Building2, Download, Loader2, Wallet } from '@lucide/vue'
+import { ref, watch, computed } from 'vue'
 import Drawer from '@/core/ui/Drawer.vue'
 import { Button } from '@/core/ui/button'
+import Badge from '@/core/ui/Badge.vue'
 import { useLocaleStore } from '@/core/i18n/locale.store'
 import { useToast } from '@/core/composables/useToast'
 import { useTelegram } from '@/core/composables/useTelegram'
@@ -13,10 +13,10 @@ import type { Payment } from '@/modules/orders/types/order'
 
 /**
  * How the client settles an active deal. The order is already running — this
- * only decides where the money comes from:
- *  - card/wallet now (Multicard checkout),
- *  - an invoice link/QR paid later from any wallet (still Multicard),
- *  - cash at the platform's desk or a bank transfer, confirmed by a manager.
+ * only decides where the money comes from: cash at the platform's desk, or a
+ * bank transfer, both confirmed by a manager. Card/online payment (Multicard)
+ * is deprecated platform-wide (CLAUDE.md §12/GOTCHA #20) and not offered here;
+ * a future card gateway (Atmos) will need its own 100%/50% support built in.
  */
 const props = defineProps<{
   orderId: number
@@ -33,13 +33,15 @@ const toast = useToast()
 const orders = useOrdersStore()
 const { haptic } = useTelegram()
 
-type Step = 'choose' | 'invoice' | 'offline'
+type Step = 'choose' | 'percent' | 'offline'
 
 const step = ref<Step>('choose')
 const invoice = ref<Payment | null>(null)
-const qrDataUrl = ref<string | null>(null)
 const offlineMethod = ref<'cash' | 'bank_transfer'>('cash')
-const smsSent = ref(false)
+/** Offline method picked in the 'choose' step, awaiting a percent choice. */
+const pendingOfflineMethod = ref<'cash' | 'bank_transfer' | null>(null)
+/** Percent the client picked (or the backend confirmed) for the last offline payment. */
+const chosenPercent = ref<100 | 50>(100)
 
 // Every open starts from the method list; an already pending offline invoice
 // is shown straight away so the client can re-read the instructions.
@@ -47,8 +49,7 @@ watch(open, (isOpen) => {
   if (!isOpen) {
     step.value = 'choose'
     invoice.value = null
-    qrDataUrl.value = null
-    smsSent.value = false
+    pendingOfflineMethod.value = null
     return
   }
 
@@ -56,65 +57,45 @@ watch(open, (isOpen) => {
   if (pending && pending.method !== 'multicard' && ['draft', 'progress'].includes(pending.status)) {
     invoice.value = pending
     offlineMethod.value = pending.method === 'cash' ? 'cash' : 'bank_transfer'
+    chosenPercent.value = pending.percent === 50 ? 50 : 100
     step.value = 'offline'
   }
 })
 
 const amountLabel = computed(() => formatPrice(props.amount))
 
-const shareUrl = computed(() => invoice.value?.share_url ?? invoice.value?.checkout_url ?? null)
+/** Numeric amount owed, for the illustrative 50% preview below. */
+const numericAmount = computed(() => {
+  const n = typeof props.amount === 'string' ? Number(props.amount) : props.amount
+  return n == null || Number.isNaN(n) ? null : n
+})
 
-async function renderQr(url: string) {
-  try {
-    qrDataUrl.value = await QRCode.toDataURL(url, { margin: 1, width: 480 })
-  }
-  catch {
-    qrDataUrl.value = null
-  }
-}
+// Preview-only math for the 50% option's subtitle — purely illustrative so the
+// client knows roughly what they'll owe now; the backend is the source of
+// truth for the actual amount once the offline invoice is created.
+const halfAmountLabel = computed(() => {
+  if (numericAmount.value == null) return ''
+  return formatPrice(Math.round(numericAmount.value / 2))
+})
 
-async function payOnline() {
+/** Cash or bank transfer row tapped — ask how much of the balance first. */
+function pickOfflineMethod(method: 'cash' | 'bank_transfer') {
   haptic('light')
-  await orders.payForOrder(props.orderId)
-  if (orders.error) toast.error(orders.error)
+  pendingOfflineMethod.value = method
+  step.value = 'percent'
 }
 
-async function openInvoice(sendSms = false) {
-  haptic('light')
-  const payment = await orders.requestInvoice(props.orderId, sendSms)
-  if (!payment) {
-    if (orders.error) toast.error(orders.error)
-    return
-  }
-  invoice.value = payment
-  step.value = 'invoice'
-  if (sendSms) smsSent.value = true
-  const url = payment.share_url ?? payment.checkout_url
-  if (url) await renderQr(url)
-}
-
-async function chooseOffline(method: 'cash' | 'bank_transfer') {
+async function chooseOffline(method: 'cash' | 'bank_transfer', percent: 100 | 50) {
   haptic('light')
   offlineMethod.value = method
-  const payment = await orders.requestOfflineInvoice(props.orderId, method)
+  const payment = await orders.requestOfflineInvoice(props.orderId, method, percent)
   if (!payment) {
     if (orders.error) toast.error(orders.error)
     return
   }
   invoice.value = payment
+  chosenPercent.value = payment.percent === 50 ? 50 : percent
   step.value = 'offline'
-}
-
-async function copyLink() {
-  if (!shareUrl.value) return
-  try {
-    await navigator.clipboard.writeText(shareUrl.value)
-    haptic('light')
-    toast.success(locale.t.orders.pay.linkCopied)
-  }
-  catch {
-    toast.error(locale.t.orders.pay.linkCopyFailed)
-  }
 }
 </script>
 
@@ -140,45 +121,7 @@ async function copyLink() {
           type="button"
           class="pressable flex w-full items-start gap-3 rounded-2xl border border-border/70 px-4 py-3.5 text-left"
           :disabled="orders.isSubmitting"
-          @click="payOnline"
-        >
-          <span class="grid size-10 shrink-0 place-items-center rounded-xl bg-primary/12 text-primary">
-            <CreditCard class="size-5" />
-          </span>
-          <span class="min-w-0">
-            <span class="block text-sm font-semibold text-foreground">
-              {{ locale.t.orders.pay.onlineTitle }}
-            </span>
-            <span class="mt-0.5 block text-[12px] leading-snug text-muted-foreground">
-              {{ locale.t.orders.pay.onlineHint }}
-            </span>
-          </span>
-        </button>
-
-        <button
-          type="button"
-          class="pressable flex w-full items-start gap-3 rounded-2xl border border-border/70 px-4 py-3.5 text-left"
-          :disabled="orders.isSubmitting"
-          @click="openInvoice(false)"
-        >
-          <span class="grid size-10 shrink-0 place-items-center rounded-xl bg-primary/12 text-primary">
-            <QrCode class="size-5" />
-          </span>
-          <span class="min-w-0">
-            <span class="block text-sm font-semibold text-foreground">
-              {{ locale.t.orders.pay.invoiceTitle }}
-            </span>
-            <span class="mt-0.5 block text-[12px] leading-snug text-muted-foreground">
-              {{ locale.t.orders.pay.invoiceHint }}
-            </span>
-          </span>
-        </button>
-
-        <button
-          type="button"
-          class="pressable flex w-full items-start gap-3 rounded-2xl border border-border/70 px-4 py-3.5 text-left"
-          :disabled="orders.isSubmitting"
-          @click="chooseOffline('cash')"
+          @click="pickOfflineMethod('cash')"
         >
           <span class="grid size-10 shrink-0 place-items-center rounded-xl bg-primary/12 text-primary">
             <Banknote class="size-5" />
@@ -197,7 +140,7 @@ async function copyLink() {
           type="button"
           class="pressable flex w-full items-start gap-3 rounded-2xl border border-border/70 px-4 py-3.5 text-left"
           :disabled="orders.isSubmitting"
-          @click="chooseOffline('bank_transfer')"
+          @click="pickOfflineMethod('bank_transfer')"
         >
           <span class="grid size-10 shrink-0 place-items-center rounded-xl bg-primary/12 text-primary">
             <Building2 class="size-5" />
@@ -221,68 +164,65 @@ async function copyLink() {
         </p>
       </template>
 
-      <!-- 2a. Shareable Multicard invoice: QR + link + SMS -->
-      <template v-else-if="step === 'invoice'">
-        <p class="text-[13px] leading-relaxed text-muted-foreground">
-          {{ locale.t.orders.pay.invoiceBody }}
-        </p>
-
-        <div
-          v-if="qrDataUrl"
-          class="flex justify-center rounded-2xl bg-white p-4"
+      <!-- 1b. Offline method chosen — how much of the balance now? -->
+      <template v-else-if="step === 'percent'">
+        <button
+          type="button"
+          class="pressable flex w-full items-start gap-3 rounded-2xl border border-border/70 px-4 py-3.5 text-left"
+          :disabled="orders.isSubmitting"
+          @click="pendingOfflineMethod && chooseOffline(pendingOfflineMethod, 100)"
         >
-          <img
-            :src="qrDataUrl"
-            :alt="locale.t.orders.pay.invoiceTitle"
-            class="size-52"
-          >
-        </div>
+          <span class="grid size-10 shrink-0 place-items-center rounded-xl bg-primary/12 text-primary">
+            <Wallet class="size-5" />
+          </span>
+          <span class="min-w-0">
+            <span class="block text-sm font-semibold text-foreground">
+              {{ locale.t.orders.pay.percentFullTitle }}
+            </span>
+            <span class="mt-0.5 block text-[12px] leading-snug text-muted-foreground">
+              {{ locale.t.orders.pay.percentFullHint }} — {{ amountLabel }}
+            </span>
+          </span>
+        </button>
+
+        <button
+          type="button"
+          class="pressable flex w-full items-start gap-3 rounded-2xl border border-border/70 px-4 py-3.5 text-left"
+          :disabled="orders.isSubmitting"
+          @click="pendingOfflineMethod && chooseOffline(pendingOfflineMethod, 50)"
+        >
+          <span class="grid size-10 shrink-0 place-items-center rounded-xl bg-primary/12 text-primary">
+            <Wallet class="size-5" />
+          </span>
+          <span class="min-w-0">
+            <span class="block text-sm font-semibold text-foreground">
+              {{ locale.t.orders.pay.percentHalfTitle }}
+            </span>
+            <span class="mt-0.5 block text-[12px] leading-snug text-muted-foreground">
+              {{ locale.t.orders.pay.percentHalfHint }} — {{ halfAmountLabel }}
+            </span>
+          </span>
+        </button>
 
         <p
-          v-if="shareUrl"
-          class="break-all rounded-2xl bg-muted/50 px-3.5 py-3 text-[11px] text-muted-foreground dark:bg-white/5"
+          v-if="orders.isSubmitting"
+          class="flex items-center justify-center gap-2 text-xs text-muted-foreground"
         >
-          {{ shareUrl }}
+          <Loader2 class="size-3.5 animate-spin" />
+          {{ locale.t.common.loading }}
         </p>
 
-        <div class="flex gap-2">
-          <Button
-            variant="outline"
-            class="h-11 flex-1 rounded-2xl"
-            :disabled="!shareUrl"
-            @click="copyLink"
-          >
-            <Copy class="size-4" />
-            {{ locale.t.orders.pay.copyLink }}
-          </Button>
-          <Button
-            variant="outline"
-            class="h-11 flex-1 rounded-2xl"
-            :disabled="orders.isSubmitting || smsSent"
-            @click="openInvoice(true)"
-          >
-            <Check
-              v-if="smsSent"
-              class="size-4"
-            />
-            <Send
-              v-else
-              class="size-4"
-            />
-            {{ smsSent ? locale.t.orders.pay.smsSent : locale.t.orders.pay.sendSms }}
-          </Button>
-        </div>
-
         <Button
-          class="btn-brand h-12 w-full rounded-2xl text-base font-semibold"
-          @click="payOnline"
+          variant="outline"
+          class="h-11 w-full rounded-2xl"
+          :disabled="orders.isSubmitting"
+          @click="step = 'choose'"
         >
-          <CreditCard class="size-4" />
-          {{ locale.t.orders.pay.payNowInstead }}
+          {{ locale.t.orders.pay.otherMethod }}
         </Button>
       </template>
 
-      <!-- 2b. Cash / bank transfer: invoice + manager confirmation -->
+      <!-- 2. Cash / bank transfer: invoice + manager confirmation -->
       <template v-else>
         <p class="text-[13px] leading-relaxed text-muted-foreground">
           {{ offlineMethod === 'cash'
@@ -290,8 +230,11 @@ async function copyLink() {
             : locale.t.orders.pay.bankBody }}
         </p>
 
-        <div class="rounded-2xl bg-amber-500/10 px-3.5 py-3 text-[12px] leading-snug text-amber-700 dark:text-amber-300">
-          {{ locale.t.orders.pay.offlinePending }}
+        <div class="flex items-center justify-between gap-3 rounded-2xl bg-amber-500/10 px-3.5 py-3 text-[12px] leading-snug text-amber-700 dark:text-amber-300">
+          <span>{{ locale.t.orders.pay.offlinePending }}</span>
+          <Badge variant="primary">
+            {{ locale.t.orders.pay.percentBadge.replace('{percent}', String(invoice?.percent ?? chosenPercent)) }}
+          </Badge>
         </div>
 
         <a
