@@ -14,9 +14,8 @@ import type { Payment } from '@/modules/orders/types/order'
 /**
  * How the client settles an active deal. The order is already running — this
  * only decides where the money comes from: cash at the platform's desk, or a
- * bank transfer, both confirmed by a manager. Card/online payment (Multicard)
- * is deprecated platform-wide (CLAUDE.md §12/GOTCHA #20) and not offered here;
- * a future card gateway (Atmos) will need its own 100%/50% support built in.
+ * bank transfer, both confirmed by a manager. A future card gateway (Atmos)
+ * will need its own 100%/50% support built in.
  */
 const props = defineProps<{
   orderId: number
@@ -54,7 +53,7 @@ watch(open, (isOpen) => {
   }
 
   const pending = props.payment
-  if (pending && pending.method !== 'multicard' && ['draft', 'progress'].includes(pending.status)) {
+  if (pending && ['draft', 'progress'].includes(pending.status)) {
     invoice.value = pending
     offlineMethod.value = pending.method === 'cash' ? 'cash' : 'bank_transfer'
     chosenPercent.value = pending.percent === 50 ? 50 : 100

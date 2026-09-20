@@ -1,11 +1,10 @@
 <script setup lang="ts">
-import { AlertTriangle, ArrowRight, Check, CreditCard, FileText, Loader2, X } from '@lucide/vue'
+import { AlertTriangle, ArrowRight, Check, FileText, Loader2, X } from '@lucide/vue'
 import { computed } from 'vue'
 import GlassCard from '@/core/ui/GlassCard.vue'
 import Badge from '@/core/ui/Badge.vue'
 import { Button } from '@/core/ui/button'
 import { useLocaleStore } from '@/core/i18n/locale.store'
-import { openCheckout } from '@/core/lib/telegram-init'
 import { formatDateTime } from '@/core/lib/date'
 import { formatPrice } from '@/modules/orders/lib/order-status'
 import type { Amendment } from '@/modules/orders/types/order'
@@ -40,12 +39,6 @@ function deadlineLabel(days: number | null): string {
   return days == null ? '—' : `${days} ${locale.t.amendments.days}`
 }
 
-// Extra payment is due once approved but not yet applied and a checkout exists
-// (legacy rows only — new amendments put the extra on the order's balance).
-const showPayCta = computed(() =>
-  a.value.status === 'approved' && !!a.value.payment?.checkout_url,
-)
-
 /** Money outcome of an applied addendum, in the reader's own terms. */
 const moneyNote = computed(() => {
   if (a.value.status !== 'applied') return null
@@ -66,10 +59,6 @@ const moneyTone = computed(() =>
     ? 'bg-amber-500/10 text-amber-700 dark:text-amber-300'
     : 'bg-primary/10 text-primary',
 )
-
-function pay() {
-  if (a.value.payment?.checkout_url) openCheckout(a.value.payment.checkout_url)
-}
 </script>
 
 <template>
@@ -211,15 +200,6 @@ function pay() {
     </a>
 
     <!-- Actions -->
-    <Button
-      v-if="showPayCta"
-      class="h-11 w-full rounded-2xl"
-      @click="pay"
-    >
-      <CreditCard class="size-4" />
-      {{ locale.t.amendments.payExtra }} · {{ formatPrice(a.extra_amount) }}
-    </Button>
-
     <div
       v-if="a.can_approve"
       class="flex gap-2"

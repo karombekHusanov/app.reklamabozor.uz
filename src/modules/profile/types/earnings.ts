@@ -29,8 +29,7 @@ export interface EarningsBalance {
 
 /** Where the agent's earnings are headed, and how they get there. */
 export interface PayoutDestination {
-  channel: 'bank' | 'card'
-  card_withdrawal_enabled: boolean
+  channel: 'bank'
   bank: {
     bank_name: string | null
     bank_account: string | null
@@ -44,27 +43,4 @@ export interface EarningsResponse {
   balance: EarningsBalance
   items: Payout[]
   meta: { current_page: number, last_page: number, per_page: number, total: number }
-}
-
-export type WithdrawalStatus =
-  | 'draft'
-  | 'card_pending'
-  | 'otp_required'
-  | 'success'
-  | 'failed'
-  | 'cancelled'
-
-export interface Withdrawal {
-  id: number
-  method: string
-  status: WithdrawalStatus
-  amount: number
-  amount_som: number
-  currency: string
-  form_url: string | null
-  card_pan: string | null
-  ps: string | null
-  failure_reason: string | null
-  paid_at: string | null
-  created_at: string
 }

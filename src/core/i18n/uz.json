@@ -688,7 +688,6 @@
       "title": "To'lov usulini tanlang",
       "amountDue": "To'lanadigan summa",
       "onlineTitle": "Online to'lov (karta)",
-      "onlineHint": "Karta yoki hamyon orqali hoziroq to'lash — Multicard sahifasi ochiladi.",
       "invoiceTitle": "Hisob (havola / QR)",
       "invoiceHint": "Keyinroq istalgan ilova orqali to'lash uchun havola va QR kod.",
       "invoiceBody": "QR kodni skanerlang yoki havolani oching — to'lovni Payme, Click, Uzum, Oson va boshqa ilovalar orqali amalga oshirish mumkin. To'lov kelib tushishi bilan buyurtma «to'langan» bo'ladi.",

@@ -18,11 +18,10 @@ export type OfferStatus = 'pending' | 'accepted' | 'rejected' | 'withdrawn'
 export type PaymentStatus = 'draft' | 'progress' | 'success' | 'error' | 'revert' | 'hold'
 
 /**
- * How the client pays. `multicard` covers every gateway route (in-app checkout,
- * invoice link, QR, SMS); cash and bank transfers are settled offline by a
- * manager.
+ * How the client pays. Both methods are settled offline and confirmed by a
+ * manager (cash at the platform's desk, or a bank transfer).
  */
-export type PaymentMethod = 'multicard' | 'cash' | 'bank_transfer'
+export type PaymentMethod = 'cash' | 'bank_transfer'
 
 export interface Payment {
   id: number
@@ -33,15 +32,10 @@ export interface Payment {
   amount: number // tiyin
   amount_som: number
   currency: string
-  checkout_url: string | null
-  /** Short link when Multicard issued one, else the checkout URL — QR source. */
-  share_url: string | null
   /** Generated invoice (hisob-faktura) for offline payments. */
   invoice_url: string | null
   reference: string | null
   confirmed_at: string | null
-  card_pan: string | null
-  ps: string | null
   paid_at: string | null
   created_at: string
   /** Share of the outstanding amount this payment covers (offline payments only). */
@@ -155,7 +149,7 @@ export interface Amendment {
   rejection_reason: string | null
   can_approve: boolean
   can_cancel: boolean
-  payment?: { status: string, checkout_url: string | null }
+  payment?: { status: string }
   pdf_url: string | null
   applied_at: string | null
   created_at: string

@@ -688,7 +688,6 @@
       "title": "Choose how to pay",
       "amountDue": "Amount due",
       "onlineTitle": "Pay online (card)",
-      "onlineHint": "Pay now by card or wallet — opens the Multicard page.",
       "invoiceTitle": "Invoice (link / QR)",
       "invoiceHint": "A link and QR code to pay later from any app.",
       "invoiceBody": "Scan the QR code or open the link — payable via Payme, Click, Uzum, Oson and other apps. The order is marked paid as soon as the money arrives.",

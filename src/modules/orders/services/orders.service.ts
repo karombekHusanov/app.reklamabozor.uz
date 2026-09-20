@@ -74,24 +74,6 @@ export async function fetchOfferContract(offerId: number): Promise<ContractDocum
 }
 
 /**
- * (Re)start the Multicard payment for an active unpaid order.
- * `checkout` redirects the client now; `invoice` returns a long-lived link
- * (QR / SMS) they can pay later from any wallet.
- */
-export async function startOrderPayment(
-  orderId: number,
-  mode: 'checkout' | 'invoice' = 'checkout',
-  sendSms = false,
-): Promise<Payment> {
-  const { data } = await api.post<ApiSuccess<Payment>>(`/api/v1/orders/${orderId}/pay`, {
-    mode,
-    send_sms: sendSms,
-  })
-
-  return data.data
-}
-
-/**
  * Ask for an invoice the client pays outside the gateway (cash at the
  * platform's desk or a bank transfer); a manager confirms the money later.
  */

@@ -75,13 +75,12 @@ const paymentMeta = computed(() => {
   if (payment.value === 'paid') {
     const parts = [
       (p?.paid_at ?? props.order.paid_at) ? formatDateTime(p?.paid_at ?? props.order.paid_at) : null,
-      p?.card_pan,
     ]
     return parts.filter(Boolean).join(' · ') || null
   }
 
   // Cash / bank transfer already requested — a manager has to confirm it.
-  if (payment.value === 'pending' && p && p.method !== 'multicard') {
+  if (payment.value === 'pending' && p) {
     return locale.t.orders.pay.offlinePending
   }
 

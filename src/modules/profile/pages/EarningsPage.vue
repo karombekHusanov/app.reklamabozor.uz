@@ -1,33 +1,22 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
-import { AlertTriangle, Building2, CreditCard, Wallet } from '@lucide/vue'
+import { computed, onMounted, ref } from 'vue'
+import { AlertTriangle, Building2 } from '@lucide/vue'
 import AppHeader from '@/modules/shell/components/AppHeader.vue'
 import GlassCard from '@/core/ui/GlassCard.vue'
 import EmptyState from '@/core/ui/EmptyState.vue'
 import Skeleton from '@/core/ui/Skeleton.vue'
-import { Button } from '@/core/ui/button'
 import { useLocaleStore } from '@/core/i18n/locale.store'
 import { useToast } from '@/core/composables/useToast'
-import { useTelegram } from '@/core/composables/useTelegram'
-import { openExternalLink } from '@/core/lib/telegram-init'
 import { earningsStrings } from '@/modules/profile/lib/earnings-i18n'
-import {
-  cancelWithdrawal,
-  confirmWithdrawal,
-  fetchEarnings,
-  fetchWithdrawal,
-  startWithdrawal,
-} from '@/modules/profile/services/earnings.service'
+import { fetchEarnings } from '@/modules/profile/services/earnings.service'
 import type {
   EarningsBalance,
   Payout,
   PayoutDestination,
-  Withdrawal,
 } from '@/modules/profile/types/earnings'
 
 const locale = useLocaleStore()
 const toast = useToast()
-const { haptic } = useTelegram()
 
 const t = computed(() => earningsStrings(locale.locale))
 
@@ -36,17 +25,7 @@ const balance = ref<EarningsBalance | null>(null)
 const payouts = ref<Payout[]>([])
 const destination = ref<PayoutDestination | null>(null)
 
-// Active withdrawal flow.
-const withdrawal = ref<Withdrawal | null>(null)
-const busy = ref(false)
-const otp = ref('')
-let poll: ReturnType<typeof setInterval> | null = null
-
-const canWithdraw = computed(() => (balance.value?.available ?? 0) > 0)
-
-// Earnings are transferred to the agent's bank account by a manager; the card
-// cash-out only appears where the platform has it switched on.
-const cardWithdrawal = computed(() => destination.value?.card_withdrawal_enabled === true)
+// Earnings are transferred to the agent's bank account by a manager.
 const bank = computed(() => destination.value?.bank ?? null)
 
 function money(som: number): string {
@@ -69,108 +48,6 @@ async function load() {
   }
 }
 
-function stopPolling() {
-  if (poll) {
-    clearInterval(poll)
-    poll = null
-  }
-}
-
-async function beginWithdraw() {
-  if (!canWithdraw.value || busy.value) return
-  haptic('light')
-  busy.value = true
-  try {
-    withdrawal.value = await startWithdrawal()
-    if (withdrawal.value.form_url) {
-      openExternalLink(withdrawal.value.form_url)
-      toast.info(t.value.formOpened)
-    }
-    startPolling()
-  }
-  catch (e: any) {
-    toast.error(e?.response?.data?.message || t.value.noFunds)
-  }
-  finally {
-    busy.value = false
-  }
-}
-
-function startPolling() {
-  stopPolling()
-  poll = setInterval(() => void refreshWithdrawal(true), 3500)
-}
-
-async function refreshWithdrawal(silent = false) {
-  if (!withdrawal.value) return
-  if (!silent) busy.value = true
-  try {
-    const w = await fetchWithdrawal(withdrawal.value.id, silent)
-    withdrawal.value = w
-    if (w.status === 'otp_required') stopPolling()
-    if (w.status === 'success') {
-      stopPolling()
-      toast.success(t.value.success)
-      resetFlow()
-      await load()
-    }
-    if (w.status === 'failed') {
-      stopPolling()
-      toast.error(t.value.failed)
-    }
-  }
-  catch {
-    if (!silent) toast.error(t.value.genericError)
-  }
-  finally {
-    if (!silent) busy.value = false
-  }
-}
-
-async function submitOtp() {
-  if (!withdrawal.value || otp.value.trim().length === 0 || busy.value) return
-  haptic('light')
-  busy.value = true
-  try {
-    const w = await confirmWithdrawal(withdrawal.value.id, otp.value.trim())
-    withdrawal.value = w
-    if (w.status === 'success') {
-      toast.success(t.value.success)
-      resetFlow()
-      await load()
-    }
-    else {
-      toast.error(t.value.failed)
-    }
-  }
-  catch (e: any) {
-    toast.error(e?.response?.data?.message || t.value.genericError)
-  }
-  finally {
-    busy.value = false
-  }
-}
-
-async function abort() {
-  if (!withdrawal.value) return
-  busy.value = true
-  try {
-    await cancelWithdrawal(withdrawal.value.id)
-  }
-  catch { /* best effort */ }
-  finally {
-    busy.value = false
-    resetFlow()
-    await load()
-  }
-}
-
-function resetFlow() {
-  stopPolling()
-  withdrawal.value = null
-  otp.value = ''
-}
-
 function statusTone(status: Payout['status']): string {
   if (status === 'paid') return 'earnings-chip--paid'
   if (status === 'processing') return 'earnings-chip--processing'
@@ -178,22 +55,8 @@ function statusTone(status: Payout['status']): string {
   return 'earnings-chip--pending'
 }
 
-// Returning from the hosted card form (tab visible again): re-check at once so
-// an OTP-less credit shows its result immediately instead of after a poll tick.
-function onVisible() {
-  if (document.visibilityState !== 'visible') return
-  if (withdrawal.value && !['success', 'failed', 'cancelled'].includes(withdrawal.value.status)) {
-    void refreshWithdrawal(true)
-  }
-}
-
 onMounted(() => {
   void load()
-  document.addEventListener('visibilitychange', onVisible)
-})
-onBeforeUnmount(() => {
-  stopPolling()
-  document.removeEventListener('visibilitychange', onVisible)
 })
 </script>
 
@@ -211,7 +74,7 @@ onBeforeUnmount(() => {
       <GlassCard v-else-if="balance" class="space-y-4">
         <div>
           <p class="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-            {{ cardWithdrawal ? t.available : t.owed }}
+            {{ t.owed }}
           </p>
           <p class="rb-font-display mt-1 text-[28px] font-extrabold tabular-nums tracking-[-0.02em] text-foreground">
             {{ money(balance.available_som) }} <span class="text-base font-bold text-muted-foreground">{{ balance.currency }}</span>
@@ -229,21 +92,8 @@ onBeforeUnmount(() => {
           </div>
         </div>
 
-        <template v-if="cardWithdrawal && !withdrawal">
-          <Button
-            size="lg"
-            class="w-full"
-            :disabled="!canWithdraw || busy"
-            @click="beginWithdraw"
-          >
-            <CreditCard class="size-4" />
-            {{ t.withdrawCta }}
-          </Button>
-          <p class="text-center text-[11px] text-muted-foreground">{{ t.withdrawHint }}</p>
-        </template>
-
         <!-- Bank channel: no self-service cash-out, just where it lands -->
-        <template v-else-if="!cardWithdrawal">
+        <div class="space-y-4">
           <div class="glass-chip flex items-start gap-3 rounded-xl px-3 py-3">
             <span class="earnings-flow-icon shrink-0"><Building2 class="size-4" /></span>
             <div class="min-w-0">
@@ -272,60 +122,7 @@ onBeforeUnmount(() => {
               {{ t.bankMissing }} — <span class="font-semibold">{{ t.bankMissingCta }}</span>
             </span>
           </div>
-        </template>
-      </GlassCard>
-
-      <!-- Active withdrawal flow -->
-      <GlassCard v-if="withdrawal" class="space-y-3">
-        <div class="flex items-center gap-2">
-          <span class="earnings-flow-icon"><Wallet class="size-4" /></span>
-          <div class="min-w-0">
-            <p class="text-sm font-bold text-foreground">
-              {{ money(withdrawal.amount_som) }} {{ withdrawal.currency }}
-            </p>
-            <p class="text-[11px] text-muted-foreground">
-              <template v-if="withdrawal.status === 'card_pending'">{{ t.waitingCard }}</template>
-              <template v-else-if="withdrawal.status === 'otp_required'">{{ t.enterOtp }}</template>
-            </p>
-          </div>
         </div>
-
-        <!-- card_pending: reopen form + manual check -->
-        <template v-if="withdrawal.status === 'card_pending'">
-          <div class="flex gap-2">
-            <Button
-              variant="outline"
-              size="lg"
-              class="flex-1"
-              :disabled="busy || !withdrawal.form_url"
-              @click="withdrawal.form_url && openExternalLink(withdrawal.form_url)"
-            >
-              {{ t.openForm }}
-            </Button>
-            <Button size="lg" class="flex-1" :disabled="busy" @click="() => refreshWithdrawal(false)">
-              {{ t.confirm }}
-            </Button>
-          </div>
-        </template>
-
-        <!-- otp_required: enter code -->
-        <template v-else-if="withdrawal.status === 'otp_required'">
-          <label class="block text-[11px] font-semibold text-muted-foreground">{{ t.otpLabel }}</label>
-          <input
-            v-model="otp"
-            inputmode="numeric"
-            autocomplete="one-time-code"
-            class="glass-input w-full text-center text-lg tracking-widest"
-            :placeholder="'••••••'"
-          >
-          <Button size="lg" class="w-full" :disabled="busy || !otp.trim()" @click="submitOtp">
-            {{ t.confirm }}
-          </Button>
-        </template>
-
-        <button type="button" class="w-full text-center text-[11px] text-muted-foreground" @click="abort">
-          {{ t.cancel }}
-        </button>
       </GlassCard>
 
       <!-- History -->

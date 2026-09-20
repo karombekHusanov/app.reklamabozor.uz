@@ -56,9 +56,10 @@ export function readTelegramInitData(): string {
 }
 
 /**
- * Open an external URL (e.g. the Multicard checkout page). Inside Telegram we
- * use WebApp.openLink (opens the in-app browser); outside we fall back to a
- * normal navigation so it also works in a plain browser during dev.
+ * Open an external URL (e.g. a payment gateway checkout page). Inside
+ * Telegram we use WebApp.openLink (opens the in-app browser); outside we
+ * fall back to a normal navigation so it also works in a plain browser
+ * during dev.
  */
 export function openExternalLink(url: string): void {
   if (isInsideTelegram()) {
@@ -78,7 +79,7 @@ export function openExternalLink(url: string): void {
  * Open a payment checkout while keeping the user *inside* the mini-app webview.
  *
  * Do NOT use WebApp.openLink / openTelegramLink here — those open an external
- * browser, so Multicard's return_url / return_error_url land outside Telegram
+ * browser, so the gateway's return_url / return_error_url land outside Telegram
  * and the user is stranded. Navigate the current webview to the checkout; after
  * pay (or fail) the gateway redirects back to TELEGRAM_MINI_APP_URL/orders/{id}.
  * The auth token survives via localStorage / CloudStorage (token-storage.ts).

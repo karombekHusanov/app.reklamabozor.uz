@@ -57,8 +57,7 @@ export function paymentView(order: Pick<Order, 'payment' | 'status' | 'payment_s
 
   if (order.payment_state === 'unpaid') {
     // An offline invoice (cash / bank) sits pending until a manager confirms it.
-    return order.payment && order.payment.method !== 'multicard'
-      && ['draft', 'progress'].includes(order.payment.status)
+    return order.payment && ['draft', 'progress'].includes(order.payment.status)
       ? 'pending'
       : 'unpaid'
   }

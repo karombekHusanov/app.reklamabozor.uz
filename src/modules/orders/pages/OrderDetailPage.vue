@@ -190,7 +190,7 @@ onMounted(() => {
   orders.loadOrder(Number(props.id))
   document.addEventListener('visibilitychange', recheckPayment)
 
-  // Multicard return_error_url lands here with ?pay=failed.
+  // A payment gateway's return_error_url lands here with ?pay=failed.
   if (route.query.pay === 'failed') {
     toast.error(locale.t.orders.payFailedToast)
     const q = { ...route.query }
