@@ -18,7 +18,6 @@ import {
   supportsStreaming,
 } from '@/modules/assistant/services/assistant.service'
 import { useOrderDraftStore } from '@/modules/orders/stores/order-draft.store'
-import { useOrdersStore } from '@/modules/orders/stores/orders.store'
 import { fetchRegions } from '@/modules/orders/services/regions.service'
 import type { Region } from '@/modules/orders/types/region'
 import { ROUTES } from '@/modules/shell/constants/routes'
@@ -28,7 +27,6 @@ const locale = useLocaleStore()
 const router = useRouter()
 const { haptic } = useTelegram()
 const orderDraft = useOrderDraftStore()
-const orders = useOrdersStore()
 
 const messages = ref<AssistantMessage[]>([])
 const draft = ref<AssistantDraft | null>(null)
@@ -144,34 +142,13 @@ async function send(text?: string) {
   }
 }
 
-/** Send it from here — no detour through the form. */
-async function sendDraft() {
-  if (!draft.value || sendingOrder.value) return
-
-  haptic('medium')
-  sendingOrder.value = true
-  error.value = null
-
-  const order = await orders.create({
-    ...(draft.value.category_id !== null ? { category_id: draft.value.category_id } : {}),
-    description: draft.value.description,
-    attachment_file_ids: [],
-    ...(regionId.value !== null ? { region_id: regionId.value } : {}),
-    ...(draft.value.title ? { title: draft.value.title } : {}),
-  })
-
-  sendingOrder.value = false
-
-  if (!order) {
-    error.value = locale.t.assistant.draftError
-    haptic('heavy')
-    return
-  }
-
-  haptic('medium')
-  sentOrderId.value = order.id
-  draft.value = null
-  void scrollToEnd()
+/**
+ * The backend now requires a budget, which the assistant draft does not carry —
+ * hand the draft over to the request form instead of posting it directly.
+ */
+function sendDraft() {
+  if (!draft.value) return
+  editDraft()
 }
 
 /** For files or a map pin the form is still the right place. */

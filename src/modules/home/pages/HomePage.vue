@@ -9,6 +9,8 @@ import { useAuthStore } from '@/modules/auth/stores/auth.store'
 import { useHomeStore } from '@/modules/home/stores/home.store'
 import HomePageSkeleton from '@/modules/home/components/HomePageSkeleton.vue'
 import HomeHero from '@/modules/home/components/HomeHero.vue'
+import HomeTrustRow from '@/modules/home/components/HomeTrustRow.vue'
+import HomeBannerCarousel from '@/modules/home/components/HomeBannerCarousel.vue'
 import HomeStatCards from '@/modules/home/components/HomeStatCards.vue'
 import HomeFeatureTiles from '@/modules/home/components/HomeFeatureTiles.vue'
 import HomeSteps from '@/modules/home/components/HomeSteps.vue'
@@ -29,6 +31,9 @@ import {
   isProviderInviteDismissed,
 } from '@/modules/home/lib/provider-invite'
 import { ROUTES } from '@/modules/shell/constants/routes'
+
+// MVP: the designers rail is hidden (kept in code, may return).
+const SHOW_TOP_DESIGNERS = false
 
 const auth = useAuthStore()
 const home = useHomeStore()
@@ -279,6 +284,17 @@ watch(() => auth.user?.id, () => {
         <HomeStatCards :stats="liveStats" />
       </div>
 
+      <div
+        v-if="home.platformContact?.phone"
+        class="home-block home-gutter"
+      >
+        <HomeTrustRow :contact="home.platformContact" />
+      </div>
+
+      <div class="home-block home-gutter">
+        <HomeBannerCarousel :banners="home.banners" />
+      </div>
+
       <div class="home-block home-gutter">
         <HomeFeatureTiles
           :nearby="liveStats?.agencies_total"
@@ -319,7 +335,10 @@ watch(() => auth.user?.id, () => {
         />
       </div>
 
-      <div class="home-block">
+      <div
+        v-if="SHOW_TOP_DESIGNERS"
+        class="home-block"
+      >
         <HomeAgencyRail
           :title="locale.t.home.topDesigners"
           :agents="home.topDesigners"

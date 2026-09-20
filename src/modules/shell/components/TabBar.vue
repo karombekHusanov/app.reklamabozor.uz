@@ -170,7 +170,7 @@ const shapePath = computed(() => {
           <span class="fab">
             <component
               :is="tab.icon"
-              class="size-6"
+              class="size-7"
               :stroke-width="2.4"
             />
           </span>
@@ -297,8 +297,8 @@ const shapePath = computed(() => {
   position: absolute;
   left: 50%;
   bottom: var(--fab-lift);
-  width: 52px;
-  height: 52px;
+  width: 62px;
+  height: 62px;
   border-radius: 999px;
   background: linear-gradient(180deg, var(--rb-cta) 0%, var(--rb-cta-strong) 100%);
   color: #fff;
@@ -309,7 +309,15 @@ const shapePath = computed(() => {
   transition: transform .14s ease;
 }
 .tab--fab:active .fab { transform: translateX(-50%) scale(0.92); }
-.tab__lbl--fab { color: var(--rb-cta); font-weight: 600; margin-top: 3px; }
+/* The FAB label is wider than its grid column — let it overflow evenly rather than clip. */
+.tab__lbl--fab {
+  max-width: none;
+  overflow: visible;
+  text-overflow: clip;
+  color: var(--rb-cta);
+  font-weight: 600;
+  margin-top: 3px;
+}
 
 @media (prefers-reduced-motion: reduce) {
   .tab, .tab__ic, .tab--fab .fab { transition: none; }

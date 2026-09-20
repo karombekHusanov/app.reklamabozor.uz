@@ -8,6 +8,7 @@ import {
   markLiveOrdersSeen as markLiveOrdersSeenApi,
   type UserActivity,
 } from '@/modules/home/services/activity.service'
+import { fetchPlatformContact, type PlatformContact } from '@/modules/home/services/platform-contact.service'
 import { fetchLiveOrders, type LiveOrder } from '@/modules/home/services/live-orders.service'
 import { fetchTopAgents, type PublicAgent } from '@/modules/marketplace/services/agents.service'
 
@@ -34,6 +35,7 @@ export const useHomeStore = defineStore('home', () => {
   const topAgents = ref<PublicAgent[]>([])
   const topDesigners = ref<PublicAgent[]>([])
   const liveOrders = ref<LiveOrder[]>([])
+  const platformContact = ref<PlatformContact | null>(null)
   const activity = ref<UserActivity | null>(null)
 
   const newLiveOrdersCount = ref(0)
@@ -119,11 +121,12 @@ export const useHomeStore = defineStore('home', () => {
           ? loadActivity(force)
           : Promise.resolve()
 
-        const [bannersData, agentsData, designersData, liveOrdersData] = await Promise.all([
+        const [bannersData, agentsData, designersData, liveOrdersData, contactData] = await Promise.all([
           fetchBanners().catch(() => [] as Banner[]),
           fetchTopAgents(TOP_AGENTS_LIMIT, undefined, 'agent').catch(() => [] as PublicAgent[]),
           fetchTopAgents(TOP_AGENTS_LIMIT, undefined, 'designer').catch(() => [] as PublicAgent[]),
           fetchLiveOrders(LIVE_ORDERS_LIMIT).catch(() => [] as LiveOrder[]),
+          fetchPlatformContact().catch(() => null),
         ])
 
         await activityPromise
@@ -132,6 +135,7 @@ export const useHomeStore = defineStore('home', () => {
         topAgents.value = agentsData
         topDesigners.value = designersData
         liveOrders.value = liveOrdersData
+        platformContact.value = contactData
         hasLoaded.value = true
       }
       catch (e) {
@@ -179,6 +183,7 @@ export const useHomeStore = defineStore('home', () => {
     topAgents.value = []
     topDesigners.value = []
     liveOrders.value = []
+    platformContact.value = null
     applyActivity(null)
     hasLoaded.value = false
     isLoading.value = false
@@ -193,6 +198,7 @@ export const useHomeStore = defineStore('home', () => {
     topAgents,
     topDesigners,
     liveOrders,
+    platformContact,
     activity,
     newLiveOrdersCount,
     unreadChats,

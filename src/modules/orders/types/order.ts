@@ -429,8 +429,8 @@ export interface CreateOrderPayload {
   hashtags?: string[]
   /** Concrete deadline as an ISO date string, e.g. "2026-07-15". */
   deadline_date?: string | null
-  /** Preset budget band. UI-only for now — backend drops until wired. */
-  budget?: OrderBudget | null
+  /** Approximate budget in so'm (integer, required by the backend, min 1). */
+  budget: number
   /** Show TZ/files on Recent / Live Orders. Default true if omitted. */
   show_files_in_showcase?: boolean
 }

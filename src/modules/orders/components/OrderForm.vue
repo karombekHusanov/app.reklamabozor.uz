@@ -5,7 +5,6 @@ import Drawer from '@/core/ui/Drawer.vue'
 import GlassCard from '@/core/ui/GlassCard.vue'
 import LocationPicker from '@/core/ui/LocationPicker.vue'
 import StickyActionBar from '@/core/ui/StickyActionBar.vue'
-import { Button } from '@/core/ui/button'
 import { useFileUpload } from '@/core/composables/useFileUpload'
 import { useTelegram } from '@/core/composables/useTelegram'
 import { useToast } from '@/core/composables/useToast'
@@ -33,6 +32,13 @@ const emit = defineEmits<{
 
 const MAX_FILES = 5
 
+// MVP: the category is inferred by the backend, the city is fixed to Tashkent
+// and the map pin is skipped. The pickers stay in the code (they may return).
+const SHOW_CATEGORY_PICKER = false
+const SHOW_REGION_PICKER = false
+const SHOW_LOCATION_PICKER = false
+const TASHKENT_REGION_CODE = 'toshkent-shahri'
+
 const locale = useLocaleStore()
 const { haptic } = useTelegram()
 const { isUploading, upload } = useFileUpload()
@@ -47,6 +53,9 @@ const files = ref<DraftFile[]>([])
 const regionId = ref<number | null>(null)
 const location = ref<{ lat: number, lng: number, label: string | null } | null>(null)
 
+const budgetInput = ref('')
+const budgetError = ref<string | null>(null)
+const budgetRef = ref<HTMLInputElement | null>(null)
 const descriptionError = ref<string | null>(null)
 const categoryOpen = ref(false)
 const regionOpen = ref(false)
@@ -58,6 +67,28 @@ const descriptionRef = ref<HTMLTextAreaElement | null>(null)
 const selectedCategory = computed(() =>
   props.categories.find(category => category.id === categoryId.value) ?? null,
 )
+
+/** Fixed city: the Tashkent region row, when the catalog has it. */
+const tashkentRegion = computed(() =>
+  props.regions.find(region => region.code === TASHKENT_REGION_CODE) ?? null,
+)
+
+const effectiveRegionId = computed(() =>
+  SHOW_REGION_PICKER ? regionId.value : (tashkentRegion.value?.id ?? null),
+)
+
+const budgetValue = computed(() => {
+  const digits = budgetInput.value.replace(/\D/g, '')
+  return digits ? Number(digits) : 0
+})
+
+function onBudgetInput(event: Event) {
+  const digits = (event.target as HTMLInputElement).value.replace(/\D/g, '').replace(/^0+/, '').slice(0, 12)
+  budgetInput.value = digits.replace(/\B(?=(\d{3})+(?!\d))/g, ' ')
+  budgetError.value = null
+  // Keep the DOM in sync when the formatted text differs from what was typed.
+  ;(event.target as HTMLInputElement).value = budgetInput.value
+}
 
 const selectedRegion = computed(() =>
   props.regions.find(region => region.id === regionId.value) ?? null,
@@ -175,12 +206,29 @@ function submit() {
 
   descriptionError.value = null
 
+  if (budgetValue.value < 1) {
+    budgetError.value = locale.t.orders.form.errBudget
+    toast.error(locale.t.orders.form.errBudget)
+    haptic('heavy')
+
+    const field = budgetRef.value
+    if (field) {
+      const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      field.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'center' })
+      field.focus({ preventScroll: true })
+    }
+    return
+  }
+
+  budgetError.value = null
+
   emit('submit', {
     ...(categoryId.value !== null ? { category_id: categoryId.value } : {}),
     description: text,
+    budget: budgetValue.value,
     attachment_file_ids: files.value.map(file => file.id),
-    ...(regionId.value !== null ? { region_id: regionId.value } : {}),
-    ...(location.value
+    ...(effectiveRegionId.value !== null ? { region_id: effectiveRegionId.value } : {}),
+    ...(SHOW_LOCATION_PICKER && location.value
       ? {
           lat: location.value.lat,
           lng: location.value.lng,
@@ -203,8 +251,11 @@ function submit() {
       <span class="font-semibold text-foreground">{{ targetAgent.company_name }}</span>
     </GlassCard>
 
-    <!-- 1 · Service type (optional) -->
-    <GlassCard class="space-y-2.5">
+    <!-- 1 · Service type (optional) — hidden, the backend infers it -->
+    <GlassCard
+      v-if="SHOW_CATEGORY_PICKER"
+      class="space-y-2.5"
+    >
       <p class="field-label">
         {{ locale.t.orders.form.categoryLabel }}
         <span class="field-optional">{{ locale.t.orders.form.optional }}</span>
@@ -253,6 +304,42 @@ function submit() {
         class="text-[12.5px] font-medium text-destructive"
       >
         {{ descriptionError }}
+      </p>
+    </GlassCard>
+
+    <!-- Budget (required) -->
+    <GlassCard class="space-y-2.5">
+      <label
+        class="field-label"
+        for="order-budget"
+      >{{ locale.t.orders.form.budgetLabel }}</label>
+
+      <div class="budget-field">
+        <input
+          id="order-budget"
+          ref="budgetRef"
+          :value="budgetInput"
+          type="text"
+          inputmode="numeric"
+          autocomplete="off"
+          class="glass-input h-12 w-full text-base"
+          :placeholder="locale.t.orders.form.budgetPlaceholder"
+          :aria-invalid="budgetError ? 'true' : undefined"
+          :aria-describedby="budgetError ? 'order-budget-error' : undefined"
+          @input="onBudgetInput"
+        >
+        <span
+          class="budget-field__unit"
+          aria-hidden="true"
+        >{{ locale.t.orders.form.budgetSuffix }}</span>
+      </div>
+
+      <p
+        v-if="budgetError"
+        id="order-budget-error"
+        class="text-[12.5px] font-medium text-destructive"
+      >
+        {{ budgetError }}
       </p>
     </GlassCard>
 
@@ -322,8 +409,11 @@ function submit() {
       </ul>
     </GlassCard>
 
-    <!-- 4 · Region (optional) -->
-    <GlassCard class="space-y-2.5">
+    <!-- 4 · Region (optional) — hidden, city is fixed to Tashkent -->
+    <GlassCard
+      v-if="SHOW_REGION_PICKER"
+      class="space-y-2.5"
+    >
       <p class="field-label">
         {{ locale.t.orders.wizard.regionLabel }}
         <span class="field-optional">{{ locale.t.orders.form.optional }}</span>
@@ -344,8 +434,11 @@ function submit() {
       </button>
     </GlassCard>
 
-    <!-- 5 · Map pin (optional) -->
-    <GlassCard class="space-y-2.5">
+    <!-- 5 · Map pin (optional) — hidden for the MVP -->
+    <GlassCard
+      v-if="SHOW_LOCATION_PICKER"
+      class="space-y-2.5"
+    >
       <p class="field-label">
         {{ locale.t.orders.wizard.locationLabel }}
         <span class="field-optional">{{ locale.t.orders.form.optional }}</span>
@@ -394,8 +487,9 @@ function submit() {
     </GlassCard>
 
     <StickyActionBar class="action-dock !bottom-3">
-      <Button
-        class="h-12 w-full rounded-2xl text-[15px] font-semibold"
+      <button
+        type="button"
+        class="rb-cta-btn w-full"
         :disabled="submitting"
         @click="submit"
       >
@@ -407,8 +501,8 @@ function submit() {
           v-else
           class="size-4"
         />
-        {{ locale.t.orders.wizard.submit }}
-      </Button>
+        {{ locale.t.orders.form.submit }}
+      </button>
     </StickyActionBar>
 
     <!-- Category drawer -->
@@ -518,6 +612,18 @@ function submit() {
   font-size: 13.5px;
   font-weight: 600;
   color: var(--foreground);
+}
+.budget-field { position: relative; }
+.budget-field .glass-input { padding-right: 56px; }
+.budget-field__unit {
+  position: absolute;
+  top: 50%;
+  right: 14px;
+  transform: translateY(-50%);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--muted-foreground);
+  pointer-events: none;
 }
 .field-optional {
   font-size: 11.5px;
