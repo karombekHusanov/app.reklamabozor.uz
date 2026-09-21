@@ -15,7 +15,7 @@ import { useLocaleStore } from '@/core/i18n/locale.store'
 import { formatFileSize, isImageFile } from '@/modules/orders/lib/wizard'
 import { useOrderDraftStore } from '@/modules/orders/stores/order-draft.store'
 import type { Category } from '@/modules/agent/types/agent'
-import type { CreateOrderPayload } from '@/modules/orders/types/order'
+import type { CreateOrderPayload, OrderRoute } from '@/modules/orders/types/order'
 import type { Region } from '@/modules/orders/types/region'
 
 const props = defineProps<{
@@ -24,6 +24,8 @@ const props = defineProps<{
   submitting: boolean
   /** Directed order — the request reaches only this agency. */
   targetAgent: { id: number, company_name: string } | null
+  /** Tender | Tezkor — fixed by the tab the request is created from. */
+  route: OrderRoute
 }>()
 
 const emit = defineEmits<{
@@ -53,9 +55,6 @@ const files = ref<DraftFile[]>([])
 const regionId = ref<number | null>(null)
 const location = ref<{ lat: number, lng: number, label: string | null } | null>(null)
 
-const budgetInput = ref('')
-const budgetError = ref<string | null>(null)
-const budgetRef = ref<HTMLInputElement | null>(null)
 const descriptionError = ref<string | null>(null)
 const categoryOpen = ref(false)
 const regionOpen = ref(false)
@@ -76,19 +75,6 @@ const tashkentRegion = computed(() =>
 const effectiveRegionId = computed(() =>
   SHOW_REGION_PICKER ? regionId.value : (tashkentRegion.value?.id ?? null),
 )
-
-const budgetValue = computed(() => {
-  const digits = budgetInput.value.replace(/\D/g, '')
-  return digits ? Number(digits) : 0
-})
-
-function onBudgetInput(event: Event) {
-  const digits = (event.target as HTMLInputElement).value.replace(/\D/g, '').replace(/^0+/, '').slice(0, 12)
-  budgetInput.value = digits.replace(/\B(?=(\d{3})+(?!\d))/g, ' ')
-  budgetError.value = null
-  // Keep the DOM in sync when the formatted text differs from what was typed.
-  ;(event.target as HTMLInputElement).value = budgetInput.value
-}
 
 const selectedRegion = computed(() =>
   props.regions.find(region => region.id === regionId.value) ?? null,
@@ -206,26 +192,10 @@ function submit() {
 
   descriptionError.value = null
 
-  if (budgetValue.value < 1) {
-    budgetError.value = locale.t.orders.form.errBudget
-    toast.error(locale.t.orders.form.errBudget)
-    haptic('heavy')
-
-    const field = budgetRef.value
-    if (field) {
-      const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-      field.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'center' })
-      field.focus({ preventScroll: true })
-    }
-    return
-  }
-
-  budgetError.value = null
-
   emit('submit', {
     ...(categoryId.value !== null ? { category_id: categoryId.value } : {}),
     description: text,
-    budget: budgetValue.value,
+    route: props.route,
     attachment_file_ids: files.value.map(file => file.id),
     ...(effectiveRegionId.value !== null ? { region_id: effectiveRegionId.value } : {}),
     ...(SHOW_LOCATION_PICKER && location.value
@@ -242,6 +212,11 @@ function submit() {
 
 <template>
   <div class="space-y-3.5">
+    <!-- Which route this request takes (fixed by the tab it was created from) -->
+    <p class="route-hint">
+      {{ props.route === 'tender' ? locale.t.route.formTender : locale.t.route.formTezkor }}
+    </p>
+
     <!-- Directed order banner -->
     <GlassCard
       v-if="targetAgent"
@@ -304,42 +279,6 @@ function submit() {
         class="text-[12.5px] font-medium text-destructive"
       >
         {{ descriptionError }}
-      </p>
-    </GlassCard>
-
-    <!-- Budget (required) -->
-    <GlassCard class="space-y-2.5">
-      <label
-        class="field-label"
-        for="order-budget"
-      >{{ locale.t.orders.form.budgetLabel }}</label>
-
-      <div class="budget-field">
-        <input
-          id="order-budget"
-          ref="budgetRef"
-          :value="budgetInput"
-          type="text"
-          inputmode="numeric"
-          autocomplete="off"
-          class="glass-input h-12 w-full text-base"
-          :placeholder="locale.t.orders.form.budgetPlaceholder"
-          :aria-invalid="budgetError ? 'true' : undefined"
-          :aria-describedby="budgetError ? 'order-budget-error' : undefined"
-          @input="onBudgetInput"
-        >
-        <span
-          class="budget-field__unit"
-          aria-hidden="true"
-        >{{ locale.t.orders.form.budgetSuffix }}</span>
-      </div>
-
-      <p
-        v-if="budgetError"
-        id="order-budget-error"
-        class="text-[12.5px] font-medium text-destructive"
-      >
-        {{ budgetError }}
       </p>
     </GlassCard>
 
@@ -613,17 +552,14 @@ function submit() {
   font-weight: 600;
   color: var(--foreground);
 }
-.budget-field { position: relative; }
-.budget-field .glass-input { padding-right: 56px; }
-.budget-field__unit {
-  position: absolute;
-  top: 50%;
-  right: 14px;
-  transform: translateY(-50%);
-  font-size: 12.5px;
-  font-weight: 600;
+.route-hint {
+  margin: 0;
+  padding: 10px 14px;
+  border-radius: var(--rb-r-field);
+  background: var(--secondary);
   color: var(--muted-foreground);
-  pointer-events: none;
+  font-size: 12.5px;
+  line-height: 1.45;
 }
 .field-optional {
   font-size: 11.5px;

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Briefcase, CheckCircle2, ChevronRight, CreditCard, RefreshCw } from '@lucide/vue'
+import { useRoute } from 'vue-router'
 import { computed, onMounted, ref } from 'vue'
 import { memberDuration } from '@/core/lib/date'
 import { ROUTES } from '@/modules/shell/constants/routes'
@@ -119,8 +120,12 @@ const completedLabel = computed(() =>
 
 const isVerified = computed(() => Boolean(props.user.phone))
 
+// `?tender=1` — sent here from the locked Tender tab to request tender access.
+const tenderRequested = useRoute().query.tender === '1' && props.user.tender_access_status !== 'granted'
+
 const showLegalCard = computed(() =>
-  props.user.person_type === 'legal_entity' && !props.user.person_type_verified,
+  tenderRequested
+  || (props.user.person_type === 'legal_entity' && !props.user.person_type_verified),
 )
 
 onMounted(() => {

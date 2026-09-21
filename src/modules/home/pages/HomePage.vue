@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Loader2 } from '@lucide/vue'
+import { Loader2, Lock } from '@lucide/vue'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { usePullToRefresh } from '@/core/composables/usePullToRefresh'
@@ -7,6 +7,9 @@ import { useTelegram } from '@/core/composables/useTelegram'
 import { useLocaleStore } from '@/core/i18n/locale.store'
 import { useAuthStore } from '@/modules/auth/stores/auth.store'
 import { useHomeStore } from '@/modules/home/stores/home.store'
+import OrderRouteTabs from '@/modules/orders/components/OrderRouteTabs.vue'
+import { useOrderRouteStore } from '@/modules/orders/stores/order-route.store'
+import type { OrderRoute } from '@/modules/orders/types/order'
 import HomePageSkeleton from '@/modules/home/components/HomePageSkeleton.vue'
 import HomeHero from '@/modules/home/components/HomeHero.vue'
 import HomeTrustRow from '@/modules/home/components/HomeTrustRow.vue'
@@ -37,6 +40,7 @@ const SHOW_TOP_DESIGNERS = false
 
 const auth = useAuthStore()
 const home = useHomeStore()
+const routeStore = useOrderRouteStore()
 const router = useRouter()
 const locale = useLocaleStore()
 const { user: telegramUser, haptic } = useTelegram()
@@ -163,6 +167,27 @@ function onSelectCategory(category: Category) {
     query: { category: String(category.id), type: category.type },
   })
 }
+
+/** Tender | Tezkor tab — filters the live requests below and drives Create. */
+const requestRoute = computed({
+  get: (): OrderRoute => routeStore.active,
+  set: (route) => { routeStore.set(route) },
+})
+
+const tenderLockCopy = computed(() => {
+  if (routeStore.tenderStatus === 'pending') return locale.t.route.accessPending
+  if (routeStore.tenderStatus === 'revoked') return locale.t.route.accessRevoked
+  return locale.t.route.lockedBody
+})
+
+function requestTenderAccess() {
+  haptic('light')
+  void router.push({ path: ROUTES.profile, query: { tender: '1' } })
+}
+
+watch(() => routeStore.active, () => {
+  if (home.hasLoaded) void home.loadLiveOrders()
+})
 
 function openLiveOrder(order: LiveOrder) {
   haptic('light')
@@ -347,6 +372,39 @@ watch(() => auth.user?.id, () => {
         />
       </div>
 
+      <div class="home-block home-gutter">
+        <OrderRouteTabs
+          v-model="requestRoute"
+          :tender-locked="!routeStore.canCreateTender"
+        />
+
+        <div
+          v-if="routeStore.tenderLocked"
+          class="tender-lock"
+        >
+          <span
+            class="tender-lock__icon"
+            aria-hidden="true"
+          ><Lock class="size-4" /></span>
+          <div class="tender-lock__body">
+            <p class="tender-lock__title">
+              {{ locale.t.route.tenderLocked }}
+            </p>
+            <p class="tender-lock__text">
+              {{ tenderLockCopy }}
+            </p>
+            <button
+              v-if="routeStore.tenderStatus !== 'pending'"
+              type="button"
+              class="tender-lock__cta"
+              @click="requestTenderAccess"
+            >
+              {{ locale.t.route.requestAccess }}
+            </button>
+          </div>
+        </div>
+      </div>
+
       <div class="home-block pb-2">
         <HomeLiveRequests
           :orders="home.liveOrders"
@@ -409,4 +467,43 @@ watch(() => auth.user?.id, () => {
 .home-gutter {
   padding-inline: var(--home-gutter);
 }
+
+.tender-lock {
+  display: flex;
+  gap: 12px;
+  margin-top: 12px;
+  padding: 14px;
+  border-radius: var(--rb-r-tile);
+  background: var(--card);
+  border: 1px solid var(--border);
+  box-shadow: var(--rb-elev-1);
+}
+.tender-lock__icon {
+  display: grid;
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  border-radius: 12px;
+  background: var(--secondary);
+  color: var(--muted-foreground);
+}
+.tender-lock__body { min-width: 0; flex: 1; }
+.tender-lock__title { margin: 0; font-family: var(--rb-font-display); font-size: 14px; font-weight: 800; color: var(--foreground); }
+.tender-lock__text { margin: 3px 0 0; font-size: 12.5px; line-height: 1.45; color: var(--muted-foreground); }
+.tender-lock__cta {
+  margin-top: 10px;
+  min-height: 44px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: var(--rb-r-field);
+  background: var(--primary);
+  color: var(--primary-foreground);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.tender-lock__cta:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
 </style>

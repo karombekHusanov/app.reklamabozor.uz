@@ -15,6 +15,7 @@ import type {
   ContractDocument,
   Offer,
   Order,
+  OrderRoute,
   OrderReview,
   Payment,
   PricelistItemInput,
@@ -119,6 +120,25 @@ export async function disputeCompletion(orderId: number): Promise<Order> {
 }
 
 /** Client cancels their own order — only while it is still open for offers. */
+/** Tezkor: client rejects the claimed agent and reopens the request. */
+export async function releaseOrder(orderId: number): Promise<Order> {
+  const { data } = await api.post<ApiSuccess<Order>>(`/api/v1/orders/${orderId}/release`)
+
+  return data.data
+}
+
+/** Tezkor: client closes the request as agreed. */
+export async function closeOrder(orderId: number): Promise<Order> {
+  const { data } = await api.post<ApiSuccess<Order>>(`/api/v1/orders/${orderId}/close`)
+
+  return data.data
+}
+
+/** Tezkor: the claiming agent lets go of the request. */
+export async function agentReleaseOrder(orderId: number): Promise<void> {
+  await api.post(`/api/v1/agent/orders/${orderId}/release`)
+}
+
 export async function cancelOrder(orderId: number): Promise<Order> {
   const { data } = await api.post<ApiSuccess<Order>>(`/api/v1/orders/${orderId}/cancel`)
 
@@ -192,8 +212,10 @@ export async function fetchMyRating(role?: string): Promise<RatingInfo | null> {
 
 // --- Agent ------------------------------------------------------------------
 
-export async function fetchAgentOrders(): Promise<AgentOrder[]> {
-  const { data } = await api.get<ApiSuccess<AgentOrder[]>>('/api/v1/agent/orders')
+export async function fetchAgentOrders(route?: OrderRoute): Promise<AgentOrder[]> {
+  const { data } = await api.get<ApiSuccess<AgentOrder[]>>('/api/v1/agent/orders', {
+    params: route ? { route } : undefined,
+  })
 
   return data.data
 }

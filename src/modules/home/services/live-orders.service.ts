@@ -1,7 +1,7 @@
 import { api } from '@/core/api/client'
 import type { ApiSuccess } from '@/core/types/api'
 import type { Category } from '@/modules/agent/types/agent'
-import type { OfferStatus, OrderAttachment, OrderHashtag } from '@/modules/orders/types/order'
+import type { OfferStatus, OrderAttachment, OrderHashtag, OrderRoute } from '@/modules/orders/types/order'
 import type { OrderRegionRef } from '@/modules/orders/types/region'
 
 export interface ShowcaseClient {
@@ -12,6 +12,10 @@ export interface ShowcaseClient {
 
 export interface LiveOrder {
   id: number
+  route?: OrderRoute
+  claimed?: boolean
+  claimed_by_me?: boolean
+  can_offer?: boolean
   title: string
   description: string | null
   category: Category | null
@@ -27,6 +31,9 @@ export interface LiveOrder {
 
 export interface ShowcaseOrder {
   id: number
+  route?: OrderRoute
+  claimed?: boolean
+  claimed_by_me?: boolean
   title: string
   description: string | null
   deadline: string | null
@@ -59,6 +66,7 @@ export interface HashtagSuggest {
 }
 
 export interface LiveOrdersFilters {
+  route?: OrderRoute | null
   q?: string | null
   hashtag?: string | null
   category_ids?: number[] | null
@@ -76,6 +84,7 @@ export async function fetchLiveOrders(
   const { data } = await api.get<ApiSuccess<LiveOrder[]>>('/api/v1/orders/showcase', {
     params: {
       limit,
+      ...(filters.route ? { route: filters.route } : {}),
       ...(filters.q?.trim() ? { q: filters.q.trim() } : {}),
       ...(filters.hashtag ? { hashtag: filters.hashtag } : {}),
       ...(filters.category_ids?.length ? { category_ids: filters.category_ids.join(',') } : {}),

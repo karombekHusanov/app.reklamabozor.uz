@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { getApiErrorMessage } from '@/core/api/api-error'
 import { useAuthStore } from '@/modules/auth/stores/auth.store'
+import { useOrderRouteStore } from '@/modules/orders/stores/order-route.store'
 import { type Banner, fetchBanners } from '@/modules/home/services/banners.service'
 import {
   fetchMyActivity,
@@ -125,7 +126,7 @@ export const useHomeStore = defineStore('home', () => {
           fetchBanners().catch(() => [] as Banner[]),
           fetchTopAgents(TOP_AGENTS_LIMIT, undefined, 'agent').catch(() => [] as PublicAgent[]),
           fetchTopAgents(TOP_AGENTS_LIMIT, undefined, 'designer').catch(() => [] as PublicAgent[]),
-          fetchLiveOrders(LIVE_ORDERS_LIMIT).catch(() => [] as LiveOrder[]),
+          fetchLiveOrders(LIVE_ORDERS_LIMIT, { route: useOrderRouteStore().active }).catch(() => [] as LiveOrder[]),
           fetchPlatformContact().catch(() => null),
         ])
 
@@ -150,6 +151,16 @@ export const useHomeStore = defineStore('home', () => {
     })
 
     return loadInflight
+  }
+
+  /** Re-fetch just the live-requests rail (Tender | Tezkor tab switch). */
+  async function loadLiveOrders() {
+    try {
+      liveOrders.value = await fetchLiveOrders(LIVE_ORDERS_LIMIT, { route: useOrderRouteStore().active })
+    }
+    catch {
+      liveOrders.value = []
+    }
   }
 
   async function refresh() {
@@ -215,6 +226,7 @@ export const useHomeStore = defineStore('home', () => {
     load,
     refresh,
     loadActivity,
+    loadLiveOrders,
     markLiveOrdersSeen,
     reset,
   }

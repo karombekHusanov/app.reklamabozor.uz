@@ -17,6 +17,9 @@ import {
 import { useLocaleStore } from '@/core/i18n/locale.store'
 import { useTelegram } from '@/core/composables/useTelegram'
 import { useHomeStore } from '@/modules/home/stores/home.store'
+import OrderRouteTabs from '@/modules/orders/components/OrderRouteTabs.vue'
+import { useOrderRouteStore } from '@/modules/orders/stores/order-route.store'
+import type { OrderRoute } from '@/modules/orders/types/order'
 import { fetchCategories } from '@/modules/orders/services/orders.service'
 import { fetchRegions } from '@/modules/orders/services/regions.service'
 import { fetchLiveOrders, type LiveOrder } from '@/modules/home/services/live-orders.service'
@@ -25,6 +28,11 @@ import type { Region } from '@/modules/orders/types/region'
 
 const locale = useLocaleStore()
 const home = useHomeStore()
+const routeStore = useOrderRouteStore()
+const requestRoute = computed({
+  get: (): OrderRoute => routeStore.active,
+  set: (route) => { routeStore.set(route) },
+})
 const { haptic } = useTelegram()
 
 const orders = ref<LiveOrder[]>([])
@@ -53,6 +61,7 @@ async function loadOrders() {
   try {
     const dates = datesFromPreset(filters.value.datePreset)
     orders.value = await fetchLiveOrders(50, {
+      route: routeStore.active,
       q: debouncedQuery.value.trim() || null,
       category_ids: filters.value.categoryIds,
       region_id: filters.value.regionId,
@@ -83,7 +92,7 @@ onMounted(async () => {
   await loadOrders()
 })
 
-watch([debouncedQuery, filters], () => {
+watch([debouncedQuery, filters, () => routeStore.active], () => {
   void loadOrders()
 }, { deep: true })
 
@@ -114,6 +123,13 @@ const emptyTitle = computed(() => {
         </div>
       </template>
     </AppHeader>
+
+    <section class="px-5 pb-1 pt-2">
+      <OrderRouteTabs
+        v-model="requestRoute"
+        :tender-locked="!routeStore.canCreateTender"
+      />
+    </section>
 
     <section class="flex items-center gap-2 px-5 pb-1 pt-2">
       <div class="glass-input flex h-11 min-w-0 flex-1 items-center gap-2.5 !rounded-2xl !bg-card !py-0 shadow-[0_8px_20px_-16px_rgba(15,23,42,0.35)]">

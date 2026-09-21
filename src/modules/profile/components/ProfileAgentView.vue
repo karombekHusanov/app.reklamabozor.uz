@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ChevronRight, CircleX, Clock, LayoutGrid, ShieldCheck, Star } from '@lucide/vue'
+import { useRoute } from 'vue-router'
 import { computed, onMounted, ref, watch } from 'vue'
 import AppHeader from '@/modules/shell/components/AppHeader.vue'
 import Avatar from '@/core/ui/Avatar.vue'
@@ -138,10 +139,14 @@ const verifyMeta = computed(() => {
 
 /** Zone B: at most one primary next action. */
 const showKycCta = computed(() => needsVerification.value)
+// `?tender=1` — sent here from the locked Tender tab to request tender access.
+const tenderRequested = useRoute().query.tender === '1' && props.user.tender_access_status !== 'granted'
+
 const showLegalCard = computed(() =>
-  !showKycCta.value
-  && props.user.person_type === 'legal_entity'
-  && !props.user.person_type_verified,
+  tenderRequested
+  || (!showKycCta.value
+    && props.user.person_type === 'legal_entity'
+    && !props.user.person_type_verified),
 )
 
 const publicPagePath = computed(() =>

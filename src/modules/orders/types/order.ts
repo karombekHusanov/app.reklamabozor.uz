@@ -343,8 +343,36 @@ export interface OrderHashtag {
 
 export const MAX_ORDER_HASHTAGS = 5
 
+/** Order route, fixed at creation: Tender (priced offers + contract) or Tezkor (one-agent claim). */
+export type OrderRoute = 'tender' | 'tezkor'
+
+/** The agent holding an exclusive Tezkor claim on an order. */
+export interface OrderClaim {
+  agent_id: number
+  claimed_at: string
+  agent: {
+    first_name: string | null
+    last_name: string | null
+    phone: string | null
+    username: string | null
+    profile_id: number | null
+    company_name: string | null
+    company_logo: string | null
+    location_label: string | null
+    stars: number | null
+    stars_count: number | null
+    grade: number | null
+  }
+}
+
 export interface Order {
   id: number
+  route?: OrderRoute
+  /** Tezkor: client may reject the claimed agent and reopen the request. */
+  can_release?: boolean
+  /** Tezkor: client may close the request as agreed. */
+  can_close?: boolean
+  claim?: OrderClaim | null
   title: string
   description: string
   deadline: OrderDeadline | null
@@ -429,8 +457,8 @@ export interface CreateOrderPayload {
   hashtags?: string[]
   /** Concrete deadline as an ISO date string, e.g. "2026-07-15". */
   deadline_date?: string | null
-  /** Approximate budget in so'm (integer, required by the backend, min 1). */
-  budget: number
+  /** Route is fixed at creation; tender needs `can_create_tender` (403 otherwise). */
+  route: OrderRoute
   /** Show TZ/files on Recent / Live Orders. Default true if omitted. */
   show_files_in_showcase?: boolean
 }
@@ -470,6 +498,11 @@ export interface OrderDraft {
 
 export interface AgentOrder {
   id: number
+  route?: OrderRoute
+  /** Tezkor: another (or this) agent already holds the claim. */
+  claimed?: boolean
+  claimed_by_me?: boolean
+  can_offer?: boolean
   title: string
   description: string
   deadline: OrderDeadline | null
@@ -490,6 +523,9 @@ export interface AgentOrder {
     id?: number | null
     first_name: string | null
     avatar?: string | null
+    /** Shown to the claiming agent on a Tezkor request. */
+    phone?: string | null
+    username?: string | null
   }
   my_offer: null | {
     id: number

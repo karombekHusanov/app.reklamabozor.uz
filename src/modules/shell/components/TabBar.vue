@@ -2,6 +2,7 @@
 import { ROUTES } from '@/modules/shell/constants/routes'
 import { useTelegram } from '@/core/composables/useTelegram'
 import { useLocaleStore } from '@/core/i18n/locale.store'
+import { useOrderRouteStore } from '@/modules/orders/stores/order-route.store'
 import { ClipboardList, Home, Plus, Sparkles, User } from '@lucide/vue'
 import { computed, onBeforeUnmount, onMounted, ref, useId } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -10,6 +11,7 @@ const route = useRoute()
 const router = useRouter()
 const { haptic } = useTelegram()
 const locale = useLocaleStore()
+const routeStore = useOrderRouteStore()
 
 const tabs = computed(() => [
   { key: 'home', to: ROUTES.home, label: locale.t.shell.tabs.home, icon: Home, fab: false },
@@ -32,6 +34,12 @@ function isActive(to: string): boolean {
 function navigate(to: string) {
   if (isActive(to)) return
   haptic(to === ROUTES.newOrder ? 'medium' : 'light')
+  // The Tender tab is locked for accounts without access: Create leads to the
+  // access request (legal-entity verification) rather than a refused form.
+  if (to === ROUTES.newOrder && routeStore.tenderLocked) {
+    void router.push({ path: ROUTES.profile, query: { tender: '1' } })
+    return
+  }
   void router.push(to)
 }
 

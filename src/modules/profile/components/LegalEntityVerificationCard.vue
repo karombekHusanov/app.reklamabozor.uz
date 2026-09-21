@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { BadgeCheck, Clock } from '@lucide/vue'
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, nextTick, onMounted, reactive, ref } from 'vue'
+import { useRoute } from 'vue-router'
 import GlassCard from '@/core/ui/GlassCard.vue'
 import FileUpload from '@/core/ui/FileUpload.vue'
 import { Button } from '@/core/ui/button'
@@ -11,11 +12,19 @@ import { fetchLegalEntity, submitLegalEntity } from '@/modules/profile/services/
 
 const auth = useAuthStore()
 const locale = useLocaleStore()
+const route = useRoute()
+
+/** Arrived from the locked Tender tab / Create button (`?tender=1`). */
+const tenderRequest = computed(() =>
+  route.query.tender === '1' && auth.user?.tender_access_status !== 'granted',
+)
+const cardRef = ref<{ $el: HTMLElement } | null>(null)
 
 // Only self-declared legal entities that aren't verified yet manage this here —
 // agents/sellers are verified through their role, individuals don't apply.
 const applies = computed(() =>
-  auth.user?.person_type === 'legal_entity' && !auth.user?.person_type_verified,
+  tenderRequest.value
+  || (auth.user?.person_type === 'legal_entity' && !auth.user?.person_type_verified),
 )
 
 const status = computed(() => auth.user?.legal_entity_status ?? null)
@@ -31,6 +40,12 @@ const error = ref<string | null>(null)
 
 onMounted(async () => {
   if (!applies.value) return
+  if (tenderRequest.value) {
+    void nextTick(() => {
+      const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      cardRef.value?.$el?.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'center' })
+    })
+  }
   try {
     const existing = await fetchLegalEntity()
     if (existing) {
@@ -77,6 +92,7 @@ async function submit() {
 <template>
   <GlassCard
     v-if="applies"
+    ref="cardRef"
     class="space-y-3 p-4"
   >
     <div class="flex items-center gap-2">
@@ -94,6 +110,13 @@ async function submit() {
         {{ locale.t.legalVerify.title }}
       </h3>
     </div>
+
+    <p
+      v-if="tenderRequest"
+      class="rounded-xl bg-secondary px-3 py-2 text-[12px] leading-snug text-muted-foreground"
+    >
+      {{ locale.t.route.lockedBody }}
+    </p>
 
     <!-- Awaiting moderation -->
     <p

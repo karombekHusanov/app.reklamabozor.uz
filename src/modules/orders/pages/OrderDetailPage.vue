@@ -18,6 +18,7 @@ import { ROUTES } from '@/modules/shell/constants/routes'
 import OrderHashtagChips from '@/modules/orders/components/OrderHashtagChips.vue'
 import OrderAttachments from '@/modules/orders/components/OrderAttachments.vue'
 import OfferCard from '@/modules/orders/components/OfferCard.vue'
+import TezkorClaimCard from '@/modules/orders/components/TezkorClaimCard.vue'
 import OrderStateCard from '@/modules/orders/components/OrderStateCard.vue'
 import ContractDownloadCard from '@/modules/orders/components/ContractDownloadCard.vue'
 import OrderActsCard from '@/modules/orders/components/OrderActsCard.vue'
@@ -28,6 +29,7 @@ import CriteriaReviewForm from '@/modules/orders/components/CriteriaReviewForm.v
 import ReviewDisplay from '@/modules/orders/components/ReviewDisplay.vue'
 import { formatOrderRegion } from '@/modules/orders/lib/region-label'
 import { getApiErrorMessage } from '@/core/api/api-error'
+import { confirmAction } from '@/core/lib/confirm-action'
 import { fetchOfferContract } from '@/modules/orders/services/orders.service'
 import { useOrdersStore } from '@/modules/orders/stores/orders.store'
 import type { ContractDocument, Offer, ReviewCriterionScore } from '@/modules/orders/types/order'
@@ -42,6 +44,8 @@ const router = useRouter()
 const { haptic } = useTelegram()
 
 const order = computed(() => orders.currentOrder)
+// Tezkor: one exclusively claimed agent, no priced offers / contract / payment.
+const isTezkor = computed(() => order.value?.route === 'tezkor')
 const offers = computed(() => order.value?.offers ?? [])
 // Once the client picks an offer, the losing bids are no longer relevant —
 // show only the accepted one so the order detail focuses on the chosen agency.
@@ -307,6 +311,21 @@ async function cancelOrder() {
   toast.error(orders.error ?? locale.t.orders.cancelOrder)
 }
 
+async function resolveTezkor(action: 'close' | 'release') {
+  if (!order.value || orders.isSubmitting) return
+  const message = action === 'close' ? locale.t.route.closeConfirm : locale.t.route.releaseConfirm
+  if (!(await confirmAction(message))) return
+  haptic('light')
+  const ok = await orders.resolveTezkor(order.value.id, action)
+  if (ok) {
+    haptic('medium')
+    toast.success(action === 'close' ? locale.t.route.closedToast : locale.t.route.reopenedToast)
+  }
+  else {
+    toast.error(orders.error || locale.t.route.errAction)
+  }
+}
+
 async function sendReview(criteria: ReviewCriterionScore[], comment: string | null) {
   if (!order.value) return
   haptic('light')
@@ -334,7 +353,18 @@ async function sendReview(criteria: ReviewCriterionScore[], comment: string | nu
 
       <template v-else-if="order">
         <!-- Where the work is, and — kept apart — where the money is. -->
-        <OrderStateCard :order="order">
+        <TezkorClaimCard
+          v-if="isTezkor"
+          :order="order"
+          :busy="orders.isSubmitting"
+          @close="resolveTezkor('close')"
+          @release="resolveTezkor('release')"
+        />
+
+        <OrderStateCard
+          v-else
+          :order="order"
+        >
           <template #action>
             <!-- Each state shows exactly one primary action. -->
             <div
@@ -565,19 +595,19 @@ async function sendReview(criteria: ReviewCriterionScore[], comment: string | nu
 
         <!-- Service contract (generated once the deal started). -->
         <ContractDownloadCard
-          v-if="order.contract"
+          v-if="!isTezkor && order.contract"
           :contract="order.contract"
         />
 
         <!-- Acts closing the deal (bookkeeping). -->
         <OrderActsCard
-          v-if="order.documents?.length"
+          v-if="!isTezkor && order.documents?.length"
           :documents="order.documents"
         />
 
         <!-- Additional agreements (Qo'shimcha kelishuv) on the active deal. -->
         <AmendmentsSection
-          v-if="acceptedOffer"
+          v-if="!isTezkor && acceptedOffer"
           :order-id="order.id"
           :is-active="isActiveDeal"
           :initial-items="acceptedOffer.items ?? []"
@@ -610,7 +640,10 @@ async function sendReview(criteria: ReviewCriterionScore[], comment: string | nu
         />
 
         <!-- Offers -->
-        <div class="space-y-3">
+        <div
+          v-if="!isTezkor"
+          class="space-y-3"
+        >
           <div class="flex items-center gap-2 px-1">
             <MessageSquareQuote class="size-4 text-primary" />
             <h3 class="text-base font-semibold text-foreground">

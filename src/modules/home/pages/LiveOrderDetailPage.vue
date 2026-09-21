@@ -2,6 +2,7 @@
 import { Calendar, Eye, Loader2, MessageSquareQuote, Send, User } from '@lucide/vue'
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import axios from 'axios'
 import WebApp from '@twa-dev/sdk'
 import AppHeader from '@/modules/shell/components/AppHeader.vue'
 import Avatar from '@/core/ui/Avatar.vue'
@@ -73,7 +74,14 @@ async function sendInterest() {
     await loadOrder()
   }
   catch (e) {
-    toast.error(getApiErrorMessage(e) || locale.t.orders.showcase.offerError)
+    if (axios.isAxiosError(e) && e.response?.status === 409) {
+      // Another agent claimed this Tezkor request first.
+      toast.error(locale.t.route.busyToast)
+      await loadOrder()
+    }
+    else {
+      toast.error(getApiErrorMessage(e) || locale.t.orders.showcase.offerError)
+    }
   }
   finally {
     submitting.value = false
@@ -271,9 +279,28 @@ onMounted(loadOrder)
           </div>
         </GlassCard>
 
+        <!-- Tezkor: the request is exclusively held by an agent -->
+        <p
+          v-if="order.route === 'tezkor' && order.claimed_by_me"
+          class="claim-note claim-note--mine"
+        >
+          {{ locale.t.route.yoursBody }}
+        </p>
+        <template v-else-if="order.route === 'tezkor' && order.claimed">
+          <Button
+            class="h-12 w-full rounded-2xl text-base"
+            disabled
+          >
+            {{ locale.t.route.busy }}
+          </Button>
+          <p class="claim-note">
+            {{ locale.t.route.busyBody }}
+          </p>
+        </template>
+
         <!-- Interest CTA — only if can_offer and no existing offer -->
         <Button
-          v-if="order.can_offer && !order.my_offer"
+          v-if="order.can_offer && !order.my_offer && !order.claimed"
           class="h-12 w-full rounded-2xl text-base"
           :disabled="submitting"
           @click="confirmSendInterest"
@@ -313,3 +340,19 @@ onMounted(loadOrder)
     </section>
   </div>
 </template>
+
+<style scoped>
+.claim-note {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: var(--rb-r-field);
+  background: var(--secondary);
+  color: var(--muted-foreground);
+  font-size: 13px;
+  line-height: 1.45;
+}
+.claim-note--mine {
+  background: color-mix(in srgb, var(--rb-glow) 12%, var(--card));
+  color: var(--foreground);
+}
+</style>

@@ -9,6 +9,9 @@ import { useLocaleStore } from '@/core/i18n/locale.store'
 import AgentOrderItem from '@/modules/agent/components/AgentOrderItem.vue'
 import AgentOfferItem from '@/modules/agent/components/AgentOfferItem.vue'
 import { useOrdersStore } from '@/modules/orders/stores/orders.store'
+import OrderRouteTabs from '@/modules/orders/components/OrderRouteTabs.vue'
+import { useOrderRouteStore } from '@/modules/orders/stores/order-route.store'
+import type { OrderRoute } from '@/modules/orders/types/order'
 import { ROUTES } from '@/modules/shell/constants/routes'
 import type { AgentOffer } from '@/modules/orders/types/order'
 
@@ -23,6 +26,11 @@ const props = defineProps<{
 const activeTab = defineModel<'orders' | 'offers'>('tab', { default: 'orders' })
 
 const orders = useOrdersStore()
+const routeStore = useOrderRouteStore()
+const requestRoute = computed({
+  get: (): OrderRoute => routeStore.active,
+  set: (route) => { routeStore.set(route) },
+})
 const router = useRouter()
 
 type OfferFilter = 'all' | 'pending' | 'active' | 'completed' | 'rejected'
@@ -31,8 +39,11 @@ const offerFilter = ref<OfferFilter>('all')
 const ACTIVE_DEAL_STATUSES = ['awaiting_payment', 'in_progress', 'work_submitted']
 
 // Tab 1 — open opportunities from /agent/orders, newest first.
+// Filtered by the shared Tender | Tezkor tab (rows without a route are tenders).
 const availableOrders = computed(() =>
-  [...orders.availableOrders].sort((a, b) => b.id - a.id),
+  orders.availableOrders
+    .filter(o => (o.route ?? 'tender') === routeStore.active)
+    .sort((a, b) => b.id - a.id),
 )
 
 // Tab 2 — the agent's own offers from /agent/offers, newest first.
@@ -215,6 +226,11 @@ watch(
 
     <!-- ===================== Tab 1: New orders ===================== -->
     <template v-if="activeTab === 'orders'">
+      <OrderRouteTabs
+        v-model="requestRoute"
+        :tender-locked="false"
+      />
+
       <template v-if="orders.isLoadingAgent && orders.availableOrders.length === 0">
         <div class="flex flex-col gap-4">
           <Skeleton v-for="n in 2" :key="n" class="h-[140px] w-full rounded-[1.35rem]" />

@@ -33,6 +33,8 @@ const deadlineLabel = computed(() => {
   return null
 })
 
+const isTezkorClaimed = computed(() => props.order.route === 'tezkor' && Boolean(props.order.claimed))
+
 function openDetail() {
   router.push(ROUTES.offerOpportunity(props.order.id))
 }
@@ -59,7 +61,7 @@ function openClient() {
     @open-client="openClient"
   >
     <template
-      v-if="deadlineLabel || order.my_offer"
+      v-if="deadlineLabel || order.my_offer || isTezkorClaimed"
       #chips
     >
       <span
@@ -69,7 +71,21 @@ function openClient() {
         {{ deadlineLabel }}
       </span>
       <Badge
-        v-if="order.my_offer"
+        v-if="order.route === 'tezkor' && order.claimed_by_me"
+        variant="primary"
+        class="shrink-0 !px-2.5 !py-1 text-[11px] font-bold"
+      >
+        {{ locale.t.route.mine }}
+      </Badge>
+      <Badge
+        v-else-if="order.route === 'tezkor' && order.claimed"
+        variant="default"
+        class="shrink-0 !px-2.5 !py-1 text-[11px] font-bold"
+      >
+        {{ locale.t.route.busy }}
+      </Badge>
+      <Badge
+        v-else-if="order.my_offer"
         :variant="offerStatusVariant(order.my_offer.status)"
         class="shrink-0 !px-2.5 !py-1 text-[11px] font-bold"
       >

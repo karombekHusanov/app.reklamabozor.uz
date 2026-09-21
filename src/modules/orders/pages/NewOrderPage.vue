@@ -7,6 +7,7 @@ import GlassCard from '@/core/ui/GlassCard.vue'
 import Skeleton from '@/core/ui/Skeleton.vue'
 import { Button } from '@/core/ui/button'
 import { useTelegram } from '@/core/composables/useTelegram'
+import { useToast } from '@/core/composables/useToast'
 import { useLocaleStore } from '@/core/i18n/locale.store'
 import { useAuthStore } from '@/modules/auth/stores/auth.store'
 import { ROUTES } from '@/modules/shell/constants/routes'
@@ -14,6 +15,7 @@ import OrderForm from '@/modules/orders/components/OrderForm.vue'
 import { fetchCategories } from '@/modules/orders/services/orders.service'
 import { fetchRegions } from '@/modules/orders/services/regions.service'
 import { useOrdersStore } from '@/modules/orders/stores/orders.store'
+import { useOrderRouteStore } from '@/modules/orders/stores/order-route.store'
 import { fetchPublicAgent } from '@/modules/marketplace/services/agents.service'
 import type { Category } from '@/modules/agent/types/agent'
 import type { CreateOrderPayload, Order } from '@/modules/orders/types/order'
@@ -25,6 +27,8 @@ const auth = useAuthStore()
 const orders = useOrdersStore()
 const locale = useLocaleStore()
 const { haptic } = useTelegram()
+const toast = useToast()
+const routeStore = useOrderRouteStore()
 
 const serviceType = computed(() => {
   const type = route.query.type
@@ -85,7 +89,18 @@ async function loadCatalog() {
   }
 }
 
-onMounted(loadCatalog)
+// Tender needs manager-granted access — a locked account is sent to the
+// legal-entity verification flow instead of a form the backend would refuse.
+function redirectIfTenderLocked() {
+  if (auth.isAuthenticated && routeStore.tenderLocked) {
+    void router.replace({ path: ROUTES.profile, query: { tender: '1' } })
+  }
+}
+
+onMounted(() => {
+  redirectIfTenderLocked()
+  void loadCatalog()
+})
 watch([() => auth.isAuthenticated, serviceType, targetAgentId], loadCatalog)
 
 async function handleSubmit(payload: CreateOrderPayload) {
@@ -101,6 +116,7 @@ async function handleSubmit(payload: CreateOrderPayload) {
   }
   else {
     haptic('heavy')
+    toast.error(orders.error || locale.t.route.errAction)
   }
 }
 </script>
@@ -177,6 +193,7 @@ async function handleSubmit(payload: CreateOrderPayload) {
           :regions="regions"
           :submitting="orders.isSubmitting"
           :target-agent="targetAgent"
+          :route="routeStore.active"
           @submit="handleSubmit"
         />
       </template>

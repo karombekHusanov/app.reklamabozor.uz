@@ -3,6 +3,9 @@ import { ref } from 'vue'
 import { getApiErrorMessage } from '@/core/api/api-error'
 import {
   acceptOffer as acceptOfferRequest,
+  agentReleaseOrder as agentReleaseOrderRequest,
+  closeOrder as closeOrderRequest,
+  releaseOrder as releaseOrderRequest,
   cancelOrder as cancelOrderRequest,
   confirmCompletion as confirmCompletionRequest,
   createOrder as createOrderRequest,
@@ -234,6 +237,45 @@ export const useOrdersStore = defineStore('orders', () => {
     }
   }
 
+  /** Tezkor: client closes ("Kelishildi") or rejects/reopens the claimed request. */
+  async function resolveTezkor(orderId: number, action: 'close' | 'release') {
+    isSubmitting.value = true
+    error.value = null
+    try {
+      const updated = action === 'close'
+        ? await closeOrderRequest(orderId)
+        : await releaseOrderRequest(orderId)
+      if (currentOrder.value?.id === orderId) await loadOrder(orderId)
+      myOrders.value = myOrders.value.map(o => (o.id === orderId ? { ...o, ...updated } : o))
+      return true
+    }
+    catch (e) {
+      error.value = getApiErrorMessage(e)
+      return false
+    }
+    finally {
+      isSubmitting.value = false
+    }
+  }
+
+  /** Tezkor: the claiming agent lets go of the request. */
+  async function agentRelease(orderId: number) {
+    isSubmitting.value = true
+    error.value = null
+    try {
+      await agentReleaseOrderRequest(orderId)
+      await loadAgentWorkspace(true)
+      return true
+    }
+    catch (e) {
+      error.value = getApiErrorMessage(e)
+      return false
+    }
+    finally {
+      isSubmitting.value = false
+    }
+  }
+
   /** Client rates the winning agency on a completed order (criteria-based). */
   async function submitReview(orderId: number, criteria: ReviewCriterionScore[], comment: string | null) {
     isSubmitting.value = true
@@ -367,6 +409,8 @@ export const useOrdersStore = defineStore('orders', () => {
     disputeCompletion,
     reportNoStart,
     cancelOrder,
+    resolveTezkor,
+    agentRelease,
     submitReview,
     submitProviderReview,
     loadAgentWorkspace,

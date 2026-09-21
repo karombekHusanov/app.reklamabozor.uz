@@ -2,6 +2,8 @@ export type UserRole = 'client' | 'agent' | 'designer' | 'admin' | 'seller'
 
 export type PersonType = 'individual' | 'legal_entity'
 
+export type TenderAccessStatus = 'none' | 'pending' | 'granted' | 'revoked'
+
 export type LegalEntityStatus = 'pending' | 'approved' | 'rejected'
 
 export interface User {
@@ -34,6 +36,9 @@ export interface User {
   person_type_declared: PersonType | null
   /** Verification request state for the badge/CTA; null = nothing submitted. */
   legal_entity_status: LegalEntityStatus | null
+  /** May create Tender requests (manager-granted); everyone can create Tezkor. */
+  can_create_tender?: boolean
+  tender_access_status?: TenderAccessStatus
   is_active: boolean
   created_at: string
   updated_at: string
