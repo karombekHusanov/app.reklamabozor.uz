@@ -52,6 +52,8 @@ export interface Chat {
     name: string
     company_name: string | null
     agent_profile_id: number | null
+    /** Thread detail only: the client's phone, for the agent, while their otklik is live. */
+    phone?: string | null
   }
   last_message?: ChatMessage | null
   unread_count: number
