@@ -11,7 +11,6 @@ import {
 } from '@lucide/vue'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import WebApp from '@twa-dev/sdk'
 import AppHeader from '@/modules/shell/components/AppHeader.vue'
 import Avatar from '@/core/ui/Avatar.vue'
 import Badge from '@/core/ui/Badge.vue'
@@ -26,7 +25,7 @@ import { useLocaleStore } from '@/core/i18n/locale.store'
 import { categoryName } from '@/core/i18n/category-name'
 import { formatDateTime } from '@/core/lib/date'
 import { getApiErrorMessage } from '@/core/api/api-error'
-import { isInsideTelegram, supportsVersion } from '@/core/lib/telegram-init'
+import { confirmOtklik } from '@/modules/agent/lib/confirm-otklik'
 import { ROUTES } from '@/modules/shell/constants/routes'
 import { formatPrice, isInterestOffer, offerStatusVariant } from '@/modules/orders/lib/order-status'
 import { formatOrderRegion } from '@/modules/orders/lib/region-label'
@@ -101,7 +100,7 @@ async function loadOrder() {
 async function sendInterest() {
   if (!order.value || orders.isSubmitting) return
   haptic('light')
-  const ok = await orders.sendOffer(order.value.id, {}, () => void sendInterest())
+  const ok = await orders.sendOffer(order.value.id, {}, () => sendInterest())
   if (ok) {
     haptic('medium')
     toast.success(locale.t.orders.showcase.interestSent)
@@ -169,16 +168,7 @@ async function openClientChat() {
 
 function confirmSendInterest() {
   if (!order.value || orders.isSubmitting) return
-  const message = locale.t.orders.showcase.sendInterestConfirm
-  const run = () => void sendInterest()
-
-  if (isInsideTelegram() && supportsVersion('6.2') && typeof WebApp.showConfirm === 'function') {
-    WebApp.showConfirm(message, (confirmed) => {
-      if (confirmed) run()
-    })
-    return
-  }
-  if (window.confirm(message)) run()
+  void confirmOtklik(() => sendInterest())
 }
 
 function openClient(clientId: number) {

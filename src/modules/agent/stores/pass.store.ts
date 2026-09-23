@@ -18,13 +18,16 @@ export const usePassStore = defineStore('agent-pass', () => {
   const buying = ref(false)
   const awaitingPayment = ref(false)
   const drawerOpen = ref(false)
+  /** Why the drawer is open: no Propusk (daily pass) or balance below one otklik fee. */
+  const drawerReason = ref<'pass' | 'balance'>('pass')
 
   // Live countdown: anchor the server's seconds_left to the moment it was received.
   const anchorAt = ref(Date.now())
   const now = ref(Date.now())
   let tick: ReturnType<typeof setInterval> | null = null
   let poll: ReturnType<typeof setInterval> | null = null
-  let retry: (() => void) | null = null
+  /** Otklik to resend once the agent has paid; may return its promise. */
+  let retry: (() => unknown) | null = null
 
   const secondsLeft = computed(() => {
     if (!pass.value?.active) return 0
@@ -34,6 +37,14 @@ export const usePassStore = defineStore('agent-pass', () => {
   const isActive = computed(() => Boolean(pass.value?.active) && secondsLeft.value > 0)
   const enforce = computed(() => pass.value?.enforce === true)
   const walletEnabled = computed(() => pass.value?.wallet_enabled === true)
+  /** Pay-per-otklik: each response (Tezkor or Tender) is debited from the balance. */
+  const perResponse = computed(() => pass.value?.mode === 'per_response')
+  const balanceSom = computed(() => pass.value?.balance_som ?? 0)
+  /** Per-otklik fee currently charged (0 when responses are free). */
+  const otklikFeeSom = computed(() =>
+    enforce.value && perResponse.value ? (pass.value?.response_price_som ?? 0) : 0,
+  )
+  const canAffordOtklik = computed(() => balanceSom.value >= otklikFeeSom.value)
   /** Tezkor CTA hint: a pass is required and the agent has none. */
   const needsPass = computed(() =>
     loaded.value && enforce.value && !isActive.value && pass.value?.mode === 'daily_pass',
@@ -159,7 +170,7 @@ export const usePassStore = defineStore('agent-pass', () => {
    * Inspect a failed claim. Returns true when the error was a Propusk/claim gate
    * that this store fully handled (drawer / toast) so the caller shows nothing more.
    */
-  function handleClaimError(e: unknown, onRetry?: () => void): boolean {
+  function handleClaimError(e: unknown, onRetry?: () => unknown): boolean {
     if (!axios.isAxiosError(e) || e.response?.status !== 402) return false
     const body = e.response.data as { code?: ClaimBlockCode, message?: string } | undefined
     const t = passStrings(useLocaleStore().locale)
@@ -168,6 +179,7 @@ export const usePassStore = defineStore('agent-pass', () => {
     switch (body?.code) {
       case 'pass_required':
         retry = onRetry ?? null
+        drawerReason.value = 'pass'
         drawerOpen.value = true
         void load()
         return true
@@ -175,7 +187,11 @@ export const usePassStore = defineStore('agent-pass', () => {
         toast.error(t.claimLimit)
         return true
       case 'insufficient_balance':
-        toast.error(t.insufficientBalance)
+        // Per-otklik fee: offer the top-up and resend the otklik afterwards.
+        retry = onRetry ?? null
+        drawerReason.value = 'balance'
+        drawerOpen.value = true
+        void load()
         return true
       case 'payment_source_unavailable':
         toast.error(t.paymentUnavailable)
@@ -184,6 +200,13 @@ export const usePassStore = defineStore('agent-pass', () => {
         toast.error(body?.message || t.genericError)
         return true
     }
+  }
+
+  /** Balance already below one fee — go straight to the top-up drawer. */
+  function promptTopup(onRetry?: () => unknown) {
+    retry = onRetry ?? null
+    drawerReason.value = 'balance'
+    drawerOpen.value = true
   }
 
   /** Leaving the drawer for the card page — keep the pending claim retry. */
@@ -203,6 +226,21 @@ export const usePassStore = defineStore('agent-pass', () => {
     }
   }
 
+  /** The card page topped the balance up — adopt it and resend a pending otklik. */
+  function completeTopup(summary: AgentPass) {
+    pass.value = summary
+    anchorAt.value = Date.now()
+    now.value = anchorAt.value
+    loaded.value = true
+    stopPoll()
+    drawerOpen.value = false
+    useToast().success(passStrings(useLocaleStore().locale).topupToast)
+    const run = retry
+    retry = null
+    // The resent otklik takes its fee — refresh so the balance shown is current.
+    if (run) void Promise.resolve(run()).finally(() => void load())
+  }
+
   function closeDrawer() {
     drawerOpen.value = false
     retry = null
@@ -219,9 +257,9 @@ export const usePassStore = defineStore('agent-pass', () => {
   }
 
   return {
-    pass, history, loaded, buying, awaitingPayment, drawerOpen,
-    secondsLeft, isActive, enforce, walletEnabled, needsPass,
+    pass, history, loaded, buying, awaitingPayment, drawerOpen, drawerReason,
+    secondsLeft, isActive, enforce, walletEnabled, perResponse, balanceSom, otklikFeeSom, canAffordOtklik, needsPass,
     load, ensureLoaded, loadHistory, buy, refreshNow, handleClaimError, closeDrawer, reset,
-    openCardCheckout, completeCardPayment,
+    openCardCheckout, completeCardPayment, completeTopup, promptTopup,
   }
 })

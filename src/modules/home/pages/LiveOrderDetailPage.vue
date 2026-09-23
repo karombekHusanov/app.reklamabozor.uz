@@ -3,7 +3,6 @@ import { Calendar, Eye, Loader2, MessageSquareQuote, Send, User } from '@lucide/
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
-import WebApp from '@twa-dev/sdk'
 import AppHeader from '@/modules/shell/components/AppHeader.vue'
 import Avatar from '@/core/ui/Avatar.vue'
 import GlassCard from '@/core/ui/GlassCard.vue'
@@ -16,7 +15,7 @@ import { useLocaleStore } from '@/core/i18n/locale.store'
 import { categoryName } from '@/core/i18n/category-name'
 import { formatDateTime } from '@/core/lib/date'
 import { getApiErrorMessage } from '@/core/api/api-error'
-import { isInsideTelegram, supportsVersion } from '@/core/lib/telegram-init'
+import { confirmOtklik } from '@/modules/agent/lib/confirm-otklik'
 import { ROUTES } from '@/modules/shell/constants/routes'
 import OrderStatusBadge from '@/modules/orders/components/OrderStatusBadge.vue'
 import OrderHashtagChips from '@/modules/orders/components/OrderHashtagChips.vue'
@@ -80,7 +79,7 @@ async function sendInterest() {
       toast.error(locale.t.route.busyToast)
       await loadOrder()
     }
-    else if (!usePassStore().handleClaimError(e, () => void sendInterest())) {
+    else if (!usePassStore().handleClaimError(e, () => sendInterest())) {
       toast.error(getApiErrorMessage(e) || locale.t.orders.showcase.offerError)
     }
   }
@@ -91,16 +90,7 @@ async function sendInterest() {
 
 function confirmSendInterest() {
   if (!order.value || submitting.value) return
-  const message = locale.t.orders.showcase.sendInterestConfirm
-  const run = () => void sendInterest()
-
-  if (isInsideTelegram() && supportsVersion('6.2') && typeof WebApp.showConfirm === 'function') {
-    WebApp.showConfirm(message, (confirmed) => {
-      if (confirmed) run()
-    })
-    return
-  }
-  if (window.confirm(message)) run()
+  void confirmOtklik(() => sendInterest())
 }
 
 function openClient(clientId: number) {

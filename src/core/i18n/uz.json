@@ -6,7 +6,8 @@
     "cancel": "Bekor qilish",
     "retry": "Qayta urinish",
     "loading": "Yuklanmoqda…",
-    "notAdded": "Kiritilmagan"
+    "notAdded": "Kiritilmagan",
+    "confirm": "Tasdiqlash"
   },
   "roles": {
     "client": "Mijoz",
@@ -140,7 +141,7 @@
     "happeningNow": "Hozir",
     "liveRequestsTitle": "Jonli so'rovlar",
     "newLabel": "Yangi",
-    "offerCta": "Otklik",
+    "offerCta": "Javob berish",
     "welcome": "Xush kelibsiz",
     "guest": "Mehmon",
     "userFallback": "Foydalanuvchi",
@@ -438,9 +439,9 @@
     "perkContract": "Rasmiy shartnoma",
     "perkPayment": "Xavfsiz to'lov",
     "formTender": "Tender: agentliklar narxli taklif yuboradi, siz eng yaxshisini tanlaysiz.",
-    "formTezkor": "Tezkor so'rov: birinchi otklik bergan agent sizga biriktiriladi; narxni u bilan to'g'ridan-to'g'ri kelishasiz.",
+    "formTezkor": "Tezkor so'rov: birinchi javob bergan agent sizga biriktiriladi; narxni u bilan to'g'ridan-to'g'ri kelishasiz.",
     "errTenderAccess": "Tender yaratish uchun ruxsat kerak.",
-    "otklik": "Otklik",
+    "otklik": "Javob berish",
     "busy": "Band",
     "mine": "Sizniki",
     "busyToast": "Bu so'rovni hozirgina boshqa agent band qildi.",
@@ -449,7 +450,7 @@
     "clientContact": "Mijoz aloqasi",
     "claimTitle": "Biriktirilgan agentlik",
     "claimWaitingTitle": "Agent kutilmoqda",
-    "claimWaitingBody": "Birinchi otklik bergan agent so'rovga biriktiriladi. Uning profili va aloqasi shu yerda ko'rinadi.",
+    "claimWaitingBody": "Birinchi javob bergan agent so'rovga biriktiriladi. Uning profili va aloqasi shu yerda ko'rinadi.",
     "claimedAt": "Biriktirilgan: {date}",
     "callAgent": "Qo'ng'iroq",
     "telegramAgent": "Telegram",
@@ -462,7 +463,7 @@
     "releaseConfirm": "Agentni rad etib, so'rovni hamma uchun qayta ochasizmi?",
     "reopenedToast": "So'rov qayta ochildi.",
     "agentRelease": "Bo'shatish",
-    "agentReleaseConfirm": "So'rovni bo'shatasizmi? Boshqa agentlar otklik bera oladi.",
+    "agentReleaseConfirm": "So'rovni bo'shatasizmi? Boshqa agentlar javob bera oladi.",
     "agentReleasedToast": "So'rov bo'shatildi.",
     "agentClose": "Kelishildi — yopish",
     "agentCloseConfirm": "So'rovni kelishilgan deb yopasizmi? Bu uni bajarilgan deb belgilaydi.",
@@ -738,7 +739,8 @@
       "offerSent": "Taklifingiz muvaffaqiyatli yuborildi!",
       "offerError": "Taklif yuborishda xatolik yuz berdi.",
       "errPrice": "Narxni kiriting.",
-      "errComment": "Izoh yozing."
+      "errComment": "Izoh yozing.",
+      "sendInterestCta": "Yuborish"
     },
     "pay": {
       "title": "To'lov usulini tanlang",
@@ -821,7 +823,7 @@
     "contract": {
       "title": "Hamkorlik shartnomasi",
       "awaitingTitle": "Shartnomani imzolang",
-      "awaitingBody": "Ma'lumotlaringiz asosida shartnoma tayyorlandi. Yuklab oling, imzolab va muhr bosib, imzolangan nusxasini qayta yuklang. Imzolamaguningizcha buyurtmalarga otklik bera olmaysiz.",
+      "awaitingBody": "Ma'lumotlaringiz asosida shartnoma tayyorlandi. Yuklab oling, imzolab va muhr bosib, imzolangan nusxasini qayta yuklang. Imzolamaguningizcha buyurtmalarga javob bera olmaysiz.",
       "download": "Shartnomani yuklab olish",
       "uploadLabel": "Imzolangan shartnomani yuklash",
       "uploadHint": "PDF yoki rasm (imzo + muhr bilan)",
@@ -1427,7 +1429,7 @@
     "deskReviewSub": "{count} ta tekshiruv kutmoqda",
     "deskOpportunities": "Yangi so'rovlar",
     "deskOpportunitiesSub": "{count} ta yangi",
-    "deskBids": "Otkliklarim",
+    "deskBids": "Javoblarim",
     "deskBidsSub": "{count} ta kutilmoqda",
     "deskDeals": "Faol ishlar",
     "deskDealsSub": "{count} ta jarayonda",

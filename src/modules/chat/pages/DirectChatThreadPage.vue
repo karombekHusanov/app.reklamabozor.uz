@@ -2,7 +2,6 @@
 import { MessageCircle } from '@lucide/vue'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import WebApp from '@twa-dev/sdk'
 import AppHeader from '@/modules/shell/components/AppHeader.vue'
 import Avatar from '@/core/ui/Avatar.vue'
 import GlassCard from '@/core/ui/GlassCard.vue'
@@ -12,7 +11,7 @@ import { useTelegram } from '@/core/composables/useTelegram'
 import { useAuthStore } from '@/modules/auth/stores/auth.store'
 import { useLocaleStore } from '@/core/i18n/locale.store'
 import { formatDaySeparator } from '@/core/lib/date'
-import { isInsideTelegram, supportsVersion } from '@/core/lib/telegram-init'
+import { confirmAction } from '@/core/lib/confirm-action'
 import { ROUTES } from '@/modules/shell/constants/routes'
 import { useChatStore } from '@/modules/chat/stores/chat.store'
 import ChatComposer from '@/modules/chat/components/ChatComposer.vue'
@@ -125,18 +124,7 @@ function confirmEndChat() {
     actionBusy.value = false
   }
 
-  try {
-    if (isInsideTelegram() && supportsVersion('6.2') && typeof WebApp.showConfirm === 'function') {
-      WebApp.showConfirm(message, (confirmed) => {
-        if (confirmed) void run()
-      })
-      return
-    }
-  }
-  catch {
-    // fall through
-  }
-  if (window.confirm(message)) void run()
+  void confirmAction({ message, tone: 'danger' }).then((ok) => { if (ok) void run() })
 }
 
 async function handleReopen() {
@@ -252,7 +240,10 @@ function openActiveOffer() {
           {{ locale.t.chat.directEmpty }}
         </p>
 
-        <template v-for="item in feed" :key="item.key">
+        <template
+          v-for="item in feed"
+          :key="item.key"
+        >
           <div
             v-if="item.kind === 'date'"
             class="chat-day-pill my-1"

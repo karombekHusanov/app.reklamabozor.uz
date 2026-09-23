@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
 import { storeToRefs } from 'pinia'
-import { Loader2, Ticket } from '@lucide/vue'
+import { Loader2, Ticket, Wallet } from '@lucide/vue'
 import GlassCard from '@/core/ui/GlassCard.vue'
 import { useRouter } from 'vue-router'
 import { useLocaleStore } from '@/core/i18n/locale.store'
@@ -16,8 +16,12 @@ withDefaults(defineProps<{ showHistory?: boolean }>(), { showHistory: false })
 const locale = useLocaleStore()
 const router = useRouter()
 
-/** Wallet mode pays from the balance; otherwise open the in-app card page. */
+/** Per-otklik mode tops the balance up; wallet mode pays from the balance; otherwise the card page. */
 function checkout() {
+  if (perResponse.value) {
+    void router.push({ path: ROUTES.propuskPay, query: { topup: '1' } })
+    return
+  }
   if (store.walletEnabled) {
     void store.buy()
     return
@@ -26,7 +30,7 @@ function checkout() {
   void router.push(ROUTES.propuskPay)
 }
 const store = usePassStore()
-const { pass, history, buying, isActive, enforce, loaded } = storeToRefs(store)
+const { pass, history, buying, isActive, enforce, loaded, perResponse, balanceSom } = storeToRefs(store)
 const { hours, minutes } = usePassCountdown()
 
 const t = computed(() => passStrings(locale.locale))
@@ -35,6 +39,10 @@ const timeLeft = computed(() =>
   t.value.timeLeft.replace('{h}', String(hours.value)).replace('{m}', String(minutes.value)),
 )
 const priceLabel = computed(() => fmtSom(pass.value?.price_som ?? 0, t.value.unit))
+const feeSom = computed(() => pass.value?.response_price_som ?? 0)
+const feeLabel = computed(() => t.value.perOtklik.replace('{price}', fmtSom(feeSom.value, t.value.unit)))
+const otkliksLeft = computed(() => (feeSom.value > 0 ? Math.floor(balanceSom.value / feeSom.value) : 0))
+
 const buyLabel = computed(() =>
   (isActive.value ? t.value.extend : t.value.buy)
     .replace('{price}', priceLabel.value)
@@ -47,8 +55,39 @@ onMounted(() => {
 </script>
 
 <template>
+  <!-- Pay-per-otklik: the balance each response is taken from -->
   <GlassCard
-    v-if="loaded && pass"
+    v-if="loaded && pass && perResponse && enforce"
+    class="space-y-3"
+  >
+    <p class="profile-eyebrow flex items-center gap-1.5">
+      <Wallet
+        class="size-3.5"
+        aria-hidden="true"
+      />
+      {{ t.walletTitle }}
+    </p>
+    <div>
+      <p class="rb-font-display text-[24px] font-extrabold tabular-nums leading-tight tracking-[-0.02em] text-foreground">
+        {{ fmtSom(balanceSom, t.unit) }}
+      </p>
+      <p class="mt-1 text-[12.5px] text-muted-foreground">
+        {{ feeLabel }}<template v-if="otkliksLeft > 0">
+          · {{ t.otkliksLeft.replace('{count}', String(otkliksLeft)) }}
+        </template>
+      </p>
+    </div>
+    <button
+      type="button"
+      class="pressable flex h-11 w-full items-center justify-center gap-2 rounded-2xl bg-primary text-[14px] font-bold text-primary-foreground transition active:scale-[0.98]"
+      @click="checkout"
+    >
+      {{ t.topup }}
+    </button>
+  </GlassCard>
+
+  <GlassCard
+    v-else-if="loaded && pass"
     class="space-y-3"
   >
     <div class="flex items-center justify-between gap-2">

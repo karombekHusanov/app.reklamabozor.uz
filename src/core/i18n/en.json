@@ -6,7 +6,8 @@
     "cancel": "Cancel",
     "retry": "Retry",
     "loading": "Loading…",
-    "notAdded": "Not added yet"
+    "notAdded": "Not added yet",
+    "confirm": "Confirm"
   },
   "roles": {
     "client": "Client",
@@ -738,7 +739,8 @@
       "offerSent": "Your offer has been sent!",
       "offerError": "Failed to submit your offer.",
       "errPrice": "Enter a price.",
-      "errComment": "Add a comment."
+      "errComment": "Add a comment.",
+      "sendInterestCta": "Send"
     },
     "pay": {
       "title": "Choose how to pay",

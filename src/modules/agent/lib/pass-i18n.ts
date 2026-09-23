@@ -54,6 +54,24 @@ export interface PassStrings {
   successCta: string
   pendingTitle: string
   pendingBody: string
+  walletTitle: string
+  perOtklik: string
+  otkliksLeft: string
+  topup: string
+  topupTitle: string
+  topupAmount: string
+  topupService: string
+  topupCta: string
+  topupSuccessTitle: string
+  topupSuccessBody: string
+  topupToast: string
+  balanceDrawerTitle: string
+  balanceDrawerBody: string
+  balanceDrawerHint: string
+  balanceDrawerCta: string
+  otklikCost: string
+  otklikPrice: string
+  otklikCount: string
 }
 
 const uz: PassStrings = {
@@ -75,8 +93,8 @@ const uz: PassStrings = {
   gatewayUnavailable: 'To‘lov tizimi hozircha mavjud emas. Keyinroq urinib ko‘ring.',
   genericError: 'Amalni bajarib bo‘lmadi. Qayta urinib ko‘ring.',
   drawerTitle: 'Propusk kerak',
-  drawerBody: 'Tezkor so‘rovlarga otklik yuborish uchun faol Propusk kerak. U {hours} soat davomida amal qiladi.',
-  drawerHint: 'To‘lovdan so‘ng otklik avtomatik yuboriladi.',
+  drawerBody: 'Tezkor so‘rovlarga javob yuborish uchun faol Propusk kerak. U {hours} soat davomida amal qiladi.',
+  drawerHint: 'To‘lovdan so‘ng javobingiz avtomatik yuboriladi.',
   drawerBuy: 'Sotib olish — {price}',
   drawerChecking: 'To‘lov tekshirilmoqda...',
   drawerRetryHint: 'To‘lab bo‘ldingizmi? Holatni tekshiring.',
@@ -109,6 +127,24 @@ const uz: PassStrings = {
   successCta: 'Tayyor',
   pendingTitle: "To'lov tekshirilmoqda",
   pendingBody: 'Bank javobini kutyapmiz — bu bir necha soniya olishi mumkin.',
+  walletTitle: 'Balans',
+  perOtklik: 'Har bir javob: {price}',
+  otkliksLeft: '≈ {count} ta javobga yetadi',
+  topup: "Balansni to'ldirish",
+  topupTitle: "Balansni to'ldirish",
+  topupAmount: "Qancha to'ldirasiz?",
+  topupService: "Balansni to'ldirish",
+  topupCta: "To'ldirish · {amount}",
+  topupSuccessTitle: "Balans to'ldirildi",
+  topupSuccessBody: 'Balansingiz: {amount}',
+  topupToast: "Balans to'ldirildi",
+  balanceDrawerTitle: 'Balans yetarli emas',
+  balanceDrawerBody: 'Har bir javob {price} turadi. Balansingiz: {balance}.',
+  balanceDrawerHint: "To'ldirgach, javobingiz avtomatik yuboriladi.",
+  balanceDrawerCta: "Balansni to'ldirish",
+  otklikCost: 'Balansdan {price} yechiladi · qoladi {left}',
+  otklikPrice: 'Javob narxi',
+  otklikCount: '≈ {count} ta javob',
 }
 
 const ru: PassStrings = {
@@ -164,6 +200,24 @@ const ru: PassStrings = {
   successCta: 'Готово',
   pendingTitle: 'Проверяем оплату',
   pendingBody: 'Ждём ответа банка — это может занять несколько секунд.',
+  walletTitle: 'Баланс',
+  perOtklik: 'Каждый отклик: {price}',
+  otkliksLeft: 'Хватит примерно на {count} откликов',
+  topup: 'Пополнить баланс',
+  topupTitle: 'Пополнение баланса',
+  topupAmount: 'Сумма пополнения',
+  topupService: 'Пополнение баланса',
+  topupCta: 'Пополнить · {amount}',
+  topupSuccessTitle: 'Баланс пополнен',
+  topupSuccessBody: 'Ваш баланс: {amount}',
+  topupToast: 'Баланс пополнен',
+  balanceDrawerTitle: 'Недостаточно средств',
+  balanceDrawerBody: 'Каждый отклик стоит {price}. Ваш баланс: {balance}.',
+  balanceDrawerHint: 'После пополнения отклик отправится автоматически.',
+  balanceDrawerCta: 'Пополнить баланс',
+  otklikCost: 'С баланса спишется {price} · останется {left}',
+  otklikPrice: 'Цена отклика',
+  otklikCount: '≈ {count} откликов',
 }
 
 const en: PassStrings = {
@@ -219,6 +273,24 @@ const en: PassStrings = {
   successCta: 'Done',
   pendingTitle: 'Checking the payment',
   pendingBody: 'Waiting for the bank — this can take a few seconds.',
+  walletTitle: 'Balance',
+  perOtklik: 'Each response: {price}',
+  otkliksLeft: 'Enough for about {count} responses',
+  topup: 'Top up balance',
+  topupTitle: 'Top up balance',
+  topupAmount: 'How much to add?',
+  topupService: 'Balance top-up',
+  topupCta: 'Top up · {amount}',
+  topupSuccessTitle: 'Balance topped up',
+  topupSuccessBody: 'Your balance: {amount}',
+  topupToast: 'Balance topped up',
+  balanceDrawerTitle: 'Not enough balance',
+  balanceDrawerBody: 'Each response costs {price}. Your balance: {balance}.',
+  balanceDrawerHint: 'Your response is sent automatically after you top up.',
+  balanceDrawerCta: 'Top up balance',
+  otklikCost: '{price} from your balance · {left} left',
+  otklikPrice: 'Response price',
+  otklikCount: '≈ {count} responses',
 }
 
 const all: Record<Locale, PassStrings> = { uz, ru, en }

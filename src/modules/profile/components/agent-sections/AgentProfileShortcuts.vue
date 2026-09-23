@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { ChevronRight, LogOut, Settings } from '@lucide/vue'
-import WebApp from '@twa-dev/sdk'
 import { ROUTES } from '@/modules/shell/constants/routes'
-import { isInsideTelegram, supportsVersion } from '@/core/lib/telegram-init'
+import { confirmAction } from '@/core/lib/confirm-action'
 import type { useLocaleStore } from '@/core/i18n/locale.store'
 
 const props = defineProps<{
@@ -14,20 +13,14 @@ const emit = defineEmits<{
   logout: []
 }>()
 
-function confirmSignOut() {
-  const message = props.locale.t.profile.signOutConfirm
-  try {
-    if (isInsideTelegram() && supportsVersion('6.2') && typeof WebApp.showConfirm === 'function') {
-      WebApp.showConfirm(message, (confirmed) => {
-        if (confirmed) emit('logout')
-      })
-      return
-    }
-  }
-  catch {
-    // fall through
-  }
-  if (window.confirm(message)) emit('logout')
+async function confirmSignOut() {
+  const ok = await confirmAction({
+    message: props.locale.t.profile.signOutConfirm,
+    confirmLabel: props.locale.t.profile.signOut,
+    tone: 'danger',
+    icon: LogOut,
+  })
+  if (ok) emit('logout')
 }
 </script>
 

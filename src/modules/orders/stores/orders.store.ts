@@ -347,7 +347,7 @@ export const useOrdersStore = defineStore('orders', () => {
     return workspaceInflight
   }
 
-  async function sendOffer(orderId: number, payload: CreateOfferPayload, onPassBought?: () => void) {
+  async function sendOffer(orderId: number, payload: CreateOfferPayload, onPassBought?: () => unknown) {
     isSubmitting.value = true
     error.value = null
     try {

@@ -1,20 +1,22 @@
 <script setup lang="ts">
 /**
- * Propusk card payment (ATMOS merchant flow): card number + expiry → ATMOS
- * texts an SMS code → confirm → pass active. Card data lives only in this
- * component's memory for the resend button; it is never persisted.
+ * Card payment (ATMOS merchant flow): card number + expiry → ATMOS texts an
+ * SMS code → confirm. Two uses: buy a Propusk (daily-pass mode), or — with
+ * `?topup=1` — top up the balance each otklik fee is taken from (per-otklik
+ * mode). Card data lives only in this component's memory for the resend
+ * button; it is never persisted.
  */
 import axios from 'axios'
 import { CheckCircle2, CreditCard, Loader2, Lock, MessageSquareText } from '@lucide/vue'
 import { storeToRefs } from 'pinia'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import AppHeader from '@/modules/shell/components/AppHeader.vue'
 import { useTelegram } from '@/core/composables/useTelegram'
 import { useLocaleStore } from '@/core/i18n/locale.store'
 import { navigateBack } from '@/core/lib/navigation'
 import { fmtSom, passStrings } from '@/modules/agent/lib/pass-i18n'
-import { confirmCardPayment, startCardPayment } from '@/modules/agent/services/pass.service'
+import { confirmCardPayment, startCardPayment, startWalletTopup } from '@/modules/agent/services/pass.service'
 import { usePassStore } from '@/modules/agent/stores/pass.store'
 
 type Step = 'card' | 'otp' | 'pending' | 'done'
@@ -23,6 +25,7 @@ type Brand = 'humo' | 'uzcard' | 'mastercard' | 'visa'
 const RESEND_SECONDS = 60
 
 const router = useRouter()
+const route = useRoute()
 const locale = useLocaleStore()
 const store = usePassStore()
 const { pass } = storeToRefs(store)
@@ -30,7 +33,21 @@ const { haptic } = useTelegram()
 
 const t = computed(() => passStrings(locale.locale))
 const hours = computed(() => pass.value?.hours ?? 24)
-const amount = computed(() => fmtSom(pass.value?.price_som ?? 0, t.value.unit))
+/* ── what is being paid for ───────────────────────────────────────── */
+const isTopup = computed(() => route.query.topup === '1')
+const TOPUP_PRESETS = [5000, 10000, 20000, 50000]
+const feeSom = computed(() => pass.value?.response_price_som ?? 1000)
+const topupOptions = computed(() => TOPUP_PRESETS.filter(v => v >= feeSom.value))
+// Preselected from the "not enough balance" sheet (`?amount=`), else 10 000.
+const queryAmount = Number(route.query.amount)
+const topupSom = ref(TOPUP_PRESETS.includes(queryAmount) ? queryAmount : 10000)
+const balanceBefore = ref(0)
+
+const amountSom = computed(() => (isTopup.value ? topupSom.value : (pass.value?.price_som ?? 0)))
+const amount = computed(() => fmtSom(amountSom.value, t.value.unit))
+const serviceLabel = computed(() =>
+  isTopup.value ? t.value.topupService : t.value.payService.replace('{hours}', String(hours.value)),
+)
 
 const step = ref<Step>('card')
 const busy = ref(false)
@@ -129,7 +146,10 @@ async function pay() {
   error.value = null
   haptic('medium')
   try {
-    const res = await startCardPayment(cardDigits.value, expiryInput.value)
+    balanceBefore.value = pass.value?.balance_som ?? 0
+    const res = isTopup.value
+      ? await startWalletTopup(topupSom.value, cardDigits.value, expiryInput.value)
+      : await startCardPayment(cardDigits.value, expiryInput.value)
     paymentRef.value = res.payment_ref
     cardMask.value = res.card_mask
     otp.value = ''
@@ -172,7 +192,10 @@ function waitForBank() {
   const startedAt = Date.now()
   pollTimer = setInterval(async () => {
     const data = await store.load()
-    if (data?.active) finish(data)
+    const settled = isTopup.value
+      ? (data?.balance_som ?? 0) >= balanceBefore.value + topupSom.value
+      : data?.active
+    if (data && settled) finish(data)
     else if (Date.now() - startedAt > 90_000 && pollTimer) {
       clearInterval(pollTimer)
       error.value = t.value.genericError
@@ -182,7 +205,8 @@ function waitForBank() {
 
 function finish(summary: NonNullable<typeof pass.value>) {
   if (pollTimer) clearInterval(pollTimer)
-  store.completeCardPayment(summary)
+  if (isTopup.value) store.completeTopup(summary)
+  else store.completeCardPayment(summary)
   step.value = 'done'
   haptic('medium')
 }
@@ -214,7 +238,7 @@ onBeforeUnmount(() => {
 <template>
   <div class="pay">
     <AppHeader
-      :title="t.payTitle"
+      :title="isTopup ? t.topupTitle : t.payTitle"
       show-back
     />
 
@@ -222,12 +246,36 @@ onBeforeUnmount(() => {
       <!-- amount -->
       <section class="pay-sum">
         <div class="pay-sum__row">
-          <span>{{ t.payService.replace('{hours}', String(hours)) }}</span>
+          <span>{{ serviceLabel }}</span>
           <span class="tabular-nums">{{ amount }}</span>
         </div>
         <div class="pay-sum__total">
           <span>{{ t.payTotal }}</span>
           <strong>{{ amount }}</strong>
+        </div>
+      </section>
+
+      <!-- top-up amount (per-otklik mode) -->
+      <section
+        v-if="isTopup && step === 'card'"
+        class="pay-card"
+      >
+        <p class="pay-label">
+          {{ t.topupAmount }}
+        </p>
+        <div class="pay-amounts">
+          <button
+            v-for="v in topupOptions"
+            :key="v"
+            type="button"
+            class="pay-amount"
+            :class="{ 'is-on': topupSom === v }"
+            :aria-pressed="topupSom === v"
+            @click="topupSom = v"
+          >
+            {{ fmtSom(v, t.unit) }}
+            <small>{{ t.otkliksLeft.replace('{count}', String(Math.floor(v / feeSom))) }}</small>
+          </button>
         </div>
       </section>
 
@@ -372,10 +420,12 @@ onBeforeUnmount(() => {
           aria-hidden="true"
         ><CheckCircle2 class="size-9" /></span>
         <h2 class="pay-otp__title">
-          {{ t.successTitle }}
+          {{ isTopup ? t.topupSuccessTitle : t.successTitle }}
         </h2>
         <p class="pay-otp__body">
-          {{ t.successBody.replace('{hours}', String(hours)) }}
+          {{ isTopup
+            ? t.topupSuccessBody.replace('{amount}', fmtSom(pass?.balance_som ?? 0, t.unit))
+            : t.successBody.replace('{hours}', String(hours)) }}
         </p>
       </section>
 
@@ -404,7 +454,7 @@ onBeforeUnmount(() => {
           v-if="busy"
           class="size-4 animate-spin"
         />
-        {{ busy ? t.paySending : t.payCta.replace('{amount}', amount) }}
+        {{ busy ? t.paySending : (isTopup ? t.topupCta : t.payCta).replace('{amount}', amount) }}
       </button>
       <button
         v-else-if="step === 'otp'"
@@ -444,6 +494,18 @@ onBeforeUnmount(() => {
 .pay-sum__row { display: flex; justify-content: space-between; gap: 12px; font-size: 13.5px; color: var(--muted-foreground); }
 .pay-sum__total { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--border); font-size: 13.5px; color: var(--muted-foreground); }
 .pay-sum__total strong { font-family: var(--rb-font-display); font-size: 24px; font-weight: 900; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; color: var(--foreground); }
+
+/* top-up amount chips */
+.pay-amounts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.pay-amount {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 2px; min-height: 58px; padding: 10px 12px;
+  border: 1.5px solid var(--border); border-radius: 14px; background: var(--card); cursor: pointer; text-align: left;
+  font-family: var(--rb-font-display); font-size: 15px; font-weight: 800; font-variant-numeric: tabular-nums; color: var(--foreground);
+  transition: border-color var(--rb-dur) var(--rb-ease), background var(--rb-dur) var(--rb-ease);
+}
+.pay-amount small { font-family: inherit; font-size: 11px; font-weight: 600; color: var(--muted-foreground); }
+.pay-amount.is-on { border-color: var(--primary); background: color-mix(in srgb, var(--primary) 7%, var(--card)); }
+.pay-amount:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
 
 /* card form */
 .pay-card { padding: 16px; border-radius: var(--rb-r-card); background: var(--card); border: 1px solid var(--border); box-shadow: var(--rb-elev-1); }

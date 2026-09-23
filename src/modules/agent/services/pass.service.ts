@@ -46,3 +46,13 @@ export async function confirmCardPayment(
   )
   return data.data
 }
+
+/** Wallet top-up from the in-app card form (per-otklik mode); confirm with {@link confirmCardPayment}. */
+export async function startWalletTopup(amountSom: number, cardNumber: string, expiry: string): Promise<CardPaymentStart> {
+  const { data } = await api.post<ApiSuccess<CardPaymentStart>>(
+    '/api/v1/agent/wallet/card',
+    { amount_som: amountSom, card_number: cardNumber, expiry },
+    { skipErrorToast: true },
+  )
+  return data.data
+}
