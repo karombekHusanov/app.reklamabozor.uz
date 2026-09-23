@@ -65,7 +65,10 @@ function pick(value: ThemeMode) {
 
       <div class="theme-switcher__meta">
         <span class="theme-switcher__icon">
-          <component :is="option.icon" class="size-3.5" />
+          <component
+            :is="option.icon"
+            class="size-3.5"
+          />
         </span>
         <span class="theme-switcher__label">{{ option.label }}</span>
       </div>

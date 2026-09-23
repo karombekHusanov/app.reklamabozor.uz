@@ -50,14 +50,29 @@ async function onChange(event: Event) {
 
 <template>
   <div class="space-y-1.5">
-    <button type="button" class="relative inline-block" @click="pick">
-      <Avatar :name="name" :src="preview" :size="size" class="rounded-full" />
+    <button
+      type="button"
+      class="relative inline-block"
+      @click="pick"
+    >
+      <Avatar
+        :name="name"
+        :src="preview"
+        :size="size"
+        class="rounded-full"
+      />
 
       <span
         class="absolute -bottom-0.5 -right-0.5 flex size-7 items-center justify-center rounded-full border-2 border-white bg-primary text-primary-foreground shadow dark:border-slate-900"
       >
-        <Loader2 v-if="isUploading" class="size-3.5 animate-spin" />
-        <Camera v-else class="size-3.5" />
+        <Loader2
+          v-if="isUploading"
+          class="size-3.5 animate-spin"
+        />
+        <Camera
+          v-else
+          class="size-3.5"
+        />
       </span>
     </button>
 
@@ -69,7 +84,10 @@ async function onChange(event: Event) {
       @change="onChange"
     >
 
-    <p v-if="error" class="text-xs text-destructive">
+    <p
+      v-if="error"
+      class="text-xs text-destructive"
+    >
       {{ error }}
     </p>
   </div>

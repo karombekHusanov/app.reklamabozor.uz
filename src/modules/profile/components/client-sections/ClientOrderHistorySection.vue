@@ -30,7 +30,10 @@ function viewAll() {
     show-view-all
     @view-all="viewAll"
   >
-    <div v-if="recentOrders.length" class="space-y-3">
+    <div
+      v-if="recentOrders.length"
+      class="space-y-3"
+    >
       <OrderTile
         v-for="order in recentOrders"
         :key="order.id"
@@ -54,7 +57,10 @@ function viewAll() {
       </OrderTile>
     </div>
 
-    <p v-else class="py-4 text-center text-[11px] text-muted-foreground">
+    <p
+      v-else
+      class="py-4 text-center text-[11px] text-muted-foreground"
+    >
       {{ locale.t.profile.clientOrderHistoryEmpty }}
     </p>
   </ClientProfileSectionShell>

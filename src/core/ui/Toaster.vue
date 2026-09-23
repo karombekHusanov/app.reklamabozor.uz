@@ -35,11 +35,19 @@ const tone = {
         role="alert"
         @click="dismiss(toast.id)"
       >
-        <component :is="icons[toast.type]" class="mt-0.5 size-5 shrink-0" />
+        <component
+          :is="icons[toast.type]"
+          class="mt-0.5 size-5 shrink-0"
+        />
         <p class="flex-1 text-sm font-medium leading-snug">
           {{ toast.message }}
         </p>
-        <button type="button" class="shrink-0 opacity-80 transition hover:opacity-100" :aria-label="'Close'" @click.stop="dismiss(toast.id)">
+        <button
+          type="button"
+          class="shrink-0 opacity-80 transition hover:opacity-100"
+          :aria-label="'Close'"
+          @click.stop="dismiss(toast.id)"
+        >
           <X class="size-4" />
         </button>
       </div>

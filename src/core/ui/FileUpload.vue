@@ -62,7 +62,10 @@ const hasFile = () => props.modelValue !== null || fileName.value !== null
 
 <template>
   <div class="space-y-1.5">
-    <label v-if="label" class="text-sm font-medium">{{ label }}</label>
+    <label
+      v-if="label"
+      class="text-sm font-medium"
+    >{{ label }}</label>
 
     <div
       v-if="hasFile()"
@@ -89,13 +92,25 @@ const hasFile = () => props.modelValue !== null || fileName.value !== null
       :disabled="isUploading"
       @click="pick"
     >
-      <Loader2 v-if="isUploading" class="size-4 animate-spin" />
-      <Upload v-else class="size-4" />
+      <Loader2
+        v-if="isUploading"
+        class="size-4 animate-spin"
+      />
+      <Upload
+        v-else
+        class="size-4"
+      />
       {{ isUploading ? locale.t.ui.uploading : locale.t.ui.uploadFile }}
-      <FileText v-if="!isUploading" class="size-4 opacity-50" />
+      <FileText
+        v-if="!isUploading"
+        class="size-4 opacity-50"
+      />
     </button>
 
-    <p v-if="hint && !hasFile()" class="text-xs text-muted-foreground">
+    <p
+      v-if="hint && !hasFile()"
+      class="text-xs text-muted-foreground"
+    >
       {{ hint }}
     </p>
 
@@ -107,7 +122,10 @@ const hasFile = () => props.modelValue !== null || fileName.value !== null
       @change="onChange"
     >
 
-    <p v-if="error" class="text-xs text-destructive">
+    <p
+      v-if="error"
+      class="text-xs text-destructive"
+    >
       {{ error }}
     </p>
   </div>

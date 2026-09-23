@@ -60,7 +60,10 @@ function clear() {
 
 <template>
   <div class="space-y-1.5">
-    <label v-if="label" class="text-sm font-medium">{{ label }}</label>
+    <label
+      v-if="label"
+      class="text-sm font-medium"
+    >{{ label }}</label>
 
     <div class="flex items-center gap-4">
       <button
@@ -71,8 +74,16 @@ function clear() {
         )"
         @click="pick"
       >
-        <img v-if="preview" :src="preview" alt="" class="size-full object-cover">
-        <ImagePlus v-else class="size-7 text-muted-foreground" />
+        <img
+          v-if="preview"
+          :src="preview"
+          alt=""
+          class="size-full object-cover"
+        >
+        <ImagePlus
+          v-else
+          class="size-7 text-muted-foreground"
+        />
 
         <span
           v-if="isUploading"
@@ -83,7 +94,10 @@ function clear() {
       </button>
 
       <div class="min-w-0 space-y-1.5">
-        <p v-if="hint" class="text-xs text-muted-foreground">
+        <p
+          v-if="hint"
+          class="text-xs text-muted-foreground"
+        >
           {{ hint }}
         </p>
         <div class="flex gap-2">
@@ -115,7 +129,10 @@ function clear() {
       @change="onChange"
     >
 
-    <p v-if="error" class="text-xs text-destructive">
+    <p
+      v-if="error"
+      class="text-xs text-destructive"
+    >
       {{ error }}
     </p>
   </div>

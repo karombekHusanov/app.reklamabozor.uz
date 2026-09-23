@@ -60,7 +60,10 @@ async function handleAvatarChange(fileId: number | null) {
 </script>
 
 <template>
-  <form class="space-y-4" @submit.prevent="save">
+  <form
+    class="space-y-4"
+    @submit.prevent="save"
+  >
     <GlassCard class="space-y-4">
       <div class="flex justify-center">
         <AvatarUpload
@@ -73,7 +76,10 @@ async function handleAvatarChange(fileId: number | null) {
       </div>
 
       <div class="space-y-1.5">
-        <label class="text-sm font-medium" for="client_edit_first_name">
+        <label
+          class="text-sm font-medium"
+          for="client_edit_first_name"
+        >
           {{ locale.t.profile.firstName }}
         </label>
         <input
@@ -85,7 +91,10 @@ async function handleAvatarChange(fileId: number | null) {
       </div>
 
       <div class="space-y-1.5">
-        <label class="text-sm font-medium" for="client_edit_last_name">
+        <label
+          class="text-sm font-medium"
+          for="client_edit_last_name"
+        >
           {{ locale.t.profile.lastName }}
         </label>
         <input
@@ -107,7 +116,10 @@ async function handleAvatarChange(fileId: number | null) {
         class="h-12 w-full rounded-2xl text-base shadow-lg shadow-primary/20"
         :disabled="saving"
       >
-        <Loader2 v-if="saving" class="size-4 animate-spin" />
+        <Loader2
+          v-if="saving"
+          class="size-4 animate-spin"
+        />
         {{ saving ? locale.t.profile.saving : locale.t.profile.save }}
       </Button>
     </StickyActionBar>

@@ -52,6 +52,8 @@ const initials = computed(() =>
       class="size-full object-cover"
       @error="failed = true"
     >
-    <slot v-else>{{ initials }}</slot>
+    <slot v-else>
+      {{ initials }}
+    </slot>
   </div>
 </template>

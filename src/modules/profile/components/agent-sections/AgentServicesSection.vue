@@ -39,72 +39,10 @@ const cloudCategories = computed(() => sortedCategories.value)
         {{ sortedCategories.length }} {{ locale.t.profile.agentServicesCount }}
       </p>
 
-    <!-- 1 category — hero tile -->
-    <article
-      v-if="layout === 'solo' && featuredCategory"
-      class="agent-category-tile agent-category-tile--solo"
-      :class="categoryAccent(featuredCategory).tile"
-    >
-      <div
-        class="agent-category-tile__glow"
-        :class="categoryAccent(featuredCategory).glow"
-      />
-      <span
-        class="agent-category-tile__icon agent-category-tile__icon--lg"
-        :class="categoryAccent(featuredCategory).icon"
-      >
-        <CategoryThumb
-          :category="featuredCategory"
-          :size="24"
-        />
-      </span>
-      <div class="min-w-0 flex-1">
-        <p class="text-[15px] font-bold leading-tight text-foreground">
-          {{ categoryName(featuredCategory, locale.locale) }}
-        </p>
-        <p class="mt-1 text-[10px] text-muted-foreground">
-          {{ locale.t.profile.agentServicesSoloHint }}
-        </p>
-      </div>
-    </article>
-
-    <!-- 2 categories — split duo -->
-    <div
-      v-else-if="layout === 'pair'"
-      class="grid grid-cols-2 gap-2.5"
-    >
+      <!-- 1 category — hero tile -->
       <article
-        v-for="(category, index) in sortedCategories"
-        :key="category.id"
-        class="agent-category-tile agent-category-tile--pair"
-        :class="categoryAccent(category, index).tile"
-      >
-        <div
-          class="agent-category-tile__glow"
-          :class="categoryAccent(category, index).glow"
-        />
-        <span
-          class="agent-category-tile__icon"
-          :class="categoryAccent(category, index).icon"
-        >
-          <CategoryThumb
-            :category="category"
-            :size="18"
-          />
-        </span>
-        <p class="mt-3 text-[12px] font-bold leading-snug text-foreground">
-          {{ categoryName(category, locale.locale) }}
-        </p>
-      </article>
-    </div>
-
-    <!-- 3 categories — featured + pair -->
-    <div
-      v-else-if="layout === 'trio' && featuredCategory"
-      class="space-y-2.5"
-    >
-      <article
-        class="agent-category-tile agent-category-tile--featured"
+        v-if="layout === 'solo' && featuredCategory"
+        class="agent-category-tile agent-category-tile--solo"
         :class="categoryAccent(featuredCategory).tile"
       >
         <div
@@ -112,106 +50,168 @@ const cloudCategories = computed(() => sortedCategories.value)
           :class="categoryAccent(featuredCategory).glow"
         />
         <span
-          class="agent-category-tile__icon agent-category-tile__icon--md"
+          class="agent-category-tile__icon agent-category-tile__icon--lg"
           :class="categoryAccent(featuredCategory).icon"
         >
           <CategoryThumb
             :category="featuredCategory"
-            :size="20"
+            :size="24"
           />
         </span>
         <div class="min-w-0 flex-1">
-          <p class="text-[14px] font-bold leading-tight text-foreground">
+          <p class="text-[15px] font-bold leading-tight text-foreground">
             {{ categoryName(featuredCategory, locale.locale) }}
           </p>
-          <p class="mt-0.5 text-[10px] text-muted-foreground">
-            {{ locale.t.profile.agentServicesFeatured }}
+          <p class="mt-1 text-[10px] text-muted-foreground">
+            {{ locale.t.profile.agentServicesSoloHint }}
           </p>
         </div>
       </article>
 
-      <div class="grid grid-cols-2 gap-2.5">
+      <!-- 2 categories — split duo -->
+      <div
+        v-else-if="layout === 'pair'"
+        class="grid grid-cols-2 gap-2.5"
+      >
         <article
-          v-for="(category, index) in secondaryCategories"
+          v-for="(category, index) in sortedCategories"
           :key="category.id"
-          class="agent-category-tile agent-category-tile--compact"
-          :class="categoryAccent(category, index + 1).tile"
+          class="agent-category-tile agent-category-tile--pair"
+          :class="categoryAccent(category, index).tile"
+        >
+          <div
+            class="agent-category-tile__glow"
+            :class="categoryAccent(category, index).glow"
+          />
+          <span
+            class="agent-category-tile__icon"
+            :class="categoryAccent(category, index).icon"
+          >
+            <CategoryThumb
+              :category="category"
+              :size="18"
+            />
+          </span>
+          <p class="mt-3 text-[12px] font-bold leading-snug text-foreground">
+            {{ categoryName(category, locale.locale) }}
+          </p>
+        </article>
+      </div>
+
+      <!-- 3 categories — featured + pair -->
+      <div
+        v-else-if="layout === 'trio' && featuredCategory"
+        class="space-y-2.5"
+      >
+        <article
+          class="agent-category-tile agent-category-tile--featured"
+          :class="categoryAccent(featuredCategory).tile"
+        >
+          <div
+            class="agent-category-tile__glow"
+            :class="categoryAccent(featuredCategory).glow"
+          />
+          <span
+            class="agent-category-tile__icon agent-category-tile__icon--md"
+            :class="categoryAccent(featuredCategory).icon"
+          >
+            <CategoryThumb
+              :category="featuredCategory"
+              :size="20"
+            />
+          </span>
+          <div class="min-w-0 flex-1">
+            <p class="text-[14px] font-bold leading-tight text-foreground">
+              {{ categoryName(featuredCategory, locale.locale) }}
+            </p>
+            <p class="mt-0.5 text-[10px] text-muted-foreground">
+              {{ locale.t.profile.agentServicesFeatured }}
+            </p>
+          </div>
+        </article>
+
+        <div class="grid grid-cols-2 gap-2.5">
+          <article
+            v-for="(category, index) in secondaryCategories"
+            :key="category.id"
+            class="agent-category-tile agent-category-tile--compact"
+            :class="categoryAccent(category, index + 1).tile"
+          >
+            <span
+              class="agent-category-tile__icon agent-category-tile__icon--sm"
+              :class="categoryAccent(category, index + 1).icon"
+            >
+              <CategoryThumb
+                :category="category"
+                :size="14"
+              />
+            </span>
+            <p class="mt-2 text-[11px] font-bold leading-snug text-foreground">
+              {{ categoryName(category, locale.locale) }}
+            </p>
+          </article>
+        </div>
+      </div>
+
+      <!-- 4–6 categories — balanced grid -->
+      <div
+        v-else-if="layout === 'grid'"
+        class="grid grid-cols-2 gap-2.5"
+      >
+        <article
+          v-for="(category, index) in gridCategories"
+          :key="category.id"
+          class="agent-category-tile agent-category-tile--grid"
+          :class="[
+            categoryAccent(category, index).tile,
+            index === 0 && gridCategories.length >= 5 ? 'col-span-2' : '',
+          ]"
+        >
+          <div
+            class="agent-category-tile__glow"
+            :class="categoryAccent(category, index).glow"
+          />
+          <span
+            class="agent-category-tile__icon"
+            :class="categoryAccent(category, index).icon"
+          >
+            <CategoryThumb
+              :category="category"
+              :size="18"
+            />
+          </span>
+          <p class="mt-2.5 text-[12px] font-bold leading-snug text-foreground">
+            {{ categoryName(category, locale.locale) }}
+          </p>
+          <span class="agent-category-tile__index">{{ index + 1 }}</span>
+        </article>
+      </div>
+
+      <!-- 7+ categories — flowing chip cloud -->
+      <div
+        v-else
+        class="flex flex-wrap gap-2"
+      >
+        <article
+          v-for="(category, index) in cloudCategories"
+          :key="category.id"
+          class="agent-category-chip"
+          :class="categoryAccent(category, index).tile"
         >
           <span
-            class="agent-category-tile__icon agent-category-tile__icon--sm"
-            :class="categoryAccent(category, index + 1).icon"
+            class="agent-category-chip__icon"
+            :class="categoryAccent(category, index).icon"
           >
             <CategoryThumb
               :category="category"
               :size="14"
             />
           </span>
-          <p class="mt-2 text-[11px] font-bold leading-snug text-foreground">
+          <span class="text-[11px] font-semibold leading-none text-foreground">
             {{ categoryName(category, locale.locale) }}
-          </p>
+          </span>
         </article>
       </div>
-    </div>
-
-    <!-- 4–6 categories — balanced grid -->
-    <div
-      v-else-if="layout === 'grid'"
-      class="grid grid-cols-2 gap-2.5"
-    >
-      <article
-        v-for="(category, index) in gridCategories"
-        :key="category.id"
-        class="agent-category-tile agent-category-tile--grid"
-        :class="[
-          categoryAccent(category, index).tile,
-          index === 0 && gridCategories.length >= 5 ? 'col-span-2' : '',
-        ]"
-      >
-        <div
-          class="agent-category-tile__glow"
-          :class="categoryAccent(category, index).glow"
-        />
-        <span
-          class="agent-category-tile__icon"
-          :class="categoryAccent(category, index).icon"
-        >
-          <CategoryThumb
-            :category="category"
-            :size="18"
-          />
-        </span>
-        <p class="mt-2.5 text-[12px] font-bold leading-snug text-foreground">
-          {{ categoryName(category, locale.locale) }}
-        </p>
-        <span class="agent-category-tile__index">{{ index + 1 }}</span>
-      </article>
-    </div>
-
-    <!-- 7+ categories — flowing chip cloud -->
-    <div
-      v-else
-      class="flex flex-wrap gap-2"
-    >
-      <article
-        v-for="(category, index) in cloudCategories"
-        :key="category.id"
-        class="agent-category-chip"
-        :class="categoryAccent(category, index).tile"
-      >
-        <span
-          class="agent-category-chip__icon"
-          :class="categoryAccent(category, index).icon"
-        >
-          <CategoryThumb
-            :category="category"
-            :size="14"
-          />
-        </span>
-        <span class="text-[11px] font-semibold leading-none text-foreground">
-          {{ categoryName(category, locale.locale) }}
-        </span>
-      </article>
-    </div>
     </template>
   </AgentProfileSectionShell>
 </template>

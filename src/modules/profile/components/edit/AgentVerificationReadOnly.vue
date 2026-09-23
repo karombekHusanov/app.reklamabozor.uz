@@ -30,18 +30,30 @@ function display(value: string | null | undefined): string {
       </p>
 
       <div class="profile-edit-readonly-field">
-        <p class="profile-edit-readonly-field__label">{{ locale.t.agent.companyName }}</p>
-        <p class="profile-edit-readonly-field__value">{{ display(profile.company_name) }}</p>
+        <p class="profile-edit-readonly-field__label">
+          {{ locale.t.agent.companyName }}
+        </p>
+        <p class="profile-edit-readonly-field__value">
+          {{ display(profile.company_name) }}
+        </p>
       </div>
 
       <div class="profile-edit-readonly-field">
-        <p class="profile-edit-readonly-field__label">{{ locale.t.agent.legalForm }}</p>
-        <p class="profile-edit-readonly-field__value">{{ display(profile.legal_form) }}</p>
+        <p class="profile-edit-readonly-field__label">
+          {{ locale.t.agent.legalForm }}
+        </p>
+        <p class="profile-edit-readonly-field__value">
+          {{ display(profile.legal_form) }}
+        </p>
       </div>
 
       <div class="profile-edit-readonly-field">
-        <p class="profile-edit-readonly-field__label">{{ locale.t.agent.innLabel }}</p>
-        <p class="profile-edit-readonly-field__value">{{ display(profile.inn) }}</p>
+        <p class="profile-edit-readonly-field__label">
+          {{ locale.t.agent.innLabel }}
+        </p>
+        <p class="profile-edit-readonly-field__value">
+          {{ display(profile.inn) }}
+        </p>
       </div>
     </GlassCard>
 
@@ -51,13 +63,21 @@ function display(value: string | null | undefined): string {
       </p>
 
       <div class="profile-edit-readonly-field">
-        <p class="profile-edit-readonly-field__label">{{ locale.t.agent.fullName }}</p>
-        <p class="profile-edit-readonly-field__value">{{ display(profile.director_name) }}</p>
+        <p class="profile-edit-readonly-field__label">
+          {{ locale.t.agent.fullName }}
+        </p>
+        <p class="profile-edit-readonly-field__value">
+          {{ display(profile.director_name) }}
+        </p>
       </div>
 
       <div class="profile-edit-readonly-field">
-        <p class="profile-edit-readonly-field__label">{{ locale.t.agent.passport }}</p>
-        <p class="profile-edit-readonly-field__value">{{ display(profile.director_passport) }}</p>
+        <p class="profile-edit-readonly-field__label">
+          {{ locale.t.agent.passport }}
+        </p>
+        <p class="profile-edit-readonly-field__value">
+          {{ display(profile.director_passport) }}
+        </p>
       </div>
 
       <a
@@ -89,23 +109,39 @@ function display(value: string | null | undefined): string {
       </a>
 
       <div class="profile-edit-readonly-field">
-        <p class="profile-edit-readonly-field__label">{{ locale.t.agent.bankName }}</p>
-        <p class="profile-edit-readonly-field__value">{{ display(profile.bank_name) }}</p>
+        <p class="profile-edit-readonly-field__label">
+          {{ locale.t.agent.bankName }}
+        </p>
+        <p class="profile-edit-readonly-field__value">
+          {{ display(profile.bank_name) }}
+        </p>
       </div>
 
       <div class="profile-edit-readonly-field">
-        <p class="profile-edit-readonly-field__label">{{ locale.t.agent.accountNumber }}</p>
-        <p class="profile-edit-readonly-field__value">{{ display(profile.bank_account) }}</p>
+        <p class="profile-edit-readonly-field__label">
+          {{ locale.t.agent.accountNumber }}
+        </p>
+        <p class="profile-edit-readonly-field__value">
+          {{ display(profile.bank_account) }}
+        </p>
       </div>
 
       <div class="profile-edit-readonly-field">
-        <p class="profile-edit-readonly-field__label">{{ locale.t.agent.mfo }}</p>
-        <p class="profile-edit-readonly-field__value">{{ display(profile.mfo) }}</p>
+        <p class="profile-edit-readonly-field__label">
+          {{ locale.t.agent.mfo }}
+        </p>
+        <p class="profile-edit-readonly-field__value">
+          {{ display(profile.mfo) }}
+        </p>
       </div>
 
       <div class="profile-edit-readonly-field">
-        <p class="profile-edit-readonly-field__label">{{ locale.t.agent.contactPhone }}</p>
-        <p class="profile-edit-readonly-field__value">{{ display(profile.phone) }}</p>
+        <p class="profile-edit-readonly-field__label">
+          {{ locale.t.agent.contactPhone }}
+        </p>
+        <p class="profile-edit-readonly-field__value">
+          {{ display(profile.phone) }}
+        </p>
       </div>
     </GlassCard>
   </div>

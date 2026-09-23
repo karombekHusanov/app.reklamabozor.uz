@@ -34,7 +34,10 @@ const open = defineModel<boolean>('open', { default: false })
             v-if="title || showClose"
             class="flex shrink-0 items-center justify-between px-5 pb-2 pt-0"
           >
-            <DialogTitle v-if="title" class="text-base font-bold leading-tight">
+            <DialogTitle
+              v-if="title"
+              class="text-base font-bold leading-tight"
+            >
               {{ title }}
             </DialogTitle>
             <span v-else />

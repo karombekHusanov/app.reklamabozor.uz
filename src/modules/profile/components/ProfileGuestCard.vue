@@ -12,7 +12,11 @@ defineProps<{
 
 <template>
   <GlassCard class="space-y-4 text-center">
-    <Avatar name="Guest" size="lg" class="mx-auto" />
+    <Avatar
+      name="Guest"
+      size="lg"
+      class="mx-auto"
+    />
     <div class="space-y-2">
       <h2 class="text-xl font-semibold">
         {{ title }}
