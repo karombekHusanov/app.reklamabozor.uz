@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Loader2, Lock } from '@lucide/vue'
+import { Loader2 } from '@lucide/vue'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { usePullToRefresh } from '@/core/composables/usePullToRefresh'
@@ -7,32 +7,28 @@ import { useTelegram } from '@/core/composables/useTelegram'
 import { useLocaleStore } from '@/core/i18n/locale.store'
 import { useAuthStore } from '@/modules/auth/stores/auth.store'
 import { useHomeStore } from '@/modules/home/stores/home.store'
-import OrderRouteTabs from '@/modules/orders/components/OrderRouteTabs.vue'
 import { useOrderRouteStore } from '@/modules/orders/stores/order-route.store'
-import type { OrderRoute } from '@/modules/orders/types/order'
 import HomePageSkeleton from '@/modules/home/components/HomePageSkeleton.vue'
 import HomeHero from '@/modules/home/components/HomeHero.vue'
-import HomeTrustRow from '@/modules/home/components/HomeTrustRow.vue'
-import HomeBannerCarousel from '@/modules/home/components/HomeBannerCarousel.vue'
 import HomeStatCards from '@/modules/home/components/HomeStatCards.vue'
 import HomeFeatureTiles from '@/modules/home/components/HomeFeatureTiles.vue'
-import HomeSteps from '@/modules/home/components/HomeSteps.vue'
+import HomeDesk from '@/modules/home/components/HomeDesk.vue'
+import HomeSafeDeal from '@/modules/home/components/HomeSafeDeal.vue'
+import HomeJourney from '@/modules/home/components/HomeJourney.vue'
+import HomeRoutes from '@/modules/home/components/HomeRoutes.vue'
+import HomeProviderZone from '@/modules/home/components/HomeProviderZone.vue'
+import HomeSupport from '@/modules/home/components/HomeSupport.vue'
 import HomeServiceRail from '@/modules/home/components/HomeServiceRail.vue'
 import HomeAgencyRail from '@/modules/home/components/HomeAgencyRail.vue'
 import HomeLiveRequests from '@/modules/home/components/HomeLiveRequests.vue'
-import HomeProviderInvite from '@/modules/home/components/HomeProviderInvite.vue'
 import GlobalSearchDrawer from '@/modules/search/components/GlobalSearchDrawer.vue'
 import { fetchLiveStats, type LiveStats } from '@/modules/home/services/live-stats.service'
 import { fetchCategories } from '@/modules/orders/services/orders.service'
-import { fullName, isBusinessUser } from '@/modules/auth/types/user'
+import { fullName } from '@/modules/auth/types/user'
 import type { LiveOrder } from '@/modules/home/services/live-orders.service'
 import type { Category } from '@/modules/agent/types/agent'
 import type { PublicAgent } from '@/modules/marketplace/services/agents.service'
-import {
-  dismissProviderInvite,
-  hydrateProviderInviteDismissed,
-  isProviderInviteDismissed,
-} from '@/modules/home/lib/provider-invite'
+import { vReveal } from '@/modules/home/lib/reveal'
 import { ROUTES } from '@/modules/shell/constants/routes'
 
 // MVP: the designers rail is hidden (kept in code, may return).
@@ -80,41 +76,33 @@ async function loadLiveStats() {
   }
 }
 
-/**
- * "Do you run an agency?" invite. Clients only, hidden for good once dismissed
- * (per user id) — the same offer stays permanently on the profile page.
- */
-const inviteDismissed = ref(true)
-
-const showProviderInvite = computed(() => {
-  const user = auth.user
-  if (!user || inviteDismissed.value) return false
-  if (isBusinessUser(user)) return false
-
-  // An application already under review is not a candidate for the invite
-  // (`/me/activity` reports it before the agent role is granted on approval).
-  return !home.activity?.provider?.has_profile
+/** Supply-side state for the provider zone (and the desk's provider side). */
+const providerState = computed<'none' | 'pending' | 'approved'>(() => {
+  if (home.providerApproved) return 'approved'
+  return home.activity?.provider?.has_profile ? 'pending' : 'none'
 })
-
-async function syncProviderInvite() {
-  const user = auth.user
-  if (!user) {
-    inviteDismissed.value = true
-    return
-  }
-
-  inviteDismissed.value = isProviderInviteDismissed(user.id)
-    || await hydrateProviderInviteDismissed(user.id)
-}
 
 function applyAsProvider() {
   haptic('medium')
   void router.push({ path: ROUTES.profileEdit, query: { as: 'agent' } })
 }
 
-function closeProviderInvite() {
-  if (auth.user) dismissProviderInvite(auth.user.id)
-  inviteDismissed.value = true
+/** Create a request on a chosen route (Tezkor / Tender). */
+function startOrder(route: 'tezkor' | 'tender') {
+  haptic('medium')
+  routeStore.set(route)
+  void router.push(ROUTES.newOrder)
+}
+
+/** Journey CTA — same gate as the tab bar's Create button. */
+function startDefaultOrder() {
+  if (routeStore.tenderLocked) startOrder('tezkor')
+  else startOrder(routeStore.active)
+}
+
+function scrollToSafeDeal() {
+  haptic('light')
+  document.getElementById('safe-deal')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
 }
 
 /** Public service catalogue for the "Browse by service" rail. */
@@ -167,18 +155,6 @@ function onSelectCategory(category: Category) {
     query: { category: String(category.id), type: category.type },
   })
 }
-
-/** Tender | Tezkor tab — filters the live requests below and drives Create. */
-const requestRoute = computed({
-  get: (): OrderRoute => routeStore.active,
-  set: (route) => { routeStore.set(route) },
-})
-
-const tenderLockCopy = computed(() => {
-  if (routeStore.tenderStatus === 'pending') return locale.t.route.accessPending
-  if (routeStore.tenderStatus === 'revoked') return locale.t.route.accessRevoked
-  return locale.t.route.lockedBody
-})
 
 function requestTenderAccess() {
   haptic('light')
@@ -247,7 +223,6 @@ onMounted(() => {
   void home.load()
   void loadLiveStats()
   void loadCategories()
-  void syncProviderInvite()
   startBadgePoll()
   document.addEventListener('visibilitychange', onVisibilityChange)
 })
@@ -261,13 +236,7 @@ watch(() => auth.isAuthenticated, (authed, wasAuthed) => {
   if (wasAuthed === undefined || authed === wasAuthed) return
   home.reset()
   void home.load()
-  void syncProviderInvite()
   startBadgePoll()
-})
-
-// A user id can arrive after mount (session restore) — re-check the flag then.
-watch(() => auth.user?.id, () => {
-  void syncProviderInvite()
 })
 </script>
 
@@ -297,30 +266,20 @@ watch(() => auth.user?.id, () => {
       @search="onSearch"
       @notifications="navigate(ROUTES.notifications)"
       @profile="navigate(ROUTES.profile)"
+      @trust="scrollToSafeDeal"
     />
 
     <div class="home-sheet">
-      <span
-        class="home-sheet__grip"
-        aria-hidden="true"
-      />
-
       <div class="home-stats">
-        <HomeStatCards :stats="liveStats" />
+        <HomeStatCards
+          :stats="liveStats"
+          :agents="home.topAgents"
+          @open="navigate(ROUTES.agencies)"
+        />
       </div>
 
-      <div
-        v-if="home.platformContact?.phone"
-        class="home-block home-gutter"
-      >
-        <HomeTrustRow :contact="home.platformContact" />
-      </div>
-
-      <div class="home-block home-gutter">
-        <HomeBannerCarousel :banners="home.banners" />
-      </div>
-
-      <div class="home-block home-gutter">
+      <!-- core features: ad map + global chat, right under the fold line -->
+      <div class="home-block home-block--tight home-gutter">
         <HomeFeatureTiles
           :nearby="liveStats?.agencies_total"
           :online="liveStats?.users_online"
@@ -329,30 +288,56 @@ watch(() => auth.user?.id, () => {
         />
       </div>
 
-      <div class="home-block home-gutter">
-        <HomeSteps />
-      </div>
-
+      <!-- 1 · what I control -->
       <div
-        v-if="showProviderInvite"
+        v-if="auth.isAuthenticated"
         class="home-block home-gutter"
       >
-        <HomeProviderInvite
-          @apply="applyAsProvider"
-          @dismiss="closeProviderInvite"
+        <HomeDesk
+          v-reveal
+          :activity="home.activity"
+          :is-provider="home.providerApproved"
+          @open="navigate"
         />
       </div>
 
-      <div class="home-block">
+      <!-- 2 · why it is safe -->
+      <div class="home-block home-gutter">
+        <HomeSafeDeal v-reveal />
+      </div>
+
+      <!-- 3 · how it works -->
+      <div class="home-block home-gutter">
+        <HomeJourney
+          v-reveal
+          @start="startDefaultOrder"
+        />
+      </div>
+
+      <!-- 4 · what you can order -->
+      <div class="home-block home-gutter">
         <HomeServiceRail
+          v-reveal
           :categories="categories"
           @select="onSelectCategory"
           @view-all="navigate(ROUTES.agencies)"
         />
       </div>
 
+      <div class="home-block home-gutter">
+        <HomeRoutes
+          v-reveal
+          :can-create-tender="routeStore.canCreateTender"
+          :tender-status="routeStore.tenderStatus"
+          @pick="startOrder"
+          @request-access="requestTenderAccess"
+        />
+      </div>
+
+      <!-- 5 · who does the work -->
       <div class="home-block">
         <HomeAgencyRail
+          v-reveal
           :title="locale.t.home.topAgencies"
           :agents="home.topAgents"
           :view-all-route="ROUTES.agencies"
@@ -372,44 +357,37 @@ watch(() => auth.user?.id, () => {
         />
       </div>
 
-      <div class="home-block home-gutter">
-        <OrderRouteTabs
-          v-model="requestRoute"
-          :tender-locked="!routeStore.canCreateTender"
-        />
-
-        <div
-          v-if="routeStore.tenderLocked"
-          class="tender-lock"
-        >
-          <span
-            class="tender-lock__icon"
-            aria-hidden="true"
-          ><Lock class="size-4" /></span>
-          <div class="tender-lock__body">
-            <p class="tender-lock__title">
-              {{ locale.t.route.tenderLocked }}
-            </p>
-            <p class="tender-lock__text">
-              {{ tenderLockCopy }}
-            </p>
-            <button
-              v-if="routeStore.tenderStatus !== 'pending'"
-              type="button"
-              class="tender-lock__cta"
-              @click="requestTenderAccess"
-            >
-              {{ locale.t.route.requestAccess }}
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <div class="home-block pb-2">
+      <!-- 6 · the market is alive -->
+      <div
+        v-if="home.liveOrders.length"
+        class="home-block"
+      >
         <HomeLiveRequests
+          v-reveal
           :orders="home.liveOrders"
           @open="openLiveOrder"
           @view-all="openLiveOrders"
+        />
+      </div>
+
+      <!-- 7 · the other side of the market -->
+      <div class="home-block home-gutter">
+        <HomeProviderZone
+          v-reveal
+          :state="providerState"
+          :new-count="home.newLiveOrdersCount"
+          @apply="applyAsProvider"
+          @open="openLiveOrders"
+        />
+      </div>
+
+      <!-- 8 · a human behind it -->
+      <div class="home-block home-gutter pb-2">
+        <HomeSupport
+          v-reveal
+          :contact="home.platformContact"
+          @assistant="navigate(ROUTES.assistant)"
+          @offer="navigate(ROUTES.publicOffer)"
         />
       </div>
     </div>
@@ -439,24 +417,20 @@ watch(() => auth.user?.id, () => {
   border-radius: 26px 26px 0 0;
   padding-bottom: 1.5rem;
 }
-.home-sheet__grip {
-  display: block;
-  width: 40px;
-  height: 4px;
-  border-radius: 999px;
-  background: var(--border);
-  margin: 10px auto 0;
-}
 
+/* The proof strip rides the seam: half on the hero, half on the sheet. */
 .home-stats {
   position: relative;
   z-index: 4;
   padding-inline: var(--home-gutter);
-  margin-top: -1.75rem;
+  margin-top: -1.6rem;
 }
 
 .home-block {
   padding-top: 1.6rem;
+}
+.home-block--tight {
+  padding-top: 1rem;
 }
 
 /* One page container: hero, sheet sections and rails share this gutter. */
@@ -468,42 +442,4 @@ watch(() => auth.user?.id, () => {
   padding-inline: var(--home-gutter);
 }
 
-.tender-lock {
-  display: flex;
-  gap: 12px;
-  margin-top: 12px;
-  padding: 14px;
-  border-radius: var(--rb-r-tile);
-  background: var(--card);
-  border: 1px solid var(--border);
-  box-shadow: var(--rb-elev-1);
-}
-.tender-lock__icon {
-  display: grid;
-  flex-shrink: 0;
-  width: 36px;
-  height: 36px;
-  place-items: center;
-  border-radius: 12px;
-  background: var(--secondary);
-  color: var(--muted-foreground);
-}
-.tender-lock__body { min-width: 0; flex: 1; }
-.tender-lock__title { margin: 0; font-family: var(--rb-font-display); font-size: 14px; font-weight: 800; color: var(--foreground); }
-.tender-lock__text { margin: 3px 0 0; font-size: 12.5px; line-height: 1.45; color: var(--muted-foreground); }
-.tender-lock__cta {
-  margin-top: 10px;
-  min-height: 44px;
-  padding: 0 16px;
-  border: 0;
-  border-radius: var(--rb-r-field);
-  background: var(--primary);
-  color: var(--primary-foreground);
-  font-family: inherit;
-  font-size: 13px;
-  font-weight: 700;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-}
-.tender-lock__cta:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
 </style>

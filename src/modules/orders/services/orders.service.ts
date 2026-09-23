@@ -139,6 +139,11 @@ export async function agentReleaseOrder(orderId: number): Promise<void> {
   await api.post(`/api/v1/agent/orders/${orderId}/release`)
 }
 
+/** Tezkor: the claiming agent closes the request as agreed — symmetric with the client's own action. */
+export async function agentCloseOrder(orderId: number): Promise<void> {
+  await api.post(`/api/v1/agent/orders/${orderId}/close`)
+}
+
 export async function cancelOrder(orderId: number): Promise<Order> {
   const { data } = await api.post<ApiSuccess<Order>>(`/api/v1/orders/${orderId}/cancel`)
 
@@ -231,6 +236,7 @@ export async function submitOffer(orderId: number, payload: CreateOfferPayload):
   const { data } = await api.post<ApiSuccess<Offer>>(
     `/api/v1/agent/orders/${orderId}/offers`,
     payload,
+    { skipErrorToast: true },
   )
 
   return data.data

@@ -20,6 +20,13 @@ export const profileRoutes: RouteRecordRaw[] = [
     component: () => import('@/modules/profile/pages/EarningsPage.vue'),
   },
   {
+    // Propusk card payment (ATMOS): card → SMS code → done. Own sticky pay bar.
+    path: 'propusk/pay',
+    name: 'propusk-pay',
+    meta: { hideTabBar: true },
+    component: () => import('@/modules/agent/pages/PropuskPayPage.vue'),
+  },
+  {
     path: 'profile',
     name: 'profile',
     component: () => import('@/modules/profile/pages/ProfilePage.vue'),

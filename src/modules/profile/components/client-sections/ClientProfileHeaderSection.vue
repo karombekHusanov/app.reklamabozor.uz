@@ -11,6 +11,7 @@ import Avatar from '@/core/ui/Avatar.vue'
 import PersonTypeBadge from '@/core/ui/PersonTypeBadge.vue'
 import { gradeLabelForScore } from '@/core/lib/rating'
 import type { User } from '@/modules/auth/types/user'
+import type { useLocaleStore } from '@/core/i18n/locale.store'
 
 export interface ClientProfileStat {
   value: number
@@ -26,7 +27,7 @@ const emit = defineEmits<{ select: [to: string] }>()
 const props = withDefaults(defineProps<{
   user: Pick<User, 'avatar'> & Partial<Pick<User, 'person_type' | 'person_type_verified' | 'legal_entity_status'>>
   displayName: string
-  locale: any
+  locale: ReturnType<typeof useLocaleStore>
   stats: ClientProfileStat[]
   /** Stars from /me/rating (own) or public API. */
   stars?: number | null
@@ -125,7 +126,14 @@ function statValueClass(tone?: ClientProfileStat['tone']) {
       :title="title"
       :show-back="showBack"
       class="client-profile-hero__header"
-    />
+    >
+      <template
+        v-if="$slots['header-trailing']"
+        #trailing
+      >
+        <slot name="header-trailing" />
+      </template>
+    </AppHeader>
 
     <slot name="top" />
 
@@ -236,6 +244,9 @@ function statValueClass(tone?: ClientProfileStat['tone']) {
           </p>
         </component>
       </div>
+
+      <!-- Owner-only actions (edit, public page) -->
+      <slot name="actions" />
     </div>
   </div>
 </template>

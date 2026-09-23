@@ -22,6 +22,7 @@ import OrderStatusBadge from '@/modules/orders/components/OrderStatusBadge.vue'
 import OrderHashtagChips from '@/modules/orders/components/OrderHashtagChips.vue'
 import OrderAttachments from '@/modules/orders/components/OrderAttachments.vue'
 import { formatPrice, isInterestOffer, offerStatusVariant } from '@/modules/orders/lib/order-status'
+import { usePassStore } from '@/modules/agent/stores/pass.store'
 import { submitOffer } from '@/modules/orders/services/orders.service'
 import { fetchShowcaseOrder, type ShowcaseOrder } from '@/modules/home/services/live-orders.service'
 import type { OrderStatus } from '@/modules/orders/types/order'
@@ -79,7 +80,7 @@ async function sendInterest() {
       toast.error(locale.t.route.busyToast)
       await loadOrder()
     }
-    else {
+    else if (!usePassStore().handleClaimError(e, () => void sendInterest())) {
       toast.error(getApiErrorMessage(e) || locale.t.orders.showcase.offerError)
     }
   }

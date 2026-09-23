@@ -327,23 +327,6 @@
     @apply min-w-0 text-[11px] font-bold leading-snug text-foreground;
   }
 
-  /* Home banner — one full-width slide; dots overlaid inside the viewport. */
-  .home-banner-carousel [data-slot="carousel-item"] {
-    @apply min-w-0 shrink-0 grow-0 basis-full pl-0;
-  }
-
-  .home-banner-carousel__dots {
-    @apply pointer-events-none absolute inset-x-0 bottom-3 z-10 flex items-center justify-center gap-1.5;
-  }
-
-  .home-banner-carousel__dot {
-    @apply h-1.5 w-1.5 rounded-full bg-white/45 shadow-sm transition-all duration-300;
-  }
-
-  .home-banner-carousel__dot--active {
-    @apply w-4 bg-white;
-  }
-
   .top-agents-list {
     @apply divide-y divide-border/70;
   }
@@ -2225,6 +2208,16 @@
   @keyframes rbReveal { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
   @media (prefers-reduced-motion: reduce) {
     .rb-reveal { animation: none; }
+  }
+
+  /* Scroll reveal (`v-reveal`) — sections ease in once as they enter view.
+     Children marked `.rb-stagger` follow in sequence via `--i`. */
+  .rb-scroll-reveal { opacity: 0; transform: translateY(18px); transition: opacity 520ms var(--rb-ease), transform 520ms var(--rb-ease); }
+  .rb-scroll-reveal.is-in { opacity: 1; transform: none; }
+  .rb-scroll-reveal .rb-stagger { opacity: 0; transform: translateY(10px); transition: opacity 420ms var(--rb-ease), transform 420ms var(--rb-ease); transition-delay: calc(var(--i, 0) * 70ms + 120ms); }
+  .rb-scroll-reveal.is-in .rb-stagger { opacity: 1; transform: none; }
+  @media (prefers-reduced-motion: reduce) {
+    .rb-scroll-reveal, .rb-scroll-reveal .rb-stagger { opacity: 1; transform: none; transition: none; }
   }
 
   .tab-bar-dock {

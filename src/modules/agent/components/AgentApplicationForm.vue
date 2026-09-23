@@ -113,7 +113,10 @@ const inputClass = 'glass-input'
 </script>
 
 <template>
-  <form class="space-y-4" @submit.prevent="handleSubmit">
+  <form
+    class="space-y-4"
+    @submit.prevent="handleSubmit"
+  >
     <!-- Company -->
     <GlassCard class="space-y-4">
       <p class="text-sm font-semibold">
@@ -121,26 +124,71 @@ const inputClass = 'glass-input'
       </p>
 
       <div class="space-y-1.5">
-        <label class="text-sm font-medium" for="company_name">{{ locale.t.agent.companyName }}</label>
-        <input id="company_name" v-model="form.company_name" type="text" placeholder="Nova Media Group" :class="inputClass">
-        <p v-if="fieldErrors.company_name" class="text-xs text-destructive">{{ fieldErrors.company_name }}</p>
+        <label
+          class="text-sm font-medium"
+          for="company_name"
+        >{{ locale.t.agent.companyName }}</label>
+        <input
+          id="company_name"
+          v-model="form.company_name"
+          type="text"
+          placeholder="Nova Media Group"
+          :class="inputClass"
+        >
+        <p
+          v-if="fieldErrors.company_name"
+          class="text-xs text-destructive"
+        >
+          {{ fieldErrors.company_name }}
+        </p>
       </div>
 
       <div class="space-y-1.5">
-        <label class="text-sm font-medium" for="legal_form">{{ locale.t.agent.legalForm }}</label>
-        <input id="legal_form" v-model="form.legal_form" type="text" list="legal-forms" placeholder="MChJ" :class="inputClass">
+        <label
+          class="text-sm font-medium"
+          for="legal_form"
+        >{{ locale.t.agent.legalForm }}</label>
+        <input
+          id="legal_form"
+          v-model="form.legal_form"
+          type="text"
+          list="legal-forms"
+          placeholder="MChJ"
+          :class="inputClass"
+        >
         <datalist id="legal-forms">
           <option value="YaTT" />
           <option value="MChJ" />
           <option value="AJ" />
         </datalist>
-        <p v-if="fieldErrors.legal_form" class="text-xs text-destructive">{{ fieldErrors.legal_form }}</p>
+        <p
+          v-if="fieldErrors.legal_form"
+          class="text-xs text-destructive"
+        >
+          {{ fieldErrors.legal_form }}
+        </p>
       </div>
 
       <div class="space-y-1.5">
-        <label class="text-sm font-medium" for="inn">{{ locale.t.agent.innLabel }}</label>
-        <input id="inn" v-model="form.inn" type="text" inputmode="numeric" maxlength="9" placeholder="123456789" :class="inputClass">
-        <p v-if="fieldErrors.inn" class="text-xs text-destructive">{{ fieldErrors.inn }}</p>
+        <label
+          class="text-sm font-medium"
+          for="inn"
+        >{{ locale.t.agent.innLabel }}</label>
+        <input
+          id="inn"
+          v-model="form.inn"
+          type="text"
+          inputmode="numeric"
+          maxlength="9"
+          placeholder="123456789"
+          :class="inputClass"
+        >
+        <p
+          v-if="fieldErrors.inn"
+          class="text-xs text-destructive"
+        >
+          {{ fieldErrors.inn }}
+        </p>
       </div>
     </GlassCard>
 
@@ -151,15 +199,44 @@ const inputClass = 'glass-input'
       </p>
 
       <div class="space-y-1.5">
-        <label class="text-sm font-medium" for="director_name">{{ locale.t.agent.fullName }}</label>
-        <input id="director_name" v-model="form.director_name" type="text" placeholder="Akmal Karimov" :class="inputClass">
-        <p v-if="fieldErrors.director_name" class="text-xs text-destructive">{{ fieldErrors.director_name }}</p>
+        <label
+          class="text-sm font-medium"
+          for="director_name"
+        >{{ locale.t.agent.fullName }}</label>
+        <input
+          id="director_name"
+          v-model="form.director_name"
+          type="text"
+          placeholder="Akmal Karimov"
+          :class="inputClass"
+        >
+        <p
+          v-if="fieldErrors.director_name"
+          class="text-xs text-destructive"
+        >
+          {{ fieldErrors.director_name }}
+        </p>
       </div>
 
       <div class="space-y-1.5">
-        <label class="text-sm font-medium" for="director_passport">{{ locale.t.agent.passport }}</label>
-        <input id="director_passport" v-model="form.director_passport" type="text" maxlength="9" placeholder="AA1234567" :class="cn(inputClass, 'uppercase')">
-        <p v-if="fieldErrors.director_passport" class="text-xs text-destructive">{{ fieldErrors.director_passport }}</p>
+        <label
+          class="text-sm font-medium"
+          for="director_passport"
+        >{{ locale.t.agent.passport }}</label>
+        <input
+          id="director_passport"
+          v-model="form.director_passport"
+          type="text"
+          maxlength="9"
+          placeholder="AA1234567"
+          :class="cn(inputClass, 'uppercase')"
+        >
+        <p
+          v-if="fieldErrors.director_passport"
+          class="text-xs text-destructive"
+        >
+          {{ fieldErrors.director_passport }}
+        </p>
       </div>
 
       <FileUpload
@@ -169,7 +246,10 @@ const inputClass = 'glass-input'
         :current-name="initial?.director_passport_file ? locale.t.agent.passportScanName : null"
         :invalid="!!fieldErrors.director_passport_file_id"
       />
-      <p v-if="fieldErrors.director_passport_file_id" class="-mt-2 text-xs text-destructive">
+      <p
+        v-if="fieldErrors.director_passport_file_id"
+        class="-mt-2 text-xs text-destructive"
+      >
         {{ fieldErrors.director_passport_file_id }}
       </p>
     </GlassCard>
@@ -187,38 +267,109 @@ const inputClass = 'glass-input'
         :current-name="initial?.registration_certificate_file ? locale.t.agent.regCertName : null"
         :invalid="!!fieldErrors.registration_certificate_file_id"
       />
-      <p v-if="fieldErrors.registration_certificate_file_id" class="-mt-2 text-xs text-destructive">
+      <p
+        v-if="fieldErrors.registration_certificate_file_id"
+        class="-mt-2 text-xs text-destructive"
+      >
         {{ fieldErrors.registration_certificate_file_id }}
       </p>
 
       <div class="space-y-1.5">
-        <label class="text-sm font-medium" for="bank_name">{{ locale.t.agent.bankName }}</label>
-        <input id="bank_name" v-model="form.bank_name" type="text" placeholder="Ipoteka Bank" :class="inputClass">
-        <p v-if="fieldErrors.bank_name" class="text-xs text-destructive">{{ fieldErrors.bank_name }}</p>
+        <label
+          class="text-sm font-medium"
+          for="bank_name"
+        >{{ locale.t.agent.bankName }}</label>
+        <input
+          id="bank_name"
+          v-model="form.bank_name"
+          type="text"
+          placeholder="Ipoteka Bank"
+          :class="inputClass"
+        >
+        <p
+          v-if="fieldErrors.bank_name"
+          class="text-xs text-destructive"
+        >
+          {{ fieldErrors.bank_name }}
+        </p>
       </div>
 
       <div class="space-y-1.5">
-        <label class="text-sm font-medium" for="bank_account">{{ locale.t.agent.accountNumber }}</label>
-        <input id="bank_account" v-model="form.bank_account" type="text" inputmode="numeric" maxlength="26" placeholder="2020 8000 9001 2345 6789" :class="inputClass">
-        <p v-if="fieldErrors.bank_account" class="text-xs text-destructive">{{ fieldErrors.bank_account }}</p>
+        <label
+          class="text-sm font-medium"
+          for="bank_account"
+        >{{ locale.t.agent.accountNumber }}</label>
+        <input
+          id="bank_account"
+          v-model="form.bank_account"
+          type="text"
+          inputmode="numeric"
+          maxlength="26"
+          placeholder="2020 8000 9001 2345 6789"
+          :class="inputClass"
+        >
+        <p
+          v-if="fieldErrors.bank_account"
+          class="text-xs text-destructive"
+        >
+          {{ fieldErrors.bank_account }}
+        </p>
       </div>
 
       <div class="space-y-1.5">
-        <label class="text-sm font-medium" for="mfo">{{ locale.t.agent.mfo }}</label>
-        <input id="mfo" v-model="form.mfo" type="text" inputmode="numeric" maxlength="5" placeholder="00440" :class="inputClass">
-        <p v-if="fieldErrors.mfo" class="text-xs text-destructive">{{ fieldErrors.mfo }}</p>
+        <label
+          class="text-sm font-medium"
+          for="mfo"
+        >{{ locale.t.agent.mfo }}</label>
+        <input
+          id="mfo"
+          v-model="form.mfo"
+          type="text"
+          inputmode="numeric"
+          maxlength="5"
+          placeholder="00440"
+          :class="inputClass"
+        >
+        <p
+          v-if="fieldErrors.mfo"
+          class="text-xs text-destructive"
+        >
+          {{ fieldErrors.mfo }}
+        </p>
       </div>
 
       <div class="space-y-1.5">
-        <label class="text-sm font-medium" for="phone">{{ locale.t.agent.contactPhone }}</label>
-        <input id="phone" v-model="form.phone" type="tel" inputmode="tel" placeholder="+998 90 123 45 67" :class="inputClass">
-        <p v-if="fieldErrors.phone" class="text-xs text-destructive">{{ fieldErrors.phone }}</p>
+        <label
+          class="text-sm font-medium"
+          for="phone"
+        >{{ locale.t.agent.contactPhone }}</label>
+        <input
+          id="phone"
+          v-model="form.phone"
+          type="tel"
+          inputmode="tel"
+          placeholder="+998 90 123 45 67"
+          :class="inputClass"
+        >
+        <p
+          v-if="fieldErrors.phone"
+          class="text-xs text-destructive"
+        >
+          {{ fieldErrors.phone }}
+        </p>
       </div>
     </GlassCard>
 
     <StickyActionBar>
-      <Button type="submit" class="h-12 w-full rounded-2xl text-base shadow-lg shadow-primary/20" :disabled="submitting">
-        <Loader2 v-if="submitting" class="size-4 animate-spin" />
+      <Button
+        type="submit"
+        class="h-12 w-full rounded-2xl text-base shadow-lg shadow-primary/20"
+        :disabled="submitting"
+      >
+        <Loader2
+          v-if="submitting"
+          class="size-4 animate-spin"
+        />
         {{ submitting ? locale.t.agent.submitting : initial ? locale.t.agent.resubmit : locale.t.agent.submitVerify }}
       </Button>
     </StickyActionBar>

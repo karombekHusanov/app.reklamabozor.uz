@@ -25,6 +25,7 @@ export const ROUTES = {
   profile: '/profile', // personal account only (tab)
   profileEdit: '/profile/edit',
   earnings: '/earnings',
+  propuskPay: '/propusk/pay',
   clientDetail: (id: number | string) => `/clients/${id}`,
   settings: '/settings',
   publicOffer: '/legal/public-offer',

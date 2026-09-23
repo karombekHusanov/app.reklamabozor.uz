@@ -1,8 +1,11 @@
 <script setup lang="ts">
-import { ArrowRight, Bell, Search } from '@lucide/vue'
+import { ArrowRight, Bell, ChevronDown, Phone, Search, ShieldCheck } from '@lucide/vue'
 import Avatar from '@/core/ui/Avatar.vue'
-// import BillboardAd from '@/modules/home/components/BillboardAd.vue'
+import HomeBillboard from '@/modules/home/components/HomeBillboard.vue'
 import { useLocaleStore } from '@/core/i18n/locale.store'
+
+/** Platform contact number, tap-to-call from the header. */
+const CONTACT_PHONE = '+998902250778'
 
 defineProps<{
   displayName: string
@@ -15,6 +18,8 @@ const emit = defineEmits<{
   search: []
   notifications: []
   profile: []
+  /** Scroll to the "Safe deal" explainer. */
+  trust: []
 }>()
 
 const locale = useLocaleStore()
@@ -30,16 +35,6 @@ const locale = useLocaleStore()
       class="hero__glow hero__glow--b"
       aria-hidden="true"
     />
-
-    <!-- real billboard, floating on the hero — hidden for now, headline is centered instead
-    <span
-      class="bbglow"
-      aria-hidden="true"
-    />
-    <div class="bb">
-      <BillboardAd />
-    </div>
-    -->
 
     <!-- greeting -->
     <div class="hero__greet">
@@ -63,6 +58,13 @@ const locale = useLocaleStore()
           {{ displayName }}
         </p>
       </div>
+      <a
+        :href="`tel:${CONTACT_PHONE}`"
+        class="hero__bell"
+        :aria-label="locale.t.home.callButton"
+      >
+        <Phone class="size-[18px]" />
+      </a>
       <button
         type="button"
         class="hero__bell"
@@ -77,13 +79,8 @@ const locale = useLocaleStore()
       </button>
     </div>
 
-    <!-- headline -->
-    <h1 class="hero__title">
-      {{ locale.t.home.heroTitle }}
-    </h1>
-    <p class="hero__sub">
-      {{ locale.t.home.heroSubtitle }}
-    </p>
+    <!-- headline now lives on the billboard's screen, cycling like a real display -->
+    <HomeBillboard class="hero__billboard" />
 
     <!-- search — opens the global search drawer -->
     <button
@@ -101,6 +98,23 @@ const locale = useLocaleStore()
         <ArrowRight class="size-[17px]" />
       </span>
     </button>
+
+    <!-- trust promise — the first thing a new client should read -->
+    <button
+      type="button"
+      class="hero__trust"
+      @click="emit('trust')"
+    >
+      <span
+        class="hero__trust-ic"
+        aria-hidden="true"
+      ><ShieldCheck class="size-4" /></span>
+      <span class="hero__trust-t">{{ locale.t.landing.heroTrust }}</span>
+      <span class="hero__trust-more">
+        {{ locale.t.landing.heroTrustMore }}
+        <ChevronDown class="size-3.5" />
+      </span>
+    </button>
   </header>
 </template>
 
@@ -116,19 +130,6 @@ const locale = useLocaleStore()
 .hero__glow--a { top: -40px; right: -50px; width: 200px; height: 200px; background: radial-gradient(circle, rgba(56, 189, 248, 0.5) 0%, transparent 70%); animation: heroGlow 13s ease-in-out infinite; }
 .hero__glow--b { top: 40px; left: -70px; width: 180px; height: 180px; background: radial-gradient(circle, rgba(3, 134, 217, 0.5) 0%, transparent 72%); animation: heroGlow 16s ease-in-out infinite reverse; }
 
-/* floating billboard */
-.bbglow {
-  position: absolute; top: 112px; right: 52px; width: 128px; height: 94px;
-  border-radius: 50%; filter: blur(30px); z-index: 0; pointer-events: none;
-  background: radial-gradient(circle, rgba(56, 189, 248, 0.45), transparent 70%);
-}
-.bb {
-  position: absolute; top: 92px; right: 32px; width: 138px; z-index: 1;
-  transform: rotate(-5deg); pointer-events: none;
-  border-radius: 16px; box-shadow: 0 24px 42px -16px rgba(0, 0, 0, 0.6);
-  animation: bbFloat 9s ease-in-out infinite;
-}
-
 /* greeting */
 .hero__greet { position: relative; z-index: 2; display: flex; align-items: center; gap: 12px; padding: 8px 0 18px; }
 .hero__avatar { flex-shrink: 0; border-radius: 999px; border: 2px solid rgba(255, 255, 255, 0.35); }
@@ -143,23 +144,9 @@ const locale = useLocaleStore()
 .hero__bell:active { transform: scale(0.92); }
 .hero__bell-badge { position: absolute; top: -4px; right: -4px; min-width: 17px; height: 17px; padding: 0 4px; border-radius: 999px; background: var(--rb-cta); color: #fff; font-size: 10px; font-weight: 800; line-height: 17px; text-align: center; border: 2px solid #023059; }
 
-/* headline with animated colour gradient */
-.hero__title {
-  position: relative; z-index: 2;
-  font-family: var(--rb-font-display); font-weight: 800; font-size: 26px;
-  line-height: 1.12; letter-spacing: -0.022em; margin: 10px 0 0;
-  text-align: center; text-wrap: balance;
-  background-image: linear-gradient(102deg, #ffffff 0%, #6ee7ff 16%, var(--rb-glow) 33%, #a78bfa 54%, #ffbf6b 76%, #ffffff 100%);
-  background-size: 200% auto;
-  -webkit-background-clip: text; background-clip: text;
-  -webkit-text-fill-color: transparent; color: transparent;
-  animation: titleShine 7s linear infinite;
-}
-.hero__sub { position: relative; z-index: 2; margin: 10px 0 0; font-size: 13.5px; line-height: 1.5; color: rgba(255, 255, 255, 0.82); text-align: center; text-wrap: balance; }
-
 /* search */
 .hero__search {
-  position: relative; z-index: 2; margin-top: 24px;
+  position: relative; z-index: 2; margin-top: 10px;
   display: flex; width: 100%; align-items: center; gap: 10px; height: 54px; padding: 0 7px 0 16px;
   border-radius: 16px; background: #fff; box-shadow: 0 18px 32px -16px rgba(0, 0, 0, 0.6);
 }
@@ -170,11 +157,24 @@ const locale = useLocaleStore()
 .hero__search-ph { flex: 1; min-width: 0; font-size: 14.5px; color: #94a0b2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .hero__search-go { flex-shrink: 0; width: 38px; height: 38px; border-radius: 11px; background: linear-gradient(150deg, #0b6bcb 0%, #014ba4 100%); color: #fff; display: grid; place-items: center; }
 
-@keyframes titleShine { from { background-position: 0% center; } to { background-position: 200% center; } }
-@keyframes bbFloat { 0%, 100% { transform: rotate(-5deg) translateY(0); } 50% { transform: rotate(-3.6deg) translateY(-12px); } }
+/* trust pill */
+.hero__trust {
+  position: relative; z-index: 2; display: flex; width: 100%; align-items: center; gap: 10px; margin-top: 12px; min-height: 44px; padding: 6px 12px 6px 6px;
+  border-radius: var(--rb-r-chip); border: 1px solid rgba(255, 255, 255, 0.2); background: rgba(255, 255, 255, 0.1);
+  color: #fff; font-family: inherit; text-align: left; cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.hero__trust:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
+.hero__trust-ic { flex-shrink: 0; display: grid; place-items: center; width: 30px; height: 30px; border-radius: 999px; background: var(--success); color: #fff; }
+.hero__trust-t { flex: 1; min-width: 0; font-size: 12.5px; font-weight: 700; line-height: 1.25; }
+.hero__trust-more { flex-shrink: 0; display: inline-flex; align-items: center; gap: 2px; font-size: 11.5px; font-weight: 700; color: var(--rb-glow-soft); }
+
+/* billboard — sits a bit below the greeting, its pole fade blends into the search area behind it */
+.hero__billboard { position: relative; z-index: 2; margin-top: 6px; }
+
 @keyframes heroGlow { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(-16px, 14px); } }
 
 @media (prefers-reduced-motion: reduce) {
-  .hero__title, .bb, .hero__glow--a, .hero__glow--b { animation: none !important; }
+  .hero__glow--a, .hero__glow--b { animation: none !important; }
 }
 </style>

@@ -3,7 +3,6 @@ import { computed, ref } from 'vue'
 import { getApiErrorMessage } from '@/core/api/api-error'
 import { useAuthStore } from '@/modules/auth/stores/auth.store'
 import { useOrderRouteStore } from '@/modules/orders/stores/order-route.store'
-import { type Banner, fetchBanners } from '@/modules/home/services/banners.service'
 import {
   fetchMyActivity,
   markLiveOrdersSeen as markLiveOrdersSeenApi,
@@ -32,7 +31,6 @@ const emptyActivityBadges = () => ({
  * Badges come from GET /me/activity — do not pull full order/chat lists here.
  */
 export const useHomeStore = defineStore('home', () => {
-  const banners = ref<Banner[]>([])
   const topAgents = ref<PublicAgent[]>([])
   const topDesigners = ref<PublicAgent[]>([])
   const liveOrders = ref<LiveOrder[]>([])
@@ -122,8 +120,7 @@ export const useHomeStore = defineStore('home', () => {
           ? loadActivity(force)
           : Promise.resolve()
 
-        const [bannersData, agentsData, designersData, liveOrdersData, contactData] = await Promise.all([
-          fetchBanners().catch(() => [] as Banner[]),
+        const [agentsData, designersData, liveOrdersData, contactData] = await Promise.all([
           fetchTopAgents(TOP_AGENTS_LIMIT, undefined, 'agent').catch(() => [] as PublicAgent[]),
           fetchTopAgents(TOP_AGENTS_LIMIT, undefined, 'designer').catch(() => [] as PublicAgent[]),
           fetchLiveOrders(LIVE_ORDERS_LIMIT, { route: useOrderRouteStore().active }).catch(() => [] as LiveOrder[]),
@@ -132,7 +129,6 @@ export const useHomeStore = defineStore('home', () => {
 
         await activityPromise
 
-        banners.value = bannersData
         topAgents.value = agentsData
         topDesigners.value = designersData
         liveOrders.value = liveOrdersData
@@ -190,7 +186,6 @@ export const useHomeStore = defineStore('home', () => {
   }
 
   function reset() {
-    banners.value = []
     topAgents.value = []
     topDesigners.value = []
     liveOrders.value = []
@@ -205,7 +200,6 @@ export const useHomeStore = defineStore('home', () => {
   }
 
   return {
-    banners,
     topAgents,
     topDesigners,
     liveOrders,

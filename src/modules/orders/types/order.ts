@@ -502,6 +502,9 @@ export interface AgentOrder {
   /** Tezkor: another (or this) agent already holds the claim. */
   claimed?: boolean
   claimed_by_me?: boolean
+  /** Tezkor: only the agent holding the claim gets these — same pair the client has. */
+  can_release?: boolean
+  can_close?: boolean
   can_offer?: boolean
   title: string
   description: string

@@ -1,101 +1,147 @@
 <script setup lang="ts">
+import { ChevronRight } from '@lucide/vue'
 import { computed, onMounted, ref, watch } from 'vue'
+import Avatar from '@/core/ui/Avatar.vue'
 import { useLocaleStore } from '@/core/i18n/locale.store'
 import type { LiveStats } from '@/modules/home/services/live-stats.service'
+import type { PublicAgent } from '@/modules/marketplace/services/agents.service'
 
+/**
+ * Social-proof strip — one slim line on the hero seam that says "this is a
+ * real, busy marketplace": real agency logos, verified-agency and
+ * active-request counts, and who's online right now. Glanceable, not a feature.
+ */
 const props = defineProps<{
   stats: LiveStats | null
+  agents: PublicAgent[]
 }>()
+
+const emit = defineEmits<{ open: [] }>()
 
 const locale = useLocaleStore()
 
 const reduce = typeof window !== 'undefined'
   && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
 
-const cards = computed(() => [
-  { key: 'agencies', value: props.stats?.agencies_total ?? 0, label: locale.t.home.heroStatAgencies },
-  { key: 'live', value: props.stats?.active_orders ?? 0, label: locale.t.home.heroStatToday },
-  { key: 'online', value: props.stats?.agents_online ?? 0, label: locale.t.home.heroStatOnline, live: true },
+const faces = computed(() => props.agents.slice(0, 3))
+
+const targets = computed(() => [
+  props.stats?.agencies_total ?? 0,
+  props.stats?.active_orders ?? 0,
+  props.stats?.agents_online ?? 0,
 ])
 
 /** Animated count-up, keyed to the resolved stat values. */
 const shown = ref<number[]>([0, 0, 0])
 
-function animateTo(targets: number[]) {
-  if (reduce) { shown.value = [...targets]; return }
-  const start = performance.now()
+function animateTo(to: number[]) {
+  if (reduce) { shown.value = [...to]; return }
   const from = [...shown.value]
-  const dur = 1100
+  const start = performance.now()
   function tick(now: number) {
-    const p = Math.min((now - start) / dur, 1)
+    const p = Math.min((now - start) / 900, 1)
     const eased = 1 - (1 - p) ** 3
-    shown.value = targets.map((t, i) => Math.round(from[i] + (t - from[i]) * eased))
+    shown.value = to.map((t, i) => Math.round(from[i] + (t - from[i]) * eased))
     if (p < 1) requestAnimationFrame(tick)
   }
   requestAnimationFrame(tick)
 }
 
-onMounted(() => animateTo(cards.value.map(c => c.value)))
-watch(() => cards.value.map(c => c.value).join(','), () => animateTo(cards.value.map(c => c.value)))
+onMounted(() => animateTo(targets.value))
+watch(() => targets.value.join(','), () => animateTo(targets.value))
+
+/** Split "{count} …" copy so the number can be styled/animated on its own. */
+function parts(tpl: string) {
+  const [before = '', after = ''] = tpl.split('{count}')
+  return { before, after }
+}
+const agencies = computed(() => parts(locale.t.landing.proofAgencies))
+const requests = computed(() => parts(locale.t.landing.proofRequests))
+const online = computed(() => parts(locale.t.landing.proofOnline))
 </script>
 
 <template>
-  <div class="stats">
-    <div
-      v-for="(card, i) in cards"
-      :key="card.key"
-      class="stat"
+  <button
+    type="button"
+    class="proof"
+    @click="emit('open')"
+  >
+    <span
+      v-if="faces.length"
+      class="proof__faces"
+      aria-hidden="true"
     >
-      <span class="stat__n">
+      <Avatar
+        v-for="(agent, i) in faces"
+        :key="agent.id"
+        :src="agent.company_logo ?? agent.avatar"
+        :name="agent.display_name"
+        size="sm"
+        class="proof__face size-7 text-[10px]"
+        :style="{ '--i': i }"
+      />
+    </span>
+
+    <span class="proof__text">
+      <span class="proof__main">{{ agencies.before }}<b>{{ shown[0] }}</b>{{ agencies.after }}</span>
+      <span class="proof__sub">
+        {{ requests.before }}{{ shown[1] }}{{ requests.after }}
         <span
-          v-if="card.live"
-          class="stat__grn"
+          class="proof__sep"
           aria-hidden="true"
-        />
-        {{ shown[i] }}
+        >·</span>
+        <span class="proof__live">
+          <span
+            class="proof__dot"
+            aria-hidden="true"
+          />
+          {{ online.before }}{{ shown[2] }}{{ online.after }}
+        </span>
       </span>
-      <span class="stat__l">{{ card.label }}</span>
-    </div>
-  </div>
+    </span>
+
+    <ChevronRight
+      class="proof__chev"
+      aria-hidden="true"
+    />
+  </button>
 </template>
 
 <style scoped>
-@property --sang { syntax: "<angle>"; initial-value: 0deg; inherits: false; }
-
-.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 9px; }
-
-.stat {
-  position: relative;
-  background: var(--card);
-  border-radius: 17px; padding: 13px 10px; box-shadow: var(--rb-elev-1);
-  text-align: left;
+.proof {
+  display: flex; width: 100%; align-items: center; gap: 10px; min-height: 52px; padding: 8px 10px 8px 10px;
+  border: 1px solid var(--border); border-radius: var(--rb-r-field); background: var(--card); box-shadow: var(--rb-elev-2);
+  color: var(--foreground); font-family: inherit; text-align: left; cursor: pointer;
+  animation: proofIn 500ms var(--rb-ease) both 150ms;
+  transition: transform var(--rb-dur) var(--rb-ease);
+  -webkit-tap-highlight-color: transparent;
 }
-.stat::before, .stat::after {
-  content: ""; position: absolute; inset: 0; border-radius: inherit; padding: 1.5px;
-  background: conic-gradient(from var(--sang), var(--border) 0deg, var(--border) 205deg, var(--rb-glow) 280deg, var(--rb-glow-soft) 312deg, var(--border) 348deg);
-  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-  mask-composite: exclude;
-  animation: statSpin 5s linear infinite;
-  pointer-events: none;
-}
-.stat::after { filter: blur(5px); opacity: 0.85; }
-.stat:nth-child(2)::before, .stat:nth-child(2)::after { animation-delay: -1.6s; }
-.stat:nth-child(3)::before, .stat:nth-child(3)::after { animation-delay: -3.2s; }
+.proof:active { transform: scale(0.985); }
+.proof:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
 
-.stat__n {
-  font-family: var(--rb-font-display); font-weight: 900; font-size: 22px;
-  letter-spacing: -0.02em; color: var(--foreground); font-variant-numeric: tabular-nums; line-height: 1;
-  display: inline-flex; align-items: center; gap: 5px;
+.proof__faces { display: flex; flex-shrink: 0; padding-left: 6px; }
+.proof__face {
+  margin-left: -8px; border: 2px solid var(--card); border-radius: 999px;
+  animation: faceIn 420ms var(--rb-ease) both; animation-delay: calc(300ms + var(--i) * 80ms);
 }
-.stat__grn { width: 8px; height: 8px; border-radius: 999px; background: var(--success); box-shadow: 0 0 0 0 rgba(18, 183, 106, 0.5); animation: statPulse 2s ease-out infinite; }
-.stat__l { display: block; margin-top: 5px; font-size: 10.5px; font-weight: 600; color: var(--muted-foreground); }
 
-@keyframes statSpin { to { --sang: 360deg; } }
-@keyframes statPulse { 0% { box-shadow: 0 0 0 0 rgba(18, 183, 106, 0.5); } 70% { box-shadow: 0 0 0 6px rgba(18, 183, 106, 0); } 100% { box-shadow: 0 0 0 0 rgba(18, 183, 106, 0); } }
+.proof__text { display: flex; flex: 1; min-width: 0; flex-direction: column; line-height: 1.2; }
+.proof__main { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.proof__main b { font-family: var(--rb-font-display); font-weight: 900; font-variant-numeric: tabular-nums; }
+.proof__sub { margin-top: 1px; font-size: 11px; color: var(--muted-foreground); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-variant-numeric: tabular-nums; }
+
+.proof__sep { margin-inline: 3px; }
+.proof__live { display: inline-flex; align-items: center; gap: 5px; color: var(--success); font-weight: 700; }
+.proof__dot { position: relative; width: 6px; height: 6px; border-radius: 999px; background: currentColor; }
+.proof__dot::after { content: ""; position: absolute; inset: 0; border-radius: inherit; background: currentColor; animation: ripple 1.8s ease-out infinite; }
+
+.proof__chev { width: 16px; height: 16px; flex-shrink: 0; color: var(--muted-foreground); }
+
+@keyframes proofIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+@keyframes faceIn { from { opacity: 0; transform: translateX(-6px) scale(0.8); } to { opacity: 1; transform: none; } }
+@keyframes ripple { 0% { transform: scale(1); opacity: 0.6; } 100% { transform: scale(3); opacity: 0; } }
 
 @media (prefers-reduced-motion: reduce) {
-  .stat::before, .stat::after, .stat__grn { animation: none !important; }
+  .proof, .proof__face, .proof__dot::after { animation: none !important; }
 }
 </style>

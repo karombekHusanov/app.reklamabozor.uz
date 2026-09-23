@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ChevronRight, CircleX, Clock, LayoutGrid, ShieldCheck, Star } from '@lucide/vue'
+import { ChevronRight, CircleX, ClipboardList, Clock, Eye, Inbox, PenLine, Settings, ShieldCheck, Star, Wallet } from '@lucide/vue'
 import { useRoute } from 'vue-router'
 import { computed, onMounted, ref, watch } from 'vue'
 import AppHeader from '@/modules/shell/components/AppHeader.vue'
@@ -15,9 +15,11 @@ import { fetchMyRating } from '@/modules/orders/services/orders.service'
 import type { RatingInfo } from '@/modules/orders/types/order'
 import AgentProfileShortcuts from '@/modules/profile/components/agent-sections/AgentProfileShortcuts.vue'
 import LegalEntityVerificationCard from '@/modules/profile/components/LegalEntityVerificationCard.vue'
-import ProviderBalanceCard from '@/modules/profile/components/ProviderBalanceCard.vue'
+import PropuskCard from '@/modules/agent/components/PropuskCard.vue'
 import ProviderPortfolioCard from '@/modules/profile/components/ProviderPortfolioCard.vue'
-import ProviderPublicPageCard from '@/modules/profile/components/ProviderPublicPageCard.vue'
+import { fetchEarnings } from '@/modules/profile/services/earnings.service'
+import { earningsStrings } from '@/modules/profile/lib/earnings-i18n'
+import { formatPrice } from '@/modules/orders/lib/order-status'
 import { ROUTES } from '@/modules/shell/constants/routes'
 
 const props = defineProps<{
@@ -45,9 +47,28 @@ async function loadMyRating() {
   }
 }
 
+/** Available balance, shown on the Earnings tile. */
+const balanceSom = ref<number | null>(null)
+
+async function loadBalance() {
+  try {
+    balanceSom.value = (await fetchEarnings()).balance.available_som ?? 0
+  }
+  catch {
+    balanceSom.value = null
+  }
+}
+
 onMounted(() => {
   void loadMyRating()
 })
+
+// The profile may arrive after mount — fetch the balance once it's approved.
+watch(
+  () => props.profile?.status === 'approved',
+  (approved) => { if (approved && balanceSom.value == null) void loadBalance() },
+  { immediate: true },
+)
 
 watch(
   () => props.user.role,
@@ -153,6 +174,27 @@ const publicPagePath = computed(() =>
   props.profile?.id ? `/agents/${props.profile.id}` : null,
 )
 
+/** Public-page completeness — only surfaced while something is missing. */
+const completion = computed(() => props.profile?.completion_percent ?? 0)
+const profileIncomplete = computed(() => {
+  const p = props.profile
+  if (!p) return false
+  return !p.company_logo || !p.bio || !p.categories.length || !p.portfolio.length || !p.results_text || !p.location_label
+})
+
+/** Day-to-day screens, one tap from the top of the page. */
+const activity = computed(() => [
+  { key: 'offers', icon: Inbox, label: props.locale.t.profile.agentShortcutOffers, sub: null as string | null, to: ROUTES.offers },
+  { key: 'orders', icon: ClipboardList, label: props.locale.t.profile.agentShortcutOrders, sub: null as string | null, to: ROUTES.orders },
+  {
+    key: 'earnings',
+    icon: Wallet,
+    label: earningsStrings(props.locale.locale).title,
+    sub: balanceSom.value != null ? formatPrice(balanceSom.value) : null,
+    to: ROUTES.earnings,
+  },
+])
+
 const statusLabel = computed(() => {
   if (!props.profile) return props.locale.t.profile.notStarted
   return props.locale.t.profile.agentStatus[props.profile.status] ?? props.profile.status
@@ -164,7 +206,18 @@ const statusLabel = computed(() => {
     <AppHeader
       :title="pageTitle"
       show-back
-    />
+    >
+      <template #trailing>
+        <button
+          type="button"
+          class="app-header-back pressable"
+          :aria-label="locale.t.profile.agentShortcutSettings"
+          @click="emit('navigate', ROUTES.settings)"
+        >
+          <Settings class="size-5" />
+        </button>
+      </template>
+    </AppHeader>
 
     <template v-if="loading && !profile">
       <section class="space-y-4 px-4 pt-3">
@@ -263,17 +316,74 @@ const statusLabel = computed(() => {
             </p>
           </div>
         </div>
+
+        <!-- Profile actions live on the identity card itself -->
+        <div
+          v-if="profile"
+          class="apv-actions"
+        >
+          <button
+            type="button"
+            class="apv-action pressable"
+            @click="emit('navigate', ROUTES.profileEdit)"
+          >
+            <PenLine class="size-4" />
+            {{ locale.t.profile.editShort }}
+          </button>
+          <button
+            v-if="isApproved && publicPagePath"
+            type="button"
+            class="apv-action pressable"
+            @click="emit('navigate', publicPagePath)"
+          >
+            <Eye class="size-4" />
+            {{ locale.t.profile.viewMyPublicPage }}
+          </button>
+        </div>
+
+        <button
+          v-if="isApproved && profileIncomplete"
+          type="button"
+          class="apv-complete pressable"
+          @click="emit('navigate', ROUTES.profileEdit)"
+        >
+          <span class="apv-complete__row">
+            <span>{{ locale.t.profile.completeLine.replace('{percent}', String(completion)) }}</span>
+            <span class="apv-complete__cta">{{ locale.t.profile.publicPageFill }} <ChevronRight class="size-3.5" /></span>
+          </span>
+          <span class="apv-complete__bar"><span :style="{ width: `${completion}%` }" /></span>
+        </button>
       </div>
 
-      <!-- Portfolio and money — what a provider opens this page for -->
+      <!-- Activity — the screens a provider opens every day -->
+      <div
+        v-if="isApproved"
+        class="apv-tiles"
+      >
+        <button
+          v-for="tile in activity"
+          :key="tile.key"
+          type="button"
+          class="apv-tile pressable"
+          @click="emit('navigate', tile.to)"
+        >
+          <span class="apv-tile__ic"><component
+            :is="tile.icon"
+            class="size-[18px]"
+          /></span>
+          <span class="apv-tile__label">{{ tile.label }}</span>
+          <span
+            v-if="tile.sub"
+            class="apv-tile__sub"
+          >{{ tile.sub }}</span>
+        </button>
+      </div>
+
+      <PropuskCard v-if="isApproved" />
+
       <ProviderPortfolioCard
         v-if="isApproved && profile"
         :items="profile.portfolio"
-        @navigate="emit('navigate', $event)"
-      />
-
-      <ProviderBalanceCard
-        v-if="isApproved"
         @navigate="emit('navigate', $event)"
       />
 
@@ -309,44 +419,39 @@ const statusLabel = computed(() => {
 
       <LegalEntityVerificationCard v-else-if="showLegalCard" />
 
-      <ProviderPublicPageCard
-        v-else-if="isApproved && profile"
-        :profile="profile"
-        :public-path="publicPagePath"
-        @navigate="emit('navigate', $event)"
-      />
-
-
-      <!-- Zone C — Account list -->
+      <!-- Account — settings & sign out -->
       <AgentProfileShortcuts
         :locale="locale"
         @navigate="emit('navigate', $event)"
         @logout="emit('logout')"
       />
-
-      <!-- Zone D — Public page link -->
-      <button
-        v-if="isApproved && publicPagePath"
-        type="button"
-        class="app-list-row pressable"
-        @click="emit('navigate', publicPagePath)"
-      >
-        <span class="app-list-row__icon app-list-row__icon--amber">
-          <LayoutGrid class="size-4" />
-        </span>
-        <span class="app-list-row__body">
-          <span class="app-list-row__label">
-            {{ locale.t.profile.viewMyPublicPage }}
-          </span>
-          <span class="app-list-row__hint">
-            {{ locale.t.profile.viewMyPublicPageHint }}
-          </span>
-        </span>
-        <ChevronRight
-          class="app-list-row__chevron"
-          aria-hidden="true"
-        />
-      </button>
     </section>
   </div>
 </template>
+
+<style scoped>
+.apv-actions { display: grid; grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); gap: 8px; margin-top: 12px; }
+.apv-action {
+  display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: 44px; padding: 0 10px;
+  border: 1px solid var(--border); border-radius: 14px; background: var(--secondary); color: var(--secondary-foreground);
+  font-size: 13px; font-weight: 700; white-space: nowrap;
+}
+.apv-action:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+
+.apv-complete { display: block; width: 100%; margin-top: 12px; padding: 0; border: 0; background: none; text-align: left; cursor: pointer; }
+.apv-complete__row { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 12px; color: var(--muted-foreground); }
+.apv-complete__cta { display: inline-flex; align-items: center; gap: 2px; font-weight: 700; color: var(--primary); }
+.apv-complete__bar { display: block; height: 5px; margin-top: 6px; overflow: hidden; border-radius: 999px; background: var(--muted); }
+.apv-complete__bar span { display: block; height: 100%; border-radius: inherit; background: var(--primary); }
+
+.apv-tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.apv-tile {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 6px; min-width: 0; min-height: 96px; padding: 12px 11px;
+  background: var(--card); border: 1px solid var(--border); border-radius: var(--rb-r-tile); box-shadow: var(--rb-elev-1);
+  text-align: left; cursor: pointer;
+}
+.apv-tile:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.apv-tile__ic { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 11px; background: var(--secondary); color: var(--primary); }
+.apv-tile__label { font-size: 12.5px; font-weight: 700; line-height: 1.2; color: var(--foreground); }
+.apv-tile__sub { margin-top: auto; font-family: var(--rb-font-display); font-size: 13px; font-weight: 800; font-variant-numeric: tabular-nums; color: var(--foreground); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+</style>

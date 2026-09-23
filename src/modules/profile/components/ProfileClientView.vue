@@ -1,28 +1,29 @@
 <script setup lang="ts">
-import { Briefcase, CheckCircle2, ChevronRight, CreditCard, RefreshCw } from '@lucide/vue'
+import { Briefcase, CheckCircle2, ChevronRight, ClipboardList, Eye, MessageCircle, PenLine, Settings } from '@lucide/vue'
 import { useRoute } from 'vue-router'
 import { computed, onMounted, ref } from 'vue'
 import { memberDuration } from '@/core/lib/date'
 import { ROUTES } from '@/modules/shell/constants/routes'
 import type { User } from '@/modules/auth/types/user'
+import type { useLocaleStore } from '@/core/i18n/locale.store'
 import type { OrderStatus } from '@/modules/orders/types/order'
 import type { RatingInfo } from '@/modules/orders/types/order'
 import { formatPrice } from '@/modules/orders/lib/order-status'
 import { fetchMyRating } from '@/modules/orders/services/orders.service'
 import { useOrdersStore } from '@/modules/orders/stores/orders.store'
+import { useHomeStore } from '@/modules/home/stores/home.store'
 import ClientAboutSection from '@/modules/profile/components/client-sections/ClientAboutSection.vue'
 import ClientOrderHistorySection from '@/modules/profile/components/client-sections/ClientOrderHistorySection.vue'
 import ClientProfileHeaderSection from '@/modules/profile/components/client-sections/ClientProfileHeaderSection.vue'
 import ClientProfileShortcuts from '@/modules/profile/components/client-sections/ClientProfileShortcuts.vue'
 import ClientAttentionCard from '@/modules/profile/components/client-sections/ClientAttentionCard.vue'
 import LegalEntityVerificationCard from '@/modules/profile/components/LegalEntityVerificationCard.vue'
-import type { ClientProfileStat } from '@/modules/profile/components/client-sections/ClientProfileHeaderSection.vue'
 
 const props = defineProps<{
   user: User
   displayName: string
   memberSince: string
-  locale: any
+  locale: ReturnType<typeof useLocaleStore>
 }>()
 
 const emit = defineEmits<{
@@ -31,6 +32,7 @@ const emit = defineEmits<{
 }>()
 
 const orders = useOrdersStore()
+const home = useHomeStore()
 const myRating = ref<RatingInfo | null>(null)
 
 const ACTIVE_STATUSES: OrderStatus[] = [
@@ -49,9 +51,6 @@ const orderList = computed(() => orders.myOrders)
 const activeCount = computed(() =>
   orderList.value.filter(order => ACTIVE_STATUSES.includes(order.status)).length,
 )
-const awaitingPaymentCount = computed(() =>
-  orderList.value.filter(order => order.status === 'awaiting_payment').length,
-)
 const completedCount = computed(() =>
   orderList.value.filter(order => order.status === 'completed').length,
 )
@@ -60,28 +59,11 @@ const attentionOrder = computed(() =>
   orderList.value.find(order => ATTENTION_STATUSES.includes(order.status)) ?? null,
 )
 
-// The counters double as navigation — every number opens the order list.
-const stats = computed<ClientProfileStat[]>(() => [
-  {
-    value: activeCount.value,
-    label: props.locale.t.profile.statActive,
-    icon: RefreshCw,
-    to: ROUTES.orders,
-  },
-  {
-    value: awaitingPaymentCount.value,
-    label: props.locale.t.profile.statAwaitingPayment,
-    icon: CreditCard,
-    tone: awaitingPaymentCount.value > 0 ? 'warning' : 'default',
-    to: ROUTES.orders,
-  },
-  {
-    value: completedCount.value,
-    label: props.locale.t.profile.statCompletedShort,
-    icon: CheckCircle2,
-    tone: 'success',
-    to: ROUTES.orders,
-  },
+/** Day-to-day screens, one tap from the top — each with its live count. */
+const tiles = computed(() => [
+  { key: 'active', icon: ClipboardList, label: props.locale.t.profile.statActive, value: activeCount.value, to: ROUTES.orders },
+  { key: 'done', icon: CheckCircle2, label: props.locale.t.profile.statCompletedShort, value: completedCount.value, to: ROUTES.orders },
+  { key: 'chats', icon: MessageCircle, label: props.locale.t.landing.deskChats, value: home.unreadChats, to: ROUTES.chatThreads },
 ])
 
 const platformLabel = computed(() => {
@@ -130,6 +112,7 @@ const showLegalCard = computed(() =>
 
 onMounted(() => {
   void orders.loadMyOrders()
+  void home.loadActivity()
   void fetchMyRating(props.user.role)
     .then((rating) => { myRating.value = rating })
     .catch(() => { myRating.value = null })
@@ -153,15 +136,65 @@ function becomeAgent() {
         :user="user"
         :display-name="displayName"
         :locale="locale"
-        :stats="stats"
+        :stats="[]"
         :stars="myRating?.stars ?? null"
         :stars-count="myRating?.stars_count ?? 0"
         :grade="myRating?.grade ?? null"
         :is-verified="isVerified"
         show-back
       >
-        <template #top />
+        <template #header-trailing>
+          <button
+            type="button"
+            class="app-header-back pressable"
+            :aria-label="locale.t.profile.clientShortcutSettings"
+            @click="emit('navigate', ROUTES.settings)"
+          >
+            <Settings class="size-5" />
+          </button>
+        </template>
+
+        <template #actions>
+          <div class="cpv-actions">
+            <button
+              type="button"
+              class="cpv-action pressable"
+              @click="emit('navigate', ROUTES.profileEdit)"
+            >
+              <PenLine class="size-4" />
+              {{ locale.t.profile.editShort }}
+            </button>
+            <button
+              type="button"
+              class="cpv-action pressable"
+              @click="emit('navigate', ROUTES.clientDetail(user.id))"
+            >
+              <Eye class="size-4" />
+              {{ locale.t.profile.viewMyPublicPage }}
+            </button>
+          </div>
+        </template>
       </ClientProfileHeaderSection>
+
+      <!-- Orders & chats — counts double as shortcuts -->
+      <div class="cpv-tiles">
+        <button
+          v-for="tile in tiles"
+          :key="tile.key"
+          type="button"
+          class="cpv-tile pressable"
+          @click="emit('navigate', tile.to)"
+        >
+          <span class="cpv-tile__top">
+            <span class="cpv-tile__ic"><component
+              :is="tile.icon"
+              class="size-[18px]"
+            /></span>
+            <span class="cpv-tile__n">{{ tile.value }}</span>
+          </span>
+          <span class="cpv-tile__label">{{ tile.label }}</span>
+        </button>
+      </div>
 
       <!-- What is waiting on the client right now -->
       <ClientAttentionCard
@@ -170,9 +203,14 @@ function becomeAgent() {
         @open="openOrder"
       />
 
-      <!-- Zone B — at most one primary -->
       <LegalEntityVerificationCard v-if="showLegalCard" />
 
+      <ClientOrderHistorySection
+        :locale="locale"
+        :orders="orderList"
+        @navigate="emit('navigate', $event)"
+        @open-order="openOrder"
+      />
 
       <!-- Become a provider: one quiet row, not a competing block. -->
       <button
@@ -197,7 +235,7 @@ function becomeAgent() {
         />
       </button>
 
-      <!-- Zone C — Account -->
+      <!-- Account — settings & sign out -->
       <ClientProfileShortcuts
         :locale="locale"
         @navigate="emit('navigate', $event)"
@@ -210,13 +248,28 @@ function becomeAgent() {
         :avg-order-label="avgOrderLabel"
         :completed-label="completedLabel"
       />
-
-      <ClientOrderHistorySection
-        :locale="locale"
-        :orders="orderList"
-        @navigate="emit('navigate', $event)"
-        @open-order="openOrder"
-      />
     </section>
   </div>
 </template>
+
+<style scoped>
+.cpv-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
+.cpv-action {
+  display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: 44px; padding: 0 10px;
+  border: 1px solid var(--border); border-radius: 14px; background: var(--secondary); color: var(--secondary-foreground);
+  font-size: 13px; font-weight: 700; white-space: nowrap;
+}
+.cpv-action:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+
+.cpv-tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.cpv-tile {
+  display: flex; flex-direction: column; align-items: stretch; gap: 8px; min-width: 0; min-height: 88px; padding: 12px 11px;
+  background: var(--card); border: 1px solid var(--border); border-radius: var(--rb-r-tile); box-shadow: var(--rb-elev-1);
+  text-align: left; cursor: pointer;
+}
+.cpv-tile:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.cpv-tile__top { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+.cpv-tile__ic { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 11px; background: var(--secondary); color: var(--primary); }
+.cpv-tile__n { font-family: var(--rb-font-display); font-size: 20px; font-weight: 900; font-variant-numeric: tabular-nums; color: var(--foreground); }
+.cpv-tile__label { font-size: 12px; font-weight: 700; line-height: 1.2; color: var(--foreground); }
+</style>

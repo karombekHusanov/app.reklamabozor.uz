@@ -101,7 +101,7 @@ async function loadOrder() {
 async function sendInterest() {
   if (!order.value || orders.isSubmitting) return
   haptic('light')
-  const ok = await orders.sendOffer(order.value.id, {})
+  const ok = await orders.sendOffer(order.value.id, {}, () => void sendInterest())
   if (ok) {
     haptic('medium')
     toast.success(locale.t.orders.showcase.interestSent)
@@ -130,9 +130,23 @@ async function releaseClaim() {
   if (!order.value || orders.isSubmitting) return
   if (!(await confirmAction(locale.t.route.agentReleaseConfirm))) return
   haptic('light')
-  if (await orders.agentRelease(order.value.id)) {
+  if (await orders.resolveAgentTezkor(order.value.id, 'release')) {
     haptic('medium')
     toast.success(locale.t.route.agentReleasedToast)
+    router.replace(ROUTES.offers)
+  }
+  else {
+    toast.error(orders.error || locale.t.route.errAction)
+  }
+}
+
+async function closeAgreed() {
+  if (!order.value || orders.isSubmitting) return
+  if (!(await confirmAction(locale.t.route.agentCloseConfirm))) return
+  haptic('light')
+  if (await orders.resolveAgentTezkor(order.value.id, 'close')) {
+    haptic('medium')
+    toast.success(locale.t.route.agentClosedToast)
     router.replace(ROUTES.offers)
   }
   else {
@@ -343,18 +357,27 @@ watch(() => props.id, loadOrder)
               {{ locale.t.route.chat }}
             </button>
           </div>
-          <Button
-            variant="outline"
-            class="h-11 w-full rounded-2xl"
-            :disabled="orders.isSubmitting"
-            @click="releaseClaim"
-          >
-            <Loader2
-              v-if="orders.isSubmitting"
-              class="size-4 animate-spin"
-            />
-            {{ locale.t.route.agentRelease }}
-          </Button>
+          <div class="flex gap-2">
+            <Button
+              class="h-11 flex-1 rounded-2xl"
+              :disabled="orders.isSubmitting"
+              @click="closeAgreed"
+            >
+              <Loader2
+                v-if="orders.isSubmitting"
+                class="size-4 animate-spin"
+              />
+              {{ locale.t.route.agentClose }}
+            </Button>
+            <Button
+              variant="outline"
+              class="h-11 flex-1 rounded-2xl"
+              :disabled="orders.isSubmitting"
+              @click="releaseClaim"
+            >
+              {{ locale.t.route.agentRelease }}
+            </Button>
+          </div>
         </GlassCard>
 
         <!-- Tezkor: another agent holds it -->

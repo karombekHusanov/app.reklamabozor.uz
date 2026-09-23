@@ -7,6 +7,8 @@ import EmptyState from '@/core/ui/EmptyState.vue'
 import Skeleton from '@/core/ui/Skeleton.vue'
 import { useLocaleStore } from '@/core/i18n/locale.store'
 import { useToast } from '@/core/composables/useToast'
+import PropuskCard from '@/modules/agent/components/PropuskCard.vue'
+import { usePassStore } from '@/modules/agent/stores/pass.store'
 import { earningsStrings } from '@/modules/profile/lib/earnings-i18n'
 import { fetchEarnings } from '@/modules/profile/services/earnings.service'
 import type {
@@ -17,6 +19,7 @@ import type {
 
 const locale = useLocaleStore()
 const toast = useToast()
+const passStore = usePassStore()
 
 const t = computed(() => earningsStrings(locale.locale))
 
@@ -57,6 +60,7 @@ function statusTone(status: Payout['status']): string {
 
 onMounted(() => {
   void load()
+  void passStore.loadHistory()
 })
 </script>
 
@@ -65,6 +69,8 @@ onMounted(() => {
     <AppHeader :title="t.title" :subtitle="t.subtitle" show-back />
 
     <section class="space-y-4 px-4">
+      <PropuskCard show-history />
+
       <!-- Balance -->
       <GlassCard v-if="loading" class="space-y-3">
         <Skeleton class="h-4 w-24" />

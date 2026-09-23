@@ -233,11 +233,19 @@ watch(
 
       <template v-if="orders.isLoadingAgent && orders.availableOrders.length === 0">
         <div class="flex flex-col gap-4">
-          <Skeleton v-for="n in 2" :key="n" class="h-[140px] w-full rounded-[1.35rem]" />
+          <Skeleton
+            v-for="n in 2"
+            :key="n"
+            class="h-[140px] w-full rounded-[1.35rem]"
+          />
         </div>
       </template>
 
-      <GlassCard v-else-if="availableOrders.length === 0" padding="none" class="overflow-hidden">
+      <GlassCard
+        v-else-if="availableOrders.length === 0"
+        padding="none"
+        class="overflow-hidden"
+      >
         <EmptyState
           :icon="Inbox"
           :title="locale.t.agent.noOpenOrders"
@@ -245,7 +253,10 @@ watch(
         />
       </GlassCard>
 
-      <div v-else class="flex flex-col gap-4">
+      <div
+        v-else
+        class="flex flex-col gap-4"
+      >
         <AgentOrderItem
           v-for="order in availableOrders"
           :key="order.id"
@@ -259,11 +270,19 @@ watch(
     <template v-else>
       <template v-if="orders.isLoadingAgent && orders.myOffers.length === 0">
         <div class="flex flex-col gap-4">
-          <Skeleton v-for="n in 2" :key="n" class="h-[140px] w-full rounded-[1.35rem]" />
+          <Skeleton
+            v-for="n in 2"
+            :key="n"
+            class="h-[140px] w-full rounded-[1.35rem]"
+          />
         </div>
       </template>
 
-      <GlassCard v-else-if="myOffers.length === 0" padding="none" class="overflow-hidden">
+      <GlassCard
+        v-else-if="myOffers.length === 0"
+        padding="none"
+        class="overflow-hidden"
+      >
         <EmptyState
           :icon="MessageSquareDashed"
           :title="locale.t.agent.noOffersYet"
@@ -271,7 +290,10 @@ watch(
         />
       </GlassCard>
 
-      <div v-else class="flex flex-col gap-4">
+      <div
+        v-else
+        class="flex flex-col gap-4"
+      >
         <!-- Status filter chips -->
         <div
           ref="filterScrollRef"
@@ -293,11 +315,17 @@ watch(
           </div>
         </div>
 
-        <div v-if="filteredOffers.length === 0" class="px-1 py-8 text-center text-sm text-muted-foreground">
+        <div
+          v-if="filteredOffers.length === 0"
+          class="px-1 py-8 text-center text-sm text-muted-foreground"
+        >
           {{ locale.t.agent.noOffersInFilter }}
         </div>
 
-        <div v-else class="flex flex-col gap-4">
+        <div
+          v-else
+          class="flex flex-col gap-4"
+        >
           <AgentOfferItem
             v-for="offer in filteredOffers"
             :key="offer.id"
@@ -308,7 +336,10 @@ watch(
       </div>
     </template>
 
-    <p v-if="orders.error" class="rounded-2xl bg-destructive/10 px-4 py-3 text-sm text-destructive">
+    <p
+      v-if="orders.error"
+      class="rounded-2xl bg-destructive/10 px-4 py-3 text-sm text-destructive"
+    >
       {{ orders.error }}
     </p>
   </div>

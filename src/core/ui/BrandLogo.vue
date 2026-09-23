@@ -8,7 +8,7 @@ const props = withDefaults(defineProps<{
   class?: HTMLAttributes['class']
   /** Logo mark diameter. */
   size?: 'sm' | 'md' | 'lg' | 'xl'
-  /** Render the "Reklama Bozor" wordmark next to the mark. */
+  /** Render the "PRB" wordmark next to the mark. */
   wordmark?: boolean
   /** Use light wordmark text for placement on a dark background. */
   onDark?: boolean
@@ -54,7 +54,7 @@ const verticalTextSizes = {
   >
     <img
       src="/images/logo.png"
-      alt="Reklama Bozor"
+      alt="PRB"
       :class="cn('shrink-0 object-contain', markSizes[size])"
     >
     <div
@@ -65,8 +65,7 @@ const verticalTextSizes = {
         onDark ? 'text-white' : 'text-foreground',
       )"
     >
-      <span>Reklama</span>
-      <span>Bozor</span>
+      <span>PRB</span>
     </div>
   </div>
 </template>

@@ -60,7 +60,10 @@ const meta = computed(() => {
           class="flex size-11 shrink-0 items-center justify-center rounded-2xl"
           :class="meta.iconWrap"
         >
-          <component :is="meta.icon" class="size-6" />
+          <component
+            :is="meta.icon"
+            class="size-6"
+          />
         </div>
         <div class="min-w-0">
           <h2 class="truncate text-lg font-semibold leading-tight">
@@ -71,13 +74,19 @@ const meta = computed(() => {
           </p>
         </div>
       </div>
-      <Badge class="shrink-0" :class="meta.badgeClass">
+      <Badge
+        class="shrink-0"
+        :class="meta.badgeClass"
+      >
         {{ meta.label }}
       </Badge>
     </div>
 
     <!-- Profile completion (approved only) -->
-    <div v-if="profile.status === 'approved'" class="space-y-1.5">
+    <div
+      v-if="profile.status === 'approved'"
+      class="space-y-1.5"
+    >
       <div class="flex items-center justify-between text-xs">
         <span class="font-medium text-muted-foreground">{{ locale.t.agent.profileCompleteness }}</span>
         <span class="font-semibold text-primary">{{ profile.completion_percent }}%</span>

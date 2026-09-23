@@ -1,10 +1,12 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import Badge from '@/core/ui/Badge.vue'
 import { useLocaleStore } from '@/core/i18n/locale.store'
 import { categoryName } from '@/core/i18n/category-name'
 import { isInterestOffer, offerStatusVariant } from '@/modules/orders/lib/order-status'
+import { usePassStore } from '@/modules/agent/stores/pass.store'
+import { passStrings } from '@/modules/agent/lib/pass-i18n'
 import { ROUTES } from '@/modules/shell/constants/routes'
 import OrderPreviewCard from '@/modules/orders/components/OrderPreviewCard.vue'
 import type { AgentOrder } from '@/modules/orders/types/order'
@@ -32,6 +34,12 @@ const deadlineLabel = computed(() => {
   if (props.order.deadline === 'today_tomorrow') return locale.t.orders.deadlineTodayTomorrow
   return null
 })
+
+const pass = usePassStore()
+const needsPassHint = computed(() =>
+  pass.needsPass && props.order.route === 'tezkor' && !props.order.claimed && !props.order.my_offer,
+)
+onMounted(() => { void pass.ensureLoaded() })
 
 const isTezkorClaimed = computed(() => props.order.route === 'tezkor' && Boolean(props.order.claimed))
 
@@ -83,6 +91,13 @@ function openClient() {
         class="shrink-0 !px-2.5 !py-1 text-[11px] font-bold"
       >
         {{ locale.t.route.busy }}
+      </Badge>
+      <Badge
+        v-else-if="needsPassHint"
+        variant="default"
+        class="shrink-0 !px-2.5 !py-1 text-[11px] font-bold"
+      >
+        {{ passStrings(locale.locale).needed }}
       </Badge>
       <Badge
         v-else-if="order.my_offer"

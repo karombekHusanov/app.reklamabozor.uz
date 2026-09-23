@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { ChevronRight, LogOut, Settings, UserRound } from '@lucide/vue'
+import { ChevronRight, LogOut, Settings } from '@lucide/vue'
 import WebApp from '@twa-dev/sdk'
 import { ROUTES } from '@/modules/shell/constants/routes'
 import { isInsideTelegram, supportsVersion } from '@/core/lib/telegram-init'
+import type { useLocaleStore } from '@/core/i18n/locale.store'
 
 const props = defineProps<{
-  locale: any
+  locale: ReturnType<typeof useLocaleStore>
 }>()
 
 const emit = defineEmits<{
@@ -37,25 +38,6 @@ function confirmSignOut() {
         {{ locale.t.profile.accountSectionAccount }}
       </h2>
       <div class="app-list">
-        <button
-          type="button"
-          class="app-list-row pressable"
-          @click="emit('navigate', ROUTES.profileEdit)"
-        >
-          <span class="app-list-row__icon app-list-row__icon--teal">
-            <UserRound class="size-4" />
-          </span>
-          <span class="app-list-row__body">
-            <span class="app-list-row__label">
-              {{ locale.t.profile.clientShortcutEditProfile }}
-            </span>
-          </span>
-          <ChevronRight
-            class="app-list-row__chevron"
-            aria-hidden="true"
-          />
-        </button>
-
         <button
           type="button"
           class="app-list-row pressable"

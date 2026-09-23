@@ -1,8 +1,10 @@
 import { defineStore } from 'pinia'
+import { usePassStore } from '@/modules/agent/stores/pass.store'
 import { ref } from 'vue'
 import { getApiErrorMessage } from '@/core/api/api-error'
 import {
   acceptOffer as acceptOfferRequest,
+  agentCloseOrder as agentCloseOrderRequest,
   agentReleaseOrder as agentReleaseOrderRequest,
   closeOrder as closeOrderRequest,
   releaseOrder as releaseOrderRequest,
@@ -258,12 +260,14 @@ export const useOrdersStore = defineStore('orders', () => {
     }
   }
 
-  /** Tezkor: the claiming agent lets go of the request. */
-  async function agentRelease(orderId: number) {
+  /** Tezkor: the claiming agent lets go of the request, or closes it as agreed. */
+  async function resolveAgentTezkor(orderId: number, action: 'close' | 'release') {
     isSubmitting.value = true
     error.value = null
     try {
-      await agentReleaseOrderRequest(orderId)
+      action === 'close'
+        ? await agentCloseOrderRequest(orderId)
+        : await agentReleaseOrderRequest(orderId)
       await loadAgentWorkspace(true)
       return true
     }
@@ -275,6 +279,7 @@ export const useOrdersStore = defineStore('orders', () => {
       isSubmitting.value = false
     }
   }
+
 
   /** Client rates the winning agency on a completed order (criteria-based). */
   async function submitReview(orderId: number, criteria: ReviewCriterionScore[], comment: string | null) {
@@ -342,7 +347,7 @@ export const useOrdersStore = defineStore('orders', () => {
     return workspaceInflight
   }
 
-  async function sendOffer(orderId: number, payload: CreateOfferPayload) {
+  async function sendOffer(orderId: number, payload: CreateOfferPayload, onPassBought?: () => void) {
     isSubmitting.value = true
     error.value = null
     try {
@@ -351,6 +356,11 @@ export const useOrdersStore = defineStore('orders', () => {
       return true
     }
     catch (e) {
+      // 402 Propusk / claim gates are surfaced by the pass store (drawer / toast).
+      if (usePassStore().handleClaimError(e, onPassBought)) {
+        error.value = null
+        return false
+      }
       error.value = getApiErrorMessage(e)
       return false
     }
@@ -410,7 +420,7 @@ export const useOrdersStore = defineStore('orders', () => {
     reportNoStart,
     cancelOrder,
     resolveTezkor,
-    agentRelease,
+    resolveAgentTezkor,
     submitReview,
     submitProviderReview,
     loadAgentWorkspace,

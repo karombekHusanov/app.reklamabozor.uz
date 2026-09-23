@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Check, ChevronRight, CloudUpload, FileText, ImageIcon, Loader2, MapPin, Search, Send, X } from '@lucide/vue'
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import Drawer from '@/core/ui/Drawer.vue'
 import GlassCard from '@/core/ui/GlassCard.vue'
 import LocationPicker from '@/core/ui/LocationPicker.vue'
@@ -34,11 +34,9 @@ const emit = defineEmits<{
 
 const MAX_FILES = 5
 
-// MVP: the category is inferred by the backend, the city is fixed to Tashkent
-// and the map pin is skipped. The pickers stay in the code (they may return).
-const SHOW_CATEGORY_PICKER = false
-const SHOW_REGION_PICKER = false
-const SHOW_LOCATION_PICKER = false
+// Category, region and map pin are all optional: without a category the
+// backend infers one from the text (or broadcasts); region starts on Tashkent
+// and can be changed or cleared (= all Uzbekistan).
 const TASHKENT_REGION_CODE = 'toshkent-shahri'
 
 const locale = useLocaleStore()
@@ -67,14 +65,16 @@ const selectedCategory = computed(() =>
   props.categories.find(category => category.id === categoryId.value) ?? null,
 )
 
-/** Fixed city: the Tashkent region row, when the catalog has it. */
+/** Default city: the Tashkent region row, when the catalog has it. */
 const tashkentRegion = computed(() =>
   props.regions.find(region => region.code === TASHKENT_REGION_CODE) ?? null,
 )
 
-const effectiveRegionId = computed(() =>
-  SHOW_REGION_PICKER ? regionId.value : (tashkentRegion.value?.id ?? null),
-)
+// Preselect Tashkent once the regions arrive — until the client picks.
+const regionTouched = ref(false)
+watch(tashkentRegion, (tashkent) => {
+  if (tashkent && !regionTouched.value && regionId.value === null) regionId.value = tashkent.id
+}, { immediate: true })
 
 const selectedRegion = computed(() =>
   props.regions.find(region => region.id === regionId.value) ?? null,
@@ -110,6 +110,7 @@ function pickCategory(id: number | null) {
 
 function pickRegion(id: number | null) {
   haptic('light')
+  regionTouched.value = true
   regionId.value = id
   regionOpen.value = false
 }
@@ -197,8 +198,8 @@ function submit() {
     description: text,
     route: props.route,
     attachment_file_ids: files.value.map(file => file.id),
-    ...(effectiveRegionId.value !== null ? { region_id: effectiveRegionId.value } : {}),
-    ...(SHOW_LOCATION_PICKER && location.value
+    ...(regionId.value !== null ? { region_id: regionId.value } : {}),
+    ...(location.value
       ? {
           lat: location.value.lat,
           lng: location.value.lng,
@@ -226,38 +227,7 @@ function submit() {
       <span class="font-semibold text-foreground">{{ targetAgent.company_name }}</span>
     </GlassCard>
 
-    <!-- 1 · Service type (optional) — hidden, the backend infers it -->
-    <GlassCard
-      v-if="SHOW_CATEGORY_PICKER"
-      class="space-y-2.5"
-    >
-      <p class="field-label">
-        {{ locale.t.orders.form.categoryLabel }}
-        <span class="field-optional">{{ locale.t.orders.form.optional }}</span>
-      </p>
-
-      <button
-        type="button"
-        class="picker"
-        @click="haptic('light'); categoryOpen = true"
-      >
-        <span
-          v-if="selectedCategory"
-          class="picker__icon"
-        >
-          <CategoryThumb :category="selectedCategory" :size="18" />
-        </span>
-        <span
-          class="picker__value"
-          :class="selectedCategory ? '' : 'picker__value--empty'"
-        >
-          {{ selectedCategory ? categoryName(selectedCategory, locale.locale) : locale.t.orders.form.categoryPlaceholder }}
-        </span>
-        <ChevronRight class="size-[18px] shrink-0 text-muted-foreground" />
-      </button>
-    </GlassCard>
-
-    <!-- 2 · What do you need (required) -->
+    <!-- 1 · What do you need (required) -->
     <GlassCard class="space-y-2.5">
       <label
         class="field-label"
@@ -282,7 +252,109 @@ function submit() {
       </p>
     </GlassCard>
 
-    <!-- 3 · Files (optional, multiple) -->
+    <!-- 2 · Service type (optional) — inferred from the text when empty -->
+    <GlassCard class="space-y-2.5">
+      <p class="field-label">
+        {{ locale.t.orders.form.categoryLabel }}
+        <span class="field-optional">{{ locale.t.orders.form.optional }}</span>
+      </p>
+
+      <button
+        type="button"
+        class="picker"
+        @click="haptic('light'); categoryOpen = true"
+      >
+        <span
+          v-if="selectedCategory"
+          class="picker__icon"
+        >
+          <CategoryThumb
+            :category="selectedCategory"
+            :size="18"
+          />
+        </span>
+        <span
+          class="picker__value"
+          :class="selectedCategory ? '' : 'picker__value--empty'"
+        >
+          {{ selectedCategory ? categoryName(selectedCategory, locale.locale) : locale.t.orders.form.categoryPlaceholder }}
+        </span>
+        <ChevronRight class="size-[18px] shrink-0 text-muted-foreground" />
+      </button>
+    </GlassCard>
+
+    <!-- 3 · Region (optional) — starts on Tashkent -->
+    <GlassCard class="space-y-2.5">
+      <p class="field-label">
+        {{ locale.t.orders.wizard.regionLabel }}
+        <span class="field-optional">{{ locale.t.orders.form.optional }}</span>
+      </p>
+
+      <button
+        type="button"
+        class="picker"
+        @click="haptic('light'); regionOpen = true"
+      >
+        <span
+          class="picker__value"
+          :class="selectedRegion ? '' : 'picker__value--empty'"
+        >
+          {{ selectedRegion ? regionName(selectedRegion, locale.locale) : locale.t.orders.form.regionPlaceholder }}
+        </span>
+        <ChevronRight class="size-[18px] shrink-0 text-muted-foreground" />
+      </button>
+    </GlassCard>
+
+    <!-- 4 · Map pin (optional) -->
+    <GlassCard class="space-y-2.5">
+      <p class="field-label">
+        {{ locale.t.orders.wizard.locationLabel }}
+        <span class="field-optional">{{ locale.t.orders.form.optional }}</span>
+      </p>
+
+      <button
+        v-if="!mapOpen"
+        type="button"
+        class="picker"
+        @click="haptic('light'); mapOpen = true"
+      >
+        <MapPin class="size-[18px] shrink-0 text-primary" />
+        <span
+          class="picker__value"
+          :class="location ? '' : 'picker__value--empty'"
+        >
+          {{ location?.label ?? (location ? `${location.lat.toFixed(4)}, ${location.lng.toFixed(4)}` : locale.t.orders.form.locationOnMap) }}
+        </span>
+        <ChevronRight class="size-[18px] shrink-0 text-muted-foreground" />
+      </button>
+
+      <template v-else>
+        <LocationPicker
+          :lat="location?.lat ?? null"
+          :lng="location?.lng ?? null"
+          @change="onLocationChange"
+        />
+        <div class="flex items-center gap-2">
+          <button
+            type="button"
+            class="glass-chip flex-1 rounded-2xl px-3 py-2 text-[12.5px] font-semibold"
+            @click="haptic('light'); mapOpen = false"
+          >
+            {{ locale.t.orders.form.locationHide }}
+          </button>
+          <button
+            v-if="location"
+            type="button"
+            class="glass-chip rounded-2xl px-3 py-2 text-[12.5px] font-semibold text-destructive"
+            @click="clearLocation"
+          >
+            {{ locale.t.orders.form.locationClear }}
+          </button>
+        </div>
+      </template>
+    </GlassCard>
+
+    <!-- 5 · Files (optional, multiple) -->
     <GlassCard class="space-y-2.5">
       <p class="field-label">
         {{ locale.t.orders.form.filesLabel }}
@@ -348,83 +420,6 @@ function submit() {
       </ul>
     </GlassCard>
 
-    <!-- 4 · Region (optional) — hidden, city is fixed to Tashkent -->
-    <GlassCard
-      v-if="SHOW_REGION_PICKER"
-      class="space-y-2.5"
-    >
-      <p class="field-label">
-        {{ locale.t.orders.wizard.regionLabel }}
-        <span class="field-optional">{{ locale.t.orders.form.optional }}</span>
-      </p>
-
-      <button
-        type="button"
-        class="picker"
-        @click="haptic('light'); regionOpen = true"
-      >
-        <span
-          class="picker__value"
-          :class="selectedRegion ? '' : 'picker__value--empty'"
-        >
-          {{ selectedRegion ? regionName(selectedRegion, locale.locale) : locale.t.orders.form.regionPlaceholder }}
-        </span>
-        <ChevronRight class="size-[18px] shrink-0 text-muted-foreground" />
-      </button>
-    </GlassCard>
-
-    <!-- 5 · Map pin (optional) — hidden for the MVP -->
-    <GlassCard
-      v-if="SHOW_LOCATION_PICKER"
-      class="space-y-2.5"
-    >
-      <p class="field-label">
-        {{ locale.t.orders.wizard.locationLabel }}
-        <span class="field-optional">{{ locale.t.orders.form.optional }}</span>
-      </p>
-
-      <button
-        v-if="!mapOpen"
-        type="button"
-        class="picker"
-        @click="haptic('light'); mapOpen = true"
-      >
-        <MapPin class="size-[18px] shrink-0 text-primary" />
-        <span
-          class="picker__value"
-          :class="location ? '' : 'picker__value--empty'"
-        >
-          {{ location?.label ?? (location ? `${location.lat.toFixed(4)}, ${location.lng.toFixed(4)}` : locale.t.orders.form.locationOnMap) }}
-        </span>
-        <ChevronRight class="size-[18px] shrink-0 text-muted-foreground" />
-      </button>
-
-      <template v-else>
-        <LocationPicker
-          :lat="location?.lat ?? null"
-          :lng="location?.lng ?? null"
-          @change="onLocationChange"
-        />
-        <div class="flex items-center gap-2">
-          <button
-            type="button"
-            class="glass-chip flex-1 rounded-2xl px-3 py-2 text-[12.5px] font-semibold"
-            @click="haptic('light'); mapOpen = false"
-          >
-            {{ locale.t.orders.form.locationHide }}
-          </button>
-          <button
-            v-if="location"
-            type="button"
-            class="glass-chip rounded-2xl px-3 py-2 text-[12.5px] font-semibold text-destructive"
-            @click="clearLocation"
-          >
-            {{ locale.t.orders.form.locationClear }}
-          </button>
-        </div>
-      </template>
-    </GlassCard>
-
     <StickyActionBar class="action-dock !bottom-3">
       <button
         type="button"
@@ -483,7 +478,10 @@ function submit() {
           @click="pickCategory(category.id)"
         >
           <span class="option__icon">
-            <CategoryThumb :category="category" :size="18" />
+            <CategoryThumb
+              :category="category"
+              :size="18"
+            />
           </span>
           <span class="option__label">{{ categoryName(category, locale.locale) }}</span>
           <Check
