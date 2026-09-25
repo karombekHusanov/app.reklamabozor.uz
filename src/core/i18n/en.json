@@ -43,30 +43,10 @@
   },
   "legal": {
     "offerTitle": "Public offer",
-    "offerVersionLabel": "Terms of use · v1",
-    "offerIntro": "This public offer (“Terms”) applies to users of the Reklama Bozor platform (reklamabozor.uz). By using the platform and confirming consent, you accept the current version of these terms.",
-    "offerSections": [
-      {
-        "title": "Role of the platform",
-        "body": "Reklama Bozor is a marketplace operator and payment operator (intermediary). The platform is not the principal for the advertising service; responsibility for delivery sits with the chosen agency or designer."
-      },
-      {
-        "title": "Users",
-        "body": "The platform has client, agency, designer, and seller roles. Providers (agencies) cannot respond to orders until they complete KYC and sign the platform agreement."
-      },
-      {
-        "title": "Orders and interest",
-        "body": "A client posts an order and matching providers send interest. Price and terms are agreed afterwards. A contract is formed when the client accepts a priced offer; an official PDF is generated later as evidence."
-      },
-      {
-        "title": "Payments",
-        "body": "Payments go through the platform. The platform commission is 7%. Client funds first land on the platform account, then are paid out to the agency as an advance and a final payment."
-      },
-      {
-        "title": "Changes to the terms",
-        "body": "When the terms change, the version is bumped and you must accept again to continue. The last accepted version and time are stored on your profile."
-      }
-    ]
+    "offerVersionLabel": "For clients",
+    "offerLanguageNote": "The legally binding text of the offer is in Uzbek.",
+    "download": "Download PDF",
+    "loadError": "Could not load the offer text."
   },
   "personType": {
     "individual": "Individual",

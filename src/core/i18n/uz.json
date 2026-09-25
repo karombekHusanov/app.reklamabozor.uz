@@ -43,30 +43,10 @@
   },
   "legal": {
     "offerTitle": "Ommaviy oferta",
-    "offerVersionLabel": "Foydalanish shartlari · v1",
-    "offerIntro": "Ushbu ommaviy oferta («Shartlar») Reklama Bozor platformasi (reklamabozor.uz) foydalanuvchilariga tatbiq etiladi. Platformadan foydalanish va rozilikni belgilash orqali siz joriy versiyadagi shartlarni qabul qilasiz.",
-    "offerSections": [
-      {
-        "title": "Platformaning roli",
-        "body": "Reklama Bozor — marketplace operatori va to‘lov operatori (vositachi). Platforma reklama xizmatining bajarilishi uchun principal emas; xizmat javobgarligi tanlangan agentlik yoki dizayner zimmasida."
-      },
-      {
-        "title": "Foydalanuvchilar",
-        "body": "Platformada mijoz, agentlik, dizayner va sotuvchi rollari mavjud. Provayderlar (agentlik) KYC va platforma shartnomasini imzolamaguncha buyurtmalarga otklik yubora olmaydi."
-      },
-      {
-        "title": "Buyurtmalar va otkliklar",
-        "body": "Mijoz buyurtma joylaydi, mos provayderlar otklik (qiziqish) yuboradi. Narx va shartlar keyin kelishiladi. Mijoz narxlangan taklifni qabul qilganda shartnoma tuziladi; rasmiy PDF keyin dalil sifatida yaratiladi."
-      },
-      {
-        "title": "To‘lov",
-        "body": "To‘lov platforma orqali amalga oshiriladi. Platforma komissiyasi 7%. Mijoz to‘lovi avval platforma hisobiga tushadi, so‘ng agentlikka oldindan va yakuniy to‘lov tartibida o‘tkaziladi."
-      },
-      {
-        "title": "Shartlarning o‘zgarishi",
-        "body": "Shartlar yangilanganda versiya yangilanadi va davom etish uchun qayta rozilik so‘raladi. Oxirgi qabul qilingan versiya va vaqt profilingizda saqlanadi."
-      }
-    ]
+    "offerVersionLabel": "Mijozlar uchun",
+    "offerLanguageNote": "",
+    "download": "PDF yuklab olish",
+    "loadError": "Oferta matnini yuklab bo‘lmadi."
   },
   "personType": {
     "individual": "Jismoniy shaxs",
