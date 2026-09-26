@@ -216,6 +216,22 @@ export interface ContractSection {
   /** `items` renders the pricelist table, `parties` the requisites block. */
   type: 'text' | 'items' | 'parties'
   paragraphs: string[]
+  /** `items`: the order card (§2) shown above the pricelist. */
+  rows?: ContractRow[]
+  /** `parties`: requisites columns (§11) — operator, client, executor. */
+  parties?: ContractParty[]
+}
+
+export interface ContractRow {
+  label: string
+  value: string
+}
+
+export interface ContractParty {
+  key: string
+  label: string
+  name: string
+  rows: ContractRow[]
 }
 
 /**

@@ -53,61 +53,6 @@ const submitLabel = computed(() =>
     : locale.t.orders.contract.acceptClient,
 )
 
-const dash = computed(() => locale.t.orders.contract.notSpecified)
-
-/** Requisite rows for one party column, blanks dropped. */
-function rows(entries: [string, unknown][]): { label: string, value: string }[] {
-  return entries
-    .filter(([, value]) => value !== null && value !== undefined && value !== '')
-    .map(([label, value]) => ({ label, value: String(value) }))
-}
-
-const agentRows = computed(() => {
-  const a = props.document?.agent ?? ({} as ContractDocument['agent'])
-  return rows([
-    ['STIR (INN)', a.inn],
-    ['Rahbar', a.director_name],
-    ['Tel', a.phone],
-    ['Manzil', a.address],
-    ['H/r', a.bank_account],
-    ['Bank', a.bank_name],
-    ['MFO', a.mfo],
-  ])
-})
-
-const clientRows = computed(() => {
-  const c = props.document?.client ?? ({} as ContractDocument['client'])
-  return rows([
-    ['STIR (INN)', c.inn],
-    ['Tel', c.phone],
-  ])
-})
-
-const platformRows = computed(() => {
-  const p = props.document?.platform ?? ({} as ContractDocument['platform'])
-  return rows([
-    ['STIR (INN)', p.inn],
-    ['Tel', p.phone],
-    ['Email', p.email],
-    ['Web', p.website],
-    ['Komissiya', p.commission_percent != null ? `${p.commission_percent}%` : null],
-  ])
-})
-
-const agentName = computed(() => props.document?.agent?.company_name || dash.value)
-
-const clientName = computed(() => {
-  const c = props.document?.client
-  if (!c) return dash.value
-  const company = c.is_legal_entity ? (c.company_name as string | null) : null
-  return company || (c.name as string | null) || dash.value
-})
-
-const platformName = computed(() => {
-  const p = props.document?.platform
-  return (p?.legal_name as string | null) || (p?.name as string | null) || dash.value
-})
-
 /** Trim trailing zeros from quantity (2.000 → 2, 1.500 → 1.5). */
 function fmtQty(value: string): string {
   const n = Number(value)
@@ -198,7 +143,7 @@ function fmtQty(value: string): string {
         </div>
 
         <!-- Preamble -->
-        <p class="text-[13px] leading-relaxed text-muted-foreground">
+        <p class="whitespace-pre-line text-[13px] leading-relaxed text-muted-foreground">
           {{ document.intro }}
         </p>
 
@@ -219,6 +164,25 @@ function fmtQty(value: string): string {
           >
             {{ paragraph }}
           </p>
+
+          <!-- Order card (§2) -->
+          <dl
+            v-if="section.type === 'items' && section.rows?.length"
+            class="divide-y divide-border/60 overflow-hidden rounded-2xl border border-border/70"
+          >
+            <div
+              v-for="row in section.rows"
+              :key="row.label"
+              class="grid grid-cols-[minmax(0,2fr)_minmax(0,3fr)] gap-x-3 px-3 py-2 text-[12px]"
+            >
+              <dt class="font-medium text-muted-foreground">
+                {{ row.label }}
+              </dt>
+              <dd class="min-w-0 break-words text-foreground">
+                {{ row.value }}
+              </dd>
+            </div>
+          </dl>
 
           <!-- Pricelist -->
           <div
@@ -260,11 +224,7 @@ function fmtQty(value: string): string {
             class="space-y-2"
           >
             <div
-              v-for="block in [
-                { key: 'agent', label: locale.t.orders.contract.partyAgent, name: agentName, rows: agentRows },
-                { key: 'client', label: locale.t.orders.contract.partyClient, name: clientName, rows: clientRows },
-                { key: 'operator', label: locale.t.orders.contract.partyOperator, name: platformName, rows: platformRows },
-              ]"
+              v-for="block in section.parties ?? []"
               :key="block.key"
               class="rounded-2xl bg-muted/50 px-3.5 py-3 dark:bg-white/5"
             >
@@ -286,7 +246,7 @@ function fmtQty(value: string): string {
                   <dt class="shrink-0 text-muted-foreground">
                     {{ row.label }}
                   </dt>
-                  <dd class="min-w-0 truncate text-right font-medium text-foreground">
+                  <dd class="min-w-0 break-words text-right font-medium text-foreground">
                     {{ row.value }}
                   </dd>
                 </div>
