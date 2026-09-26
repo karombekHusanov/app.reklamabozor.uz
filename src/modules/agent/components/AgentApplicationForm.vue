@@ -8,6 +8,7 @@ import { Button } from '@/core/ui/button'
 import { cn } from '@/core/lib/utils'
 import { useLocaleStore } from '@/core/i18n/locale.store'
 import { useToast } from '@/core/composables/useToast'
+import AgentOfferConsent from '@/modules/agent/components/AgentOfferConsent.vue'
 import type {
   AgentApplicationPayload,
   AgentProfile,
@@ -37,6 +38,8 @@ const form = reactive({
   bank_account: props.initial?.bank_account ?? '',
   mfo: props.initial?.mfo ?? '',
   phone: props.initial?.phone ?? '',
+  // Consent is per submission — always starts unchecked, even on resubmit.
+  accept_offer: false,
 })
 
 const fieldErrors = reactive<Record<string, string>>({})
@@ -54,6 +57,7 @@ const fieldLabels = computed<Record<string, string>>(() => ({
   bank_account: locale.t.agent.accountNumber,
   mfo: locale.t.agent.mfo,
   phone: locale.t.agent.contactPhone,
+  accept_offer: locale.t.agent.offerTitle,
 }))
 
 // Normalize user formatting (spaces, dashes) before validating numeric / passport fields.
@@ -78,6 +82,7 @@ function validate(): boolean {
   if (!/^\d{20,26}$/.test(digits(form.bank_account))) fieldErrors.bank_account = locale.t.agent.errAccount
   if (!/^\d{5}$/.test(digits(form.mfo))) fieldErrors.mfo = locale.t.agent.errMfo
   if (form.phone.trim() === '') fieldErrors.phone = locale.t.agent.errPhone
+  if (!form.accept_offer) fieldErrors.accept_offer = locale.t.agent.offerRequired
 
   return Object.keys(fieldErrors).length === 0
 }
@@ -106,6 +111,7 @@ function handleSubmit() {
     bank_account: digits(form.bank_account),
     mfo: digits(form.mfo),
     phone: form.phone.trim(),
+    accept_offer: true,
   })
 }
 
@@ -359,6 +365,11 @@ const inputClass = 'glass-input'
         </p>
       </div>
     </GlassCard>
+
+    <AgentOfferConsent
+      v-model="form.accept_offer"
+      :error="fieldErrors.accept_offer"
+    />
 
     <StickyActionBar>
       <Button

@@ -15,9 +15,17 @@ export interface PublicOffer {
   requisites: { label: string, value: string }[]
 }
 
-/** The legally approved client offer — same source as the downloadable PDF. */
-export async function fetchPublicOffer(): Promise<PublicOffer> {
-  const { data } = await api.get<ApiSuccess<PublicOffer>>('/api/v1/legal/public-offer', {
+/** `client` = onboarding offer for everyone; `agent` = agency partnership offer. */
+export type PublicOfferKind = 'client' | 'agent'
+
+const OFFER_PATHS: Record<PublicOfferKind, string> = {
+  client: '/api/v1/legal/public-offer',
+  agent: '/api/v1/legal/agent-offer',
+}
+
+/** A legally approved offer — same source as the downloadable PDF. */
+export async function fetchPublicOffer(kind: PublicOfferKind = 'client'): Promise<PublicOffer> {
+  const { data } = await api.get<ApiSuccess<PublicOffer>>(OFFER_PATHS[kind], {
     skipErrorToast: true,
   })
 

@@ -4,7 +4,7 @@ import { setUserPersonType } from '@/modules/auth/services/auth.service'
 import { useAuthStore } from '@/modules/auth/stores/auth.store'
 import type { PersonType } from '@/modules/auth/types/user'
 
-export type OnboardingStep = 'language' | 'terms' | 'person_type'
+export type OnboardingStep = 'language' | 'terms' | 'person_type' | 'intent'
 
 export const useOnboardingStore = defineStore('onboarding', () => {
   const auth = useAuthStore()
@@ -56,14 +56,19 @@ export const useOnboardingStore = defineStore('onboarding', () => {
     step.value = 'person_type'
   }
 
-  /** Persist the self-declared legal nature and finish onboarding. */
+  /**
+   * Persist the self-declared legal nature, then ask what brings the user
+   * here (client vs agency). That last step is front-end only — no role is
+   * changed; everyone continues as a client.
+   */
   async function selectPersonType(personType: PersonType): Promise<void> {
     if (auth.isAuthenticated) {
       const user = await setUserPersonType(personType)
       auth.setUser(user)
     }
 
-    complete()
+    active.value = true
+    step.value = 'intent'
   }
 
   function complete() {

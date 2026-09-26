@@ -91,6 +91,7 @@ const orderId = computed(() => chat.currentChat?.order_id ?? activeOffer.value?.
 const orderTitle = computed(() => chat.currentChat?.order?.title ?? activeOffer.value?.order_title ?? null)
 const phone = computed(() => chat.currentChat?.other_participant.phone ?? null)
 const phoneLabel = computed(() => formatPhone(phone.value))
+const phoneHint = computed(() => (otherIsAgency.value ? locale.t.chat.agencyPhoneHint : locale.t.chat.clientPhoneHint))
 const telHref = computed(() => (phone.value ? `tel:${phone.value.replace(/[^\d+]/g, '')}` : undefined))
 
 const headerSubtitle = computed(() => {
@@ -314,7 +315,7 @@ function openActiveOffer() {
             ><Phone class="size-4" /></span>
             <span class="min-w-0 flex-1">
               <span class="ch-order__phone-n">{{ phoneLabel }}</span>
-              <span class="ch-order__phone-h">{{ locale.t.chat.clientPhoneHint }}</span>
+              <span class="ch-order__phone-h">{{ phoneHint }}</span>
             </span>
             <span class="ch-order__call">{{ locale.t.chat.call }}</span>
           </a>

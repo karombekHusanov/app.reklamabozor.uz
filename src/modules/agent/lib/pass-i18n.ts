@@ -47,6 +47,12 @@ export interface PassStrings {
   otpCta: string
   otpChecking: string
   otpChangeCard: string
+  savedCards: string
+  newCard: string
+  saveCard: string
+  saveCardHint: string
+  removeCard: string
+  removeCardConfirm: string
   otpResend: string
   otpResendIn: string
   successTitle: string
@@ -120,6 +126,12 @@ const uz: PassStrings = {
   otpCta: 'Tasdiqlash',
   otpChecking: 'Tekshirilmoqda…',
   otpChangeCard: 'Boshqa karta',
+  savedCards: 'Saqlangan kartalar',
+  newCard: 'Yangi karta',
+  saveCard: 'Kartani saqlash',
+  saveCardHint: "Keyingi safar karta raqami va SMS kodsiz to'lanadi.",
+  removeCard: "O'chirish",
+  removeCardConfirm: "O'chirilsinmi?",
   otpResend: 'Kodni qayta yuborish',
   otpResendIn: 'Qayta yuborish: {s} s',
   successTitle: "To'lov qabul qilindi",
@@ -193,6 +205,12 @@ const ru: PassStrings = {
   otpCta: 'Подтвердить',
   otpChecking: 'Проверяем…',
   otpChangeCard: 'Другая карта',
+  savedCards: 'Сохранённые карты',
+  newCard: 'Новая карта',
+  saveCard: 'Сохранить карту',
+  saveCardHint: 'В следующий раз оплата без ввода карты и SMS-кода.',
+  removeCard: 'Удалить',
+  removeCardConfirm: 'Удалить?',
   otpResend: 'Отправить код ещё раз',
   otpResendIn: 'Повторно через {s} с',
   successTitle: 'Оплата прошла',
@@ -266,6 +284,12 @@ const en: PassStrings = {
   otpCta: 'Confirm',
   otpChecking: 'Checking…',
   otpChangeCard: 'Use another card',
+  savedCards: 'Saved cards',
+  newCard: 'New card',
+  saveCard: 'Save card',
+  saveCardHint: 'Next time pay without the card number or an SMS code.',
+  removeCard: 'Remove',
+  removeCardConfirm: 'Remove?',
   otpResend: 'Resend code',
   otpResendIn: 'Resend in {s} s',
   successTitle: 'Payment successful',

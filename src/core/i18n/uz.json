@@ -23,13 +23,12 @@
     },
     "terms": {
       "title": "Foydalanish shartlari",
-      "body": "Tizimga kirish orqali siz ilovaning maxfiylik siyosati hamda foydalanish qoidalariga to'liq rozilik bildirasiz va ularga rioya qilishni zimmangizga olasiz.",
-      "consentLabel": "Rozilik",
-      "agreeBefore": "Roziman ",
-      "agreeLink": "ommaviy oferta",
-      "agreeAfter": " shartlariga",
+      "body": "Platformadan foydalanishdan oldin quyidagi ommaviy oferta bilan tanishib chiqing.",
       "updatedTitle": "Shartlar yangilandi",
-      "updatedBody": "Foydalanish shartlarimiz yangilandi. Davom etish uchun yangi shartlarni o'qib, roziligingizni bildiring."
+      "updatedBody": "Ommaviy oferta yangilandi. Davom etish uchun yangi matn bilan tanishib chiqing.",
+      "readHint": "Tasdiqlash tugmasi hujjat oxirida",
+      "agree": "«Qabul qilaman» tugmasini bosish orqali siz ommaviy oferta shartlariga rozilik bildirasiz",
+      "accept": "Qabul qilaman"
     },
     "personType": {
       "title": "Huquqiy maqomingiz",
@@ -39,6 +38,14 @@
       "legalEntity": "Yuridik shaxs",
       "legalEntityHint": "Kompaniya nomidan (keyin tasdiqlanadi)",
       "error": "Ma'lumotni saqlashda xatolik. Qayta urinib ko'ring."
+    },
+    "intent": {
+      "title": "Platformadan qanday foydalanasiz?",
+      "body": "Agentlik arizasini keyinroq profil orqali ham topshirishingiz mumkin.",
+      "client": "Mijoz sifatida",
+      "clientHint": "Reklama xizmatlariga buyurtma beraman",
+      "agent": "Agentlik sifatida",
+      "agentHint": "Buyurtmalarni bajaraman — tasdiqlash arizasini to‘ldiraman"
     }
   },
   "legal": {
@@ -46,7 +53,9 @@
     "offerVersionLabel": "Mijozlar uchun",
     "offerLanguageNote": "",
     "download": "PDF yuklab olish",
-    "loadError": "Oferta matnini yuklab bo‘lmadi."
+    "loadError": "Oferta matnini yuklab bo‘lmadi.",
+    "agentOfferTitle": "Hamkorlik ofertasi",
+    "agentOfferVersionLabel": "Agentliklar uchun"
   },
   "personType": {
     "individual": "Jismoniy shaxs",
@@ -88,12 +97,14 @@
     "trustHours": "Ish vaqti: {hours}",
     "trustAnytime": "So'rovlar istalgan vaqtda qabul qilinadi",
     "trustPhoneLabel": "Aloqa telefoni",
-    "heroTitle": "Reklama kerakmi? E'lon qoldiring",
-    "heroSubtitle": "Agentliklar bog'lanadi, siz tanlaysiz.",
-    "billboardSlide2Title": "Butun reklama sanoati",
-    "billboardSlide2Sub": "bitta ilovada",
-    "billboardSlide3Title": "Tasdiqlangan agentliklar",
-    "billboardSlide3Sub": "reyting va portfolio bilan",
+    "billboardSlide1Title": "Toshkentning yetakchi agentliklari",
+    "billboardSlide1Sub": "bitta ishonchli manzilda",
+    "billboardSlide2Title": "Reklama kerakmi?",
+    "billboardSlide2Sub": "1 daqiqada so‘rov qoldiring",
+    "billboardSlide3Title": "Tekshirilgan agentliklar",
+    "billboardSlide3Sub": "Ochiq reyting — xavfsiz tanlov",
+    "billboardSlide4Title": "Siz izlamang —",
+    "billboardSlide4Sub": "agentliklar o‘zi taklif bilan keladi",
     "providerInviteTitle": "Reklama agentligingiz bormi?",
     "providerInviteBody": "PRBda agent sifatida ro'yxatdan o'ting — mijoz buyurtmalarini oling va ishlashni bugundan boshlang.",
     "providerInviteCta": "Agent sifatida ro'yxatdan o'tish",
@@ -352,7 +363,8 @@
     "otklikSent": "Otklik yuborildi",
     "offerAcceptedChip": "Qabul qilindi",
     "endChatHint": "Yakunlangach bu suhbatga yozib bo'lmaydi. Uni keyin qayta ochishingiz mumkin.",
-    "moreActions": "Boshqa amallar"
+    "moreActions": "Boshqa amallar",
+    "agencyPhoneHint": "Agentlik otklik bergani uchun raqami ochiq"
   },
   "notifications": {
     "title": "Bildirishnomalar",
@@ -968,7 +980,21 @@
     "pricelistDeadlineLabel": "Bajarish muddati",
     "pricelistDeadlinePlaceholder": "masalan 14",
     "pricelistDeadlineUnit": "kun",
-    "pricelistDeadlineHint": "Ishni necha kunda topshirishga majburiyat olasiz. Bu shartnomaga yoziladi."
+    "pricelistDeadlineHint": "Ishni necha kunda topshirishga majburiyat olasiz. Bu shartnomaga yoziladi.",
+    "offerTitle": "Hamkorlik ofertasi",
+    "offerBody": "Agentlik sifatida ishlash uchun «PRB» platformasining agentliklar bilan hamkorlik ofertasini o‘qib chiqing va qabul qiling.",
+    "offerCheckbox": "Hamkorlik ofertasi bilan tanishib chiqdim va uning shartlarini qabul qilaman",
+    "offerRead": "Ofertani o‘qish",
+    "offerAccept": "Qabul qilaman",
+    "offerRequired": "Davom etish uchun hamkorlik ofertasini qabul qiling",
+    "offerUpdatedTitle": "Hamkorlik ofertasi yangilandi",
+    "offerUpdatedBody": "Agentlik faoliyatini davom ettirish uchun ofertaning yangi tahririni o‘qib chiqing va qabul qiling.",
+    "offerAcceptedToast": "Oferta qabul qilindi",
+    "skipApplication": "Keyinroq to‘ldiraman",
+    "reminderTitle": "Agentlik bo‘lishni xohlaysizmi?",
+    "reminderBody": "Arizani to‘ldiring — tasdiqlangach buyurtmalar olishni boshlaysiz.",
+    "reminderCta": "Arizani to‘ldirish",
+    "reminderHide": "Yashirish"
   },
   "designer": {
     "createCategories": "Yo'nalishlaringiz",

@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { getApiErrorMessage } from '@/core/api/api-error'
 import {
+  acceptAgentOffer,
   createDesignerProfile,
   fetchAgentCategories,
   fetchMyAgentProfile,
@@ -162,6 +163,27 @@ export const useAgentStore = defineStore('agent', () => {
     }
   }
 
+  const isAcceptingOffer = ref(false)
+
+  /** Accept the current agency partnership offer (after a version bump). */
+  async function acceptOffer() {
+    isAcceptingOffer.value = true
+    error.value = null
+
+    try {
+      profile.value = await acceptAgentOffer()
+      loaded.value = true
+      return true
+    }
+    catch (e) {
+      error.value = getApiErrorMessage(e)
+      return false
+    }
+    finally {
+      isAcceptingOffer.value = false
+    }
+  }
+
   function reset() {
     profile.value = null
     categories.value = []
@@ -177,6 +199,7 @@ export const useAgentStore = defineStore('agent', () => {
     isSubmitting,
     isSavingDetails,
     isUploadingContract,
+    isAcceptingOffer,
     error,
     loaded,
     status,
@@ -192,6 +215,7 @@ export const useAgentStore = defineStore('agent', () => {
     submitDesigner,
     submitDetails,
     submitSignedContract,
+    acceptOffer,
     reset,
   }
 })

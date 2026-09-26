@@ -3,7 +3,17 @@ import { Download } from '@lucide/vue'
 import { onMounted, ref } from 'vue'
 import Skeleton from '@/core/ui/Skeleton.vue'
 import { useLocaleStore } from '@/core/i18n/locale.store'
-import { fetchPublicOffer, type PublicOffer } from '../services/public-offer.service'
+import { fetchPublicOffer, type PublicOffer, type PublicOfferKind } from '../services/public-offer.service'
+
+const props = withDefaults(defineProps<{
+  kind?: PublicOfferKind
+}>(), {
+  kind: 'client',
+})
+
+const emit = defineEmits<{
+  loaded: []
+}>()
 
 const locale = useLocaleStore()
 
@@ -15,7 +25,8 @@ async function load() {
   loading.value = true
   failed.value = false
   try {
-    offer.value = await fetchPublicOffer()
+    offer.value = await fetchPublicOffer(props.kind)
+    emit('loaded')
   }
   catch {
     failed.value = true

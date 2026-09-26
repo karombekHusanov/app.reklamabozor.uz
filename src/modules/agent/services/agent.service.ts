@@ -61,6 +61,15 @@ export async function uploadSignedContract(fileId: number): Promise<AgentProfile
   return data.data
 }
 
+/** (Re-)accept the current agency partnership offer. */
+export async function acceptAgentOffer(): Promise<AgentProfile> {
+  const { data } = await api.post<ApiSuccess<AgentProfile>>('/api/v1/agent/profile/accept-offer', {
+    accept_offer: true,
+  })
+
+  return data.data
+}
+
 // ---- Advantages catalog + portfolio (approved providers) ----
 
 /** Active advantages catalog the provider picks from. */

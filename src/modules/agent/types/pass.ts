@@ -26,7 +26,23 @@ export interface CardPaymentStart {
   amount_som: number
   /** "8600 •••• 2365" */
   card_mask: string | null
+  /** false for a saved card — it is charged at once, the result is in status/summary. */
+  requires_otp: boolean
+  status?: 'pending' | 'success' | 'failed'
+  summary?: AgentPass
 }
+
+/** A card bound at the provider — only the masked number reaches the client. */
+export interface SavedCard {
+  id: number
+  card_mask: string
+  last_used_at: string | null
+}
+
+/** What to charge: a saved card, or a typed card (optionally saved). */
+export type CardInput =
+  | { card_id: number }
+  | { card_number: string, expiry: string, save_card: boolean }
 
 export interface PassHistoryItem {
   id: number

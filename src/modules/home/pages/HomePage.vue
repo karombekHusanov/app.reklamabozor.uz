@@ -17,6 +17,8 @@ import HomeSafeDeal from '@/modules/home/components/HomeSafeDeal.vue'
 import HomeJourney from '@/modules/home/components/HomeJourney.vue'
 import HomeRoutes from '@/modules/home/components/HomeRoutes.vue'
 import HomeProviderZone from '@/modules/home/components/HomeProviderZone.vue'
+import AgentInviteCard from '@/modules/agent/components/AgentInviteCard.vue'
+import { dismissAgentInvite, isAgentInviteDismissed } from '@/modules/onboarding/lib/agent-intent'
 import HomeSupport from '@/modules/home/components/HomeSupport.vue'
 import HomeServiceRail from '@/modules/home/components/HomeServiceRail.vue'
 import HomeAgencyRail from '@/modules/home/components/HomeAgencyRail.vue'
@@ -24,7 +26,7 @@ import HomeLiveRequests from '@/modules/home/components/HomeLiveRequests.vue'
 import GlobalSearchDrawer from '@/modules/search/components/GlobalSearchDrawer.vue'
 import { fetchLiveStats, type LiveStats } from '@/modules/home/services/live-stats.service'
 import { fetchCategories } from '@/modules/orders/services/orders.service'
-import { fullName } from '@/modules/auth/types/user'
+import { fullName, userHasRole } from '@/modules/auth/types/user'
 import type { LiveOrder } from '@/modules/home/services/live-orders.service'
 import type { Category } from '@/modules/agent/types/agent'
 import type { PublicAgent } from '@/modules/marketplace/services/agents.service'
@@ -81,6 +83,21 @@ const providerState = computed<'none' | 'pending' | 'approved'>(() => {
   if (home.providerApproved) return 'approved'
   return home.activity?.provider?.has_profile ? 'pending' : 'none'
 })
+
+/** Invite every non-agent (individual or legal entity) until they hide it. */
+const agentReminderHidden = ref(false)
+const showAgentReminder = computed(() => {
+  const user = auth.user
+  if (!user || agentReminderHidden.value) return false
+  if (userHasRole(user, 'agent') || userHasRole(user, 'designer')) return false
+  return !isAgentInviteDismissed(user.id)
+})
+
+function hideAgentReminder() {
+  haptic('light')
+  if (auth.user) dismissAgentInvite(auth.user.id)
+  agentReminderHidden.value = true
+}
 
 function applyAsProvider() {
   haptic('medium')
@@ -275,6 +292,16 @@ watch(() => auth.isAuthenticated, (authed, wasAuthed) => {
           :stats="liveStats"
           :agents="home.topAgents"
           @open="navigate(ROUTES.agencies)"
+        />
+      </div>
+
+      <div
+        v-if="showAgentReminder"
+        class="home-block home-block--tight home-gutter"
+      >
+        <AgentInviteCard
+          @open="applyAsProvider"
+          @hide="hideAgentReminder"
         />
       </div>
 

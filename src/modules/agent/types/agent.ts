@@ -111,8 +111,18 @@ export interface AgentProfile {
   approved_at: string | null
   /** Platform agreement (agents only; null for designers). */
   contract?: AgentContract | null
+  /** Agency partnership offer acceptance (agents only; null for designers). */
+  offer?: AgentOfferAcceptance | null
   created_at: string
   updated_at: string
+}
+
+export interface AgentOfferAcceptance {
+  /** Current offer version the agent must accept. */
+  version: string
+  accepted_version: string | null
+  accepted_at: string | null
+  needs_acceptance: boolean
 }
 
 /** Phase 1 payload — POST (apply) / PUT (resubmit) /api/v1/agent/profile. */
@@ -128,6 +138,8 @@ export interface AgentApplicationPayload {
   bank_account: string
   mfo: string
   phone: string
+  /** Click-wrap acceptance of the agency partnership offer — required. */
+  accept_offer: true
 }
 
 /** Phase 2 payload — PATCH /api/v1/agent/profile (approved profiles only). */

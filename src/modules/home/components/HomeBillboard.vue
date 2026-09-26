@@ -1,8 +1,9 @@
 <script setup lang="ts">
 /**
  * Tri-vision billboard — the real roadside kind: a row of triangular
- * prism slats that turn one after another to reveal the next ad. Three
- * faces = three creatives (the hero headline + two taglines).
+ * prism slats that turn one after another to reveal the next ad. A prism
+ * has three faces, but the face turning in from behind is re-painted with
+ * the next creative, so the board cycles through any number of slides.
  *
  * Built with CSS 3D only: every slat is a prism whose three faces each show
  * that slat's vertical slice of one slide. The prism angle only ever grows
@@ -17,8 +18,8 @@ const locale = useLocaleStore()
 /** Artwork hues (decorative, not UI — allowed literals per DESIGN_SYSTEM §2). */
 const slides = computed(() => [
   {
-    title: locale.t.home.heroTitle,
-    sub: locale.t.home.heroSubtitle,
+    title: locale.t.home.billboardSlide1Title,
+    sub: locale.t.home.billboardSlide1Sub,
     bg: 'linear-gradient(120deg, #0a4fa6 0%, #0b6bcb 45%, #25a5ee 100%)',
   },
   {
@@ -31,7 +32,25 @@ const slides = computed(() => [
     sub: locale.t.home.billboardSlide3Sub,
     bg: 'linear-gradient(120deg, #03264a 0%, #0a4a86 55%, #0ea5c6 100%)',
   },
+  {
+    title: locale.t.home.billboardSlide4Title,
+    sub: locale.t.home.billboardSlide4Sub,
+    bg: 'linear-gradient(120deg, #2e1f7a 0%, #4f46e5 55%, #8b7cf6 100%)',
+  },
 ])
+
+const FACES = 3
+
+/**
+ * What each prism face shows at the current step: the front face (step), the
+ * one turning in next (step + 1) and the one just turned away (step − 1).
+ * Only the face at the back — never visible, even mid-turn — gets re-painted.
+ */
+const faces = computed(() => Array.from({ length: FACES }, (_, k) => {
+  const t = [step.value - 1, step.value, step.value + 1]
+    .find(n => ((n % FACES) + FACES) % FACES === k) ?? k
+  return slides.value[((t % slides.value.length) + slides.value.length) % slides.value.length]!
+}))
 
 const SLATS = 12
 const HOLD_MS = 4200
@@ -102,7 +121,7 @@ onBeforeUnmount(() => {
               }"
             >
               <div
-                v-for="(slide, k) in slides"
+                v-for="(slide, k) in faces"
                 :key="k"
                 class="bb__face"
                 :style="{ transform: `rotateY(${120 * k}deg) translateZ(${slatW * APOTHEM}px)` }"

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Briefcase, CheckCircle2, ChevronRight, ClipboardList, Eye, MessageCircle, PenLine, Settings } from '@lucide/vue'
+import { CheckCircle2, ClipboardList, Eye, MessageCircle, PenLine, Settings } from '@lucide/vue'
 import { useRoute } from 'vue-router'
 import { computed, onMounted, ref } from 'vue'
 import { memberDuration } from '@/core/lib/date'
@@ -18,6 +18,7 @@ import ClientProfileHeaderSection from '@/modules/profile/components/client-sect
 import ClientProfileShortcuts from '@/modules/profile/components/client-sections/ClientProfileShortcuts.vue'
 import ClientAttentionCard from '@/modules/profile/components/client-sections/ClientAttentionCard.vue'
 import LegalEntityVerificationCard from '@/modules/profile/components/LegalEntityVerificationCard.vue'
+import AgentInviteCard from '@/modules/agent/components/AgentInviteCard.vue'
 
 const props = defineProps<{
   user: User
@@ -212,28 +213,11 @@ function becomeAgent() {
         @open-order="openOrder"
       />
 
-      <!-- Become a provider: one quiet row, not a competing block. -->
-      <button
-        type="button"
-        class="app-list-row pressable rounded-[var(--rb-r-card)] bg-card shadow-[var(--rb-elev-1)]"
-        @click="becomeAgent"
-      >
-        <span class="app-list-row__icon app-list-row__icon--amber">
-          <Briefcase class="size-4" />
-        </span>
-        <span class="app-list-row__body">
-          <span class="app-list-row__label">
-            {{ locale.t.profile.becomeAgentTitle }}
-          </span>
-          <span class="app-list-row__hint">
-            {{ locale.t.profile.becomeAgentCta }}
-          </span>
-        </span>
-        <ChevronRight
-          class="app-list-row__chevron"
-          aria-hidden="true"
-        />
-      </button>
+      <!-- Become an agency — always shown here (hiding it is a home-only option). -->
+      <AgentInviteCard
+        :dismissible="false"
+        @open="becomeAgent"
+      />
 
       <!-- Account — settings & sign out -->
       <ClientProfileShortcuts

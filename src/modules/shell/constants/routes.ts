@@ -29,4 +29,5 @@ export const ROUTES = {
   clientDetail: (id: number | string) => `/clients/${id}`,
   settings: '/settings',
   publicOffer: '/legal/public-offer',
+  agentOffer: '/legal/agent-offer',
 } as const

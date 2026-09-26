@@ -9,6 +9,7 @@ import { useLocaleStore } from '@/core/i18n/locale.store'
 import AgentApplicationForm from '@/modules/agent/components/AgentApplicationForm.vue'
 import AgentContractCard from '@/modules/agent/components/AgentContractCard.vue'
 import AgentDetailsForm from '@/modules/agent/components/AgentDetailsForm.vue'
+import AgentOfferCard from '@/modules/agent/components/AgentOfferCard.vue'
 import AgentProfileCompletionBar from '@/modules/profile/components/edit/AgentProfileCompletionBar.vue'
 import AgentStatusCard from '@/modules/agent/components/AgentStatusCard.vue'
 import AgentVerificationReadOnly from '@/modules/profile/components/edit/AgentVerificationReadOnly.vue'
@@ -80,10 +81,21 @@ async function handleUploadContract(fileId: number) {
           :submitting="agent.isSubmitting"
           @submit="handleSubmit"
         />
+
+        <!-- Not ready for KYC now — back home; a home reminder brings them back. -->
+        <Button
+          type="button"
+          variant="ghost"
+          class="h-12 w-full rounded-2xl text-muted-foreground"
+          @click="router.replace(ROUTES.home)"
+        >
+          {{ locale.t.agent.skipApplication }}
+        </Button>
       </template>
 
       <template v-else-if="hasSubmittedApplication && profile">
         <AgentStatusCard :profile="profile" />
+        <AgentOfferCard v-if="profile.offer?.needs_acceptance" />
         <AgentContractCard
           v-if="profile.contract"
           :contract="profile.contract"
@@ -102,6 +114,7 @@ async function handleUploadContract(fileId: number) {
       </template>
 
       <template v-else-if="showDetails && profile">
+        <AgentOfferCard v-if="profile.offer?.needs_acceptance" />
         <AgentProfileCompletionBar :percent="profile.completion_percent" />
         <AgentDetailsForm
           :profile="profile"

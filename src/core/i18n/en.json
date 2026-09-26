@@ -23,13 +23,12 @@
     },
     "terms": {
       "title": "Terms of use",
-      "body": "By signing in you fully agree to the app’s privacy policy and terms of use and undertake to comply with them.",
-      "consentLabel": "Consent",
-      "agreeBefore": "I agree to the ",
-      "agreeLink": "public offer",
-      "agreeAfter": "",
+      "body": "Before using the platform, please read the public offer below.",
       "updatedTitle": "Terms updated",
-      "updatedBody": "Our terms of use have changed. To continue, please review the new terms and confirm your agreement."
+      "updatedBody": "The public offer has been updated. Please read the new text to continue.",
+      "readHint": "The confirm button is at the end of the document",
+      "agree": "By tapping “I accept” you agree to the terms of the public offer",
+      "accept": "I accept"
     },
     "personType": {
       "title": "Your legal status",
@@ -39,6 +38,14 @@
       "legalEntity": "Legal entity",
       "legalEntityHint": "On behalf of a company (verify later)",
       "error": "Couldn't save. Please try again."
+    },
+    "intent": {
+      "title": "How will you use the platform?",
+      "body": "You can also apply as an agency later from your profile.",
+      "client": "As a client",
+      "clientHint": "I order advertising services",
+      "agent": "As an agency",
+      "agentHint": "I fulfil orders — I’ll fill in the verification application"
     }
   },
   "legal": {
@@ -46,7 +53,9 @@
     "offerVersionLabel": "For clients",
     "offerLanguageNote": "The legally binding text of the offer is in Uzbek.",
     "download": "Download PDF",
-    "loadError": "Could not load the offer text."
+    "loadError": "Could not load the offer text.",
+    "agentOfferTitle": "Partnership offer",
+    "agentOfferVersionLabel": "For agencies"
   },
   "personType": {
     "individual": "Individual",
@@ -88,12 +97,14 @@
     "trustHours": "Working hours: {hours}",
     "trustAnytime": "Requests are accepted at any time",
     "trustPhoneLabel": "Contact phone",
-    "heroTitle": "Need advertising? Post a request",
-    "heroSubtitle": "Agencies write, you choose.",
-    "billboardSlide2Title": "The whole ad industry",
-    "billboardSlide2Sub": "in one app",
+    "billboardSlide1Title": "Tashkent’s leading agencies",
+    "billboardSlide1Sub": "in one trusted place",
+    "billboardSlide2Title": "Need advertising?",
+    "billboardSlide2Sub": "Post a request in 1 minute",
     "billboardSlide3Title": "Verified agencies",
-    "billboardSlide3Sub": "with ratings and portfolios",
+    "billboardSlide3Sub": "Open ratings — a safe choice",
+    "billboardSlide4Title": "Don’t search —",
+    "billboardSlide4Sub": "agencies come to you with offers",
     "providerInviteTitle": "Do you run an ad agency?",
     "providerInviteBody": "Register on PRB as an agency — receive client orders and start working today.",
     "providerInviteCta": "Register as an agency",
@@ -352,7 +363,8 @@
     "otklikSent": "Response sent",
     "offerAcceptedChip": "Accepted",
     "endChatHint": "Once ended, nobody can write here. You can reopen it later.",
-    "moreActions": "More"
+    "moreActions": "More",
+    "agencyPhoneHint": "The agency's number is shown because it responded"
   },
   "notifications": {
     "title": "Notifications",
@@ -968,7 +980,21 @@
     "pricelistDeadlineLabel": "Delivery deadline",
     "pricelistDeadlinePlaceholder": "e.g. 14",
     "pricelistDeadlineUnit": "days",
-    "pricelistDeadlineHint": "How many days you commit to deliver the work in. This is written into the contract."
+    "pricelistDeadlineHint": "How many days you commit to deliver the work in. This is written into the contract.",
+    "offerTitle": "Partnership offer",
+    "offerBody": "To work as an agency, read and accept the «PRB» partnership offer for agencies.",
+    "offerCheckbox": "I have read the partnership offer and accept its terms",
+    "offerRead": "Read the offer",
+    "offerAccept": "I accept",
+    "offerRequired": "Accept the partnership offer to continue",
+    "offerUpdatedTitle": "Partnership offer updated",
+    "offerUpdatedBody": "To keep working as an agency, read and accept the new version of the offer.",
+    "offerAcceptedToast": "Offer accepted",
+    "skipApplication": "I’ll do it later",
+    "reminderTitle": "Want to become an agency?",
+    "reminderBody": "Fill in the application — once verified you start receiving orders.",
+    "reminderCta": "Fill in the application",
+    "reminderHide": "Hide"
   },
   "designer": {
     "createCategories": "Your directions",

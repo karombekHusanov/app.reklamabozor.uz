@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { ArrowRight } from '@lucide/vue'
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import BrandLogo from '@/core/ui/BrandLogo.vue'
@@ -11,7 +10,8 @@ import { ROUTES } from '@/modules/shell/constants/routes'
 import { useAuthStore } from '@/modules/auth/stores/auth.store'
 import { useOnboardingStore } from '@/modules/onboarding/stores/onboarding.store'
 import type { PersonType } from '@/modules/auth/types/user'
-import TermsConsent from './TermsConsent.vue'
+import { Building2, ChevronRight, UserRound } from '@lucide/vue'
+import TermsReview from './TermsReview.vue'
 
 const locale = useLocaleStore()
 const onboarding = useOnboardingStore()
@@ -19,7 +19,6 @@ const auth = useAuthStore()
 const router = useRouter()
 const { haptic } = useTelegram()
 
-const agreed = ref(false)
 const submitting = ref(false)
 const errorMessage = ref<string | null>(null)
 
@@ -32,7 +31,7 @@ function pickLanguage(value: Locale) {
 }
 
 async function confirmTerms() {
-  if (!agreed.value || submitting.value) return
+  if (submitting.value) return
   submitting.value = true
   errorMessage.value = null
   haptic('light')
@@ -55,15 +54,29 @@ async function pickPersonType(personType: PersonType) {
   haptic('medium')
 
   try {
-    // Finishes onboarding (stamps role_selected_at); everyone starts as a
-    // client and drops into the app.
+    // Stamps role_selected_at; the flow stays open for the intent step.
     await onboarding.selectPersonType(personType)
-    await router.replace(ROUTES.home)
   }
   catch (e) {
     errorMessage.value = getApiErrorMessage(e) || locale.t.onboarding.personType.error
+  }
+  finally {
     submitting.value = false
   }
+}
+
+/** Last step, front-end only: continue as a client or open the agency KYC form. */
+async function pickIntent(intent: 'client' | 'agent') {
+  if (submitting.value) return
+  submitting.value = true
+  haptic('medium')
+
+  onboarding.complete()
+
+  await router.replace(intent === 'agent'
+    ? { path: ROUTES.profileEdit, query: { as: 'agent', from: 'onboarding' } }
+    : ROUTES.home)
+  submitting.value = false
 }
 
 </script>
@@ -97,35 +110,59 @@ async function pickPersonType(personType: PersonType) {
       <!-- ============ TERMS ============ -->
       <div
         v-else-if="onboarding.step === 'terms'"
-        class="mt-12 flex flex-1 flex-col"
+        class="mt-10 flex flex-1 flex-col"
       >
         <h2 class="text-center text-lg font-bold text-foreground">
           {{ locale.t.onboarding.terms.title }}
         </h2>
-        <p class="mx-auto mt-4 max-w-sm text-center text-sm leading-relaxed text-muted-foreground">
+        <p class="mx-auto mt-3 max-w-sm text-center text-sm leading-relaxed text-muted-foreground">
           {{ locale.t.onboarding.terms.body }}
         </p>
 
-        <div class="flex flex-1 items-center py-8">
-          <TermsConsent v-model="agreed" />
+        <div class="mt-6">
+          <TermsReview
+            :submitting="submitting"
+            :error="errorMessage"
+            @confirm="confirmTerms"
+          />
         </div>
+      </div>
 
-        <p
-          v-if="errorMessage"
-          class="mb-4 rounded-2xl bg-destructive/10 px-3 py-2 text-center text-sm text-destructive"
-        >
-          {{ errorMessage }}
+      <!-- ============ INTENT (client / agency) ============ -->
+      <div
+        v-else-if="onboarding.step === 'intent'"
+        class="mt-12 flex flex-1 flex-col"
+      >
+        <h2 class="text-center text-lg font-bold text-foreground">
+          {{ locale.t.onboarding.intent.title }}
+        </h2>
+        <p class="mx-auto mt-3 max-w-sm text-center text-sm leading-relaxed text-muted-foreground">
+          {{ locale.t.onboarding.intent.body }}
         </p>
 
-        <div class="pt-2">
+        <div class="mt-8 space-y-3">
           <button
+            v-for="option in ([
+              { key: 'client', icon: UserRound, label: locale.t.onboarding.intent.client, hint: locale.t.onboarding.intent.clientHint },
+              { key: 'agent', icon: Building2, label: locale.t.onboarding.intent.agent, hint: locale.t.onboarding.intent.agentHint },
+            ] as const)"
+            :key="option.key"
             type="button"
-            class="btn-brand mx-auto flex h-14 w-full max-w-xs items-center justify-center gap-2 rounded-2xl text-base font-semibold"
-            :disabled="!agreed || submitting"
-            @click="confirmTerms"
+            class="glass-input flex min-h-16 w-full items-center gap-3 rounded-2xl px-4 py-3.5 text-left"
+            :disabled="submitting"
+            @click="pickIntent(option.key)"
           >
-            {{ locale.t.common.next }}
-            <ArrowRight class="size-5" />
+            <span class="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+              <component
+                :is="option.icon"
+                class="size-5"
+              />
+            </span>
+            <span class="flex min-w-0 flex-1 flex-col gap-0.5">
+              <span class="text-sm font-semibold text-foreground">{{ option.label }}</span>
+              <span class="text-[12px] text-muted-foreground">{{ option.hint }}</span>
+            </span>
+            <ChevronRight class="size-4 shrink-0 text-muted-foreground" />
           </button>
         </div>
       </div>

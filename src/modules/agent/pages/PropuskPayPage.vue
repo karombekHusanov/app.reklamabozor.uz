@@ -4,10 +4,12 @@
  * SMS code → confirm. Two uses: buy a Propusk (daily-pass mode), or — with
  * `?topup=1` — top up the balance each otklik fee is taken from (per-otklik
  * mode). Card data lives only in this component's memory for the resend
- * button; it is never persisted.
+ * button; it is never persisted. With "save card" the SMS code binds the card
+ * at ATMOS (we keep only its token server-side); a saved card is then charged
+ * at once — no card number, no SMS step.
  */
 import axios from 'axios'
-import { CheckCircle2, CreditCard, Loader2, Lock, MessageSquareText } from '@lucide/vue'
+import { Check, CheckCircle2, CreditCard, Loader2, Lock, MessageSquareText, Plus, Trash2 } from '@lucide/vue'
 import { storeToRefs } from 'pinia'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -16,8 +18,9 @@ import { useTelegram } from '@/core/composables/useTelegram'
 import { useLocaleStore } from '@/core/i18n/locale.store'
 import { navigateBack } from '@/core/lib/navigation'
 import { fmtSom, passStrings } from '@/modules/agent/lib/pass-i18n'
-import { confirmCardPayment, startCardPayment, startWalletTopup } from '@/modules/agent/services/pass.service'
+import { confirmCardPayment, fetchSavedCards, removeSavedCard, startCardPayment, startWalletTopup } from '@/modules/agent/services/pass.service'
 import { usePassStore } from '@/modules/agent/stores/pass.store'
+import type { CardInput, CardPaymentStart, SavedCard } from '@/modules/agent/types/pass'
 
 type Step = 'card' | 'otp' | 'pending' | 'done'
 type Brand = 'humo' | 'uzcard' | 'mastercard' | 'visa'
@@ -52,6 +55,48 @@ const serviceLabel = computed(() =>
 const step = ref<Step>('card')
 const busy = ref(false)
 const error = ref<string | null>(null)
+
+/* ── saved cards ──────────────────────────────────────────────────── */
+const savedCards = ref<SavedCard[]>([])
+/** null = typing a new card. */
+const selectedCardId = ref<number | null>(null)
+const saveCard = ref(false)
+const removingId = ref<number | null>(null)
+
+async function loadSavedCards() {
+  try {
+    savedCards.value = await fetchSavedCards()
+    selectedCardId.value = savedCards.value[0]?.id ?? null
+  }
+  catch {
+    savedCards.value = []
+  }
+}
+
+function selectCard(id: number | null) {
+  selectedCardId.value = id
+  removingId.value = null
+  error.value = null
+}
+
+/** Two taps: the first arms the button, the second removes. */
+async function removeCard(id: number) {
+  if (removingId.value !== id) {
+    removingId.value = id
+    return
+  }
+  try {
+    await removeSavedCard(id)
+    savedCards.value = savedCards.value.filter(c => c.id !== id)
+    if (selectedCardId.value === id) selectedCardId.value = savedCards.value[0]?.id ?? null
+  }
+  catch (e) {
+    error.value = messageOf(e)
+  }
+  finally {
+    removingId.value = null
+  }
+}
 
 /* ── card step ────────────────────────────────────────────────────── */
 const cardInput = ref('')
@@ -99,7 +144,7 @@ const expiryValid = computed(() => {
   return month >= 1 && month <= 12
 })
 const cardValid = computed(() => cardDigits.value.length === 16)
-const canPay = computed(() => cardValid.value && expiryValid.value && !busy.value)
+const canPay = computed(() => !busy.value && (selectedCardId.value !== null || (cardValid.value && expiryValid.value)))
 
 /* ── otp step ─────────────────────────────────────────────────────── */
 const paymentRef = ref<string | null>(null)
@@ -147,9 +192,16 @@ async function pay() {
   haptic('medium')
   try {
     balanceBefore.value = pass.value?.balance_som ?? 0
+    const card: CardInput = selectedCardId.value !== null
+      ? { card_id: selectedCardId.value }
+      : { card_number: cardDigits.value, expiry: expiryInput.value, save_card: saveCard.value }
     const res = isTopup.value
-      ? await startWalletTopup(topupSom.value, cardDigits.value, expiryInput.value)
-      : await startCardPayment(cardDigits.value, expiryInput.value)
+      ? await startWalletTopup(topupSom.value, card)
+      : await startCardPayment(card)
+    if (!res.requires_otp) {
+      settle(res)
+      return
+    }
     paymentRef.value = res.payment_ref
     cardMask.value = res.card_mask
     otp.value = ''
@@ -184,6 +236,13 @@ async function confirm() {
   finally {
     busy.value = false
   }
+}
+
+/** Saved card: charged at once, no SMS step. */
+function settle(res: CardPaymentStart) {
+  if (res.status === 'success' && res.summary) finish(res.summary)
+  else if (res.status === 'pending') waitForBank()
+  else error.value = t.value.genericError
 }
 
 /** The bank answered late — the pass endpoint settles pending payments. */
@@ -224,6 +283,7 @@ function done() {
 
 onMounted(() => {
   void store.ensureLoaded()
+  void loadSavedCards()
 })
 
 onBeforeUnmount(() => {
@@ -279,77 +339,160 @@ onBeforeUnmount(() => {
         </div>
       </section>
 
-      <!-- step 1 · card -->
+      <!-- step 1 · saved cards -->
       <section
-        v-if="step === 'card'"
+        v-if="step === 'card' && savedCards.length"
         class="pay-card"
       >
-        <div
-          class="pay-brands"
-          aria-hidden="true"
-        >
-          <span
-            v-for="b in brands"
-            :key="b.key"
-            class="pay-brand"
-            :class="[`pay-brand--${b.key}`, { 'is-dim': brand && brand !== b.key, 'is-on': brand === b.key }]"
-          >
-            <template v-if="b.key === 'mastercard'"><i /><i /></template>
-            <template v-else>{{ b.label }}</template>
-          </span>
-        </div>
-
-        <label
-          class="pay-label"
-          for="pay-card"
-        >{{ t.payCardNumber }}</label>
-        <div class="pay-field">
-          <CreditCard
-            class="pay-field__ic"
-            aria-hidden="true"
-          />
-          <input
-            id="pay-card"
-            :value="cardInput"
-            class="pay-input pay-input--card"
-            inputmode="numeric"
-            autocomplete="cc-number"
-            placeholder="0000 0000 0000 0000"
-            maxlength="19"
-            @input="onCardInput"
-          >
-          <span
-            v-if="brand"
-            class="pay-field__brand"
-          >{{ brands.find(b => b.key === brand)?.label }}</span>
-        </div>
-
-        <label
-          class="pay-label"
-          for="pay-exp"
-        >{{ t.payExpiry }}</label>
-        <div class="pay-field pay-field--half">
-          <input
-            id="pay-exp"
-            ref="expiryRef"
-            :value="expiryInput"
-            class="pay-input"
-            inputmode="numeric"
-            autocomplete="cc-exp"
-            placeholder="MM/YY"
-            maxlength="5"
-            @input="onExpiryInput"
-          >
-        </div>
-
-        <p class="pay-note">
-          <Lock
-            class="size-3.5 shrink-0"
-            aria-hidden="true"
-          />
-          {{ t.payNote }}
+        <p class="pay-label">
+          {{ t.savedCards }}
         </p>
+        <div
+          class="pay-saved"
+          role="radiogroup"
+          :aria-label="t.savedCards"
+        >
+          <div
+            v-for="c in savedCards"
+            :key="c.id"
+            class="pay-saved__row"
+            :class="{ 'is-on': selectedCardId === c.id }"
+          >
+            <button
+              type="button"
+              role="radio"
+              class="pay-saved__pick"
+              :aria-checked="selectedCardId === c.id"
+              @click="selectCard(c.id)"
+            >
+              <CreditCard
+                class="pay-field__ic"
+                aria-hidden="true"
+              />
+              <span class="pay-saved__mask">{{ c.card_mask }}</span>
+              <Check
+                v-if="selectedCardId === c.id"
+                class="size-4 text-primary"
+                aria-hidden="true"
+              />
+            </button>
+            <button
+              type="button"
+              class="pay-saved__remove"
+              :class="{ 'is-armed': removingId === c.id }"
+              :aria-label="t.removeCard"
+              @click="removeCard(c.id)"
+            >
+              <span v-if="removingId === c.id">{{ t.removeCardConfirm }}</span>
+              <Trash2
+                v-else
+                class="size-4"
+                aria-hidden="true"
+              />
+            </button>
+          </div>
+          <button
+            type="button"
+            role="radio"
+            class="pay-saved__pick pay-saved__new"
+            :class="{ 'is-on': selectedCardId === null }"
+            :aria-checked="selectedCardId === null"
+            @click="selectCard(null)"
+          >
+            <Plus
+              class="pay-field__ic"
+              aria-hidden="true"
+            />
+            <span class="pay-saved__mask">{{ t.newCard }}</span>
+          </button>
+        </div>
       </section>
+
+      <!-- step 1 · card (typed) — hidden while a saved card is picked -->
+      <template v-if="step === 'card'">
+        <section
+          v-if="selectedCardId === null"
+          class="pay-card"
+        >
+          <div
+            class="pay-brands"
+            aria-hidden="true"
+          >
+            <span
+              v-for="b in brands"
+              :key="b.key"
+              class="pay-brand"
+              :class="[`pay-brand--${b.key}`, { 'is-dim': brand && brand !== b.key, 'is-on': brand === b.key }]"
+            >
+              <template v-if="b.key === 'mastercard'"><i /><i /></template>
+              <template v-else>{{ b.label }}</template>
+            </span>
+          </div>
+
+          <label
+            class="pay-label"
+            for="pay-card"
+          >{{ t.payCardNumber }}</label>
+          <div class="pay-field">
+            <CreditCard
+              class="pay-field__ic"
+              aria-hidden="true"
+            />
+            <input
+              id="pay-card"
+              :value="cardInput"
+              class="pay-input pay-input--card"
+              inputmode="numeric"
+              autocomplete="cc-number"
+              placeholder="0000 0000 0000 0000"
+              maxlength="19"
+              @input="onCardInput"
+            >
+            <span
+              v-if="brand"
+              class="pay-field__brand"
+            >{{ brands.find(b => b.key === brand)?.label }}</span>
+          </div>
+
+          <label
+            class="pay-label"
+            for="pay-exp"
+          >{{ t.payExpiry }}</label>
+          <div class="pay-field pay-field--half">
+            <input
+              id="pay-exp"
+              ref="expiryRef"
+              :value="expiryInput"
+              class="pay-input"
+              inputmode="numeric"
+              autocomplete="cc-exp"
+              placeholder="MM/YY"
+              maxlength="5"
+              @input="onExpiryInput"
+            >
+          </div>
+
+          <label class="pay-save">
+            <input
+              v-model="saveCard"
+              type="checkbox"
+              class="pay-save__box"
+            >
+            <span>
+              <b>{{ t.saveCard }}</b>
+              <small>{{ t.saveCardHint }}</small>
+            </span>
+          </label>
+
+          <p class="pay-note">
+            <Lock
+              class="size-3.5 shrink-0"
+              aria-hidden="true"
+            />
+            {{ t.payNote }}
+          </p>
+        </section>
+      </template>
 
       <!-- step 2 · sms code -->
       <section
@@ -549,6 +692,29 @@ onBeforeUnmount(() => {
 .pay-input--card { letter-spacing: 0.08em; }
 
 .pay-note { display: flex; align-items: flex-start; gap: 7px; margin: 4px 0 0; font-size: 11.5px; line-height: 1.45; color: var(--muted-foreground); }
+
+/* saved cards */
+.pay-saved { display: flex; flex-direction: column; gap: 8px; }
+.pay-saved__row { display: flex; align-items: stretch; gap: 6px; }
+.pay-saved__pick {
+  flex: 1; display: flex; align-items: center; gap: 10px; min-height: 52px; padding: 0 14px;
+  border-radius: var(--rb-r-field); background: var(--secondary); border: 1.5px solid transparent; cursor: pointer; text-align: left;
+  transition: border-color var(--rb-dur) var(--rb-ease), background var(--rb-dur) var(--rb-ease);
+}
+.pay-saved__row.is-on .pay-saved__pick, .pay-saved__new.is-on { border-color: var(--primary); background: var(--card); }
+.pay-saved__pick:focus-visible, .pay-saved__remove:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.pay-saved__mask { flex: 1; font-size: 15.5px; font-weight: 700; letter-spacing: 0.04em; font-variant-numeric: tabular-nums; color: var(--foreground); }
+.pay-saved__new .pay-saved__mask { letter-spacing: 0; font-size: 14px; }
+.pay-saved__remove {
+  display: grid; place-items: center; min-width: 48px; padding: 0 10px; border: 0; border-radius: var(--rb-r-field);
+  background: var(--secondary); color: var(--muted-foreground); font-size: 12px; font-weight: 700; cursor: pointer;
+}
+.pay-saved__remove.is-armed { background: color-mix(in srgb, var(--destructive) 12%, var(--card)); color: var(--destructive); }
+
+.pay-save { display: flex; align-items: flex-start; gap: 10px; margin: 2px 0 12px; cursor: pointer; }
+.pay-save__box { width: 20px; height: 20px; margin-top: 1px; flex-shrink: 0; accent-color: var(--primary); }
+.pay-save b { display: block; font-size: 13.5px; font-weight: 700; color: var(--foreground); }
+.pay-save small { display: block; margin-top: 2px; font-size: 11.5px; line-height: 1.4; color: var(--muted-foreground); }
 
 /* otp + states */
 .pay-otp, .pay-state { display: flex; flex-direction: column; align-items: center; text-align: center; padding: 22px 16px; }
