@@ -1,12 +1,16 @@
 <script setup lang="ts">
-import { Loader2, Star } from '@lucide/vue'
-import { computed } from 'vue'
+import { Loader2, MessageCircle, Star } from '@lucide/vue'
+import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import Avatar from '@/core/ui/Avatar.vue'
 import GlassCard from '@/core/ui/GlassCard.vue'
 import { Button } from '@/core/ui/button'
 import { useLocaleStore } from '@/core/i18n/locale.store'
+import { useToast } from '@/core/composables/useToast'
+import { getApiErrorMessage } from '@/core/api/api-error'
 import { formatDateTime } from '@/core/lib/date'
+import { openOrderChat } from '@/modules/chat/services/chat.service'
+import { ROUTES } from '@/modules/shell/constants/routes'
 import type { Order } from '@/modules/orders/types/order'
 
 const props = defineProps<{
@@ -21,6 +25,7 @@ const emit = defineEmits<{
 
 const locale = useLocaleStore()
 const router = useRouter()
+const toast = useToast()
 
 const claim = computed(() => props.order.claim ?? null)
 const agent = computed(() => claim.value?.agent ?? null)
@@ -35,6 +40,32 @@ const stars = computed(() => {
   const value = agent.value?.stars
   return value != null ? Number(value).toFixed(1) : null
 })
+
+// The claiming agent's otklik — its order thread is the in-app chat with them
+// (opened eagerly on otklik; POST /offers/{offer}/chat as a fallback).
+const claimOffer = computed(() => {
+  const agentId = claim.value?.agent_id
+  if (agentId == null) return null
+  return props.order.offers?.find(o => o.agent.id === agentId && ['pending', 'accepted'].includes(o.status)) ?? null
+})
+
+const chatOpening = ref(false)
+
+async function openChat() {
+  const offer = claimOffer.value
+  if (!offer || chatOpening.value) return
+  chatOpening.value = true
+  try {
+    const chatId = offer.chat_id ?? (await openOrderChat(offer.id)).id
+    await router.push(ROUTES.chatDirect(chatId))
+  }
+  catch (e) {
+    toast.error(getApiErrorMessage(e))
+  }
+  finally {
+    chatOpening.value = false
+  }
+}
 
 function openProfile() {
   const id = agent.value?.profile_id
@@ -92,6 +123,24 @@ function openProfile() {
       </button>
 
       <div class="flex flex-wrap gap-2">
+        <button
+          v-if="claimOffer"
+          type="button"
+          class="tez-action tez-action--primary"
+          :disabled="chatOpening"
+          @click="openChat"
+        >
+          <Loader2
+            v-if="chatOpening"
+            class="size-4 animate-spin"
+          />
+          <MessageCircle
+            v-else
+            class="size-4"
+            aria-hidden="true"
+          />
+          {{ locale.t.route.chat }}
+        </button>
         <a
           v-if="agent.phone"
           :href="`tel:${agent.phone}`"
@@ -184,5 +233,8 @@ function openProfile() {
   text-decoration: none;
   -webkit-tap-highlight-color: transparent;
 }
+.tez-action { gap: 6px; }
+.tez-action--primary { border-color: transparent; background: var(--primary); color: var(--primary-foreground); }
+.tez-action:disabled { opacity: 0.6; cursor: default; }
 .tez-action:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
 </style>

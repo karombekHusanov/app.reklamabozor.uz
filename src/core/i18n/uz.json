@@ -451,6 +451,7 @@
     "otklik": "Otklik berish",
     "busy": "Band",
     "mine": "Sizniki",
+    "claimedStatus": "Agent biriktirildi",
     "busyToast": "Bu so'rovni hozirgina boshqa agent band qildi.",
     "busyBody": "Bu so'rov ustida boshqa agent ishlamoqda.",
     "yoursBody": "So'rov sizga biriktirilgan. Narx va shartlarni mijoz bilan to'g'ridan-to'g'ri kelishing.",

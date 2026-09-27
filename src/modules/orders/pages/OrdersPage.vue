@@ -14,6 +14,7 @@ import { ROUTES } from '@/modules/shell/constants/routes'
 import OrderTile from '@/modules/orders/components/OrderTile.vue'
 import { orderStatusVariant } from '@/modules/orders/lib/order-status'
 import { useOrdersStore } from '@/modules/orders/stores/orders.store'
+import type { Order } from '@/modules/orders/types/order'
 
 const auth = useAuthStore()
 const orders = useOrdersStore()
@@ -26,6 +27,15 @@ function load() {
 
 onMounted(load)
 watch(() => auth.isAuthenticated, load)
+
+// A claimed Tezkor request sits in `offers_sent`, but for the client it means
+// "an agent is on it" — not "offers to compare" (Tender wording).
+function statusLabel(order: Order): string {
+  if (order.route === 'tezkor' && order.claim && ['new', 'offers_sent'].includes(order.status)) {
+    return locale.t.route.claimedStatus
+  }
+  return locale.t.orders.status[order.status]
+}
 
 function openOrder(id: number) {
   router.push(`/orders/${id}`)
@@ -97,7 +107,7 @@ function openOrder(id: number) {
               :variant="orderStatusVariant(order.status)"
               class="shrink-0 !px-2.5 !py-1 text-[11px] font-bold"
             >
-              {{ locale.t.orders.status[order.status] }}
+              {{ statusLabel(order) }}
             </Badge>
           </template>
         </OrderTile>
