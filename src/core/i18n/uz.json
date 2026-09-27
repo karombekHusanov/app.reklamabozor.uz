@@ -1524,5 +1524,206 @@
     "servicesAllCount": "{count} ta yo'nalish",
     "agenciesEyebrow": "Tasdiqlangan ijrochilar",
     "agenciesNew": "Yangi"
+  },
+  "agentHome": {
+    "modeLabel": "Rejim",
+    "modeClient": "Mijoz",
+    "modeAgent": "Agent",
+    "map": "Xarita",
+    "call": "Qo‘ng‘iroq qilish",
+    "notifications": "Bildirishnomalar",
+    "searchPlaceholder": "Qanday so‘rov qidiryapsiz?",
+    "filters": "Filtr",
+    "all": "Hammasi",
+    "empty": "Hozircha mos so‘rov yo‘q",
+    "emptyBody": "Yangi so‘rov chiqishi bilan Telegramda xabar yuboramiz.",
+    "take": "Olish",
+    "respond": "Otklik berish",
+    "busy": "Band — boshqa agentlik oldi",
+    "mine": "Sizniki",
+    "tabs": {
+      "orders": "So‘rovlar",
+      "chats": "Chatlar",
+      "balance": "Balans",
+      "profile": "Anketa",
+      "help": "Yordam"
+    },
+    "storyClose": "Yopish",
+    "storyPrev": "Oldingi",
+    "storyNext": "Keyingi",
+    "storyFrom": "PRB · agentlar uchun",
+    "stories": {
+      "how": {
+        "label": "Qanday ishlaydi",
+        "cta": "So‘rovlarni ko‘rish",
+        "slides": [
+          [
+            "So‘rovlar Telegramga keladi",
+            "Kategoriyangizdagi har bir yangi so‘rov haqida darhol xabar olasiz."
+          ],
+          [
+            "Bitta tugma — otklik",
+            "Otklik bering: mijoz sizni ko‘radi va u bilan chat ochiladi."
+          ],
+          [
+            "Kelishing va ishlang",
+            "Tezkorda narxni mijoz bilan o‘zingiz kelishasiz, Tenderda shartnoma PRB orqali tuziladi."
+          ]
+        ]
+      },
+      "first": {
+        "label": "Birinchi otklik",
+        "cta": "Yangi so‘rovlar",
+        "slides": [
+          [
+            "Tezkor — kim birinchi",
+            "Tezkor so‘rovni birinchi olgan agent ishlaydi. Bir vaqtda bir nechta so‘rov olishingiz mumkin."
+          ],
+          [
+            "Tender — raqobat",
+            "Narxlar ro‘yxatini yuboring: mijoz takliflarni solishtirib, eng yaxshisini tanlaydi."
+          ]
+        ]
+      },
+      "balance": {
+        "label": "Balansni to‘ldirish",
+        "cta": "Balansga o‘tish",
+        "slides": [
+          [
+            "Otklik — pullik",
+            "Pul faqat otklik yuborilganda yechiladi. Otklik rad etilsa — balansga qaytadi."
+          ],
+          [
+            "Oldindan to‘ldiring",
+            "Balans tugasa otklik yuborib bo‘lmaydi — «Balans» bo‘limidan to‘ldiring."
+          ]
+        ]
+      },
+      "profile": {
+        "label": "Anketani to‘ldirish",
+        "cta": "Anketani ochish",
+        "slides": [
+          [
+            "Logo va portfolio",
+            "To‘liq anketa mijoz ishonchini oshiradi va sizni ro‘yxatda yuqoriga olib chiqadi."
+          ],
+          [
+            "Ko‘proq kategoriya",
+            "Qancha ko‘p yo‘nalish tanlasangiz, shuncha ko‘p so‘rov keladi."
+          ]
+        ]
+      },
+      "rating": {
+        "label": "Reyting",
+        "cta": "Anketam",
+        "slides": [
+          [
+            "Sharhlar reytingni belgilaydi",
+            "Sharhni faqat yakunlangan ish mijozi qoldiradi, har biri moderatsiyadan o‘tadi."
+          ]
+        ]
+      },
+      "payout": {
+        "label": "Pul qachon keladi",
+        "cta": "Daromadlar",
+        "slides": [
+          [
+            "Tenderda avans",
+            "Ish boshlanganda avans, qolgani mijoz ishni qabul qilgach — komissiya ushlanib, bank hisobingizga o‘tadi."
+          ]
+        ]
+      }
+    },
+    "help": {
+      "title": "Yordam",
+      "support": "Yordam",
+      "assistant": "AI yordamchi",
+      "call": "Qo‘ng‘iroq qilish",
+      "app": "Ilova",
+      "clientMode": "Mijoz rejimiga o‘tish",
+      "clientModeSub": "Buyurtma berish uchun",
+      "settings": "Sozlamalar",
+      "docs": "Hujjatlar",
+      "agentOffer": "Agentlik hamkorlik ofertasi",
+      "publicOffer": "Ommaviy oferta"
+    },
+    "chats": {
+      "title": "Chatlar",
+      "tabs": {
+        "open": "Ochiq",
+        "work": "Jarayonda",
+        "done": "Bajarilgan",
+        "archive": "Arxiv"
+      },
+      "empty": {
+        "open": [
+          "Ochiq chatlar hozircha yo‘q",
+          "Bu yerda siz otklik bergan yoki mijoz o‘zi taklif qilgan so‘rovlar chatlari bo‘ladi. Tafsilot va shartlarni shu yerda kelishasiz."
+        ],
+        "work": [
+          "Jarayondagi ishlar yo‘q",
+          "Mijoz bilan kelishganingizdan keyin chat shu yerga o‘tadi."
+        ],
+        "done": [
+          "Bajarilgan ishlar hozircha yo‘q",
+          "Mijoz ishni qabul qilgach, chat shu yerda saqlanadi."
+        ],
+        "archive": [
+          "Arxiv bo‘sh",
+          "Yopilgan va bekor qilingan so‘rovlar chatlari shu yerda saqlanadi."
+        ]
+      },
+      "findOrder": "So‘rov topish"
+    },
+    "balance": {
+      "title": "Balans",
+      "enough": "{count} ta otklikka yetadi",
+      "amount": "To‘ldirish summasi",
+      "amountHint": "{amount} — {count} ta otklik",
+      "thousand": "{n} ming",
+      "rules": [
+        "Mijoz bilan gaplashish uchun otklik yuborish kerak — har biri {fee}",
+        "Pul faqat otklik yuborilganda yechiladi — balans muddatsiz saqlanadi",
+        "Otklik rad etilsa, pul balansga qaytadi"
+      ],
+      "whyTitle": "Nima uchun to‘laysiz",
+      "whyBody": "Siz otkliklar uchun to‘laysiz — mijozga o‘z xizmatingizni taklif qilish uchun. Tezkorda otklik so‘rovni sizga biriktiradi, Tenderda narxlar ro‘yxatini yuborish imkonini beradi.",
+      "history": "So‘nggi amallar",
+      "historyEmpty": "Hozircha amallar yo‘q",
+      "types": {
+        "topup": "Balans to‘ldirildi",
+        "pass": "Propusk",
+        "response_fee": "Otklik",
+        "adjustment": "Tuzatish"
+      },
+      "topup": "Balansni to‘ldirish",
+      "disabled": "Balansni to‘ldirish hozircha yoqilmagan — menejerga murojaat qiling."
+    },
+    "anketa": {
+      "title": "Anketa",
+      "completeTitle": "Anketani oxirigacha to‘ldiring",
+      "completeBody": "Logo, portfolio va joylashuv bilan to‘liq anketa mijoz ishonchini oshiradi va sizni ro‘yxatda yuqoriga olib chiqadi.",
+      "completePct": "{pct}% to‘ldirilgan",
+      "complete": "To‘ldirish",
+      "ratingNew": "Hali baho yo‘q",
+      "reviewsNone": "Sharhlar yo‘q",
+      "reviews": "{count} ta sharh",
+      "grade": "Grade: {grade}",
+      "verified": "Tasdiqlangan agentlik",
+      "edit": "Tahrirlash",
+      "share": "Ochiq sahifa",
+      "rows": {
+        "stats": "Mening statistikam",
+        "portfolio": "Portfolio",
+        "categories": "Kategoriyalar",
+        "bank": "Bank rekvizitlari",
+        "offer": "Hamkorlik ofertasi"
+      },
+      "offerAccepted": "Qabul qilingan",
+      "offerNeeded": "Qabul qiling",
+      "aboutTitle": "Agentlik haqida",
+      "aboutEmpty": "Qancha vaqtdan beri ishlaysiz, qanday natijalarga erishgansiz? Yondashuvingizning o‘ziga xosligi nimada?",
+      "logout": "Chiqish"
+    }
   }
 }

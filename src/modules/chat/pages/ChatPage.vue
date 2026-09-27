@@ -10,9 +10,9 @@ import Avatar from '@/core/ui/Avatar.vue'
 import { Button } from '@/core/ui/button'
 import { useAuthStore } from '@/modules/auth/stores/auth.store'
 import { useLocaleStore } from '@/core/i18n/locale.store'
-import { categoryName } from '@/core/i18n/category-name'
 import { formatMessageTime } from '@/core/lib/date'
 import { ROUTES } from '@/modules/shell/constants/routes'
+import { chatOrderLabel, chatRoute, chatTitle } from '@/modules/chat/lib/chat-list'
 import { fetchChats, openDirectChat } from '@/modules/chat/services/chat.service'
 import { useChatStore } from '@/modules/chat/stores/chat.store'
 import type { Chat } from '@/modules/chat/types/chat'
@@ -70,31 +70,13 @@ async function load() {
 onMounted(load)
 watch(() => [auth.isAuthenticated, agentProfileId.value], load)
 
-function chatTitle(item: Chat) {
-  return item.other_participant.company_name || item.other_participant.name
-}
-
 function orderLabel(item: Chat) {
-  if (item.order_id != null) {
-    const title = item.order?.title
-      || (item.order?.category ? categoryName(item.order.category, locale.locale) : null)
-    return locale.t.chat.orderChip
-      .replace('{id}', String(item.order_id))
-      .replace('{title}', title ?? '')
-  }
-
-  return locale.t.chat.directLabel
+  return chatOrderLabel(item, locale.t.chat, locale.locale)
 }
 
 function openThread(item: Chat) {
-  if (item.type === 'direct') {
-    router.push(ROUTES.chatDirect(item.id))
-    return
-  }
-
-  if (item.order_id) {
-    router.push(ROUTES.chatOrder(item.order_id))
-  }
+  const to = chatRoute(item)
+  if (to) void router.push(to)
 }
 
 async function startDirectChat() {

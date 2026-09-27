@@ -1,4 +1,5 @@
 import type { RouteRecordRaw } from 'vue-router'
+import { agentRoutes } from '@/modules/agent/routes'
 import { assistantRoutes } from '@/modules/assistant/routes'
 import { chatRoutes } from '@/modules/chat/routes'
 import { designersRoutes } from '@/modules/designers'
@@ -18,6 +19,7 @@ export const shellRoutes: RouteRecordRaw[] = [
     component: () => import('@/modules/shell/layouts/AppLayout.vue'),
     children: [
       ...homeRoutes,
+      ...agentRoutes,
       ...marketplaceRoutes,
       ...designersRoutes,
       ...tenderRoutes,

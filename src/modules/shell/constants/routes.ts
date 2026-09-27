@@ -1,5 +1,10 @@
 export const ROUTES = {
   home: '/',
+  agentHome: '/agent',
+  agentHelp: '/agent/help',
+  agentChats: '/agent/chats',
+  agentBalance: '/agent/balance',
+  agentProfile: '/agent/profile',
   liveOrders: '/live-orders',
   liveOrderDetail: (id: number | string) => `/live-orders/${id}`,
   marketplace: '/marketplace',

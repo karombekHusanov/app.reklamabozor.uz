@@ -71,7 +71,7 @@ onBeforeUnmount(() => {
         :class="trailingOverlay && $slots.trailing ? 'app-header-card--art !overflow-visible' : ''"
       >
         <div
-          class="flex items-center gap-2.5"
+          class="flex min-h-10 items-center gap-2.5 pl-2.5 pr-1"
           :class="trailingOverlay && $slots.trailing ? 'pr-16' : ''"
         >
           <button
@@ -89,12 +89,12 @@ onBeforeUnmount(() => {
               <div class="min-w-0">
                 <p
                   v-if="subtitle"
-                  class="truncate text-[11px] font-semibold uppercase tracking-[0.1em] text-muted-foreground"
+                  class="truncate text-[10.5px] font-medium uppercase tracking-[0.1em] text-muted-foreground"
                 >
                   {{ subtitle }}
                 </p>
                 <h1
-                  class="rb-font-display truncate text-[19px] font-extrabold leading-tight tracking-[-0.02em] text-foreground"
+                  class="rb-font-display truncate text-[18px] font-bold leading-tight tracking-[-0.01em] text-foreground"
                   :class="subtitle && 'mt-0.5'"
                 >
                   {{ title }}

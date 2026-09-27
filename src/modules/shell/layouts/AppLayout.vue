@@ -1,14 +1,17 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import AgentTabBar from '@/modules/shell/components/AgentTabBar.vue'
 import TabBar from '@/modules/shell/components/TabBar.vue'
 import PhoneGate from '@/modules/auth/components/PhoneGate.vue'
 import { useAuthStore } from '@/modules/auth/stores/auth.store'
 import { ROUTES } from '@/modules/shell/constants/routes'
+import { useModeStore } from '@/modules/shell/stores/mode.store'
 
 const auth = useAuthStore()
 const router = useRouter()
 const route = useRoute()
+const mode = useModeStore()
 
 // Some pages (e.g. the order wizard) provide their own bottom action bar and
 // hide the global tab bar via `meta.hideTabBar`.
@@ -16,7 +19,10 @@ const hideTabBar = computed(() => route.meta.hideTabBar === true)
 
 // Native-feel navigation: deeper routes push in from the right, going back pops
 // out, and switching between tab roots cross-fades.
-const TAB_ROOTS = new Set<string>([ROUTES.home, ROUTES.orders, ROUTES.assistant, ROUTES.profile])
+const TAB_ROOTS = new Set<string>([
+  ROUTES.home, ROUTES.orders, ROUTES.assistant, ROUTES.profile,
+  ROUTES.agentHome, ROUTES.agentChats, ROUTES.agentBalance, ROUTES.agentProfile, ROUTES.agentHelp,
+])
 
 function depthOf(path: string): number {
   // Tab roots share depth 1 so "/" vs "/orders" is a tab switch, not a push.
@@ -58,6 +64,9 @@ router.afterEach((to, from) => {
         </Transition>
       </RouterView>
     </main>
-    <TabBar v-if="!hideTabBar" />
+    <template v-if="!hideTabBar">
+      <AgentTabBar v-if="mode.isAgent" />
+      <TabBar v-else />
+    </template>
   </div>
 </template>

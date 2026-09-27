@@ -18,6 +18,7 @@ import { useTelegram } from '@/core/composables/useTelegram'
 import { useLocaleStore } from '@/core/i18n/locale.store'
 import { navigateBack } from '@/core/lib/navigation'
 import { fmtSom, passStrings } from '@/modules/agent/lib/pass-i18n'
+import { DEFAULT_TOPUP_SOM, TOPUP_PRESETS } from '@/modules/agent/lib/topup'
 import { confirmCardPayment, fetchSavedCards, removeSavedCard, startCardPayment, startWalletTopup } from '@/modules/agent/services/pass.service'
 import { usePassStore } from '@/modules/agent/stores/pass.store'
 import type { CardInput, CardPaymentStart, SavedCard } from '@/modules/agent/types/pass'
@@ -38,12 +39,11 @@ const t = computed(() => passStrings(locale.locale))
 const hours = computed(() => pass.value?.hours ?? 24)
 /* ── what is being paid for ───────────────────────────────────────── */
 const isTopup = computed(() => route.query.topup === '1')
-const TOPUP_PRESETS = [5000, 10000, 20000, 50000]
 const feeSom = computed(() => pass.value?.response_price_som ?? 1000)
 const topupOptions = computed(() => TOPUP_PRESETS.filter(v => v >= feeSom.value))
 // Preselected from the "not enough balance" sheet (`?amount=`), else 10 000.
 const queryAmount = Number(route.query.amount)
-const topupSom = ref(TOPUP_PRESETS.includes(queryAmount) ? queryAmount : 10000)
+const topupSom = ref(TOPUP_PRESETS.includes(queryAmount) ? queryAmount : DEFAULT_TOPUP_SOM)
 const balanceBefore = ref(0)
 
 const amountSom = computed(() => (isTopup.value ? topupSom.value : (pass.value?.price_som ?? 0)))

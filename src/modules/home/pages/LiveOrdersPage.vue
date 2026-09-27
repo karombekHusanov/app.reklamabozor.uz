@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Inbox, ListFilter, Search } from '@lucide/vue'
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import AppHeader from '@/modules/shell/components/AppHeader.vue'
 import GlassCard from '@/core/ui/GlassCard.vue'
 import EmptyState from '@/core/ui/EmptyState.vue'
@@ -8,23 +8,13 @@ import Skeleton from '@/core/ui/Skeleton.vue'
 import LiveOrderCard from '@/modules/home/components/LiveOrderCard.vue'
 import LiveOrdersHeaderArt from '@/modules/home/components/LiveOrdersHeaderArt.vue'
 import LiveOrdersFilterDrawer from '@/modules/home/components/LiveOrdersFilterDrawer.vue'
-import {
-  datesFromPreset,
-  EMPTY_LIVE_ORDERS_FILTERS,
-  isFilterActive,
-  type LiveOrdersFilterState,
-} from '@/modules/home/lib/live-orders-filters'
+import { useLiveOrdersFeed } from '@/modules/home/composables/useLiveOrdersFeed'
 import { useLocaleStore } from '@/core/i18n/locale.store'
 import { useTelegram } from '@/core/composables/useTelegram'
 import { useHomeStore } from '@/modules/home/stores/home.store'
 import OrderRouteTabs from '@/modules/orders/components/OrderRouteTabs.vue'
 import { useOrderRouteStore } from '@/modules/orders/stores/order-route.store'
 import type { OrderRoute } from '@/modules/orders/types/order'
-import { fetchCategories } from '@/modules/orders/services/orders.service'
-import { fetchRegions } from '@/modules/orders/services/regions.service'
-import { fetchLiveOrders, type LiveOrder } from '@/modules/home/services/live-orders.service'
-import type { Category } from '@/modules/agent/types/agent'
-import type { Region } from '@/modules/orders/types/region'
 
 const locale = useLocaleStore()
 const home = useHomeStore()
@@ -35,66 +25,17 @@ const requestRoute = computed({
 })
 const { haptic } = useTelegram()
 
-const orders = ref<LiveOrder[]>([])
-const categories = ref<Category[]>([])
-const regions = ref<Region[]>([])
-const searchQuery = ref('')
-const debouncedQuery = ref('')
-const filters = ref<LiveOrdersFilterState>({ ...EMPTY_LIVE_ORDERS_FILTERS })
+const { orders, categories, regions, searchQuery, filters, loading, filtersActive, hasActiveQuery } = useLiveOrdersFeed(
+  computed(() => routeStore.active),
+  (list, filtered) => {
+    if (!filtered) home.liveOrders = list.slice(0, 10)
+  },
+)
 const filterOpen = ref(false)
-const loading = ref(true)
 
-let searchTimer: ReturnType<typeof setTimeout> | null = null
-
-const filtersActive = computed(() => isFilterActive(filters.value))
-const hasActiveQuery = computed(() => debouncedQuery.value.trim().length > 0)
-
-watch(searchQuery, (value) => {
-  if (searchTimer) clearTimeout(searchTimer)
-  searchTimer = setTimeout(() => {
-    debouncedQuery.value = value
-  }, 300)
-})
-
-async function loadOrders() {
-  loading.value = true
-  try {
-    const dates = datesFromPreset(filters.value.datePreset)
-    orders.value = await fetchLiveOrders(50, {
-      route: routeStore.active,
-      q: debouncedQuery.value.trim() || null,
-      category_ids: filters.value.categoryIds,
-      region_id: filters.value.regionId,
-      district_id: filters.value.districtId,
-      created_from: dates.created_from,
-      created_to: dates.created_to,
-    })
-    if (!hasActiveQuery.value && !filtersActive.value) {
-      home.liveOrders = orders.value.slice(0, 10)
-    }
-  }
-  catch {
-    orders.value = []
-  }
-  finally {
-    loading.value = false
-  }
-}
-
-onMounted(async () => {
+onMounted(() => {
   void home.markLiveOrdersSeen()
-  const [categoriesResult, regionsResult] = await Promise.allSettled([
-    fetchCategories(),
-    fetchRegions(),
-  ])
-  categories.value = categoriesResult.status === 'fulfilled' ? categoriesResult.value : []
-  regions.value = regionsResult.status === 'fulfilled' ? regionsResult.value : []
-  await loadOrders()
 })
-
-watch([debouncedQuery, filters, () => routeStore.active], () => {
-  void loadOrders()
-}, { deep: true })
 
 function openFilters() {
   haptic('light')

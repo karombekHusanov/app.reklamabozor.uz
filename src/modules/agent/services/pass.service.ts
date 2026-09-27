@@ -1,6 +1,6 @@
 import { api } from '@/core/api/client'
 import type { ApiSuccess } from '@/core/types/api'
-import type { AgentPass, CardInput, CardPaymentStart, PassHistoryItem, PassPurchaseResult, SavedCard } from '@/modules/agent/types/pass'
+import type { AgentPass, AgentWallet, CardInput, CardPaymentStart, PassHistoryItem, PassPurchaseResult, SavedCard } from '@/modules/agent/types/pass'
 
 export async function fetchPass(): Promise<AgentPass> {
   const { data } = await api.get<ApiSuccess<AgentPass>>('/api/v1/agent/pass', { skipErrorToast: true })
@@ -61,6 +61,12 @@ export async function startWalletTopup(amountSom: number, card: CardInput): Prom
 }
 
 /** Cards bound at the provider (masked). */
+/** Balance and its latest ledger entries. */
+export async function fetchWallet(): Promise<AgentWallet> {
+  const { data } = await api.get<ApiSuccess<AgentWallet>>('/api/v1/agent/wallet', { skipErrorToast: true })
+  return data.data
+}
+
 export async function fetchSavedCards(): Promise<SavedCard[]> {
   const { data } = await api.get<ApiSuccess<{ items: SavedCard[] }>>('/api/v1/agent/cards', { skipErrorToast: true })
   return data.data.items

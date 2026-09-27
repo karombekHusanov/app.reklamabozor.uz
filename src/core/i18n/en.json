@@ -1524,5 +1524,206 @@
     "servicesAllCount": "{count} categories",
     "agenciesEyebrow": "Verified providers",
     "agenciesNew": "New"
+  },
+  "agentHome": {
+    "modeLabel": "Mode",
+    "modeClient": "Client",
+    "modeAgent": "Agent",
+    "map": "Map",
+    "call": "Call",
+    "notifications": "Notifications",
+    "searchPlaceholder": "What order are you looking for?",
+    "filters": "Filters",
+    "all": "All",
+    "empty": "No matching orders yet",
+    "emptyBody": "We will message you in Telegram as soon as a new order appears.",
+    "take": "Take",
+    "respond": "Respond",
+    "busy": "Taken by another agency",
+    "mine": "Yours",
+    "tabs": {
+      "orders": "Orders",
+      "chats": "Chats",
+      "balance": "Balance",
+      "profile": "Profile",
+      "help": "Support"
+    },
+    "storyClose": "Close",
+    "storyPrev": "Previous",
+    "storyNext": "Next",
+    "storyFrom": "PRB · for agents",
+    "stories": {
+      "how": {
+        "label": "How it works",
+        "cta": "See orders",
+        "slides": [
+          [
+            "Orders arrive in Telegram",
+            "You hear about every new order in your categories right away."
+          ],
+          [
+            "One tap to respond",
+            "Respond and the client sees you — a chat opens with them."
+          ],
+          [
+            "Agree and get to work",
+            "In Tezkor you agree the price with the client directly; in Tender the contract goes through PRB."
+          ]
+        ]
+      },
+      "first": {
+        "label": "First response",
+        "cta": "New orders",
+        "slides": [
+          [
+            "Tezkor — first come",
+            "The agent who takes a Tezkor order first does the job. You can hold several at once."
+          ],
+          [
+            "Tender — competition",
+            "Send a price list: the client compares offers and picks the best one."
+          ]
+        ]
+      },
+      "balance": {
+        "label": "Top up balance",
+        "cta": "Go to balance",
+        "slides": [
+          [
+            "Responses are paid",
+            "You are charged only when you send a response. If it is declined, the money returns to your balance."
+          ],
+          [
+            "Top up in advance",
+            "With an empty balance you cannot respond — top up in the Balance tab."
+          ]
+        ]
+      },
+      "profile": {
+        "label": "Complete profile",
+        "cta": "Open profile",
+        "slides": [
+          [
+            "Logo and portfolio",
+            "A complete profile builds client trust and lifts you in the list."
+          ],
+          [
+            "More categories",
+            "The more services you pick, the more orders you receive."
+          ]
+        ]
+      },
+      "rating": {
+        "label": "Rating",
+        "cta": "My profile",
+        "slides": [
+          [
+            "Reviews shape your rating",
+            "Only the client of a completed order can review, and every review is moderated."
+          ]
+        ]
+      },
+      "payout": {
+        "label": "When you get paid",
+        "cta": "Earnings",
+        "slides": [
+          [
+            "Advance in Tender",
+            "An advance when work starts, the rest after the client accepts it — minus commission, to your bank account."
+          ]
+        ]
+      }
+    },
+    "help": {
+      "title": "Support",
+      "support": "Support",
+      "assistant": "AI assistant",
+      "call": "Call us",
+      "app": "App",
+      "clientMode": "Switch to client mode",
+      "clientModeSub": "To place an order",
+      "settings": "Settings",
+      "docs": "Documents",
+      "agentOffer": "Agency partnership offer",
+      "publicOffer": "Public offer"
+    },
+    "chats": {
+      "title": "Chats",
+      "tabs": {
+        "open": "Open",
+        "work": "In progress",
+        "done": "Completed",
+        "archive": "Archive"
+      },
+      "empty": {
+        "open": [
+          "No open chats yet",
+          "Chats for orders you responded to, or where a client invited you, will appear here. Agree on details and terms here."
+        ],
+        "work": [
+          "Nothing in progress",
+          "A chat moves here once you agree with the client."
+        ],
+        "done": [
+          "No completed jobs yet",
+          "When the client accepts the work, the chat is kept here."
+        ],
+        "archive": [
+          "Archive is empty",
+          "Chats of closed and cancelled orders are kept here."
+        ]
+      },
+      "findOrder": "Find an order"
+    },
+    "balance": {
+      "title": "Balance",
+      "enough": "Enough for {count} responses",
+      "amount": "Top-up amount",
+      "amountHint": "{amount} — {count} responses",
+      "thousand": "{n}k",
+      "rules": [
+        "To talk to a client you send a response — {fee} each",
+        "You are charged only when you send a response — the balance never expires",
+        "If a response is declined, the money returns to your balance"
+      ],
+      "whyTitle": "What you pay for",
+      "whyBody": "You pay for responses — offering your service to a client. In Tezkor a response assigns the order to you; in Tender it lets you send a price list.",
+      "history": "Recent activity",
+      "historyEmpty": "No activity yet",
+      "types": {
+        "topup": "Balance top-up",
+        "pass": "Pass",
+        "response_fee": "Response",
+        "adjustment": "Adjustment"
+      },
+      "topup": "Top up balance",
+      "disabled": "Top-ups are not enabled yet — contact your manager."
+    },
+    "anketa": {
+      "title": "Profile",
+      "completeTitle": "Complete your profile",
+      "completeBody": "A full profile with logo, portfolio and location builds client trust and lifts you in the list.",
+      "completePct": "{pct}% complete",
+      "complete": "Complete",
+      "ratingNew": "No ratings yet",
+      "reviewsNone": "No reviews",
+      "reviews": "{count} reviews",
+      "grade": "Grade: {grade}",
+      "verified": "Verified agency",
+      "edit": "Edit",
+      "share": "Public page",
+      "rows": {
+        "stats": "My statistics",
+        "portfolio": "Portfolio",
+        "categories": "Categories",
+        "bank": "Bank details",
+        "offer": "Partnership offer"
+      },
+      "offerAccepted": "Accepted",
+      "offerNeeded": "Accept",
+      "aboutTitle": "About",
+      "aboutEmpty": "How long have you been working, what have you achieved? What makes your approach different?",
+      "logout": "Log out"
+    }
   }
 }

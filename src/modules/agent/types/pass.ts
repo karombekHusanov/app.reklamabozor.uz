@@ -60,3 +60,21 @@ export type ClaimBlockCode
     | 'claim_limit_reached'
     | 'insufficient_balance'
     | 'payment_source_unavailable'
+
+export type WalletTransactionType = 'topup' | 'pass' | 'response_fee' | 'adjustment'
+
+export interface WalletTransaction {
+  id: number
+  type: WalletTransactionType
+  /** Signed: credits positive, debits negative. */
+  amount_som: number
+  note: string | null
+  created_at: string | null
+}
+
+/** GET /agent/wallet */
+export interface AgentWallet {
+  enabled: boolean
+  balance_som: number
+  transactions: WalletTransaction[]
+}

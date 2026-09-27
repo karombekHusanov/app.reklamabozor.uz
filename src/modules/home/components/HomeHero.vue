@@ -1,28 +1,32 @@
 <script setup lang="ts">
-import { ArrowRight, Bell, ChevronDown, Phone, Search, ShieldCheck } from '@lucide/vue'
+import { ArrowRight, ChevronDown, Search, ShieldCheck } from '@lucide/vue'
 import Avatar from '@/core/ui/Avatar.vue'
 import HomeBillboard from '@/modules/home/components/HomeBillboard.vue'
 import { useLocaleStore } from '@/core/i18n/locale.store'
-
-/** Platform contact number, tap-to-call from the header. */
-const CONTACT_PHONE = '+998902250778'
+import ModeSwitch from '@/modules/shell/components/ModeSwitch.vue'
+import TopBarActions from '@/modules/shell/components/TopBarActions.vue'
+import { useModeStore } from '@/modules/shell/stores/mode.store'
 
 defineProps<{
   displayName: string
   avatarSrc?: string | null
   notificationCount?: number
+  /** New orders waiting on the agent side — shown on the switch. */
+  agentBadge?: number
 }>()
 
 const emit = defineEmits<{
   /** Opens the global search drawer — the hero field is a trigger, not an input. */
   search: []
   notifications: []
+  map: []
   profile: []
   /** Scroll to the "Safe deal" explainer. */
   trust: []
 }>()
 
 const locale = useLocaleStore()
+const mode = useModeStore()
 </script>
 
 <template>
@@ -58,25 +62,20 @@ const locale = useLocaleStore()
           {{ displayName }}
         </p>
       </div>
-      <a
-        :href="`tel:${CONTACT_PHONE}`"
-        class="hero__bell"
-        :aria-label="locale.t.home.callButton"
-      >
-        <Phone class="size-[18px]" />
-      </a>
-      <button
-        type="button"
-        class="hero__bell"
-        :aria-label="locale.t.home.notificationsButton"
-        @click="emit('notifications')"
-      >
-        <Bell class="size-[19px]" />
-        <span
-          v-if="notificationCount && notificationCount > 0"
-          class="hero__bell-badge"
-        >{{ notificationCount > 99 ? '99+' : notificationCount }}</span>
-      </button>
+      <TopBarActions
+        show-map
+        :notification-count="notificationCount"
+        @map="emit('map')"
+        @notifications="emit('notifications')"
+      />
+    </div>
+
+    <!-- Client | Agent workspace switch, only for provider accounts -->
+    <div
+      v-if="mode.canUseAgent"
+      class="hero__mode"
+    >
+      <ModeSwitch :badge="agentBadge" />
     </div>
 
     <!-- headline now lives on the billboard's screen, cycling like a real display -->
@@ -136,13 +135,6 @@ const locale = useLocaleStore()
 .hero__id { flex: 1; min-width: 0; }
 .hero__welcome { margin: 0; font-size: 12px; color: rgba(255, 255, 255, 0.72); font-weight: 600; }
 .hero__name { margin: 1px 0 0; font-family: var(--rb-font-display); font-weight: 800; font-size: 16px; letter-spacing: -0.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.hero__bell {
-  position: relative; flex-shrink: 0; width: 42px; height: 42px; border-radius: 13px;
-  background: rgba(255, 255, 255, 0.14); border: 1px solid rgba(255, 255, 255, 0.16);
-  color: #fff; display: grid; place-items: center; transition: transform .12s ease, background .18s ease;
-}
-.hero__bell:active { transform: scale(0.92); }
-.hero__bell-badge { position: absolute; top: -4px; right: -4px; min-width: 17px; height: 17px; padding: 0 4px; border-radius: 999px; background: var(--rb-cta); color: #fff; font-size: 10px; font-weight: 800; line-height: 17px; text-align: center; border: 2px solid #023059; }
 
 /* search */
 .hero__search {
@@ -168,6 +160,9 @@ const locale = useLocaleStore()
 .hero__trust-ic { flex-shrink: 0; display: grid; place-items: center; width: 30px; height: 30px; border-radius: 999px; background: var(--success); color: #fff; }
 .hero__trust-t { flex: 1; min-width: 0; font-size: 12.5px; font-weight: 700; line-height: 1.25; }
 .hero__trust-more { flex-shrink: 0; display: inline-flex; align-items: center; gap: 2px; font-size: 11.5px; font-weight: 700; color: var(--rb-glow-soft); }
+
+/* workspace switch */
+.hero__mode { position: relative; z-index: 2; display: flex; margin: -6px 0 12px; }
 
 /* billboard — sits a bit below the greeting, its pole fade blends into the search area behind it */
 .hero__billboard { position: relative; z-index: 2; margin-top: 6px; }
