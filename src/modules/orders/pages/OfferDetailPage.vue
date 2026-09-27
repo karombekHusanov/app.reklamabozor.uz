@@ -33,6 +33,7 @@ import { useLocaleStore } from '@/core/i18n/locale.store'
 import { categoryName } from '@/core/i18n/category-name'
 import { formatDateTime } from '@/core/lib/date'
 import { getApiErrorMessage } from '@/core/api/api-error'
+import { confirmAction } from '@/core/lib/confirm-action'
 import { ROUTES } from '@/modules/shell/constants/routes'
 import CriteriaReviewForm from '@/modules/orders/components/CriteriaReviewForm.vue'
 import ReviewDisplay from '@/modules/orders/components/ReviewDisplay.vue'
@@ -122,6 +123,7 @@ const badge = computed(() => {
 const statusNote = computed(() => {
   if (!offer.value) return null
   if (offer.value.status === 'withdrawn') return locale.t.agent.offerWithdrawnNote
+  if (canResolveTezkor.value) return locale.t.route.yoursBody
   if (offer.value.status === 'pending') return locale.t.agent.offerPendingNote
   if (offer.value.status === 'rejected') return locale.t.agent.offerRejectedNote
   if (orderStatus.value === 'awaiting_payment') return locale.t.agent.dealAwaitingPayment
@@ -161,6 +163,17 @@ const canReviewClient = computed(() =>
 
 const hasProviderReview = computed(() => Boolean(offer.value?.my_review))
 
+// Tezkor: the otklik is the whole bid — no pricelist, contract or payment;
+// price and payment are agreed with the client off-platform.
+const isTezkor = computed(() => order.value?.route === 'tezkor')
+
+// The claim is still open: the agent can close it as agreed or let it go.
+const canResolveTezkor = computed(() =>
+  isTezkor.value
+  && offer.value?.status === 'pending'
+  && ['new', 'offers_sent'].includes(orderStatus.value ?? ''),
+)
+
 const offerIsInterest = computed(() =>
   offer.value ? isInterestOffer(offer.value) : false,
 )
@@ -173,7 +186,8 @@ const offerHasItems = computed(() => pricelistItems.value.length > 0)
 // The agent can send / revise the pricelist while the bid is pending and the
 // order is still open for selection. Once accepted, the pricelist is locked.
 const canManagePricelist = computed(() =>
-  offer.value?.status === 'pending'
+  !isTezkor.value
+  && offer.value?.status === 'pending'
   && ['new', 'offers_sent'].includes(orderStatus.value ?? ''),
 )
 
@@ -209,6 +223,36 @@ async function loadOffer() {
   }
   finally {
     loading.value = false
+  }
+}
+
+/** Tezkor: the agent closes the claimed request as agreed (off-platform deal). */
+async function closeAgreed() {
+  if (!order.value || orders.isSubmitting) return
+  if (!(await confirmAction(locale.t.route.agentCloseConfirm))) return
+  haptic('light')
+  if (await orders.resolveAgentTezkor(order.value.id, 'close')) {
+    haptic('medium')
+    toast.success(locale.t.route.agentClosedToast)
+    await loadOffer()
+  }
+  else {
+    toast.error(orders.error || locale.t.route.errAction)
+  }
+}
+
+/** Tezkor: the agent lets the request go — it reopens for other agents. */
+async function releaseClaim() {
+  if (!order.value || orders.isSubmitting) return
+  if (!(await confirmAction(locale.t.route.agentReleaseConfirm))) return
+  haptic('light')
+  if (await orders.resolveAgentTezkor(order.value.id, 'release')) {
+    haptic('medium')
+    toast.success(locale.t.route.agentReleasedToast)
+    router.replace(ROUTES.offers)
+  }
+  else {
+    toast.error(orders.error || locale.t.route.errAction)
   }
 }
 
@@ -462,7 +506,7 @@ watch(() => props.id, loadOffer)
 
         <!-- Additional agreements (Qo'shimcha kelishuv) on the active deal. -->
         <AmendmentsSection
-          v-if="offer.status === 'accepted'"
+          v-if="offer.status === 'accepted' && !isTezkor"
           :order-id="order.id"
           :is-active="orderStatus === 'in_progress'"
           :initial-items="pricelistItems"
@@ -672,6 +716,26 @@ watch(() => props.id, loadOffer)
                   ? locale.t.agent.chatWithClient
                   : locale.t.chat.openChat }}
             </Button>
+
+            <template v-if="canResolveTezkor">
+              <Button
+                variant="outline"
+                class="h-12 w-full rounded-2xl text-base font-semibold"
+                :disabled="orders.isSubmitting"
+                @click="closeAgreed"
+              >
+                <CheckCircle2 class="size-4 shrink-0" />
+                {{ locale.t.route.agentClose }}
+              </Button>
+              <Button
+                variant="ghost"
+                class="h-11 w-full rounded-2xl text-sm font-semibold text-muted-foreground"
+                :disabled="orders.isSubmitting"
+                @click="releaseClaim"
+              >
+                {{ locale.t.route.agentRelease }}
+              </Button>
+            </template>
 
             <Button
               v-if="canManagePricelist"

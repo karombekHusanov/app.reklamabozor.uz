@@ -609,6 +609,8 @@ export interface AgentOfferDetail {
   created_at: string
   order: {
     id: number
+    /** Tezkor: no pricelist/contract/payment — agreed off-platform. */
+    route?: OrderRoute
     title: string | null
     description: string | null
     deadline: OrderDeadline | null
