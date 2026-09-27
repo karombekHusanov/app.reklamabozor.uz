@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { RouterView, useRouter } from 'vue-router'
 import { useAuthBootstrap } from '@/modules/auth'
 import { useAuthStore } from '@/modules/auth/stores/auth.store'
+import { useRealtimeStore } from '@/core/stores/realtime.store'
 import Toaster from '@/core/ui/Toaster.vue'
 import ConfirmDrawer from '@/core/ui/ConfirmDrawer.vue'
 import PropuskDrawer from '@/modules/agent/components/PropuskDrawer.vue'
@@ -14,6 +15,17 @@ useAuthBootstrap()
 const router = useRouter()
 const auth = useAuthStore()
 const onboarding = useOnboardingStore()
+const realtime = useRealtimeStore()
+
+// One socket per signed-in session — being connected is what "online" means.
+watch(
+  () => auth.isAuthenticated,
+  (signedIn) => {
+    if (signedIn) void realtime.start()
+    else realtime.stop()
+  },
+  { immediate: true },
+)
 
 // Launch splash: hold for a minimum beat, and until Telegram auth settles so the
 // onboarding decision (from the /me response) is made before the app is revealed.

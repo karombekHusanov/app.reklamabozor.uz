@@ -86,17 +86,19 @@ const online = computed(() => parts(locale.t.landing.proofOnline))
       <span class="proof__main">{{ agencies.before }}<b>{{ shown[0] }}</b>{{ agencies.after }}</span>
       <span class="proof__sub">
         {{ requests.before }}{{ shown[1] }}{{ requests.after }}
-        <span
-          class="proof__sep"
-          aria-hidden="true"
-        >·</span>
-        <span class="proof__live">
+        <template v-if="stats?.agents_online != null">
           <span
-            class="proof__dot"
+            class="proof__sep"
             aria-hidden="true"
-          />
-          {{ online.before }}{{ shown[2] }}{{ online.after }}
-        </span>
+          >·</span>
+          <span class="proof__live">
+            <span
+              class="proof__dot"
+              aria-hidden="true"
+            />
+            {{ online.before }}{{ shown[2] }}{{ online.after }}
+          </span>
+        </template>
       </span>
     </span>
 

@@ -5,6 +5,7 @@ import { useRouter } from 'vue-router'
 import { usePullToRefresh } from '@/core/composables/usePullToRefresh'
 import { useTelegram } from '@/core/composables/useTelegram'
 import { useLocaleStore } from '@/core/i18n/locale.store'
+import { useRealtimeStore } from '@/core/stores/realtime.store'
 import { useAuthStore } from '@/modules/auth/stores/auth.store'
 import { useHomeStore } from '@/modules/home/stores/home.store'
 import { useOrderRouteStore } from '@/modules/orders/stores/order-route.store'
@@ -68,6 +69,12 @@ const avatarSrc = computed(() => auth.user?.avatar ?? null)
 
 /** Live platform pulse for the glowing stat cards. */
 const liveStats = ref<LiveStats | null>(null)
+
+// With the realtime socket up the backend pushes fresh stats every ~10s.
+const realtime = useRealtimeStore()
+watch(() => realtime.liveStats, (pushed) => {
+  if (pushed) liveStats.value = pushed
+})
 
 async function loadLiveStats() {
   try {
@@ -210,7 +217,8 @@ const BADGE_POLL_MS = 15_000
 let badgePollTimer: ReturnType<typeof setInterval> | null = null
 
 function refreshBadges() {
-  void loadLiveStats()
+  // Pushed over the socket — only poll when it isn't connected.
+  if (!realtime.connected) void loadLiveStats()
   if (auth.isAuthenticated) {
     void home.loadActivity(true)
   }
@@ -309,7 +317,7 @@ watch(() => auth.isAuthenticated, (authed, wasAuthed) => {
       <div class="home-block home-block--tight home-gutter">
         <HomeFeatureTiles
           :nearby="liveStats?.agencies_total"
-          :online="liveStats?.users_online"
+          :online="liveStats?.users_online ?? undefined"
           @map="navigate(ROUTES.map)"
           @chat="navigate(ROUTES.chat)"
         />
