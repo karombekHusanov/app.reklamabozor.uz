@@ -28,18 +28,19 @@ const markSizes = {
   xl: 'size-20',
 }
 
-const textSizes = {
-  sm: 'text-[11px]',
-  md: 'text-lg',
-  lg: 'text-2xl',
-  xl: 'text-3xl',
+/** Wordmark height (the SVG is the hand-drawn "PRB" lettering, ratio 236:100). */
+const wordmarkHeights = {
+  sm: 'h-3',
+  md: 'h-[18px]',
+  lg: 'h-6',
+  xl: 'h-8',
 }
 
-const verticalTextSizes = {
-  sm: 'text-[11px]',
-  md: 'text-sm',
-  lg: 'text-base',
-  xl: 'text-lg',
+const verticalWordmarkHeights = {
+  sm: 'h-2.5',
+  md: 'h-3',
+  lg: 'h-3.5',
+  xl: 'h-4',
 }
 </script>
 
@@ -48,24 +49,23 @@ const verticalTextSizes = {
     :class="cn(
       layout === 'vertical'
         ? 'flex flex-col items-start gap-1'
-        : 'flex items-center gap-1.5',
+        : 'flex items-center gap-2.5',
       props.class,
     )"
   >
     <img
-      src="/images/logo.png"
-      alt="PRB"
+      src="/brand/prb-icon.svg"
+      :alt="wordmark ? '' : 'PRB'"
       :class="cn('shrink-0 object-contain', markSizes[size])"
     >
-    <div
+    <img
       v-if="wordmark"
+      :src="onDark ? '/brand/prb-wordmark-white.svg' : '/brand/prb-wordmark.svg'"
+      alt="PRB"
       :class="cn(
-        'flex flex-col gap-0 font-bold italic leading-none tracking-tight',
-        layout === 'vertical' ? verticalTextSizes[size] : textSizes[size],
-        onDark ? 'text-white' : 'text-foreground',
+        'w-auto shrink-0',
+        layout === 'vertical' ? verticalWordmarkHeights[size] : wordmarkHeights[size],
       )"
     >
-      <span>PRB</span>
-    </div>
   </div>
 </template>

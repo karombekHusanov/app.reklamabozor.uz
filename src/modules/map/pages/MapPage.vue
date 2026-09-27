@@ -62,8 +62,8 @@ const categoryDrawerOpen = ref(false)
 const PIN = L.divIcon({
   className: 'rb-pin',
   html: `<div style="display:flex;flex-direction:column;align-items:center">
-    <img src="/images/logo.png" style="width:36px;height:36px;border-radius:9999px;box-shadow:0 4px 10px rgba(2,48,92,.45)" />
-    <div style="width:0;height:0;border-left:7px solid transparent;border-right:7px solid transparent;border-top:11px solid #0386D9;margin-top:-3px;filter:drop-shadow(0 2px 1px rgba(2,48,92,.35))"></div>
+    <img src="/brand/prb-avatar-circle.svg" style="width:36px;height:36px;border-radius:9999px;box-shadow:0 4px 10px rgba(140,52,8,.4)" />
+    <div style="width:0;height:0;border-left:7px solid transparent;border-right:7px solid transparent;border-top:11px solid #F26B21;margin-top:-3px;filter:drop-shadow(0 2px 1px rgba(140,52,8,.35))"></div>
   </div>`,
   iconSize: [36, 49],
   iconAnchor: [18, 47],
