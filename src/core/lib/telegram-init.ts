@@ -1,4 +1,5 @@
 import WebApp from '@twa-dev/sdk'
+import { DARK_MODE_ENABLED } from '@/core/stores/theme.store'
 
 /** Payload sent to the backend's POST /api/v1/auth/telegram endpoint. */
 export interface TelegramAuthPayload {
@@ -46,8 +47,15 @@ export function initializeTelegram(): void {
 
   // setHeaderColor / setBackgroundColor with keyword → Bot API 6.1
   if (supportsVersion('6.1')) {
-    safe(() => WebApp.setHeaderColor('secondary_bg_color'))
-    safe(() => WebApp.setBackgroundColor('secondary_bg_color'))
+    if (DARK_MODE_ENABLED) {
+      safe(() => WebApp.setHeaderColor('secondary_bg_color'))
+      safe(() => WebApp.setBackgroundColor('secondary_bg_color'))
+    }
+    else {
+      // Light-only for now: don't inherit a dark Telegram chrome. Hex colors → 6.1 too.
+      safe(() => WebApp.setHeaderColor('#f3f4f6'))
+      safe(() => WebApp.setBackgroundColor('#f3f4f6'))
+    }
   }
 }
 

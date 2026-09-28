@@ -7,6 +7,13 @@ export type ThemeMode = 'auto' | 'light' | 'dark'
 
 export const THEME_STORAGE_KEY = 'adspace_theme'
 
+/**
+ * Dark mode is switched off for now: the app always renders light, whatever
+ * the saved preference or Telegram's scheme. Flip back to `true` to restore
+ * the Profile → Settings theme switcher and auto/dark modes.
+ */
+export const DARK_MODE_ENABLED = false
+
 const MODES: ThemeMode[] = ['auto', 'light', 'dark']
 
 function isThemeMode(value: unknown): value is ThemeMode {
@@ -23,6 +30,7 @@ function telegramScheme(): 'light' | 'dark' {
 }
 
 function resolve(mode: ThemeMode): 'light' | 'dark' {
+  if (!DARK_MODE_ENABLED) return 'light'
   return mode === 'auto' ? telegramScheme() : mode
 }
 

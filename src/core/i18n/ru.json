@@ -366,7 +366,8 @@
     "offerAcceptedChip": "Принят",
     "endChatHint": "После завершения писать в этот чат нельзя. Его можно снова открыть позже.",
     "moreActions": "Ещё",
-    "agencyPhoneHint": "Номер агентства открыт, потому что оно откликнулось"
+    "agencyPhoneHint": "Номер агентства открыт, потому что оно откликнулось",
+    "reviewsCount": "{count} отзывов"
   },
   "notifications": {
     "title": "Уведомления",
@@ -1737,6 +1738,7 @@
     "next": "Дальше",
     "gotIt": "Понятно",
     "close": "Закрыть",
+    "learnTitle": "Узнайте о PRB",
     "profileMenu": "Меню профиля",
     "menu": {
       "orders": "Мои заказы",

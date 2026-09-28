@@ -1,11 +1,15 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import Drawer from '@/core/ui/Drawer.vue'
 import { useTelegram } from '@/core/composables/useTelegram'
 import { useLocaleStore } from '@/core/i18n/locale.store'
 import { INFO_TOPICS } from '@/modules/home/lib/info-topics'
 
-/** "Learn PRB" tiles; each opens a sheet, "Next" walks through all topics. */
+/**
+ * "Learn PRB" tiles. Each tile opens its own topic sheet; when the topic is
+ * taller than the sheet, "Next" pages through the rest of *that* topic, then
+ * "Got it" closes — it never jumps to another tile's topic.
+ */
 const locale = useLocaleStore()
 const { haptic } = useTelegram()
 
@@ -17,7 +21,43 @@ const open = computed({
   set: (value) => { if (!value) active.value = -1 },
 })
 const current = computed(() => topics.value[active.value] ?? null)
-const isLast = computed(() => active.value === topics.value.length - 1)
+
+/** Paragraphs of the open topic (p1, p2, … — any count the copy defines). */
+const paragraphs = computed(() => {
+  const topic = current.value as Record<string, unknown> | null
+  if (!topic) return []
+  return Object.keys(topic)
+    .filter(key => /^p\d+$/.test(key))
+    .sort((a, b) => Number(a.slice(1)) - Number(b.slice(1)))
+    .map(key => String(topic[key]))
+})
+
+const bodyRef = ref<HTMLElement | null>(null)
+/** More of this topic below the fold → the button reads "Next". */
+const hasMore = ref(false)
+
+function measure() {
+  const el = bodyRef.value
+  hasMore.value = !!el && el.scrollTop + el.clientHeight < el.scrollHeight - 4
+}
+
+let resizeObserver: ResizeObserver | null = null
+
+watch(bodyRef, (el) => {
+  resizeObserver?.disconnect()
+  if (!el) return
+  resizeObserver = new ResizeObserver(measure)
+  resizeObserver.observe(el)
+  if (el.firstElementChild) resizeObserver.observe(el.firstElementChild)
+})
+
+watch(active, async () => {
+  await nextTick()
+  if (bodyRef.value) bodyRef.value.scrollTop = 0
+  measure()
+})
+
+onBeforeUnmount(() => resizeObserver?.disconnect())
 
 function show(index: number) {
   haptic('light')
@@ -26,7 +66,17 @@ function show(index: number) {
 
 function next() {
   haptic('light')
-  active.value = isLast.value ? -1 : active.value + 1
+  const el = bodyRef.value
+  if (hasMore.value && el) {
+    // Keep a line of the previous page in view so the reader doesn't lose the thread.
+    const max = el.scrollHeight - el.clientHeight
+    const target = Math.min(el.scrollTop + Math.max(el.clientHeight - 48, 48), max)
+    el.scrollTo({ top: target, behavior: 'smooth' })
+    // Decide from where we're headed, not from scroll events (they lag the animation).
+    hasMore.value = target < max - 4
+    return
+  }
+  active.value = -1
 }
 </script>
 
@@ -71,28 +121,38 @@ function next() {
       v-if="current"
       class="cit-sheet"
     >
-      <svg
-        class="cit-sheet__art"
-        viewBox="0 0 120 100"
-        aria-hidden="true"
-        v-html="current.art"
-      />
-      <h2 class="cit-sheet__title">
-        {{ current.title }}
-      </h2>
-      <p class="cit-sheet__p">
-        {{ current.p1 }}
-      </p>
-      <p class="cit-sheet__p">
-        {{ current.p2 }}
-      </p>
+      <div
+        ref="bodyRef"
+        class="cit-sheet__body"
+        :class="{ 'has-more': hasMore }"
+        @scroll.passive="measure"
+      >
+        <div class="cit-sheet__content">
+          <svg
+            class="cit-sheet__art"
+            viewBox="0 0 120 100"
+            aria-hidden="true"
+            v-html="current.art"
+          />
+          <h2 class="cit-sheet__title">
+            {{ current.title }}
+          </h2>
+          <p
+            v-for="(text, i) in paragraphs"
+            :key="i"
+            class="cit-sheet__p"
+          >
+            {{ text }}
+          </p>
+        </div>
+      </div>
       <button
         type="button"
         class="cit-sheet__btn"
-        :class="{ 'is-last': isLast }"
+        :class="{ 'is-last': !hasMore }"
         @click="next"
       >
-        {{ isLast ? locale.t.clientHome.gotIt : locale.t.clientHome.next }}
+        {{ hasMore ? locale.t.clientHome.next : locale.t.clientHome.gotIt }}
       </button>
     </div>
   </Drawer>
@@ -121,11 +181,28 @@ function next() {
 .cit__art, .cit-sheet__art { fill: none; stroke: #101828; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
 :global(.dark) .cit__art, :global(.dark) .cit-sheet__art { filter: invert(1); }
 .cit-sheet { display: flex; flex-direction: column; padding: 0 4px 4px; }
+/* Only the topic scrolls; the button stays put. Height leaves room for it inside the drawer. */
+.cit-sheet__body {
+  position: relative;
+  max-height: calc(min(70vh, 85vh - 5rem) - 7.5rem);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+  -webkit-mask-image: none;
+  mask-image: none;
+}
+.cit-sheet__body::-webkit-scrollbar { display: none; }
+/* Fade the cut-off edge so it reads as "continues below". */
+.cit-sheet__body.has-more {
+  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 40px), transparent);
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 40px), transparent);
+}
+.cit-sheet__content { display: flex; flex-direction: column; }
 .cit-sheet__art { align-self: center; width: 200px; height: 166px; margin-bottom: 12px; }
 .cit-sheet__title { margin: 0; font-size: 22px; font-weight: 600; line-height: 1.2; letter-spacing: -0.01em; }
 .cit-sheet__p { margin: 10px 0 0; font-size: 14.5px; line-height: 1.5; }
 .cit-sheet__btn {
-  margin-top: 22px; min-height: 50px; border: 0; border-radius: 16px; background: #c94f0f; color: #fff;
+  flex-shrink: 0; margin-top: 18px; min-height: 50px; border: 0; border-radius: 16px; background: #c94f0f; color: #fff;
   font-family: inherit; font-size: 15px; font-weight: 600; cursor: pointer;
 }
 .cit-sheet__btn.is-last { background: var(--muted); color: var(--foreground); }

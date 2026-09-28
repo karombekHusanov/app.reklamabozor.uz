@@ -308,9 +308,11 @@ function openFullProfile() {
 .aps__initials { font-family: var(--rb-font-display); font-size: 36px; font-weight: 800; color: var(--muted-foreground); }
 .aps__name {
   display: inline-flex;
+  max-width: 100%;
   align-items: center;
   gap: 6px;
   margin: 6px 0 0;
+  overflow-wrap: anywhere;
   font-family: var(--rb-font-display);
   font-size: 22px;
   font-weight: 800;

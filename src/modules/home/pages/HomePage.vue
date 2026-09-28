@@ -12,10 +12,10 @@ import { useOrderRouteStore } from '@/modules/orders/stores/order-route.store'
 import HomePageSkeleton from '@/modules/home/components/HomePageSkeleton.vue'
 import HomeHero from '@/modules/home/components/HomeHero.vue'
 import HomeStatCards from '@/modules/home/components/HomeStatCards.vue'
-import HomeFeatureTiles from '@/modules/home/components/HomeFeatureTiles.vue'
 import HomeDesk from '@/modules/home/components/HomeDesk.vue'
 import HomeSafeDeal from '@/modules/home/components/HomeSafeDeal.vue'
 import HomeJourney from '@/modules/home/components/HomeJourney.vue'
+import ClientInfoTiles from '@/modules/home/components/ClientInfoTiles.vue'
 import HomeRoutes from '@/modules/home/components/HomeRoutes.vue'
 import HomeProviderZone from '@/modules/home/components/HomeProviderZone.vue'
 import AgentInviteCard from '@/modules/agent/components/AgentInviteCard.vue'
@@ -36,6 +36,12 @@ import { ROUTES } from '@/modules/shell/constants/routes'
 
 // MVP: the designers rail is hidden (kept in code, may return).
 const SHOW_TOP_DESIGNERS = false
+// The 5-step "how it works" timeline is replaced by the info tiles (kept in code).
+const SHOW_JOURNEY = false
+// Services rail + Tezkor/Tender route cards are hidden for now — the info tiles
+// cover both (kept in code, may return).
+const SHOW_SERVICES = false
+const SHOW_ROUTES = false
 
 const auth = useAuthStore()
 const home = useHomeStore()
@@ -314,16 +320,6 @@ watch(() => auth.isAuthenticated, (authed, wasAuthed) => {
         />
       </div>
 
-      <!-- core features: ad map + global chat, right under the fold line -->
-      <div class="home-block home-block--tight home-gutter">
-        <HomeFeatureTiles
-          :nearby="liveStats?.agencies_total"
-          :online="liveStats?.users_online ?? undefined"
-          @map="navigate(ROUTES.map)"
-          @chat="navigate(ROUTES.chat)"
-        />
-      </div>
-
       <!-- 1 · what I control -->
       <div
         v-if="auth.isAuthenticated"
@@ -337,13 +333,35 @@ watch(() => auth.isAuthenticated, (authed, wasAuthed) => {
         />
       </div>
 
+      <!-- who does the work — right under the control panel -->
+      <div class="home-block">
+        <HomeAgencyRail
+          v-reveal
+          :title="locale.t.home.topAgencies"
+          :agents="home.topAgents"
+          :view-all-route="ROUTES.agencies"
+          :loading="providersLoading"
+        />
+      </div>
+
       <!-- 2 · why it is safe -->
       <div class="home-block home-gutter">
         <HomeSafeDeal v-reveal />
       </div>
 
-      <!-- 3 · how it works -->
-      <div class="home-block home-gutter">
+      <!-- 3 · how it works — info tiles, each opens a sheet (Next walks through all) -->
+      <section class="home-block home-gutter home-learn">
+        <span class="rb-eyebrow">{{ locale.t.landing.journeyEyebrow }}</span>
+        <h2 class="rb-sec__title home-learn__title">
+          {{ locale.t.clientHome.learnTitle }}
+        </h2>
+        <ClientInfoTiles v-reveal />
+      </section>
+
+      <div
+        v-if="SHOW_JOURNEY"
+        class="home-block home-gutter"
+      >
         <HomeJourney
           v-reveal
           @start="startDefaultOrder"
@@ -351,7 +369,10 @@ watch(() => auth.isAuthenticated, (authed, wasAuthed) => {
       </div>
 
       <!-- 4 · what you can order -->
-      <div class="home-block home-gutter">
+      <div
+        v-if="SHOW_SERVICES"
+        class="home-block home-gutter"
+      >
         <HomeServiceRail
           v-reveal
           :categories="categories"
@@ -360,24 +381,16 @@ watch(() => auth.isAuthenticated, (authed, wasAuthed) => {
         />
       </div>
 
-      <div class="home-block home-gutter">
+      <div
+        v-if="SHOW_ROUTES"
+        class="home-block home-gutter"
+      >
         <HomeRoutes
           v-reveal
           :can-create-tender="routeStore.canCreateTender"
           :tender-status="routeStore.tenderStatus"
           @pick="startOrder"
           @request-access="requestTenderAccess"
-        />
-      </div>
-
-      <!-- 5 · who does the work -->
-      <div class="home-block">
-        <HomeAgencyRail
-          v-reveal
-          :title="locale.t.home.topAgencies"
-          :agents="home.topAgents"
-          :view-all-route="ROUTES.agencies"
-          :loading="providersLoading"
         />
       </div>
 
@@ -462,6 +475,14 @@ watch(() => auth.isAuthenticated, (authed, wasAuthed) => {
   margin-top: -1.6rem;
 }
 
+.home-learn__title {
+  margin: 3px 0 12px;
+}
+/* The tiles were drawn for a white sheet; on this gray canvas lift the plain ones into cards. */
+.home-learn :deep(.cit__tile:not(.cit__tile--tezkor):not(.cit__tile--tender)) {
+  background: var(--card);
+  box-shadow: var(--rb-elev-1);
+}
 .home-block {
   padding-top: 1.6rem;
 }

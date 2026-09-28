@@ -366,7 +366,8 @@
     "offerAcceptedChip": "Qabul qilindi",
     "endChatHint": "Yakunlangach bu suhbatga yozib bo'lmaydi. Uni keyin qayta ochishingiz mumkin.",
     "moreActions": "Boshqa amallar",
-    "agencyPhoneHint": "Agentlik otklik bergani uchun raqami ochiq"
+    "agencyPhoneHint": "Agentlik otklik bergani uchun raqami ochiq",
+    "reviewsCount": "{count} ta sharh"
   },
   "notifications": {
     "title": "Bildirishnomalar",
@@ -1737,6 +1738,7 @@
     "next": "Keyingisi",
     "gotIt": "Tushunarli",
     "close": "Yopish",
+    "learnTitle": "PRB haqida bilib oling",
     "profileMenu": "Profil menyusi",
     "menu": {
       "orders": "Buyurtmalarim",

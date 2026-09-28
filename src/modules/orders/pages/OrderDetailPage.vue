@@ -1002,14 +1002,14 @@ async function sendReview(criteria: ReviewCriterionScore[], comment: string | nu
 .menu-btn:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
 
 .offers-card { overflow: hidden; }
-.offers-card__head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 18px 18px 4px; }
-.offers-card__title { margin: 0; font-family: var(--rb-font-display); font-size: 22px; font-weight: 800; letter-spacing: -0.01em; color: var(--foreground); }
-.offers-card__count { font-size: 20px; font-weight: 700; color: var(--muted-foreground); font-variant-numeric: tabular-nums; }
-.offers-card__list { display: flex; flex-direction: column; padding: 4px 14px 8px; }
+.offers-card__head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 16px 2px; }
+.offers-card__title { margin: 0; font-family: var(--rb-font-display); font-size: 17px; font-weight: 800; letter-spacing: -0.01em; color: var(--foreground); }
+.offers-card__count { font-size: 14px; font-weight: 700; color: var(--muted-foreground); font-variant-numeric: tabular-nums; }
+.offers-card__list { display: flex; flex-direction: column; padding: 2px 14px 6px; }
 .offers-card__list > * + * { border-top: 1px solid color-mix(in srgb, var(--border) 65%, transparent); }
-.offers-card__empty { padding: 6px 18px 20px; }
-.offers-card__empty-t { margin: 0; font-size: 15px; font-weight: 700; color: var(--foreground); }
-.offers-card__empty-b { margin: 4px 0 0; font-size: 13.5px; line-height: 1.5; color: var(--muted-foreground); }
+.offers-card__empty { padding: 4px 16px 16px; }
+.offers-card__empty-t { margin: 0; font-size: 14px; font-weight: 700; color: var(--foreground); }
+.offers-card__empty-b { margin: 4px 0 0; font-size: 12.5px; line-height: 1.5; color: var(--muted-foreground); }
 
 .more-link { padding: 4px 0; border: 0; background: none; color: var(--primary); font-size: 13px; font-weight: 700; cursor: pointer; }
 .brief {

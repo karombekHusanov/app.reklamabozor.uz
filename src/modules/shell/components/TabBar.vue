@@ -2,7 +2,7 @@
 import { ROUTES } from '@/modules/shell/constants/routes'
 import { useTelegram } from '@/core/composables/useTelegram'
 import { useLocaleStore } from '@/core/i18n/locale.store'
-import { ClipboardList, Home, Plus, Sparkles, User } from '@lucide/vue'
+import { Home, Map, Plus, Sparkles, User } from '@lucide/vue'
 import { computed, onBeforeUnmount, onMounted, ref, useId } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
@@ -13,17 +13,31 @@ const locale = useLocaleStore()
 
 const tabs = computed(() => [
   { key: 'home', to: ROUTES.home, label: locale.t.shell.tabs.home, icon: Home, fab: false },
-  { key: 'orders', to: ROUTES.orders, label: locale.t.shell.tabs.myOrders, icon: ClipboardList, fab: false },
+  { key: 'map', to: ROUTES.map, label: locale.t.shell.tabs.map, icon: Map, fab: false },
   { key: 'create', to: ROUTES.newOrder, label: locale.t.shell.tabs.create, icon: Plus, fab: true },
   { key: 'assistant', to: ROUTES.assistant, label: locale.t.shell.tabs.assistant, icon: Sparkles, fab: false },
   { key: 'profile', to: ROUTES.profile, label: locale.t.shell.tabs.profile, icon: User, fab: false },
 ])
 
+/**
+ * Left side · Create · right side. Each side spreads its tabs evenly in its own
+ * half, so the Create button stays centred and the gaps between labels stay
+ * even even though label widths differ ("Profil" vs "AI yordamchi").
+ */
+const groups = computed(() => {
+  const all = tabs.value
+  const fab = all.findIndex(t => t.fab)
+  return [
+    { key: 'left', side: true, items: all.slice(0, fab) },
+    { key: 'fab', side: false, items: all.slice(fab, fab + 1) },
+    { key: 'right', side: true, items: all.slice(fab + 1) },
+  ]
+})
+
 function isActive(to: string): boolean {
   const path = route.path
   if (to === ROUTES.home) return path === ROUTES.home
   if (to === ROUTES.newOrder) return path === ROUTES.newOrder
-  if (to === ROUTES.orders) return path === ROUTES.orders || (path.startsWith('/orders/') && path !== ROUTES.newOrder)
   if (to === ROUTES.assistant) return path === ROUTES.assistant
   if (to === ROUTES.profile) return path === ROUTES.profile
   return path === to || path.startsWith(`${to}/`)
@@ -159,34 +173,41 @@ const shapePath = computed(() => {
         aria-hidden="true"
       />
 
-      <button
-        v-for="tab in tabs"
-        :key="tab.key"
-        type="button"
-        class="tab"
-        :class="{ 'tab--active': isActive(tab.to), 'tab--fab': tab.fab }"
-        :aria-current="isActive(tab.to) ? 'page' : undefined"
-        @click="navigate(tab.to)"
+      <div
+        v-for="group in groups"
+        :key="group.key"
+        class="tabbar__group"
+        :class="group.side ? 'tabbar__group--side' : 'tabbar__group--fab'"
       >
-        <template v-if="tab.fab">
-          <span class="fab">
+        <button
+          v-for="tab in group.items"
+          :key="tab.key"
+          type="button"
+          class="tab"
+          :class="{ 'tab--active': isActive(tab.to), 'tab--fab': tab.fab }"
+          :aria-current="isActive(tab.to) ? 'page' : undefined"
+          @click="navigate(tab.to)"
+        >
+          <template v-if="tab.fab">
+            <span class="fab">
+              <component
+                :is="tab.icon"
+                class="size-7"
+                :stroke-width="2.4"
+              />
+            </span>
+            <span class="tab__lbl tab__lbl--fab">{{ tab.label }}</span>
+          </template>
+          <template v-else>
             <component
               :is="tab.icon"
-              class="size-7"
-              :stroke-width="2.4"
+              class="tab__ic"
+              :stroke-width="isActive(tab.to) ? 2.35 : 2"
             />
-          </span>
-          <span class="tab__lbl tab__lbl--fab">{{ tab.label }}</span>
-        </template>
-        <template v-else>
-          <component
-            :is="tab.icon"
-            class="tab__ic"
-            :stroke-width="isActive(tab.to) ? 2.35 : 2"
-          />
-          <span class="tab__lbl">{{ tab.label }}</span>
-        </template>
-      </button>
+            <span class="tab__lbl">{{ tab.label }}</span>
+          </template>
+        </button>
+      </div>
     </div>
   </nav>
 </template>
@@ -211,10 +232,28 @@ const shapePath = computed(() => {
   width: min(100% - 1.25rem, 30rem);
   margin-bottom: max(env(safe-area-inset-bottom), 0.625rem);
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  /* Equal halves around Create — minmax(0, …) so a long label can't widen one side. */
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: end;
-  gap: 8px;
+  gap: 0;
   padding: 9px 10px 10px;
+}
+.tabbar__group {
+  position: relative;
+  z-index: 1;
+  min-width: 0;
+  display: flex;
+  align-items: flex-end;
+}
+.tabbar__group--side {
+  justify-content: space-evenly;
+}
+.tabbar__group--side .tab {
+  flex: 0 1 auto;
+  min-width: 0;
+  /* Lay out by label width (even gaps), but keep a ≥44px tap target. */
+  padding-inline: 12px;
+  margin-inline: -12px;
 }
 
 .dark .tabbar__shape {

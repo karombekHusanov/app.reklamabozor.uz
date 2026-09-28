@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { BadgeCheck, ChevronRight, Copy, EllipsisVertical, Loader2, LockOpen, MessageCircle, Phone, ShieldCheck, Star, UserRound, XCircle } from '@lucide/vue'
+import { BadgeCheck, ChevronRight, Copy, Ellipsis, Loader2, LockOpen, MessageCircle, Phone, ShieldCheck, Star, UserRound, XCircle } from '@lucide/vue'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import AppHeader from '@/modules/shell/components/AppHeader.vue'
@@ -22,10 +22,9 @@ import ChatComposer from '@/modules/chat/components/ChatComposer.vue'
 import ChatComposerDock from '@/modules/chat/components/ChatComposerDock.vue'
 import MessageBubble from '@/modules/chat/components/MessageBubble.vue'
 import { buildChatFeed } from '@/modules/chat/lib/chat-feed'
-import CategoryThumb from '@/modules/orders/components/CategoryThumb.vue'
 import AgentProfileSheet from '@/modules/marketplace/components/AgentProfileSheet.vue'
 import { useOrdersStore } from '@/modules/orders/stores/orders.store'
-import { formatPrice, isInterestOffer } from '@/modules/orders/lib/order-status'
+import { formatPrice } from '@/modules/orders/lib/order-status'
 import type { ChatMessage } from '@/modules/chat/types/chat'
 
 const props = defineProps<{ chatId: string }>()
@@ -53,9 +52,6 @@ const iAmBlocker = computed(() =>
   && chat.currentChat.blocked_by === auth.user?.id,
 )
 const activeOffer = computed(() => chat.currentChat?.active_offer ?? null)
-const activeOfferIsInterest = computed(() =>
-  activeOffer.value ? isInterestOffer(activeOffer.value) : false,
-)
 
 function daySeparatorLabel(iso: string): string {
   return formatDaySeparator(iso, locale.t.chat.today, locale.t.chat.yesterday)
@@ -95,19 +91,18 @@ const orderId = computed(() => chat.currentChat?.order_id ?? activeOffer.value?.
 const orderTitle = computed(() => chat.currentChat?.order?.title ?? activeOffer.value?.order_title ?? null)
 const phone = computed(() => chat.currentChat?.other_participant.phone ?? null)
 const phoneLabel = computed(() => formatPhone(phone.value))
-const phoneHint = computed(() => (otherIsAgency.value ? locale.t.chat.agencyPhoneHint : locale.t.chat.clientPhoneHint))
 const telHref = computed(() => (phone.value ? `tel:${phone.value.replace(/[^\d+]/g, '')}` : undefined))
 
 const headerAvatar = computed(() => chat.currentChat?.other_participant.avatar ?? null)
+const avatarFailed = ref(false)
+watch(headerAvatar, () => { avatarFailed.value = false })
+const headerInitials = computed(() =>
+  headerTitle.value.split(' ').map(p => p[0]).join('').slice(0, 2).toUpperCase(),
+)
 const agencyStarsCount = computed(() => chat.currentChat?.other_participant.stars_count ?? 0)
 const agencyStars = computed(() => {
   const s = chat.currentChat?.other_participant.stars
   return otherIsAgency.value && agencyStarsCount.value > 0 && s != null ? Number(s).toFixed(1) : null
-})
-
-const headerSubtitle = computed(() => {
-  const role = otherIsAgency.value ? locale.t.chat.roleAgency : locale.t.chat.roleClient
-  return orderId.value !== null ? `${role} · ${locale.t.chat.orderRef.replace('{id}', String(orderId.value))}` : role
 })
 
 /* ── client picks this agency from the thread (Profi-style "Tanlash") ── */
@@ -167,17 +162,6 @@ function openProfileFromInfo() {
   infoOpen.value = false
   profileOpen.value = true
 }
-
-/** Where the response stands, from the viewer's side. */
-const offerChip = computed(() => {
-  const offer = activeOffer.value
-  if (!offer) return null
-  if (offer.status === 'accepted') return { label: locale.t.chat.offerAcceptedChip, tone: 'ok' }
-  if (activeOfferIsInterest.value) {
-    return { label: otherIsAgency.value ? locale.t.orders.interestBadge : locale.t.chat.otklikSent, tone: 'info' }
-  }
-  return { label: formatPrice(offer.price), tone: 'info' }
-})
 
 /* ── chat details sheet (end / reopen live here, not in the header) ── */
 const infoOpen = ref(false)
@@ -278,56 +262,66 @@ function openActiveOffer() {
 
 <template>
   <div class="flex min-h-[calc(100vh-6rem)] flex-col">
-    <AppHeader show-back>
+    <AppHeader
+      show-back
+      flat
+    >
       <template #heading>
         <button
           type="button"
           class="ch-id"
-          :aria-label="locale.t.chat.infoTitle"
+          :aria-label="otherIsAgency ? locale.t.orderView.pShowProfile : locale.t.chat.infoTitle"
           :disabled="!chat.currentChat"
           @click="openHeader"
         >
-          <Avatar
-            :name="headerTitle"
-            :src="headerAvatar"
-            size="md"
-          />
-          <span class="min-w-0 text-left">
-            <span class="block truncate text-[16px] font-bold leading-tight text-foreground">{{ headerTitle }}</span>
+          <span class="ch-photo">
+            <img
+              v-if="headerAvatar && !avatarFailed"
+              :src="headerAvatar"
+              :alt="headerTitle"
+              @error="avatarFailed = true"
+            >
+            <span v-else>{{ headerInitials }}</span>
+          </span>
+          <span class="ch-id__text">
+            <span class="ch-name">{{ headerTitle }}</span>
             <span
-              v-if="agencyStars"
+              v-if="otherIsAgency"
               class="ch-rating"
             >
               <Star
-                class="ch-rating__star"
+                class="ch-rating__ic"
                 aria-hidden="true"
               />
-              {{ agencyStars }}
-              <MessageCircle
-                class="size-3"
-                aria-hidden="true"
-              />
-              {{ agencyStarsCount }}
+              {{ agencyStars ?? locale.t.orderView.newAgency }}
+              <template v-if="agencyStarsCount > 0">
+                <MessageCircle
+                  class="ch-rating__ic ch-rating__ic--gap"
+                  aria-hidden="true"
+                />
+                {{ locale.t.chat.reviewsCount.replace('{count}', String(agencyStarsCount)) }}
+              </template>
             </span>
             <span
               v-else
-              class="block truncate text-xs text-muted-foreground"
-            >{{ headerSubtitle }}</span>
+              class="ch-rating"
+            >{{ locale.t.chat.roleClient }}</span>
           </span>
         </button>
       </template>
+
       <template
         v-if="chat.currentChat"
         #trailing
       >
-        <div class="flex items-center gap-1.5">
+        <div class="flex items-center">
           <a
             v-if="telHref"
             :href="telHref"
-            class="ch-icon-btn ch-icon-btn--call"
+            class="ch-icon-btn"
             :aria-label="`${locale.t.chat.call}: ${phoneLabel}`"
           >
-            <Phone class="size-[18px]" />
+            <Phone class="size-[18px] fill-current" />
           </a>
           <button
             type="button"
@@ -335,8 +329,43 @@ function openActiveOffer() {
             :aria-label="locale.t.chat.moreActions"
             @click="openInfo"
           >
-            <EllipsisVertical class="size-[18px]" />
+            <Ellipsis class="size-5" />
           </button>
+        </div>
+      </template>
+
+      <!-- Client: agreed with this agency? Choose it right here. -->
+      <template
+        v-if="canPick || picked"
+        #below
+      >
+        <div
+          v-if="canPick"
+          class="ch-pick"
+        >
+          <p>{{ locale.t.orderView.pickBanner }}</p>
+          <button
+            type="button"
+            class="ch-pick__btn"
+            :disabled="picking || orders.isSubmitting"
+            @click="pickAgency"
+          >
+            <Loader2
+              v-if="picking"
+              class="size-4 animate-spin"
+            />
+            {{ locale.t.orderView.pickButton }}
+          </button>
+        </div>
+        <div
+          v-else
+          class="ch-pick ch-pick--done"
+        >
+          <BadgeCheck
+            class="size-4 shrink-0"
+            aria-hidden="true"
+          />
+          <p>{{ locale.t.orderView.pickedBanner }}</p>
         </div>
       </template>
     </AppHeader>
@@ -361,87 +390,6 @@ function openActiveOffer() {
       </GlassCard>
 
       <template v-else>
-        <!-- Client: agreed with this agency? Choose it right here. -->
-        <div
-          v-if="canPick"
-          class="ch-pick"
-        >
-          <p>{{ locale.t.orderView.pickBanner }}</p>
-          <button
-            type="button"
-            class="ch-pick__btn"
-            :disabled="picking || orders.isSubmitting"
-            @click="pickAgency"
-          >
-            <Loader2
-              v-if="picking"
-              class="size-4 animate-spin"
-            />
-            {{ locale.t.orderView.pickButton }}
-          </button>
-        </div>
-        <div
-          v-else-if="picked"
-          class="ch-pick ch-pick--done"
-        >
-          <BadgeCheck
-            class="size-5 shrink-0"
-            aria-hidden="true"
-          />
-          <p>{{ locale.t.orderView.pickedBanner }}</p>
-        </div>
-
-        <!-- What this conversation is about — pinned above the messages -->
-        <div
-          v-if="orderId !== null"
-          class="ch-order"
-        >
-          <button
-            type="button"
-            class="ch-order__main"
-            @click="openActiveOffer"
-          >
-            <span
-              class="ch-order__ic"
-              aria-hidden="true"
-            >
-              <CategoryThumb
-                :category="chat.currentChat.order?.category ?? null"
-                :size="18"
-              />
-            </span>
-            <span class="min-w-0 flex-1">
-              <span class="ch-order__ref">{{ locale.t.chat.orderRef.replace('{id}', String(orderId)) }}</span>
-              <span class="ch-order__title">{{ orderTitle || locale.t.agent.yourOffer }}</span>
-            </span>
-            <span
-              v-if="offerChip"
-              class="ch-chip"
-              :class="offerChip.tone === 'ok' && 'ch-chip--ok'"
-            >{{ offerChip.label }}</span>
-            <ChevronRight
-              class="size-4 shrink-0 text-muted-foreground"
-              aria-hidden="true"
-            />
-          </button>
-
-          <a
-            v-if="telHref"
-            :href="telHref"
-            class="ch-order__phone"
-          >
-            <span
-              class="ch-order__phone-ic"
-              aria-hidden="true"
-            ><Phone class="size-4" /></span>
-            <span class="min-w-0 flex-1">
-              <span class="ch-order__phone-n">{{ phoneLabel }}</span>
-              <span class="ch-order__phone-h">{{ phoneHint }}</span>
-            </span>
-            <span class="ch-order__call">{{ locale.t.chat.call }}</span>
-          </a>
-        </div>
-
         <p
           v-if="chat.messages.length === 0"
           class="py-8 text-center text-sm text-muted-foreground"
@@ -661,66 +609,39 @@ function openActiveOffer() {
 </template>
 
 <style scoped>
-/* header */
-.ch-id { display: flex; min-width: 0; align-items: center; gap: 10px; padding: 0; border: 0; background: none; cursor: pointer; text-align: left; -webkit-tap-highlight-color: transparent; }
+/* header (messenger-style, Profi) */
+/* width:100% — a button otherwise grows to its text and pushes over the icons. */
+.ch-id { display: flex; width: 100%; max-width: 100%; min-width: 0; align-items: center; gap: 10px; padding: 0; border: 0; background: none; cursor: pointer; text-align: left; -webkit-tap-highlight-color: transparent; }
+.ch-id:focus-visible { outline: 2px solid var(--ring); outline-offset: 4px; border-radius: 14px; }
+.ch-id__text { display: block; min-width: 0; flex: 1; overflow: hidden; }
+.ch-photo {
+  display: grid; flex-shrink: 0; place-items: center; width: 38px; height: 40px; overflow: hidden;
+  border-radius: 11px; background: var(--secondary); color: var(--muted-foreground);
+  font-family: var(--rb-font-display); font-size: 13px; font-weight: 800;
+}
+.ch-photo img { width: 100%; height: 100%; object-fit: cover; }
+.ch-name { display: block; overflow: hidden; font-size: 15px; font-weight: 700; line-height: 1.2; color: var(--foreground); white-space: nowrap; text-overflow: ellipsis; }
+.ch-rating { display: flex; min-width: 0; align-items: center; gap: 3px; margin-top: 1px; overflow: hidden; white-space: nowrap; font-size: 12px; color: var(--muted-foreground); }
+.ch-rating__ic { width: 13px; height: 13px; flex-shrink: 0; }
+.ch-rating__ic--gap { margin-left: 6px; }
 .ch-icon-btn {
-  display: grid; place-items: center; width: 40px; height: 40px; border-radius: 13px; border: 1px solid var(--border);
-  background: var(--card); color: var(--foreground); cursor: pointer; transition: transform var(--rb-dur) var(--rb-ease);
+  display: grid; place-items: center; width: 40px; height: 40px; border: 0; border-radius: 999px;
+  background: none; color: var(--foreground); cursor: pointer;
 }
-.ch-icon-btn:active { transform: scale(0.94); }
-.ch-icon-btn:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
-.ch-icon-btn--call { border-color: transparent; background: color-mix(in srgb, var(--success) 14%, var(--card)); color: var(--success); }
+.ch-icon-btn:active { background: var(--secondary); }
+.ch-icon-btn:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
 
-/* header rating */
-.ch-rating { display: flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 600; color: var(--muted-foreground); }
-.ch-rating__star { width: 12px; height: 12px; fill: var(--rb-rating); color: var(--rb-rating); }
-
-/* pick banner */
-.ch-pick {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 8px;
-  padding: 12px 12px 12px 14px;
-  border: 1px solid var(--border);
-  border-radius: var(--rb-r-tile);
-  background: var(--card);
-  box-shadow: var(--rb-elev-1);
-}
-.ch-pick p { flex: 1; margin: 0; font-size: 13.5px; line-height: 1.35; color: var(--foreground); }
+/* choose strip, pinned under the header */
+.ch-pick { display: flex; align-items: center; gap: 10px; padding: 8px 12px 8px 14px; border-top: 1px solid var(--border); }
+.ch-pick p { flex: 1; margin: 0; font-size: 13px; line-height: 1.35; color: var(--foreground); }
 .ch-pick__btn {
-  display: inline-flex;
-  flex-shrink: 0;
-  min-height: 44px;
-  align-items: center;
-  gap: 6px;
-  padding: 0 18px;
-  border: 0;
-  border-radius: var(--rb-r-field);
-  background: var(--rb-cta);
-  color: #fff;
-  font-size: 14.5px;
-  font-weight: 800;
-  cursor: pointer;
+  display: inline-flex; flex-shrink: 0; min-height: 36px; align-items: center; gap: 6px; padding: 0 16px;
+  border: 0; border-radius: 11px; background: var(--rb-cta); color: #fff; font-size: 13.5px; font-weight: 700; cursor: pointer;
 }
 .ch-pick__btn:disabled { opacity: 0.6; cursor: default; }
 .ch-pick__btn:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
-.ch-pick--done { color: var(--success); background: color-mix(in srgb, var(--success) 8%, var(--card)); }
+.ch-pick--done { color: var(--success); }
 .ch-pick--done p { color: var(--success); font-weight: 700; }
-
-/* pinned order card */
-.ch-order { overflow: hidden; margin-bottom: 8px; border: 1px solid var(--border); border-radius: var(--rb-r-tile); background: var(--card); box-shadow: var(--rb-elev-1); }
-.ch-order__main { display: flex; width: 100%; align-items: center; gap: 10px; padding: 11px 12px; border: 0; background: none; text-align: left; cursor: pointer; -webkit-tap-highlight-color: transparent; }
-.ch-order__ic { display: grid; flex-shrink: 0; place-items: center; width: 38px; height: 38px; overflow: hidden; border-radius: 12px; background: var(--secondary); color: var(--primary); }
-.ch-order__ref { display: block; font-size: 11px; font-weight: 700; color: var(--muted-foreground); }
-.ch-order__title { display: block; overflow: hidden; font-size: 13.5px; font-weight: 700; line-height: 1.3; color: var(--foreground); white-space: nowrap; text-overflow: ellipsis; }
-.ch-chip { flex-shrink: 0; padding: 4px 9px; border-radius: var(--rb-r-chip); background: var(--secondary); color: var(--secondary-foreground); font-size: 11px; font-weight: 800; white-space: nowrap; }
-.ch-chip--ok { background: color-mix(in srgb, var(--success) 15%, var(--card)); color: var(--success); }
-.ch-order__phone { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-top: 1px solid var(--border); color: inherit; text-decoration: none; background: color-mix(in srgb, var(--success) 5%, var(--card)); }
-.ch-order__phone-ic { display: grid; flex-shrink: 0; place-items: center; width: 38px; height: 38px; border-radius: 12px; background: color-mix(in srgb, var(--success) 15%, var(--card)); color: var(--success); }
-.ch-order__phone-n { display: block; font-size: 14px; font-weight: 800; font-variant-numeric: tabular-nums; color: var(--foreground); }
-.ch-order__phone-h { display: block; font-size: 11px; color: var(--muted-foreground); }
-.ch-order__call { flex-shrink: 0; padding: 7px 12px; border-radius: 11px; background: var(--success); color: #fff; font-size: 12.5px; font-weight: 800; }
 
 /* ended */
 .ch-ended { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 12px 14px; border-radius: 18px; background: var(--secondary); text-align: center; font-size: 13px; color: var(--muted-foreground); }

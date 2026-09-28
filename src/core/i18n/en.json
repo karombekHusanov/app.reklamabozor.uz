@@ -366,7 +366,8 @@
     "offerAcceptedChip": "Accepted",
     "endChatHint": "Once ended, nobody can write here. You can reopen it later.",
     "moreActions": "More",
-    "agencyPhoneHint": "The agency's number is shown because it responded"
+    "agencyPhoneHint": "The agency's number is shown because it responded",
+    "reviewsCount": "{count} reviews"
   },
   "notifications": {
     "title": "Notifications",
@@ -1737,6 +1738,7 @@
     "next": "Next",
     "gotIt": "Got it",
     "close": "Close",
+    "learnTitle": "Get to know PRB",
     "profileMenu": "Profile menu",
     "menu": {
       "orders": "My orders",
