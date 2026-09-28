@@ -334,6 +334,7 @@
     "today": "Bugun",
     "yesterday": "Kecha",
     "attachFile": "Fayl biriktirish",
+    "imagesNotAllowed": "Agentliklar chatda rasm yubora olmaydi — faqat PDF hujjat.",
     "send": "Yuborish",
     "attachmentReady": "Yuborishga tayyor",
     "removeAttachment": "Faylni o'chirish",

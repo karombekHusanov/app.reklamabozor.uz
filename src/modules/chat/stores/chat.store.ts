@@ -2,6 +2,13 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { getApiErrorMessage } from '@/core/api/api-error'
 import {
+  RealtimeRpcError,
+  RealtimeUnavailableError,
+  useRealtimeStore,
+  type RealtimeUserEvent,
+} from '@/core/stores/realtime.store'
+import { useAuthStore } from '@/modules/auth/stores/auth.store'
+import {
   fetchChats,
   fetchDirectMessages,
   fetchDirectThread,
@@ -14,7 +21,31 @@ import {
   blockDirectChat,
   unblockDirectChat,
 } from '@/modules/chat/services/chat.service'
-import type { Chat, ChatMessage } from '@/modules/chat/types/chat'
+import type { Chat, ChatMessage, ChatType } from '@/modules/chat/types/chat'
+
+/** `chat.message` push on the personal channel. */
+interface ChatMessageEvent {
+  type: 'chat.message'
+  chat_type: ChatType
+  chat_id: number
+  order_id: number | null
+  message: ChatMessage
+}
+
+/** `chat.read` push — the other side read my messages. */
+interface ChatReadEvent {
+  type: 'chat.read'
+  chat_type: ChatType
+  chat_id: number
+  reader_id: number
+  read_at: string
+}
+
+/** RPC target: direct → direct chat id, order → order id (same ids as the HTTP routes). */
+interface ChatTarget {
+  type: ChatType
+  id: number
+}
 
 export const useChatStore = defineStore('chat', () => {
   // Inbox.
@@ -200,16 +231,42 @@ export const useChatStore = defineStore('chat', () => {
     }
   }
 
-  async function send(orderId: number, body: string, fileIds: number[] = []) {
+  /** Append unless already there (the socket push and the send reply race). */
+  function appendMessage(message: ChatMessage) {
+    if (!messages.value.some(m => m.id === message.id)) messages.value.push(message)
+  }
+
+  /**
+   * Send over the socket (RPC) when it's up; HTTP only when it's offline —
+   * never both, so a slow reply can't double-post.
+   */
+  async function sendVia(
+    target: ChatTarget,
+    body: string,
+    fileIds: number[],
+    http: () => Promise<ChatMessage>,
+  ): Promise<boolean> {
     isSending.value = true
     error.value = null
     try {
-      const message = await sendMessageRequest(orderId, body, fileIds)
-      messages.value.push(message)
+      let message: ChatMessage
+      try {
+        const reply = await useRealtimeStore().rpc<{ message: ChatMessage }>('chat.send', {
+          ...target,
+          body: body || undefined,
+          file_ids: fileIds.length > 0 ? fileIds : undefined,
+        })
+        message = reply.message
+      }
+      catch (e) {
+        if (!(e instanceof RealtimeUnavailableError)) throw e
+        message = await http()
+      }
+      appendMessage(message)
       return true
     }
     catch (e) {
-      error.value = getApiErrorMessage(e)
+      error.value = e instanceof RealtimeRpcError ? e.message : getApiErrorMessage(e)
       return false
     }
     finally {
@@ -217,21 +274,96 @@ export const useChatStore = defineStore('chat', () => {
     }
   }
 
+  async function send(orderId: number, body: string, fileIds: number[] = []) {
+    return sendVia({ type: 'order', id: orderId }, body, fileIds, () => sendMessageRequest(orderId, body, fileIds))
+  }
+
   async function sendDirect(chatId: number, body: string, fileIds: number[] = []) {
-    isSending.value = true
-    error.value = null
-    try {
-      const message = await sendDirectMessage(chatId, body, fileIds)
-      messages.value.push(message)
-      return true
+    return sendVia({ type: 'direct', id: chatId }, body, fileIds, () => sendDirectMessage(chatId, body, fileIds))
+  }
+
+  // ---- Realtime (Centrifugo `user:{id}` pushes) ----
+
+  function isOpenChat(chatType: ChatType, chatId: number): boolean {
+    return currentChat.value?.type === chatType && currentChat.value.id === chatId
+  }
+
+  /** The open thread's RPC target (order chats are addressed by order id). */
+  function openTarget(): ChatTarget | null {
+    const open = currentChat.value
+    if (!open) return null
+    if (open.type === 'order') return open.order_id ? { type: 'order', id: open.order_id } : null
+    return { type: 'direct', id: open.id }
+  }
+
+  let readTimer: ReturnType<typeof setTimeout> | null = null
+
+  /** Batch read receipts for the open thread (one RPC per burst of pushes). */
+  function scheduleMarkRead() {
+    if (readTimer) return
+    readTimer = setTimeout(() => {
+      readTimer = null
+      const target = openTarget()
+      if (target) void useRealtimeStore().rpc('chat.read', { ...target }).catch(() => {})
+    }, 400)
+  }
+
+  function onMessagePush(event: ChatMessageEvent) {
+    const me = useAuthStore().user?.id
+    const mine = event.message.sender_id === me
+    const open = isOpenChat(event.chat_type, event.chat_id)
+
+    if (open) {
+      appendMessage(event.message)
+      if (!mine && document.visibilityState !== 'hidden') scheduleMarkRead()
     }
-    catch (e) {
-      error.value = getApiErrorMessage(e)
-      return false
+
+    const item = chats.value.find(c => c.type === event.chat_type && c.id === event.chat_id)
+    if (!item) {
+      // A thread we haven't listed yet (first otklik, new deal) — refresh the inbox.
+      if (inboxLoaded.value) void loadChats(true)
+      return
     }
-    finally {
-      isSending.value = false
-    }
+    item.last_message = event.message
+    item.updated_at = event.message.created_at
+    if (!mine && !open) item.unread_count = (Number(item.unread_count) || 0) + 1
+    chats.value = [item, ...chats.value.filter(c => c !== item)]
+  }
+
+  function onReadPush(event: ChatReadEvent) {
+    const me = useAuthStore().user?.id
+    if (event.reader_id === me || !isOpenChat(event.chat_type, event.chat_id)) return
+    messages.value.forEach((m) => {
+      if (m.sender_id === me && !m.read_at) m.read_at = event.read_at
+    })
+  }
+
+  /** Catch up after the socket was down (pushes in between are lost). */
+  function resync() {
+    const open = currentChat.value
+    if (open?.type === 'direct') void pollDirect(open.id)
+    else if (open?.type === 'order' && open.order_id) void poll(open.order_id)
+    if (inboxLoaded.value) void loadChats(true)
+  }
+
+  /** Leaving the thread screen: pushes for it must count as unread again. */
+  function closeThread() {
+    currentChat.value = null
+    messages.value = []
+  }
+
+  let realtimeBound = false
+
+  /** Wire the store to the socket once per app session. */
+  function bindRealtime() {
+    if (realtimeBound) return
+    realtimeBound = true
+    const realtime = useRealtimeStore()
+    realtime.onUserEvent((event: RealtimeUserEvent) => {
+      if (event.type === 'chat.message') onMessagePush(event as unknown as ChatMessageEvent)
+      else if (event.type === 'chat.read') onReadPush(event as unknown as ChatReadEvent)
+    })
+    realtime.onReconnect(resync)
   }
 
   async function blockDirect(chatId: number) {
@@ -292,6 +424,8 @@ export const useChatStore = defineStore('chat', () => {
     refreshDirectThread,
     send,
     sendDirect,
+    bindRealtime,
+    closeThread,
     blockDirect,
     unblockDirect,
     reset,

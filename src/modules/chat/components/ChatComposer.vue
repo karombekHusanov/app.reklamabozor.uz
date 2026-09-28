@@ -11,8 +11,11 @@ const props = withDefaults(defineProps<{
   sending?: boolean
   placeholder?: string
   maxLength?: number
+  /** False on the agency side of client ↔ agent chats: documents only. */
+  allowImages?: boolean
 }>(), {
   sending: false,
+  allowImages: true,
   placeholder: '',
   maxLength: 4000,
 })
@@ -49,10 +52,17 @@ async function onFilesChange(event: Event) {
   input.value = '' // allow re-picking the same file(s)
 
   // Upload sequentially; each is size-checked, oversized ones are skipped with an error.
+  let skippedImage = false
   for (const file of files) {
+    if (!props.allowImages && file.type.startsWith('image/')) {
+      skippedImage = true
+      continue
+    }
     const uploaded = await upload(file)
     if (uploaded) attachments.value.push(uploaded)
   }
+  // After the loop: each upload() resets the shared error.
+  if (skippedImage) error.value = locale.t.chat.imagesNotAllowed
 }
 
 function removeAttachment(id: number) {
@@ -127,7 +137,7 @@ function onFocus() {
       <input
         ref="fileInput"
         type="file"
-        accept="image/*,application/pdf"
+:accept="allowImages ? 'image/*,application/pdf' : 'application/pdf'"
         multiple
         class="hidden"
         @change="onFilesChange"

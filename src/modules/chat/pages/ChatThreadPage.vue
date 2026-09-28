@@ -11,6 +11,7 @@ import { useAuthStore } from '@/modules/auth/stores/auth.store'
 import { useLocaleStore } from '@/core/i18n/locale.store'
 import { formatDaySeparator } from '@/core/lib/date'
 import { useChatStore } from '@/modules/chat/stores/chat.store'
+import { useRealtimeStore } from '@/core/stores/realtime.store'
 import ChatComposer from '@/modules/chat/components/ChatComposer.vue'
 import ChatComposerDock from '@/modules/chat/components/ChatComposerDock.vue'
 import MessageBubble from '@/modules/chat/components/MessageBubble.vue'
@@ -21,6 +22,7 @@ const props = defineProps<{ orderId: string }>()
 
 const auth = useAuthStore()
 const chat = useChatStore()
+const realtime = useRealtimeStore()
 const locale = useLocaleStore()
 const { haptic } = useTelegram()
 
@@ -63,14 +65,16 @@ onMounted(async () => {
   await chat.openThread(orderId.value)
   scrollToBottom(false)
 
-  // Simple polling — 5s keeps the thread fresh without websockets.
+  // New messages arrive over the socket; poll only while it's down.
   pollTimer = setInterval(() => {
+    if (realtime.connected) return
     if (auth.isAuthenticated && chat.currentChat) void chat.poll(orderId.value)
   }, 5000)
 })
 
 onBeforeUnmount(() => {
   if (pollTimer) clearInterval(pollTimer)
+  chat.closeThread()
 })
 
 watch(() => chat.messages.length, () => scrollToBottom())
@@ -174,6 +178,7 @@ async function handleSend(body: string, fileIds: number[]): Promise<boolean> {
       <ChatComposer
         :send="handleSend"
         :sending="chat.isSending"
+        :allow-images="chat.currentChat.can_send_images !== false"
         :max-length="2000"
         @focus="scrollToBottom(false)"
       />

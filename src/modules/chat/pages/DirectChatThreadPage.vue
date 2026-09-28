@@ -17,6 +17,7 @@ import { formatPhone } from '@/core/lib/phone'
 import { confirmAction } from '@/core/lib/confirm-action'
 import { ROUTES } from '@/modules/shell/constants/routes'
 import { useChatStore } from '@/modules/chat/stores/chat.store'
+import { useRealtimeStore } from '@/core/stores/realtime.store'
 import ChatComposer from '@/modules/chat/components/ChatComposer.vue'
 import ChatComposerDock from '@/modules/chat/components/ChatComposerDock.vue'
 import MessageBubble from '@/modules/chat/components/MessageBubble.vue'
@@ -31,6 +32,7 @@ const props = defineProps<{ chatId: string }>()
 
 const auth = useAuthStore()
 const chat = useChatStore()
+const realtime = useRealtimeStore()
 const locale = useLocaleStore()
 const router = useRouter()
 const { haptic } = useTelegram()
@@ -209,13 +211,16 @@ onMounted(async () => {
   await chat.openDirectThread(directChatId.value)
   scrollToBottom(false)
 
+  // New messages arrive over the socket; poll only while it's down.
   pollTimer = setInterval(() => {
+    if (realtime.connected) return
     if (auth.isAuthenticated && chat.currentChat) void chat.pollDirect(directChatId.value)
   }, 5000)
 })
 
 onBeforeUnmount(() => {
   if (pollTimer) clearInterval(pollTimer)
+  chat.closeThread()
 })
 
 watch(() => chat.messages.length, () => scrollToBottom())
@@ -516,6 +521,7 @@ function openActiveOffer() {
         v-else
         :send="handleSend"
         :sending="chat.isSending"
+        :allow-images="chat.currentChat.can_send_images !== false"
         :max-length="2000"
         @focus="scrollToBottom(false)"
       />

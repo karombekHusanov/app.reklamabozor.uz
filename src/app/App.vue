@@ -4,6 +4,7 @@ import { RouterView, useRouter } from 'vue-router'
 import { useAuthBootstrap } from '@/modules/auth'
 import { useAuthStore } from '@/modules/auth/stores/auth.store'
 import { useRealtimeStore } from '@/core/stores/realtime.store'
+import { useChatStore } from '@/modules/chat/stores/chat.store'
 import Toaster from '@/core/ui/Toaster.vue'
 import ConfirmDrawer from '@/core/ui/ConfirmDrawer.vue'
 import PropuskDrawer from '@/modules/agent/components/PropuskDrawer.vue'
@@ -16,6 +17,9 @@ const router = useRouter()
 const auth = useAuthStore()
 const onboarding = useOnboardingStore()
 const realtime = useRealtimeStore()
+
+// Chat threads + inbox update from socket pushes instead of polling.
+useChatStore().bindRealtime()
 
 // One socket per signed-in session — being connected is what "online" means.
 watch(

@@ -334,6 +334,7 @@
     "today": "Сегодня",
     "yesterday": "Вчера",
     "attachFile": "Прикрепить файл",
+    "imagesNotAllowed": "Агентства не могут отправлять изображения в чате — только PDF-документы.",
     "send": "Отправить",
     "attachmentReady": "Готово к отправке",
     "removeAttachment": "Удалить файл",

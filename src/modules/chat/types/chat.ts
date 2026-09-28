@@ -67,6 +67,8 @@ export interface Chat {
   blocked_at?: string | null
   blocked_by?: number | null
   can_write?: boolean
+  /** False on the agency side — agents may attach documents only, no images. */
+  can_send_images?: boolean
   /** Present on direct thread detail only. */
   active_offer?: ChatActiveOffer | null
   created_at: string

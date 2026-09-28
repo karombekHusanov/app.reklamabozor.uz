@@ -334,6 +334,7 @@
     "today": "Today",
     "yesterday": "Yesterday",
     "attachFile": "Attach a file",
+    "imagesNotAllowed": "Agencies can't send images in chat — PDF documents only.",
     "send": "Send",
     "attachmentReady": "Ready to send",
     "removeAttachment": "Remove file",
