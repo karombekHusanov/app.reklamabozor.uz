@@ -28,12 +28,7 @@ function load() {
 onMounted(load)
 watch(() => auth.isAuthenticated, load)
 
-// A claimed Tezkor request sits in `offers_sent`, but for the client it means
-// "an agent is on it" — not "offers to compare" (Tender wording).
 function statusLabel(order: Order): string {
-  if (order.route === 'tezkor' && order.claim && ['new', 'offers_sent'].includes(order.status)) {
-    return locale.t.route.claimedStatus
-  }
   return locale.t.orders.status[order.status]
 }
 

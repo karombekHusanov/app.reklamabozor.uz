@@ -10,7 +10,6 @@ export interface AgentPass {
   enforce: boolean
   wallet_enabled: boolean
   response_price_som: number
-  max_active_claims: number
   balance_som: number | null
 }
 
@@ -57,7 +56,6 @@ export interface PassHistoryItem {
 
 export type ClaimBlockCode
   = 'pass_required'
-    | 'claim_limit_reached'
     | 'insufficient_balance'
     | 'payment_source_unavailable'
 

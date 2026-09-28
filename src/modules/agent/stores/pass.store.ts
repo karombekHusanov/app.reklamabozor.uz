@@ -183,9 +183,6 @@ export const usePassStore = defineStore('agent-pass', () => {
         drawerOpen.value = true
         void load()
         return true
-      case 'claim_limit_reached':
-        toast.error(t.claimLimit)
-        return true
       case 'insufficient_balance':
         // Per-otklik fee: offer the top-up and resend the otklik afterwards.
         retry = onRetry ?? null

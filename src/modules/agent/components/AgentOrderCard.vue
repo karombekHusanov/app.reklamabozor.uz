@@ -30,13 +30,9 @@ const place = computed(() => {
   return [o.district, o.region].filter(Boolean).map(r => regionName(r!, locale.locale)).join(', ')
 })
 const category = computed(() => (props.order.category ? categoryName(props.order.category, locale.locale) : ''))
-const busy = computed(() => isTezkor.value && props.order.claimed && !props.order.claimed_by_me)
-
 const chip = computed(() => {
   const t = locale.t.agentHome
-  if (props.order.claimed_by_me) return t.mine
-  if (busy.value) return t.busy
-  const action = isTezkor.value ? t.take : t.respond
+  const action = t.respond
   return props.feeSom ? `${action} · ${fmtSom(props.feeSom, passStrings(locale.locale).unit)}` : action
 })
 
@@ -49,7 +45,6 @@ function open() {
   <button
     type="button"
     class="aoc"
-    :class="{ 'is-busy': busy }"
     @click="open"
   >
     <span class="aoc__top">
@@ -103,7 +98,6 @@ function open() {
 }
 .aoc:active { transform: scale(0.99); }
 .aoc:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
-.aoc.is-busy { opacity: 0.55; }
 .aoc__top { display: flex; width: 100%; align-items: center; gap: 6px; font-size: 12.5px; color: var(--muted-foreground); }
 .aoc__new { width: 6px; height: 6px; border-radius: 999px; background: #e5484d; }
 .aoc__route { margin-left: auto; padding: 2px 8px; border-radius: var(--rb-r-chip); font-size: 11px; font-weight: 700; }
@@ -121,5 +115,4 @@ function open() {
   border-radius: 10px; background: var(--background); font-size: 12.5px; font-weight: 600;
 }
 .aoc__chip-ic { display: grid; place-items: center; width: 18px; height: 18px; border-radius: 999px; background: var(--success); color: #fff; }
-.is-busy .aoc__chip-ic { background: var(--muted-foreground); }
 </style>

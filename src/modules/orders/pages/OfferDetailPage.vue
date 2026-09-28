@@ -33,7 +33,6 @@ import { useLocaleStore } from '@/core/i18n/locale.store'
 import { categoryName } from '@/core/i18n/category-name'
 import { formatDateTime } from '@/core/lib/date'
 import { getApiErrorMessage } from '@/core/api/api-error'
-import { confirmAction } from '@/core/lib/confirm-action'
 import { ROUTES } from '@/modules/shell/constants/routes'
 import CriteriaReviewForm from '@/modules/orders/components/CriteriaReviewForm.vue'
 import ReviewDisplay from '@/modules/orders/components/ReviewDisplay.vue'
@@ -123,7 +122,7 @@ const badge = computed(() => {
 const statusNote = computed(() => {
   if (!offer.value) return null
   if (offer.value.status === 'withdrawn') return locale.t.agent.offerWithdrawnNote
-  if (canResolveTezkor.value) return locale.t.route.yoursBody
+  if (tezkorPending.value) return locale.t.route.waitingPickBody
   if (offer.value.status === 'pending') return locale.t.agent.offerPendingNote
   if (offer.value.status === 'rejected') return locale.t.agent.offerRejectedNote
   if (orderStatus.value === 'awaiting_payment') return locale.t.agent.dealAwaitingPayment
@@ -167,8 +166,8 @@ const hasProviderReview = computed(() => Boolean(offer.value?.my_review))
 // price and payment are agreed with the client off-platform.
 const isTezkor = computed(() => order.value?.route === 'tezkor')
 
-// The claim is still open: the agent can close it as agreed or let it go.
-const canResolveTezkor = computed(() =>
+// Waiting for the client to pick among the otkliks (the agent may withdraw).
+const tezkorPending = computed(() =>
   isTezkor.value
   && offer.value?.status === 'pending'
   && ['new', 'offers_sent'].includes(orderStatus.value ?? ''),
@@ -223,36 +222,6 @@ async function loadOffer() {
   }
   finally {
     loading.value = false
-  }
-}
-
-/** Tezkor: the agent closes the claimed request as agreed (off-platform deal). */
-async function closeAgreed() {
-  if (!order.value || orders.isSubmitting) return
-  if (!(await confirmAction(locale.t.route.agentCloseConfirm))) return
-  haptic('light')
-  if (await orders.resolveAgentTezkor(order.value.id, 'close')) {
-    haptic('medium')
-    toast.success(locale.t.route.agentClosedToast)
-    await loadOffer()
-  }
-  else {
-    toast.error(orders.error || locale.t.route.errAction)
-  }
-}
-
-/** Tezkor: the agent lets the request go — it reopens for other agents. */
-async function releaseClaim() {
-  if (!order.value || orders.isSubmitting) return
-  if (!(await confirmAction(locale.t.route.agentReleaseConfirm))) return
-  haptic('light')
-  if (await orders.resolveAgentTezkor(order.value.id, 'release')) {
-    haptic('medium')
-    toast.success(locale.t.route.agentReleasedToast)
-    router.replace(ROUTES.offers)
-  }
-  else {
-    toast.error(orders.error || locale.t.route.errAction)
   }
 }
 
@@ -716,26 +685,6 @@ watch(() => props.id, loadOffer)
                   ? locale.t.agent.chatWithClient
                   : locale.t.chat.openChat }}
             </Button>
-
-            <template v-if="canResolveTezkor">
-              <Button
-                variant="outline"
-                class="h-12 w-full rounded-2xl text-base font-semibold"
-                :disabled="orders.isSubmitting"
-                @click="closeAgreed"
-              >
-                <CheckCircle2 class="size-4 shrink-0" />
-                {{ locale.t.route.agentClose }}
-              </Button>
-              <Button
-                variant="ghost"
-                class="h-11 w-full rounded-2xl text-sm font-semibold text-muted-foreground"
-                :disabled="orders.isSubmitting"
-                @click="releaseClaim"
-              >
-                {{ locale.t.route.agentRelease }}
-              </Button>
-            </template>
 
             <Button
               v-if="canManagePricelist"

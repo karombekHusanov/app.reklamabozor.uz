@@ -177,7 +177,22 @@ export interface OfferAgent {
   provider_type?: 'agent' | 'designer' | null
   company_name: string | null
   company_logo: string | null
+  /** The agent's Telegram avatar — shown when there is no company logo. */
+  avatar?: string | null
   location_label: string | null
+  stars?: number | null
+  stars_count?: number
+}
+
+/** Order-thread preview for the offers list (participants only). */
+export interface OfferChatPreview {
+  last_message: {
+    body: string
+    type: string | null
+    mine: boolean
+    created_at: string
+  } | null
+  unread_count: number
 }
 
 export interface Offer {
@@ -198,6 +213,7 @@ export interface Offer {
   /** Click-wrap consent on the per-order contract (ISO timestamps or null). */
   contract?: OfferContractState | null
   chat_id?: number | null
+  chat?: OfferChatPreview | null
   agent: OfferAgent
   created_at: string
   updated_at: string
@@ -359,10 +375,10 @@ export interface OrderHashtag {
 
 export const MAX_ORDER_HASHTAGS = 5
 
-/** Order route, fixed at creation: Tender (priced offers + contract) or Tezkor (one-agent claim). */
+/** Order route, fixed at creation: Tender (priced offers + contract) or Tezkor (open otkliks, client picks). */
 export type OrderRoute = 'tender' | 'tezkor'
 
-/** The agent holding an exclusive Tezkor claim on an order. */
+/** Tezkor: the agency the client picked ("Kelishildi") — set once the request is closed. */
 export interface OrderClaim {
   agent_id: number
   claimed_at: string
@@ -384,9 +400,7 @@ export interface OrderClaim {
 export interface Order {
   id: number
   route?: OrderRoute
-  /** Tezkor: client may reject the claimed agent and reopen the request. */
-  can_release?: boolean
-  /** Tezkor: client may close the request as agreed. */
+  /** Tezkor: client may pick one of the otkliks and close the request as agreed. */
   can_close?: boolean
   claim?: OrderClaim | null
   title: string
@@ -515,12 +529,8 @@ export interface OrderDraft {
 export interface AgentOrder {
   id: number
   route?: OrderRoute
-  /** Tezkor: another (or this) agent already holds the claim. */
-  claimed?: boolean
+  /** Tezkor: the client picked this agent ("Kelishildi"). */
   claimed_by_me?: boolean
-  /** Tezkor: only the agent holding the claim gets these — same pair the client has. */
-  can_release?: boolean
-  can_close?: boolean
   can_offer?: boolean
   title: string
   description: string
@@ -542,7 +552,7 @@ export interface AgentOrder {
     id?: number | null
     first_name: string | null
     avatar?: string | null
-    /** Shown to the claiming agent on a Tezkor request. */
+    /** Shown to the agent the client picked on a Tezkor request. */
     phone?: string | null
     username?: string | null
   }

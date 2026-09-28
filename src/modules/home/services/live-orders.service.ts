@@ -13,8 +13,6 @@ export interface ShowcaseClient {
 export interface LiveOrder {
   id: number
   route?: OrderRoute
-  claimed?: boolean
-  claimed_by_me?: boolean
   can_offer?: boolean
   title: string
   description: string | null
@@ -32,8 +30,6 @@ export interface LiveOrder {
 export interface ShowcaseOrder {
   id: number
   route?: OrderRoute
-  claimed?: boolean
-  claimed_by_me?: boolean
   title: string
   description: string | null
   deadline: string | null

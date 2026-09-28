@@ -39,25 +39,9 @@ function openClient() {
     @open-client="openClient"
   >
     <template #badge>
-      <span
-        v-if="order.route === 'tezkor' && order.claimed_by_me"
-        class="live-order-tile__badge claim-badge claim-badge--mine"
-      >{{ locale.t.route.mine }}</span>
-      <span
-        v-else-if="order.route === 'tezkor' && order.claimed"
-        class="live-order-tile__badge claim-badge"
-      >{{ locale.t.route.busy }}</span>
-      <span
-        v-else
-        class="live-order-tile__badge"
-      >
+      <span class="live-order-tile__badge">
         {{ locale.t.home.liveOrdersRequestBadge }}
       </span>
     </template>
   </OrderTile>
 </template>
-
-<style scoped>
-.claim-badge { background: var(--secondary); color: var(--muted-foreground); }
-.claim-badge--mine { background: color-mix(in srgb, var(--rb-glow) 16%, var(--card)); color: var(--foreground); }
-</style>

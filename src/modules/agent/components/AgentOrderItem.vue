@@ -37,11 +37,11 @@ const deadlineLabel = computed(() => {
 
 const pass = usePassStore()
 const needsPassHint = computed(() =>
-  pass.needsPass && props.order.route === 'tezkor' && !props.order.claimed && !props.order.my_offer,
+  pass.needsPass && props.order.route === 'tezkor' && !props.order.my_offer,
 )
 onMounted(() => { void pass.ensureLoaded() })
 
-const isTezkorClaimed = computed(() => props.order.route === 'tezkor' && Boolean(props.order.claimed))
+const pickedMe = computed(() => props.order.route === 'tezkor' && props.order.claimed_by_me === true)
 
 function openDetail() {
   router.push(ROUTES.offerOpportunity(props.order.id))
@@ -69,7 +69,7 @@ function openClient() {
     @open-client="openClient"
   >
     <template
-      v-if="deadlineLabel || order.my_offer || isTezkorClaimed"
+      v-if="deadlineLabel || order.my_offer || pickedMe"
       #chips
     >
       <span
@@ -79,18 +79,11 @@ function openClient() {
         {{ deadlineLabel }}
       </span>
       <Badge
-        v-if="order.route === 'tezkor' && order.claimed_by_me"
+        v-if="pickedMe"
         variant="primary"
         class="shrink-0 !px-2.5 !py-1 text-[11px] font-bold"
       >
         {{ locale.t.route.mine }}
-      </Badge>
-      <Badge
-        v-else-if="order.route === 'tezkor' && order.claimed"
-        variant="default"
-        class="shrink-0 !px-2.5 !py-1 text-[11px] font-bold"
-      >
-        {{ locale.t.route.busy }}
       </Badge>
       <Badge
         v-else-if="needsPassHint"

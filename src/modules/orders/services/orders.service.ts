@@ -120,28 +120,11 @@ export async function disputeCompletion(orderId: number): Promise<Order> {
 }
 
 /** Client cancels their own order — only while it is still open for offers. */
-/** Tezkor: client rejects the claimed agent and reopens the request. */
-export async function releaseOrder(orderId: number): Promise<Order> {
-  const { data } = await api.post<ApiSuccess<Order>>(`/api/v1/orders/${orderId}/release`)
+/** Tezkor: client picks one of the responding agencies and closes the request as agreed. */
+export async function closeOrder(orderId: number, offerId: number): Promise<Order> {
+  const { data } = await api.post<ApiSuccess<Order>>(`/api/v1/orders/${orderId}/close`, { offer_id: offerId })
 
   return data.data
-}
-
-/** Tezkor: client closes the request as agreed. */
-export async function closeOrder(orderId: number): Promise<Order> {
-  const { data } = await api.post<ApiSuccess<Order>>(`/api/v1/orders/${orderId}/close`)
-
-  return data.data
-}
-
-/** Tezkor: the claiming agent lets go of the request. */
-export async function agentReleaseOrder(orderId: number): Promise<void> {
-  await api.post(`/api/v1/agent/orders/${orderId}/release`)
-}
-
-/** Tezkor: the claiming agent closes the request as agreed — symmetric with the client's own action. */
-export async function agentCloseOrder(orderId: number): Promise<void> {
-  await api.post(`/api/v1/agent/orders/${orderId}/close`)
 }
 
 export async function cancelOrder(orderId: number): Promise<Order> {

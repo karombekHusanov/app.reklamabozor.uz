@@ -64,16 +64,7 @@ function metaText(order: LiveOrder): string {
             <span v-else>{{ metaText(order) }}</span>
           </p>
         </div>
-        <span
-          v-if="order.route === 'tezkor' && order.claimed_by_me"
-          class="fcard__state fcard__state--mine"
-        >{{ locale.t.route.mine }}</span>
-        <span
-          v-else-if="order.route === 'tezkor' && order.claimed"
-          class="fcard__state"
-        >{{ locale.t.route.busy }}</span>
         <button
-          v-else
           type="button"
           class="fcard__cta"
           @click="emit('open', order)"
@@ -100,8 +91,6 @@ function metaText(order: LiveOrder): string {
 .fcard__meta { margin: 3px 0 0; font-size: 11.5px; color: var(--muted-foreground); display: flex; align-items: center; gap: 6px; }
 .pill-new { font-size: 10px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; color: var(--rb-cta); }
 .fcard__cta { flex-shrink: 0; height: 34px; padding: 0 15px; border-radius: 11px; border: 0; background: var(--primary); color: #fff; font-family: inherit; font-weight: 700; font-size: 12.5px; cursor: pointer; -webkit-tap-highlight-color: transparent; transition: transform .12s ease; }
-.fcard__state { flex-shrink: 0; display: inline-flex; align-items: center; height: 30px; padding: 0 12px; border-radius: var(--rb-r-chip); background: var(--secondary); color: var(--muted-foreground); font-size: 12px; font-weight: 700; }
-.fcard__state--mine { background: color-mix(in srgb, var(--rb-glow) 16%, var(--card)); color: var(--foreground); }
 .fcard__cta:active { transform: scale(0.94); }
 
 @keyframes liveDot { 0% { box-shadow: 0 0 0 0 rgba(18, 183, 106, .55); } 70% { box-shadow: 0 0 0 7px rgba(18, 183, 106, 0); } 100% { box-shadow: 0 0 0 0 rgba(18, 183, 106, 0); } }

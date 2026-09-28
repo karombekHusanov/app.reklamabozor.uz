@@ -25,7 +25,6 @@ export interface PassStrings {
   drawerBuy: string
   drawerChecking: string
   drawerRetryHint: string
-  claimLimit: string
   insufficientBalance: string
   paymentUnavailable: string
   needed: string
@@ -104,7 +103,6 @@ const uz: PassStrings = {
   drawerBuy: 'Sotib olish — {price}',
   drawerChecking: 'To‘lov tekshirilmoqda...',
   drawerRetryHint: 'To‘lab bo‘ldingizmi? Holatni tekshiring.',
-  claimLimit: 'Bir vaqtda faol so‘rovlar limiti tugadi. Avval mavjudlarini yakunlang.',
   insufficientBalance: 'Hisobingizda mablag‘ yetarli emas.',
   paymentUnavailable: 'To‘lov manbai mavjud emas. Keyinroq urinib ko‘ring.',
   needed: 'Propusk kerak',
@@ -183,7 +181,6 @@ const ru: PassStrings = {
   drawerBuy: 'Купить — {price}',
   drawerChecking: 'Проверяем оплату...',
   drawerRetryHint: 'Уже оплатили? Проверьте статус.',
-  claimLimit: 'Достигнут лимит активных заявок. Сначала завершите текущие.',
   insufficientBalance: 'Недостаточно средств на балансе.',
   paymentUnavailable: 'Источник оплаты недоступен. Попробуйте позже.',
   needed: 'Нужен Пропуск',
@@ -262,7 +259,6 @@ const en: PassStrings = {
   drawerBuy: 'Buy — {price}',
   drawerChecking: 'Checking payment...',
   drawerRetryHint: 'Already paid? Check the status.',
-  claimLimit: 'You reached the limit of active requests. Finish current ones first.',
   insufficientBalance: 'Insufficient balance.',
   paymentUnavailable: 'Payment source is unavailable. Please try later.',
   needed: 'Propusk required',

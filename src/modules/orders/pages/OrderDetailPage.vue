@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { AlertTriangle, CheckCircle2, CreditCard, Loader2, MessageCircle, MessageSquareQuote, ShieldAlert, XCircle } from '@lucide/vue'
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { AlertTriangle, CheckCircle2, CreditCard, Ellipsis, FileText, Loader2, MessageCircle, MessageSquareQuote, ShieldAlert, XCircle } from '@lucide/vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AppHeader from '@/modules/shell/components/AppHeader.vue'
 import GlassCard from '@/core/ui/GlassCard.vue'
@@ -17,7 +17,7 @@ import { formatDateTime } from '@/core/lib/date'
 import { ROUTES } from '@/modules/shell/constants/routes'
 import OrderHashtagChips from '@/modules/orders/components/OrderHashtagChips.vue'
 import OrderAttachments from '@/modules/orders/components/OrderAttachments.vue'
-import OfferCard from '@/modules/orders/components/OfferCard.vue'
+import OfferListItem from '@/modules/orders/components/OfferListItem.vue'
 import TezkorClaimCard from '@/modules/orders/components/TezkorClaimCard.vue'
 import OrderStateCard from '@/modules/orders/components/OrderStateCard.vue'
 import ContractDownloadCard from '@/modules/orders/components/ContractDownloadCard.vue'
@@ -29,8 +29,8 @@ import CriteriaReviewForm from '@/modules/orders/components/CriteriaReviewForm.v
 import ReviewDisplay from '@/modules/orders/components/ReviewDisplay.vue'
 import { formatOrderRegion } from '@/modules/orders/lib/region-label'
 import { getApiErrorMessage } from '@/core/api/api-error'
-import { confirmAction } from '@/core/lib/confirm-action'
 import { fetchOfferContract } from '@/modules/orders/services/orders.service'
+import { openOrderChat } from '@/modules/chat/services/chat.service'
 import { useOrdersStore } from '@/modules/orders/stores/orders.store'
 import type { ContractDocument, Offer, ReviewCriterionScore } from '@/modules/orders/types/order'
 
@@ -44,15 +44,19 @@ const router = useRouter()
 const { haptic } = useTelegram()
 
 const order = computed(() => orders.currentOrder)
-// Tezkor: one exclusively claimed agent, no priced offers / contract / payment.
+// Tezkor: open otkliks, the client picks one — no priced offers / contract / payment.
 const isTezkor = computed(() => order.value?.route === 'tezkor')
 const offers = computed(() => order.value?.offers ?? [])
 // Once the client picks an offer, the losing bids are no longer relevant —
 // show only the accepted one so the order detail focuses on the chosen agency.
 const acceptedOffer = computed(() => offers.value.find(o => o.status === 'accepted') ?? null)
-const visibleOffers = computed(() =>
-  acceptedOffer.value ? [acceptedOffer.value] : offers.value,
-)
+// Once an offer is chosen only it stays in the list; before that, live
+// otkliks first and the withdrawn/declined ones after them.
+const listedOffers = computed(() => {
+  if (acceptedOffer.value) return [acceptedOffer.value]
+  const rank = (status: string) => (status === 'pending' ? 0 : 1)
+  return [...offers.value].sort((a, b) => rank(a.status) - rank(b.status))
+})
 const title = computed(() =>
   order.value?.title
   || (order.value?.category ? categoryName(order.value.category, locale.locale) : '')
@@ -66,6 +70,10 @@ const categoryLabel = computed(() =>
 const regionLabel = computed(() =>
   order.value ? formatOrderRegion(order.value, locale.locale) : null,
 )
+// Tender: the state card (payment / delivery / chat) matters once a deal
+// exists; while offers are open the list above says everything.
+const showStateCard = computed(() => !isTezkor.value && !selectable.value)
+
 // Offer accept + cancel share the same window: order still open for offers
 // (`new` / `offers_sent`). Unpaid checkout (`awaiting_payment`) can also cancel.
 const selectable = computed(() =>
@@ -311,20 +319,56 @@ async function cancelOrder() {
   toast.error(orders.error ?? locale.t.orders.cancelOrder)
 }
 
-async function resolveTezkor(action: 'close' | 'release') {
-  if (!order.value || orders.isSubmitting) return
-  const message = action === 'close' ? locale.t.route.closeConfirm : locale.t.route.releaseConfirm
-  if (!(await confirmAction(message))) return
+/* ── header menu (⋯) + full order card ── */
+const menuOpen = ref(false)
+const detailsOpen = ref(false)
+
+function openMenu() {
   haptic('light')
-  const ok = await orders.resolveTezkor(order.value.id, action)
-  if (ok) {
-    haptic('medium')
-    toast.success(action === 'close' ? locale.t.route.closedToast : locale.t.route.reopenedToast)
+  menuOpen.value = true
+}
+
+function openDetails() {
+  haptic('light')
+  menuOpen.value = false
+  detailsOpen.value = true
+}
+
+/** An offer opens as a chat with its agency — the client chooses from there. */
+const openingChatFor = ref<number | null>(null)
+
+async function openOfferChat(offer: Offer) {
+  if (openingChatFor.value !== null) return
+  haptic('light')
+  openingChatFor.value = offer.id
+  try {
+    const chatId = offer.chat_id ?? (await openOrderChat(offer.id)).id
+    await router.push(ROUTES.chatDirect(chatId))
   }
-  else {
-    toast.error(orders.error || locale.t.route.errAction)
+  catch (e) {
+    toast.error(getApiErrorMessage(e))
+  }
+  finally {
+    openingChatFor.value = null
   }
 }
+
+/**
+ * Tender: "Tanlash" in the chat lands here with ?accept={offer} — accepting
+ * means signing the contract, so its drawer opens right away.
+ */
+watch(
+  () => [order.value?.id, route.query.accept] as const,
+  ([orderId, accept]) => {
+    if (!orderId || orderId !== Number(props.id) || typeof accept !== 'string') return
+    const q = { ...route.query }
+    delete q.accept
+    void router.replace({ query: q })
+    const offer = offers.value.find(o => o.id === Number(accept))
+    if (offer?.can_accept && selectable.value) void reviewOfferContract(offer)
+  },
+  { immediate: true },
+)
 
 async function sendReview(criteria: ReviewCriterionScore[], comment: string | null) {
   if (!order.value) return
@@ -343,7 +387,21 @@ async function sendReview(criteria: ReviewCriterionScore[], comment: string | nu
       :title="order ? (title || locale.t.orders.detailTitle) : locale.t.orders.detailTitle"
       :subtitle="order ? `${locale.t.orders.detailTitle} #${order.id}` : locale.t.orders.detailSubtitle"
       show-back
-    />
+    >
+      <template
+        v-if="order"
+        #trailing
+      >
+        <button
+          type="button"
+          class="menu-btn"
+          :aria-label="locale.t.orderView.moreActions"
+          @click="openMenu"
+        >
+          <Ellipsis class="size-5" />
+        </button>
+      </template>
+    </AppHeader>
 
     <section class="space-y-4 px-5">
       <template v-if="orders.isLoading && !order">
@@ -352,17 +410,15 @@ async function sendReview(criteria: ReviewCriterionScore[], comment: string | nu
       </template>
 
       <template v-else-if="order">
-        <!-- Where the work is, and — kept apart — where the money is. -->
+        <!-- Tezkor, once picked: the chosen agency and how to reach it. -->
         <TezkorClaimCard
-          v-if="isTezkor"
+          v-if="isTezkor && order.claim"
           :order="order"
-          :busy="orders.isSubmitting"
-          @close="resolveTezkor('close')"
-          @release="resolveTezkor('release')"
         />
 
+        <!-- Tender deal running: where the work is, and where the money is. -->
         <OrderStateCard
-          v-else
+          v-if="showStateCard"
           :order="order"
         >
           <template #action>
@@ -501,96 +557,73 @@ async function sendReview(criteria: ReviewCriterionScore[], comment: string | nu
           </div>
         </GlassCard>
 
-        <!-- Facts: label/value rows, scannable at a glance -->
-        <GlassCard class="space-y-3">
-          <p class="section-label">
-            {{ locale.t.orders.factsTitle }}
-          </p>
+        <!-- Offers — the first thing the client sees (Profi-style list).
+             A picked Tezkor agency already has its own contact card above. -->
+        <GlassCard
+          v-if="!(isTezkor && order.claim)"
+          padding="none"
+          class="offers-card"
+        >
+          <div class="offers-card__head">
+            <h2 class="offers-card__title">
+              {{ acceptedOffer ? locale.t.orderView.pickedTitle : locale.t.orderView.offersTitle }}
+            </h2>
+            <span
+              v-if="!acceptedOffer && listedOffers.length"
+              class="offers-card__count"
+            >{{ listedOffers.length }}</span>
+          </div>
 
-          <dl class="facts">
-            <div class="fact">
-              <dt>{{ locale.t.orders.factCategory }}</dt>
-              <dd :class="categoryLabel ? '' : 'fact__empty'">
-                {{ categoryLabel ?? locale.t.orders.factNotSet }}
-              </dd>
-            </div>
-            <div class="fact">
-              <dt>{{ locale.t.orders.factRegion }}</dt>
-              <dd :class="regionLabel ? '' : 'fact__empty'">
-                {{ regionLabel ?? locale.t.orders.factNotSet }}
-              </dd>
-            </div>
-            <div
-              v-if="order.target_agent"
-              class="fact"
-            >
-              <dt>{{ locale.t.orders.wizard.directedTo }}</dt>
-              <dd>{{ order.target_agent.company_name }}</dd>
-            </div>
-            <div class="fact">
-              <dt>{{ locale.t.orders.factCreated }}</dt>
-              <dd class="tabular-nums">
-                {{ formatDateTime(order.created_at) }}
-              </dd>
-            </div>
-            <div class="fact">
-              <dt>{{ locale.t.orders.factActivity }}</dt>
-              <dd class="tabular-nums">
-                {{ order.views_count ?? 0 }} · <span class="text-primary">{{ offers.length }}</span>
-              </dd>
-            </div>
-          </dl>
+          <div
+            v-if="listedOffers.length === 0"
+            class="offers-card__empty"
+          >
+            <p class="offers-card__empty-t">
+              {{ locale.t.orderView.waitingTitle }}
+            </p>
+            <p class="offers-card__empty-b">
+              {{ locale.t.orderView.waitingBody }}
+            </p>
+          </div>
+
+          <div
+            v-else
+            class="offers-card__list"
+          >
+            <OfferListItem
+              v-for="offer in listedOffers"
+              :key="offer.id"
+              :offer="offer"
+              @open="openOfferChat"
+            />
+          </div>
         </GlassCard>
 
-        <!-- The request itself -->
-        <GlassCard
-          v-if="order.description || order.hashtags?.length || attachmentFiles.length"
-          class="space-y-3"
-        >
-          <p class="section-label">
-            {{ locale.t.orders.commentTitle }}
-          </p>
-
+        <!-- The request, in brief — the full card lives behind "Batafsil". -->
+        <GlassCard class="space-y-2">
+          <div class="flex items-center justify-between gap-3">
+            <p class="section-label">
+              {{ locale.t.orders.commentTitle }}
+            </p>
+            <button
+              type="button"
+              class="more-link"
+              @click="openDetails"
+            >
+              {{ locale.t.orderView.more }}
+            </button>
+          </div>
           <p
             v-if="order.description"
-            class="whitespace-pre-line text-sm leading-relaxed text-foreground"
+            class="brief"
           >
             {{ order.description }}
           </p>
-
-          <OrderHashtagChips
-            v-if="order.hashtags?.length"
-            :hashtags="order.hashtags"
-          />
-
-          <OrderAttachments
-            v-if="attachmentFiles.length"
-            :files="attachmentFiles"
-            hide-title
-          />
-        </GlassCard>
-
-        <!-- Location -->
-        <GlassCard
-          v-if="regionLabel || (order.lat != null && order.lng != null)"
-          padding="none"
-          class="overflow-hidden"
-        >
-          <div class="flex items-center justify-between gap-3 p-4 pb-3">
-            <p class="section-label">
-              {{ locale.t.orders.locationTitle }}
-            </p>
-            <span
-              v-if="regionLabel"
-              class="truncate text-[12.5px] font-semibold text-foreground"
-            >{{ regionLabel }}</span>
-          </div>
-          <LocationMap
-            v-if="order.lat != null && order.lng != null"
-            :lat="order.lat"
-            :lng="order.lng"
-            :label="order.location_label"
-          />
+          <p class="brief-meta">
+            <span v-if="categoryLabel">{{ categoryLabel }}</span>
+            <span v-if="regionLabel">{{ regionLabel }}</span>
+            <span class="tabular-nums">{{ formatDateTime(order.created_at) }}</span>
+          </p>
         </GlassCard>
 
         <!-- Service contract (generated once the deal started). -->
@@ -639,66 +672,12 @@ async function sendReview(criteria: ReviewCriterionScore[], comment: string | nu
           :label="locale.t.orders.rateProviderReview"
         />
 
-        <!-- Offers -->
-        <div
-          v-if="!isTezkor"
-          class="space-y-3"
-        >
-          <div class="flex items-center gap-2 px-1">
-            <MessageSquareQuote class="size-4 text-primary" />
-            <h3 class="text-base font-semibold text-foreground">
-              {{ acceptedOffer ? locale.t.orders.selectedOfferHeading : locale.t.orders.offersHeading }}
-              <template v-if="!acceptedOffer">
-                ({{ offers.length }})
-              </template>
-            </h3>
-          </div>
-
-          <GlassCard
-            v-if="offers.length === 0"
-            padding="none"
-            class="overflow-hidden"
-          >
-            <EmptyState
-              :icon="MessageSquareQuote"
-              :title="locale.t.orders.noOffersTitle"
-              :description="locale.t.orders.noOffersBody"
-            />
-          </GlassCard>
-
-          <template v-else>
-            <OfferCard
-              v-for="offer in visibleOffers"
-              :key="offer.id"
-              :offer="offer"
-              :selectable="selectable"
-              :accepting="orders.isSubmitting"
-              @accept="reviewOfferContract(offer)"
-            />
-          </template>
-        </div>
-
         <p
           v-if="orders.error"
           class="rounded-2xl bg-destructive/10 px-4 py-3 text-sm text-destructive"
         >
           {{ orders.error }}
         </p>
-
-        <!-- Quiet danger zone, always last -->
-        <div
-          v-if="canCancel"
-          class="flex justify-center pb-2 pt-1"
-        >
-          <button
-            type="button"
-            class="pressable inline-flex h-9 items-center justify-center gap-1.5 rounded-full px-5 text-[13px] font-semibold text-destructive transition active:scale-95 active:bg-destructive/10"
-            @click="openCancelDrawer"
-          >
-            <XCircle class="size-4" />
-            {{ locale.t.orders.cancelShort }}
-          </button>
-        </div>
       </template>
 
       <GlassCard
@@ -713,6 +692,142 @@ async function sendReview(criteria: ReviewCriterionScore[], comment: string | nu
         />
       </GlassCard>
     </section>
+
+    <!-- Order menu (⋯): details, work chat, cancel -->
+    <Drawer
+      v-model:open="menuOpen"
+      :title="locale.t.orderView.menuTitle"
+    >
+      <div class="menu">
+        <button
+          type="button"
+          class="menu__item"
+          @click="openDetails"
+        >
+          <FileText class="size-5" />
+          {{ locale.t.orderView.menuDetails }}
+        </button>
+        <button
+          v-if="hasChat && !isTezkor"
+          type="button"
+          class="menu__item"
+          @click="menuOpen = false; openChat()"
+        >
+          <MessageCircle class="size-5" />
+          {{ locale.t.orderView.menuChat }}
+        </button>
+        <button
+          v-if="canCancel"
+          type="button"
+          class="menu__item menu__item--danger"
+          @click="menuOpen = false; openCancelDrawer()"
+        >
+          <XCircle class="size-5" />
+          {{ locale.t.orderView.menuCancel }}
+        </button>
+      </div>
+    </Drawer>
+
+    <!-- Full order card -->
+    <Drawer
+      v-model:open="detailsOpen"
+      :title="locale.t.orderView.detailsTitle"
+    >
+      <div
+        v-if="order"
+        class="details"
+      >
+        <section class="details__block space-y-3">
+          <p class="section-label">
+            {{ locale.t.orders.factsTitle }}
+          </p>
+
+          <dl class="facts">
+            <div class="fact">
+              <dt>{{ locale.t.orders.factCategory }}</dt>
+              <dd :class="categoryLabel ? '' : 'fact__empty'">
+                {{ categoryLabel ?? locale.t.orders.factNotSet }}
+              </dd>
+            </div>
+            <div class="fact">
+              <dt>{{ locale.t.orders.factRegion }}</dt>
+              <dd :class="regionLabel ? '' : 'fact__empty'">
+                {{ regionLabel ?? locale.t.orders.factNotSet }}
+              </dd>
+            </div>
+            <div
+              v-if="order.target_agent"
+              class="fact"
+            >
+              <dt>{{ locale.t.orders.wizard.directedTo }}</dt>
+              <dd>{{ order.target_agent.company_name }}</dd>
+            </div>
+            <div class="fact">
+              <dt>{{ locale.t.orders.factCreated }}</dt>
+              <dd class="tabular-nums">
+                {{ formatDateTime(order.created_at) }}
+              </dd>
+            </div>
+            <div class="fact">
+              <dt>{{ locale.t.orders.factActivity }}</dt>
+              <dd class="tabular-nums">
+                {{ order.views_count ?? 0 }} · <span class="text-primary">{{ offers.length }}</span>
+              </dd>
+            </div>
+          </dl>
+        </section>
+
+        <!-- The request itself -->
+        <section
+          v-if="order.description || order.hashtags?.length || attachmentFiles.length"
+          class="details__block space-y-3"
+        >
+          <p class="section-label">
+            {{ locale.t.orders.commentTitle }}
+          </p>
+
+          <p
+            v-if="order.description"
+            class="whitespace-pre-line text-sm leading-relaxed text-foreground"
+          >
+            {{ order.description }}
+          </p>
+
+          <OrderHashtagChips
+            v-if="order.hashtags?.length"
+            :hashtags="order.hashtags"
+          />
+
+          <OrderAttachments
+            v-if="attachmentFiles.length"
+            :files="attachmentFiles"
+            hide-title
+          />
+        </section>
+
+        <!-- Location -->
+        <section
+          v-if="regionLabel || (order.lat != null && order.lng != null)"
+          class="details__block details__block--flush"
+        >
+          <div class="flex items-center justify-between gap-3 p-4 pb-3">
+            <p class="section-label">
+              {{ locale.t.orders.locationTitle }}
+            </p>
+            <span
+              v-if="regionLabel"
+              class="truncate text-[12.5px] font-semibold text-foreground"
+            >{{ regionLabel }}</span>
+          </div>
+          <LocationMap
+            v-if="order.lat != null && order.lng != null"
+            :lat="order.lat"
+            :lng="order.lng"
+            :label="order.location_label"
+          />
+        </section>
+      </div>
+    </Drawer>
 
     <Drawer
       v-model:open="cancelDrawerOpen"
@@ -870,4 +985,66 @@ async function sendReview(criteria: ReviewCriterionScore[], comment: string | nu
   white-space: nowrap;
 }
 .fact__empty { font-weight: 500; color: var(--muted-foreground); }
+
+.menu-btn {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--border);
+  border-radius: 13px;
+  background: var(--card);
+  color: var(--foreground);
+  cursor: pointer;
+  transition: transform var(--rb-dur) var(--rb-ease);
+}
+.menu-btn:active { transform: scale(0.94); }
+.menu-btn:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+
+.offers-card { overflow: hidden; }
+.offers-card__head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 18px 18px 4px; }
+.offers-card__title { margin: 0; font-family: var(--rb-font-display); font-size: 22px; font-weight: 800; letter-spacing: -0.01em; color: var(--foreground); }
+.offers-card__count { font-size: 20px; font-weight: 700; color: var(--muted-foreground); font-variant-numeric: tabular-nums; }
+.offers-card__list { display: flex; flex-direction: column; padding: 4px 14px 8px; }
+.offers-card__list > * + * { border-top: 1px solid color-mix(in srgb, var(--border) 65%, transparent); }
+.offers-card__empty { padding: 6px 18px 20px; }
+.offers-card__empty-t { margin: 0; font-size: 15px; font-weight: 700; color: var(--foreground); }
+.offers-card__empty-b { margin: 4px 0 0; font-size: 13.5px; line-height: 1.5; color: var(--muted-foreground); }
+
+.more-link { padding: 4px 0; border: 0; background: none; color: var(--primary); font-size: 13px; font-weight: 700; cursor: pointer; }
+.brief {
+  display: -webkit-box;
+  margin: 0;
+  overflow: hidden;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--foreground);
+  white-space: pre-line;
+}
+.brief-meta { display: flex; flex-wrap: wrap; gap: 4px 12px; margin: 0; font-size: 12.5px; color: var(--muted-foreground); }
+
+.menu { display: flex; flex-direction: column; gap: 8px; }
+.menu__item {
+  display: flex;
+  min-height: 52px;
+  align-items: center;
+  gap: 12px;
+  padding: 0 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--rb-r-field);
+  background: var(--card);
+  color: var(--foreground);
+  font-size: 15px;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+}
+.menu__item--danger { color: var(--destructive); }
+.menu__item:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+
+.details { display: flex; flex-direction: column; gap: 12px; }
+.details__block { padding: 14px; border: 1px solid var(--border); border-radius: var(--rb-r-tile); background: var(--card); }
+.details__block--flush { overflow: hidden; padding: 0; }
 </style>

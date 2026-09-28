@@ -4,23 +4,21 @@ import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import Avatar from '@/core/ui/Avatar.vue'
 import GlassCard from '@/core/ui/GlassCard.vue'
-import { Button } from '@/core/ui/button'
 import { useLocaleStore } from '@/core/i18n/locale.store'
 import { useToast } from '@/core/composables/useToast'
 import { getApiErrorMessage } from '@/core/api/api-error'
 import { formatDateTime } from '@/core/lib/date'
 import { openOrderChat } from '@/modules/chat/services/chat.service'
 import { ROUTES } from '@/modules/shell/constants/routes'
-import type { Order } from '@/modules/orders/types/order'
+import type { Offer, Order } from '@/modules/orders/types/order'
 
+/**
+ * Tezkor on the client's order, once the client picked an agency
+ * ("Kelishildi"): that agency and how to reach it. The otklik list itself
+ * lives on the order page (OfferListItem → chat → pick).
+ */
 const props = defineProps<{
   order: Order
-  busy: boolean
-}>()
-
-const emit = defineEmits<{
-  close: []
-  release: []
 }>()
 
 const locale = useLocaleStore()
@@ -36,25 +34,24 @@ const displayName = computed(() => {
   return a.company_name || [a.first_name, a.last_name].filter(Boolean).join(' ')
 })
 
+// Seeded 5.0 without a single review isn't a rating yet — same rule as the offer list.
 const stars = computed(() => {
   const value = agent.value?.stars
-  return value != null ? Number(value).toFixed(1) : null
+  return value != null && (agent.value?.stars_count ?? 0) > 0 ? Number(value).toFixed(1) : null
 })
 
-// The claiming agent's otklik — its order thread is the in-app chat with them
-// (opened eagerly on otklik; POST /offers/{offer}/chat as a fallback).
-const claimOffer = computed(() => {
+// The picked agency's otklik — its order thread is the in-app chat with them.
+const pickedOffer = computed(() => {
   const agentId = claim.value?.agent_id
   if (agentId == null) return null
-  return props.order.offers?.find(o => o.agent.id === agentId && ['pending', 'accepted'].includes(o.status)) ?? null
+  return props.order.offers?.find(o => o.agent.id === agentId && o.status === 'accepted') ?? null
 })
 
-const chatOpening = ref(false)
+const chatOpeningId = ref<number | null>(null)
 
-async function openChat() {
-  const offer = claimOffer.value
-  if (!offer || chatOpening.value) return
-  chatOpening.value = true
+async function openChat(offer: Offer) {
+  if (chatOpeningId.value !== null) return
+  chatOpeningId.value = offer.id
   try {
     const chatId = offer.chat_id ?? (await openOrderChat(offer.id)).id
     await router.push(ROUTES.chatDirect(chatId))
@@ -63,30 +60,18 @@ async function openChat() {
     toast.error(getApiErrorMessage(e))
   }
   finally {
-    chatOpening.value = false
+    chatOpeningId.value = null
   }
 }
 
-function openProfile() {
-  const id = agent.value?.profile_id
-  if (id) void router.push(`/agents/${id}`)
+function openProfile(profileId: number | null | undefined) {
+  if (profileId) void router.push(`/agents/${profileId}`)
 }
 </script>
 
 <template>
   <GlassCard class="space-y-3.5">
-    <!-- Waiting for the first agent -->
-    <template v-if="!claim || !agent">
-      <p class="tez-title">
-        {{ locale.t.route.claimWaitingTitle }}
-      </p>
-      <p class="tez-text">
-        {{ locale.t.route.claimWaitingBody }}
-      </p>
-    </template>
-
-    <!-- Claimed agent -->
-    <template v-else>
+    <template v-if="claim && agent">
       <p class="tez-eyebrow">
         {{ locale.t.route.claimTitle }}
       </p>
@@ -95,7 +80,7 @@ function openProfile() {
         type="button"
         class="tez-agent"
         :disabled="!agent.profile_id"
-        @click="openProfile"
+        @click="openProfile(agent.profile_id)"
       >
         <Avatar
           :src="agent.company_logo"
@@ -124,14 +109,14 @@ function openProfile() {
 
       <div class="flex flex-wrap gap-2">
         <button
-          v-if="claimOffer"
+          v-if="pickedOffer"
           type="button"
           class="tez-action tez-action--primary"
-          :disabled="chatOpening"
-          @click="openChat"
+          :disabled="chatOpeningId !== null"
+          @click="openChat(pickedOffer)"
         >
           <Loader2
-            v-if="chatOpening"
+            v-if="chatOpeningId === pickedOffer.id"
             class="size-4 animate-spin"
           />
           <MessageCircle
@@ -153,53 +138,17 @@ function openProfile() {
           rel="noopener"
           class="tez-action"
         >{{ locale.t.route.telegramAgent }} · @{{ agent.username }}</a>
-        <button
-          v-if="agent.profile_id"
-          type="button"
-          class="tez-action"
-          @click="openProfile"
-        >
-          {{ locale.t.route.viewProfile }}
-        </button>
       </div>
 
       <p class="tez-text">
         {{ locale.t.route.directNote }}
       </p>
-
-      <div
-        v-if="order.can_close || order.can_release"
-        class="space-y-2"
-      >
-        <Button
-          v-if="order.can_close"
-          class="h-12 w-full rounded-2xl text-base"
-          :disabled="busy"
-          @click="emit('close')"
-        >
-          <Loader2
-            v-if="busy"
-            class="size-4 animate-spin"
-          />
-          {{ locale.t.route.close }}
-        </Button>
-        <Button
-          v-if="order.can_release"
-          variant="outline"
-          class="h-11 w-full rounded-2xl"
-          :disabled="busy"
-          @click="emit('release')"
-        >
-          {{ locale.t.route.release }}
-        </Button>
-      </div>
     </template>
   </GlassCard>
 </template>
 
 <style scoped>
 .tez-eyebrow { margin: 0; font-size: 10.5px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted-foreground); }
-.tez-title { margin: 0; font-family: var(--rb-font-display); font-size: 16px; font-weight: 800; color: var(--foreground); }
 .tez-text { margin: 0; font-size: 13px; line-height: 1.5; color: var(--muted-foreground); }
 .tez-agent {
   display: flex;

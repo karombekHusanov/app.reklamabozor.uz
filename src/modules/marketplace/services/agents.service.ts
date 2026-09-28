@@ -40,6 +40,8 @@ export interface PublicAgent {
   linkedin_url: string | null
   results_text: string | null
   completion_percent: number
+  /** When the provider profile was created ("on the platform since"). */
+  member_since?: string | null
   /** Number of accepted offers that ended in a completed order (successful jobs). */
   completed_orders_count: number
   /** Weighted stars (1.00–5.00) — prefers this over legacy rating_avg. */

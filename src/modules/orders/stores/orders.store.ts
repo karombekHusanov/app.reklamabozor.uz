@@ -4,10 +4,7 @@ import { ref } from 'vue'
 import { getApiErrorMessage } from '@/core/api/api-error'
 import {
   acceptOffer as acceptOfferRequest,
-  agentCloseOrder as agentCloseOrderRequest,
-  agentReleaseOrder as agentReleaseOrderRequest,
   closeOrder as closeOrderRequest,
-  releaseOrder as releaseOrderRequest,
   cancelOrder as cancelOrderRequest,
   confirmCompletion as confirmCompletionRequest,
   createOrder as createOrderRequest,
@@ -239,36 +236,14 @@ export const useOrdersStore = defineStore('orders', () => {
     }
   }
 
-  /** Tezkor: client closes ("Kelishildi") or rejects/reopens the claimed request. */
-  async function resolveTezkor(orderId: number, action: 'close' | 'release') {
+  /** Tezkor: client picks an agency among the otkliks and closes as agreed ("Kelishildi"). */
+  async function closeTezkor(orderId: number, offerId: number) {
     isSubmitting.value = true
     error.value = null
     try {
-      const updated = action === 'close'
-        ? await closeOrderRequest(orderId)
-        : await releaseOrderRequest(orderId)
+      const updated = await closeOrderRequest(orderId, offerId)
       if (currentOrder.value?.id === orderId) await loadOrder(orderId)
       myOrders.value = myOrders.value.map(o => (o.id === orderId ? { ...o, ...updated } : o))
-      return true
-    }
-    catch (e) {
-      error.value = getApiErrorMessage(e)
-      return false
-    }
-    finally {
-      isSubmitting.value = false
-    }
-  }
-
-  /** Tezkor: the claiming agent lets go of the request, or closes it as agreed. */
-  async function resolveAgentTezkor(orderId: number, action: 'close' | 'release') {
-    isSubmitting.value = true
-    error.value = null
-    try {
-      action === 'close'
-        ? await agentCloseOrderRequest(orderId)
-        : await agentReleaseOrderRequest(orderId)
-      await loadAgentWorkspace(true)
       return true
     }
     catch (e) {
@@ -356,7 +331,7 @@ export const useOrdersStore = defineStore('orders', () => {
       return true
     }
     catch (e) {
-      // 402 Propusk / claim gates are surfaced by the pass store (drawer / toast).
+      // 402 Propusk / balance gates are surfaced by the pass store (drawer / toast).
       if (usePassStore().handleClaimError(e, onPassBought)) {
         error.value = null
         return false
@@ -419,8 +394,7 @@ export const useOrdersStore = defineStore('orders', () => {
     disputeCompletion,
     reportNoStart,
     cancelOrder,
-    resolveTezkor,
-    resolveAgentTezkor,
+    closeTezkor,
     submitReview,
     submitProviderReview,
     loadAgentWorkspace,

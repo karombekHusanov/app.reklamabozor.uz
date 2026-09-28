@@ -160,6 +160,19 @@ export const useChatStore = defineStore('chat', () => {
     }
   }
 
+  /** Re-read the open direct thread (header, offer state) without the loading skeleton. */
+  async function refreshDirectThread(chatId: number) {
+    try {
+      const thread = await fetchDirectThread(chatId)
+      if (currentChat.value?.id !== chatId) return
+      currentChat.value = thread.chat
+      messages.value = thread.messages
+    }
+    catch {
+      // Keep what is on screen — the next open reloads it.
+    }
+  }
+
   /** Fetch messages newer than the last known one and append (poll tick). */
   async function poll(orderId: number) {
     try {
@@ -276,6 +289,7 @@ export const useChatStore = defineStore('chat', () => {
     openDirectThread,
     poll,
     pollDirect,
+    refreshDirectThread,
     send,
     sendDirect,
     blockDirect,

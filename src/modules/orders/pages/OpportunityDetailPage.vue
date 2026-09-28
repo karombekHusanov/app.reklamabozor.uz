@@ -30,7 +30,6 @@ import { ROUTES } from '@/modules/shell/constants/routes'
 import { formatPrice, isInterestOffer, offerStatusVariant } from '@/modules/orders/lib/order-status'
 import { formatOrderRegion } from '@/modules/orders/lib/region-label'
 import OrderAttachments from '@/modules/orders/components/OrderAttachments.vue'
-import { confirmAction } from '@/core/lib/confirm-action'
 import { fetchAgentOrder, openOfferChat } from '@/modules/orders/services/orders.service'
 import { useOrdersStore } from '@/modules/orders/stores/orders.store'
 import type { AgentOrder } from '@/modules/orders/types/order'
@@ -77,7 +76,7 @@ async function loadOrder() {
   try {
     const data = await fetchAgentOrder(Number(props.id))
     // Already responded — land on the offer detail instead. A Tezkor request
-    // held by me stays here: this page is where it is released.
+    // the client picked me for stays here: this page shows their contact.
     if (data.my_offer && !(data.route === 'tezkor' && data.claimed_by_me)) {
       await orders.loadAgentWorkspace(true)
       const mine = orders.myOffers.find(o => o.order.id === data.id)
@@ -112,46 +111,12 @@ async function sendInterest() {
     await loadOrder()
   }
   else if (orders.error) {
-    // Tezkor is exclusive: someone may have claimed it a moment earlier.
-    const previous = orders.error
-    await loadOrder()
-    toast.error(order.value?.route === 'tezkor' && order.value.claimed && !order.value.claimed_by_me
-      ? locale.t.route.busyToast
-      : previous)
+    toast.error(orders.error)
   }
 }
 
 const isTezkor = computed(() => order.value?.route === 'tezkor')
-const heldByMe = computed(() => isTezkor.value && order.value?.claimed_by_me === true)
-const heldByOther = computed(() => isTezkor.value && order.value?.claimed === true && !order.value?.claimed_by_me)
-
-async function releaseClaim() {
-  if (!order.value || orders.isSubmitting) return
-  if (!(await confirmAction(locale.t.route.agentReleaseConfirm))) return
-  haptic('light')
-  if (await orders.resolveAgentTezkor(order.value.id, 'release')) {
-    haptic('medium')
-    toast.success(locale.t.route.agentReleasedToast)
-    router.replace(ROUTES.offers)
-  }
-  else {
-    toast.error(orders.error || locale.t.route.errAction)
-  }
-}
-
-async function closeAgreed() {
-  if (!order.value || orders.isSubmitting) return
-  if (!(await confirmAction(locale.t.route.agentCloseConfirm))) return
-  haptic('light')
-  if (await orders.resolveAgentTezkor(order.value.id, 'close')) {
-    haptic('medium')
-    toast.success(locale.t.route.agentClosedToast)
-    router.replace(ROUTES.offers)
-  }
-  else {
-    toast.error(orders.error || locale.t.route.errAction)
-  }
-}
+const pickedMe = computed(() => isTezkor.value && order.value?.claimed_by_me === true)
 
 async function openClientChat() {
   const offerId = order.value?.my_offer?.id
@@ -309,9 +274,9 @@ watch(() => props.id, loadOrder)
           </p>
         </GlassCard>
 
-        <!-- Tezkor: held by me — contact the client, or let go -->
+        <!-- Tezkor: the client picked me — their contact -->
         <GlassCard
-          v-if="heldByMe"
+          v-if="pickedMe"
           class="space-y-3"
         >
           <div class="flex items-center justify-between gap-2">
@@ -347,41 +312,7 @@ watch(() => props.id, loadOrder)
               {{ locale.t.route.chat }}
             </button>
           </div>
-          <div class="flex gap-2">
-            <Button
-              class="h-11 flex-1 rounded-2xl"
-              :disabled="orders.isSubmitting"
-              @click="closeAgreed"
-            >
-              <Loader2
-                v-if="orders.isSubmitting"
-                class="size-4 animate-spin"
-              />
-              {{ locale.t.route.agentClose }}
-            </Button>
-            <Button
-              variant="outline"
-              class="h-11 flex-1 rounded-2xl"
-              :disabled="orders.isSubmitting"
-              @click="releaseClaim"
-            >
-              {{ locale.t.route.agentRelease }}
-            </Button>
-          </div>
         </GlassCard>
-
-        <!-- Tezkor: another agent holds it -->
-        <template v-else-if="heldByOther">
-          <Button
-            class="h-12 w-full rounded-2xl text-base"
-            disabled
-          >
-            {{ locale.t.route.busy }}
-          </Button>
-          <p class="rounded-2xl bg-secondary px-4 py-3 text-[13px] leading-relaxed text-muted-foreground">
-            {{ locale.t.route.busyBody }}
-          </p>
-        </template>
 
         <!-- Already responded -->
         <GlassCard

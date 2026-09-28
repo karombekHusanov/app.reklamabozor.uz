@@ -32,6 +32,8 @@ export interface ChatActiveOffer {
   price: string | number | null
   status: string
   is_interest?: boolean
+  /** Tender: a priced pending offer the client may accept (contract first). */
+  can_accept?: boolean
   can_edit_price: boolean
   price_edits_remaining: number
   max_price_edits: number
@@ -45,6 +47,7 @@ export interface Chat {
     id: number | null
     title: string | null
     status: OrderStatus | null
+    route?: 'tender' | 'tezkor' | null
     category: Category | null
   } | null
   other_participant: {
@@ -52,6 +55,10 @@ export interface Chat {
     name: string
     company_name: string | null
     agent_profile_id: number | null
+    /** Agency logo (or the person's Telegram avatar). */
+    avatar?: string | null
+    stars?: number | null
+    stars_count?: number
     /** Thread detail only: the other side's phone (client ↔ agency) while the agent's otklik is live. */
     phone?: string | null
   }
