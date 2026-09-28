@@ -33,6 +33,12 @@ function depthOf(path: string): number {
 const transitionName = ref('page-fade')
 
 router.afterEach((to, from) => {
+  // Client ↔ Agent: a soft directional crossfade instead of a tab cut.
+  if (to.meta.mode && from.meta.mode && to.meta.mode !== from.meta.mode) {
+    transitionName.value = to.meta.mode === 'agent' ? 'mode-to-agent' : 'mode-to-client'
+    return
+  }
+
   if (TAB_ROOTS.has(to.path) && TAB_ROOTS.has(from.path)) {
     transitionName.value = 'page-fade'
     return
@@ -64,9 +70,12 @@ router.afterEach((to, from) => {
         </Transition>
       </RouterView>
     </main>
-    <template v-if="!hideTabBar">
-      <AgentTabBar v-if="mode.isAgent" />
-      <TabBar v-else />
-    </template>
+    <Transition
+      name="footer-swap"
+      mode="out-in"
+    >
+      <AgentTabBar v-if="!hideTabBar && mode.isAgent" />
+      <TabBar v-else-if="!hideTabBar" />
+    </Transition>
   </div>
 </template>

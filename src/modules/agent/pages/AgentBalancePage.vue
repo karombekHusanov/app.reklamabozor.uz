@@ -192,7 +192,7 @@ onMounted(async () => {
 </template>
 
 <style scoped>
-.ab { padding-bottom: 96px; }
+.ab { padding-bottom: 150px; }
 .ab-card { margin: 0 12px 10px; padding: 16px; border-radius: 20px; background: var(--card); }
 .ab-balance { margin: 0; font-size: 28px; font-weight: 600; letter-spacing: -0.02em; }
 .ab-muted { margin: 2px 0 0; font-size: 12.5px; color: var(--muted-foreground); }
@@ -222,8 +222,10 @@ onMounted(async () => {
 .ab-history__sum { flex-shrink: 0; font-size: 13.5px; font-weight: 700; }
 .ab-history__sum.is-credit { color: var(--success); }
 .ab-bar {
-  position: fixed; inset-inline: 0; bottom: calc(max(env(safe-area-inset-bottom), 8px) + 58px); z-index: 30;
-  display: flex; align-items: center; gap: 12px; padding: 12px 16px; margin: 0 auto; max-width: 32rem;
+  /* Runs down behind the agent footer (z-40 on top), so no gap can open between them. */
+  position: fixed; inset-inline: 0; bottom: 0; z-index: 30;
+  display: flex; align-items: center; gap: 12px; margin: 0 auto; max-width: 32rem;
+  padding: 12px 16px calc(max(env(safe-area-inset-bottom), 8px) + 72px);
   border-radius: 20px 20px 0 0; background: var(--card); box-shadow: 0 -10px 24px -14px rgba(9, 40, 78, 0.25);
 }
 .ab-bar__sum { flex: 1; font-size: 17px; font-weight: 600; }

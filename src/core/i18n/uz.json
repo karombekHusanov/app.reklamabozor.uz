@@ -1,5 +1,6 @@
 {
   "common": {
+    "close": "Yopish",
     "next": "Davom etish",
     "back": "Orqaga",
     "save": "Saqlash",
@@ -1724,6 +1725,87 @@
       "aboutTitle": "Agentlik haqida",
       "aboutEmpty": "Qancha vaqtdan beri ishlaysiz, qanday natijalarga erishgansiz? Yondashuvingizning o‘ziga xosligi nimada?",
       "logout": "Chiqish"
+    }
+  },
+  "clientHome": {
+    "greeting": {
+      "morning": "Xayrli tong",
+      "afternoon": "Xayrli kun",
+      "evening": "Xayrli kech"
+    },
+    "searchPlaceholder": "Agentlik yoki xizmat",
+    "assistantTitle": "Vazifani yozing",
+    "assistantBody": "AI yordamchi mos agentlikni topadi",
+    "myOrders": "Buyurtmalarim",
+    "all": "Hammasi",
+    "offers": "{count} ta taklif keldi",
+    "noOffers": "Takliflar kutilmoqda",
+    "agentAssigned": "Agent biriktirildi",
+    "chat": "Chat",
+    "topAgencies": "Top agentliklar",
+    "jobs": "{count} ta ish",
+    "new": "Yangi",
+    "verified": "Tasdiqlangan",
+    "cta": "Vazifa haqida ayting",
+    "next": "Keyingisi",
+    "gotIt": "Tushunarli",
+    "close": "Yopish",
+    "profileMenu": "Profil menyusi",
+    "menu": {
+      "orders": "Buyurtmalarim",
+      "chats": "Chatlar",
+      "profile": "Profil",
+      "settings": "Sozlamalar",
+      "assistant": "AI yordamchi",
+      "offer": "Ommaviy oferta",
+      "becomeAgent": "Agentlik bo‘lish"
+    },
+    "info": {
+      "tezkor": {
+        "tile": "Tezkor so‘rov",
+        "chip": "Tez va oddiy",
+        "title": "Tezkor so‘rov nima?",
+        "p1": "Kichik va shoshilinch vazifalar uchun. So‘rovingizni birinchi bo‘lib olgan agentlik bilan to‘g‘ridan-to‘g‘ri ishlaysiz.",
+        "p2": "Narx va to‘lovni agentlik bilan o‘zingiz kelishasiz. Ma’qul kelmasa — agentni bo‘shatib, so‘rovni boshqa agentliklarga ochasiz."
+      },
+      "tender": {
+        "tile": "Tender",
+        "chip": "Raqobat va kafolat",
+        "title": "Tender nima?",
+        "p1": "Katta loyihalar uchun: bir nechta agentlik narxlar ro‘yxati bilan taklif yuboradi, siz solishtirib eng yaxshisini tanlaysiz.",
+        "p2": "Uch tomonlama rasmiy shartnoma tuziladi, to‘lov PRB orqali himoyada turadi. Tender yuridik shaxslar uchun — ruxsatni menejer beradi."
+      },
+      "how": {
+        "tile": "PRB qanday ishlaydi",
+        "title": "PRB qanday ishlaydi?",
+        "p1": "PRB — mijozlar reklama agentliklarini topadigan servis. Siz vazifani yozasiz, biz uni mos tasdiqlangan agentliklarga yuboramiz.",
+        "p2": "Tayyor agentliklar otklik beradi. Siz reyting va sharhlarni solishtirasiz, chatda gaplashasiz va ma’qul kelganini tanlaysiz."
+      },
+      "city": {
+        "tile": "Shahringizdagi xizmatlar",
+        "title": "Shahringizda qanday xizmatlar bor?",
+        "p1": "Billbord va LED ekranlardan tortib SMM, poligrafiya va dizayngacha — barcha reklama yo‘nalishlari bitta ilovada.",
+        "p2": "Xaritada yaqin atrofdagi agentliklar va reklama joylarini ko‘ring yoki qidiruvga xizmat nomini yozing."
+      },
+      "price": {
+        "tile": "Xizmat qancha turadi",
+        "sub": "Narxni o‘zingiz yozishingiz yoki agentliklar takliflarini kutishingiz mumkin",
+        "title": "Xizmat narxi qanday belgilanadi?",
+        "p1": "Tezkor so‘rovda narx va to‘lovni agentlik bilan to‘g‘ridan-to‘g‘ri kelishasiz.",
+        "p2": "Tenderda agentliklar narxlar ro‘yxatini yuboradi, siz solishtirib tanlaysiz. To‘lov PRB hisobiga tushadi va ishni qabul qilganingizdan so‘ng agentlikka o‘tadi."
+      },
+      "reviews": {
+        "tile": "Haqiqiy sharhlar",
+        "title": "Sharhlar qayerdan olinadi?",
+        "p1": "Sharhni faqat buyurtmasi yakunlangan mijoz qoldira oladi — soxta baholar yo‘q.",
+        "p2": "Har bir sharh moderatsiyadan o‘tadi. Agentlik reytingi aynan shu sharhlardan hisoblanadi."
+      },
+      "free": {
+        "tile": "Mijoz uchun bepul",
+        "title": "Nimaga pul to‘lash kerak?",
+        "p1": "Siz faqat bajarilgan ish uchun to‘laysiz. PRB xizmatlari mijozlar uchun bepul.",
+        "p2": "Agentliklar uchun servis pullik: ular har bir otklik uchun to‘laydi, Tender bitimlarida esa platforma komissiyasi agentlik ulushidan ushlanadi."
+      }
     }
   }
 }

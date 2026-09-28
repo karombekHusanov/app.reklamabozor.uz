@@ -1,5 +1,6 @@
 {
   "common": {
+    "close": "Close",
     "next": "Continue",
     "back": "Back",
     "save": "Save",
@@ -1724,6 +1725,87 @@
       "aboutTitle": "About",
       "aboutEmpty": "How long have you been working, what have you achieved? What makes your approach different?",
       "logout": "Log out"
+    }
+  },
+  "clientHome": {
+    "greeting": {
+      "morning": "Good morning",
+      "afternoon": "Good afternoon",
+      "evening": "Good evening"
+    },
+    "searchPlaceholder": "Agency or service",
+    "assistantTitle": "Describe your task",
+    "assistantBody": "The AI assistant finds a matching agency",
+    "myOrders": "My orders",
+    "all": "All",
+    "offers": "{count} offers received",
+    "noOffers": "Waiting for offers",
+    "agentAssigned": "Agent assigned",
+    "chat": "Chat",
+    "topAgencies": "Top agencies",
+    "jobs": "{count} jobs",
+    "new": "New",
+    "verified": "Verified",
+    "cta": "Tell us about your task",
+    "next": "Next",
+    "gotIt": "Got it",
+    "close": "Close",
+    "profileMenu": "Profile menu",
+    "menu": {
+      "orders": "My orders",
+      "chats": "Chats",
+      "profile": "Profile",
+      "settings": "Settings",
+      "assistant": "AI assistant",
+      "offer": "Public offer",
+      "becomeAgent": "Become an agency"
+    },
+    "info": {
+      "tezkor": {
+        "tile": "Tezkor request",
+        "chip": "Fast and simple",
+        "title": "What is Tezkor?",
+        "p1": "For small, urgent tasks. You work directly with the agency that takes your request first.",
+        "p2": "You agree the price and payment with the agency yourself. Not a fit? Release the agent and reopen the request to others."
+      },
+      "tender": {
+        "tile": "Tender",
+        "chip": "Competition and guarantee",
+        "title": "What is Tender?",
+        "p1": "For bigger projects: several agencies send price lists, you compare and pick the best.",
+        "p2": "A three-party contract is signed and payment is protected by PRB. Tender is for legal entities — a manager grants access."
+      },
+      "how": {
+        "tile": "How PRB works",
+        "title": "How does PRB work?",
+        "p1": "PRB is where clients find advertising agencies. You describe the task, we send it to matching verified agencies.",
+        "p2": "Agencies respond. You compare ratings and reviews, chat, and choose the one you like."
+      },
+      "city": {
+        "tile": "Services in your city",
+        "title": "What services are available?",
+        "p1": "From billboards and LED screens to SMM, print and design — every advertising service in one app.",
+        "p2": "See nearby agencies and ad spots on the map, or type a service into search."
+      },
+      "price": {
+        "tile": "What it costs",
+        "sub": "Name your price or wait for agencies to make offers",
+        "title": "How is the price set?",
+        "p1": "In Tezkor you agree the price and payment with the agency directly.",
+        "p2": "In Tender agencies send price lists and you choose. Payment goes to PRB and reaches the agency once you accept the work."
+      },
+      "reviews": {
+        "tile": "Real reviews",
+        "title": "Where do reviews come from?",
+        "p1": "Only the client of a completed order can leave a review — no fake ratings.",
+        "p2": "Every review is moderated, and an agency's rating is calculated from them."
+      },
+      "free": {
+        "tile": "Free for clients",
+        "title": "Do I pay for anything?",
+        "p1": "You pay only for the finished work. PRB is free for clients.",
+        "p2": "Agencies pay: a fee for each response, and in Tender the platform commission comes out of the agency's share."
+      }
     }
   }
 }

@@ -4,7 +4,8 @@ export const homeRoutes: RouteRecordRaw[] = [
   {
     path: '',
     name: 'home',
-    meta: { mode: 'client' },
+    // No footer on the client home — the fixed "tell us about your task" action replaces it.
+    meta: { mode: 'client', hideTabBar: true },
     component: () => import('@/modules/home/pages/HomePage.vue'),
   },
   {
