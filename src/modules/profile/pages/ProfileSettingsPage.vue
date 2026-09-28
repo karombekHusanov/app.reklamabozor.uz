@@ -9,6 +9,7 @@ import { useTelegram } from '@/core/composables/useTelegram'
 import { ROUTES } from '@/modules/shell/constants/routes'
 import { useAuthStore } from '@/modules/auth/stores/auth.store'
 import ThemeSwitcher from '@/modules/profile/components/ThemeSwitcher.vue'
+import { DARK_MODE_ENABLED } from '@/core/stores/theme.store'
 import BecomeProviderCard from '@/modules/profile/components/BecomeProviderCard.vue'
 
 const auth = useAuthStore()
@@ -91,7 +92,7 @@ function navigate(to: string) {
         </GlassCard>
       </div>
 
-      <div>
+      <div v-if="DARK_MODE_ENABLED">
         <h2 class="profile-settings-section-title">
           {{ locale.t.profile.settingsThemeSection }}
         </h2>
