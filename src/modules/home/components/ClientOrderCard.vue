@@ -86,14 +86,14 @@ function open() {
 }
 .coc:active { transform: scale(0.99); }
 .coc:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
-.coc--tezkor { background: #02305c; color: #fff; }
-.coc--tender { background: var(--secondary); color: var(--foreground); }
+.coc--tezkor { background: linear-gradient(165deg, #02305c 0%, #014ba4 60%, #0386d9 130%); color: #fff; box-shadow: 0 14px 28px -14px rgba(2, 48, 92, 0.55); }
+.coc--tender { background: linear-gradient(135deg, var(--card) 0%, var(--card) 55%, color-mix(in srgb, var(--primary) 8%, var(--card)) 100%); color: var(--foreground); box-shadow: var(--rb-elev-1); }
 .coc__pattern { position: absolute; inset: -20px; pointer-events: none; }
 .coc--tezkor .coc__pattern { background: repeating-linear-gradient(-55deg, rgba(255, 255, 255, 0.06) 0 12px, transparent 12px 30px); }
 .coc--tender .coc__pattern { background: radial-gradient(color-mix(in srgb, var(--foreground) 9%, transparent) 1.6px, transparent 1.7px) 0 0 / 14px 14px; }
 .coc__chip { position: relative; display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px; border-radius: var(--rb-r-chip); font-size: 11px; font-weight: 700; }
 .coc--tezkor .coc__chip { background: rgba(255, 255, 255, 0.14); }
-.coc--tender .coc__chip { background: var(--card); color: var(--secondary-foreground); }
+.coc--tender .coc__chip { background: var(--secondary); color: var(--secondary-foreground); }
 .coc__title {
   position: relative; margin-top: 10px; font-size: 20px; font-weight: 600; line-height: 1.2; letter-spacing: -0.01em;
   display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden;

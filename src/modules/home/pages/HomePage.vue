@@ -13,7 +13,6 @@ import { Search, Sparkles, ChevronRight } from '@lucide/vue'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import Avatar from '@/core/ui/Avatar.vue'
-import BrandLogo from '@/core/ui/BrandLogo.vue'
 import { useTelegram } from '@/core/composables/useTelegram'
 import { useLocaleStore } from '@/core/i18n/locale.store'
 import { useAuthStore } from '@/modules/auth/stores/auth.store'
@@ -92,16 +91,8 @@ onUnmounted(() => { if (poll) clearInterval(poll) })
 <template>
   <div class="ch">
     <header class="ch__top brand-hero safe-top">
-      <ModeSwitch
-        v-if="mode.canUseAgent"
-        :badge="home.newLiveOrdersCount"
-      />
-      <BrandLogo
-        v-else
-        on-dark
-        size="sm"
-        class="flex-1"
-      />
+      <!-- Always the Client | Agent switch (no logo); non-providers get the agency application from "Agent". -->
+      <ModeSwitch :badge="mode.canUseAgent ? home.newLiveOrdersCount : 0" />
       <TopBarActions
         show-map
         :notification-count="home.notificationCount"
@@ -210,23 +201,26 @@ onUnmounted(() => { if (poll) clearInterval(poll) })
    cancels AppLayout's `pb-6` (hideTabBar pages) so no grey strip shows below. */
 .ch { display: flex; flex: 1; min-height: 100%; flex-direction: column; margin-bottom: -1.5rem; }
 .ch__top { display: flex; align-items: center; gap: 8px; padding: calc(max(env(safe-area-inset-top), 0.5rem) + 0.5rem) 16px 40px; color: #fff; }
-.ch__sheet { position: relative; z-index: 1; flex: 1; margin-top: -26px; padding-bottom: 120px; border-radius: 26px 26px 0 0; background: var(--card); }
+.ch__sheet { position: relative; z-index: 1; flex: 1; margin-top: -26px; padding-bottom: 120px; border-radius: 26px 26px 0 0; background: var(--background); }
 .ch__greet { display: flex; align-items: center; gap: 12px; padding: 18px 16px 10px; }
 .ch__hello { flex: 1; min-width: 0; margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 18px; font-weight: 600; letter-spacing: -0.01em; }
-.ch__avatar { flex-shrink: 0; padding: 0; border: 0; border-radius: 999px; background: none; cursor: pointer; box-shadow: 0 0 0 2px var(--card), 0 0 0 3px var(--border); }
-.ch__search { position: sticky; top: 0; z-index: 5; padding: 6px 16px 10px; background: var(--card); }
+.ch__avatar { flex-shrink: 0; padding: 0; border: 0; border-radius: 999px; background: none; cursor: pointer; box-shadow: 0 0 0 2px var(--background), 0 0 0 3.5px color-mix(in srgb, var(--primary) 45%, transparent); }
+.ch__search { position: sticky; top: 0; z-index: 5; padding: 6px 16px 10px; background: var(--background); }
 .ch__field {
   display: flex; width: 100%; min-height: 50px; align-items: center; gap: 10px; padding: 0 16px; border: 0; border-radius: 16px;
-  background: var(--background); color: var(--muted-foreground); font-family: inherit; font-size: 15px; text-align: left; cursor: pointer;
+  background: var(--card); color: #94a0b2; font-family: inherit; font-size: 15px; text-align: left; cursor: pointer;
+  box-shadow: var(--rb-elev-1);
 }
+.ch__field :deep(svg) { color: var(--primary); }
 .ch__body { display: flex; flex-direction: column; gap: 22px; padding: 4px 16px 0; }
 .ch__assistant {
   display: flex; min-height: 68px; align-items: center; gap: 12px; padding: 12px 16px; border: 0; border-radius: 20px;
-  background: #16181d; color: #fff; font-family: inherit; text-align: left; cursor: pointer;
+  background: linear-gradient(150deg, #0b6bcb 0%, #014ba4 100%); color: #fff; font-family: inherit; text-align: left; cursor: pointer;
+  box-shadow: 0 12px 24px -12px rgba(1, 75, 164, 0.6);
 }
 .ch__assistant-text { display: flex; flex: 1; min-width: 0; flex-direction: column; gap: 2px; }
 .ch__assistant-title { font-size: 15px; font-weight: 700; }
-.ch__assistant-sub { font-size: 12.5px; color: #b7c0cc; }
+.ch__assistant-sub { font-size: 12.5px; color: rgba(255, 255, 255, 0.72); }
 .ch__orders { display: flex; flex-direction: column; gap: 8px; }
 .ch__head { display: flex; align-items: center; }
 .ch__h2 { flex: 1; margin: 0; font-size: 18px; font-weight: 600; }
@@ -234,11 +228,11 @@ onUnmounted(() => { if (poll) clearInterval(poll) })
 .ch__cta-wrap {
   position: fixed; inset-inline: 0; bottom: 0; z-index: 30; margin: 0 auto; max-width: 32rem;
   padding: 24px 16px max(env(safe-area-inset-bottom), 16px);
-  background: linear-gradient(to top, var(--card) 60%, transparent);
+  background: linear-gradient(to top, var(--background) 60%, transparent);
 }
 .ch__cta {
-  display: block; width: 100%; min-height: 54px; border: 0; border-radius: 16px; background: #c94f0f; color: #fff;
-  font-family: inherit; font-size: 16px; font-weight: 600; box-shadow: 0 14px 26px -12px rgba(201, 79, 15, 0.7); cursor: pointer;
+  display: block; width: 100%; min-height: 54px; border: 0; border-radius: 16px; background: linear-gradient(180deg, var(--rb-cta) 0%, var(--rb-cta-strong) 100%); color: #fff;
+  font-family: inherit; font-size: 16px; font-weight: 600; box-shadow: var(--rb-elev-cta); cursor: pointer;
 }
 .ch__avatar:focus-visible, .ch__field:focus-visible, .ch__assistant:focus-visible, .ch__link:focus-visible, .ch__cta:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
 </style>

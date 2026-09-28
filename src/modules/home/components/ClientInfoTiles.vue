@@ -102,7 +102,7 @@ function next() {
 .cit { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
 .cit__tile {
   display: flex; min-height: 150px; flex-direction: column; justify-content: space-between; gap: 6px; padding: 14px 12px 10px 14px;
-  border: 0; border-radius: 22px; background: var(--background); color: var(--foreground); font-family: inherit; text-align: left; cursor: pointer;
+  border: 0; border-radius: 22px; background: var(--card); box-shadow: var(--rb-elev-1); color: var(--foreground); font-family: inherit; text-align: left; cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 }
 .cit__tile:active { transform: scale(0.98); }
@@ -112,7 +112,7 @@ function next() {
 .cit__tile--wide { grid-column: span 2; min-height: 130px; flex-direction: row; align-items: center; }
 .cit__text { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
 .cit__chip { padding: 2px 8px; border-radius: var(--rb-r-chip); background: var(--card); font-size: 11px; font-weight: 700; }
-.cit__tile--tezkor .cit__chip { color: #9a3a0a; }
+.cit__tile--tezkor .cit__chip { color: var(--rb-cta-strong); }
 .cit__tile--tender .cit__chip { color: var(--secondary-foreground); }
 .cit__title { font-size: 15px; font-weight: 500; line-height: 1.25; }
 .cit__sub { font-size: 12.5px; line-height: 1.45; color: var(--muted-foreground); }
@@ -125,9 +125,10 @@ function next() {
 .cit-sheet__title { margin: 0; font-size: 22px; font-weight: 600; line-height: 1.2; letter-spacing: -0.01em; }
 .cit-sheet__p { margin: 10px 0 0; font-size: 14.5px; line-height: 1.5; }
 .cit-sheet__btn {
-  margin-top: 22px; min-height: 50px; border: 0; border-radius: 16px; background: #c94f0f; color: #fff;
+  margin-top: 22px; min-height: 50px; border: 0; border-radius: 16px; background: linear-gradient(180deg, var(--rb-cta) 0%, var(--rb-cta-strong) 100%); color: #fff;
+  box-shadow: var(--rb-elev-cta);
   font-family: inherit; font-size: 15px; font-weight: 600; cursor: pointer;
 }
-.cit-sheet__btn.is-last { background: var(--muted); color: var(--foreground); }
+.cit-sheet__btn.is-last { background: var(--muted); color: var(--foreground); box-shadow: none; }
 .cit-sheet__btn:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
 </style>

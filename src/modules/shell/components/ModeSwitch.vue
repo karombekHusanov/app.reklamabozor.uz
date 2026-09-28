@@ -35,6 +35,11 @@ let timer: ReturnType<typeof setTimeout> | null = null
 function pick(value: AppMode, to: string) {
   if (value === selected.value) return
   haptic('light')
+  // No provider profile yet → "Agent" opens the agency application instead of a workspace.
+  if (value === 'agent' && !mode.canUseAgent) {
+    void router.push(`${ROUTES.profileEdit}?as=agent`)
+    return
+  }
   selected.value = value
   if (timer) clearTimeout(timer)
   timer = setTimeout(() => {
