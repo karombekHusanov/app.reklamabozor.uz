@@ -19,7 +19,6 @@ const emit = defineEmits<{
   /** Opens the global search drawer — the hero field is a trigger, not an input. */
   search: []
   notifications: []
-  map: []
   profile: []
   /** Scroll to the "Safe deal" explainer. */
   trust: []
@@ -63,9 +62,7 @@ const mode = useModeStore()
         </p>
       </div>
       <TopBarActions
-        show-map
         :notification-count="notificationCount"
-        @map="emit('map')"
         @notifications="emit('notifications')"
       />
     </div>

@@ -1,244 +1,481 @@
 <script setup lang="ts">
-/**
- * Client home (Profi-style): top bar (workspace switch · map · call · bell),
- * greeting + avatar menu, sticky search, assistant card, active orders, top
- * agencies, "learn PRB" tiles and a fixed "tell us about your task" action.
- *
- * Retired sections — components kept in `modules/home/components/` for reuse,
- * intentionally not imported: HomeHero, HomeBillboard, HomeStatCards,
- * HomeFeatureTiles, HomeDesk, HomeSafeDeal, HomeJourney, HomeServiceRail,
- * HomeRoutes, HomeAgencyRail, HomeLiveRequests, HomeProviderZone, HomeSupport.
- */
-import { Search, Sparkles, ChevronRight } from '@lucide/vue'
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { Loader2 } from '@lucide/vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import Avatar from '@/core/ui/Avatar.vue'
-import BrandLogo from '@/core/ui/BrandLogo.vue'
+import { usePullToRefresh } from '@/core/composables/usePullToRefresh'
 import { useTelegram } from '@/core/composables/useTelegram'
 import { useLocaleStore } from '@/core/i18n/locale.store'
+import { useRealtimeStore } from '@/core/stores/realtime.store'
 import { useAuthStore } from '@/modules/auth/stores/auth.store'
-import { fullName } from '@/modules/auth/types/user'
-import type { Category } from '@/modules/agent/types/agent'
-import ClientAgencyRail from '@/modules/home/components/ClientAgencyRail.vue'
-import ClientInfoTiles from '@/modules/home/components/ClientInfoTiles.vue'
-import ClientOrderCard from '@/modules/home/components/ClientOrderCard.vue'
-import ClientProfileMenu from '@/modules/home/components/ClientProfileMenu.vue'
 import { useHomeStore } from '@/modules/home/stores/home.store'
-import type { PublicAgent } from '@/modules/marketplace/services/agents.service'
-import { fetchCategories } from '@/modules/orders/services/orders.service'
-import { useOrdersStore } from '@/modules/orders/stores/orders.store'
+import { useOrderRouteStore } from '@/modules/orders/stores/order-route.store'
+import HomePageSkeleton from '@/modules/home/components/HomePageSkeleton.vue'
+import HomeHero from '@/modules/home/components/HomeHero.vue'
+import HomeStatCards from '@/modules/home/components/HomeStatCards.vue'
+import HomeFeatureTiles from '@/modules/home/components/HomeFeatureTiles.vue'
+import HomeDesk from '@/modules/home/components/HomeDesk.vue'
+import HomeSafeDeal from '@/modules/home/components/HomeSafeDeal.vue'
+import HomeJourney from '@/modules/home/components/HomeJourney.vue'
+import HomeRoutes from '@/modules/home/components/HomeRoutes.vue'
+import HomeProviderZone from '@/modules/home/components/HomeProviderZone.vue'
+import AgentInviteCard from '@/modules/agent/components/AgentInviteCard.vue'
+import { dismissAgentInvite, isAgentInviteDismissed } from '@/modules/onboarding/lib/agent-intent'
+import HomeSupport from '@/modules/home/components/HomeSupport.vue'
+import HomeServiceRail from '@/modules/home/components/HomeServiceRail.vue'
+import HomeAgencyRail from '@/modules/home/components/HomeAgencyRail.vue'
+import HomeLiveRequests from '@/modules/home/components/HomeLiveRequests.vue'
 import GlobalSearchDrawer from '@/modules/search/components/GlobalSearchDrawer.vue'
-import ModeSwitch from '@/modules/shell/components/ModeSwitch.vue'
-import TopBarActions from '@/modules/shell/components/TopBarActions.vue'
+import { fetchLiveStats, type LiveStats } from '@/modules/home/services/live-stats.service'
+import { fetchCategories } from '@/modules/orders/services/orders.service'
+import { fullName, userHasRole } from '@/modules/auth/types/user'
+import type { LiveOrder } from '@/modules/home/services/live-orders.service'
+import type { Category } from '@/modules/agent/types/agent'
+import type { PublicAgent } from '@/modules/marketplace/services/agents.service'
+import { vReveal } from '@/modules/home/lib/reveal'
 import { ROUTES } from '@/modules/shell/constants/routes'
-import { useModeStore } from '@/modules/shell/stores/mode.store'
 
-const ACTIVE_ORDERS_SHOWN = 3
-const BADGE_POLL_MS = 15_000
+// MVP: the designers rail is hidden (kept in code, may return).
+const SHOW_TOP_DESIGNERS = false
 
 const auth = useAuthStore()
 const home = useHomeStore()
-const orders = useOrdersStore()
-const mode = useModeStore()
+const routeStore = useOrderRouteStore()
 const router = useRouter()
 const locale = useLocaleStore()
-const { haptic } = useTelegram()
+const { user: telegramUser, haptic } = useTelegram()
 
-const t = computed(() => locale.t.clientHome)
-const name = computed(() => (auth.user ? fullName(auth.user) : ''))
-const firstName = computed(() => auth.user?.first_name || name.value)
+function resolveHomeDisplayName(raw: string, fallback: string): string {
+  const name = raw.trim()
+  if (!name || name.length === 1) return fallback
+  return name
+}
 
-const greeting = computed(() => {
-  const hour = new Date().getHours()
-  const key = hour >= 5 && hour < 12 ? 'morning' : hour >= 12 && hour < 18 ? 'afternoon' : 'evening'
-  return t.value.greeting[key]
+const displayName = computed(() => {
+  const fallback = locale.t.home.userFallback
+  if (auth.user) {
+    return resolveHomeDisplayName(fullName(auth.user), fallback)
+  }
+  if (telegramUser.value?.first_name) {
+    const tgName = [telegramUser.value.first_name, telegramUser.value.last_name]
+      .filter(Boolean)
+      .join(' ')
+      .trim()
+    return resolveHomeDisplayName(tgName, fallback)
+  }
+  return locale.t.home.guest
 })
-const hello = computed(() => (firstName.value ? `${greeting.value}, ${firstName.value}` : greeting.value))
 
-/** Open work only — finished and cancelled orders live on the Orders page. */
-const activeOrders = computed(() =>
-  orders.myOrders.filter(o => o.status !== 'completed' && o.status !== 'cancelled').slice(0, ACTIVE_ORDERS_SHOWN),
-)
+const avatarSrc = computed(() => auth.user?.avatar ?? null)
 
-const menuOpen = ref(false)
-const searchOpen = ref(false)
+/** Live platform pulse for the glowing stat cards. */
+const liveStats = ref<LiveStats | null>(null)
+
+// With the realtime socket up the backend pushes fresh stats every ~10s.
+const realtime = useRealtimeStore()
+watch(() => realtime.liveStats, (pushed) => {
+  if (pushed) liveStats.value = pushed
+})
+
+async function loadLiveStats() {
+  try {
+    liveStats.value = await fetchLiveStats()
+  }
+  catch {
+    // Non-critical — keep the last value on transient errors.
+  }
+}
+
+/** Supply-side state for the provider zone (and the desk's provider side). */
+const providerState = computed<'none' | 'pending' | 'approved'>(() => {
+  if (home.providerApproved) return 'approved'
+  return home.activity?.provider?.has_profile ? 'pending' : 'none'
+})
+
+/** Invite every non-agent (individual or legal entity) until they hide it. */
+const agentReminderHidden = ref(false)
+const showAgentReminder = computed(() => {
+  const user = auth.user
+  if (!user || agentReminderHidden.value) return false
+  if (userHasRole(user, 'agent') || userHasRole(user, 'designer')) return false
+  return !isAgentInviteDismissed(user.id)
+})
+
+function hideAgentReminder() {
+  haptic('light')
+  if (auth.user) dismissAgentInvite(auth.user.id)
+  agentReminderHidden.value = true
+}
+
+function applyAsProvider() {
+  haptic('medium')
+  void router.push({ path: ROUTES.profileEdit, query: { as: 'agent' } })
+}
+
+/** Create a request on a chosen route (Tezkor / Tender). */
+function startOrder(route: 'tezkor' | 'tender') {
+  haptic('medium')
+  routeStore.set(route)
+  void router.push(ROUTES.newOrder)
+}
+
+/** Journey CTA — same gate as the tab bar's Create button. */
+function startDefaultOrder() {
+  if (routeStore.tenderLocked) startOrder('tezkor')
+  else startOrder(routeStore.active)
+}
+
+function scrollToSafeDeal() {
+  haptic('light')
+  document.getElementById('safe-deal')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+}
+
+/** Public service catalogue for the "Browse by service" rail. */
 const categories = ref<Category[]>([])
 
-function go(to: string) {
+async function loadCategories() {
+  try {
+    const list = await fetchCategories()
+    categories.value = list
+      .filter(c => c.is_active)
+      .sort((a, b) => a.sort_order - b.sort_order)
+  }
+  catch {
+    categories.value = []
+  }
+}
+
+const showSkeleton = computed(() => !home.hasLoaded && (home.isLoading || auth.isLoading))
+const providersLoading = computed(() => !home.hasLoaded && home.isLoading)
+
+function navigate(to: string) {
   haptic('light')
   void router.push(to)
 }
 
-function openSearch() {
+/** The hero field is a trigger — searching happens inside the drawer. */
+const searchOpen = ref(false)
+
+function onSearch() {
   haptic('light')
   searchOpen.value = true
 }
 
-let poll: ReturnType<typeof setInterval> | null = null
+function openSearchProvider(agent: PublicAgent) {
+  void router.push(`/agents/${agent.id}`)
+}
 
-onMounted(async () => {
-  void home.load()
-  if (auth.isAuthenticated) void orders.loadMyOrders(true)
-  poll = setInterval(() => {
-    if (document.visibilityState === 'visible' && auth.isAuthenticated) void home.loadActivity(true)
-  }, BADGE_POLL_MS)
-  try { categories.value = (await fetchCategories()).filter(c => c.is_active) }
-  catch { categories.value = [] }
+function openSearchService(category: Category) {
+  void router.push(ROUTES.categoryDetail(category.id))
+}
+
+function openSearchResults(query: string) {
+  void router.push({ path: ROUTES.agencies, query: { q: query } })
+}
+
+function onSelectCategory(category: Category) {
+  haptic('light')
+  void router.push({
+    path: ROUTES.agencies,
+    query: { category: String(category.id), type: category.type },
+  })
+}
+
+function requestTenderAccess() {
+  haptic('light')
+  void router.push({ path: ROUTES.profile, query: { tender: '1' } })
+}
+
+watch(() => routeStore.active, () => {
+  if (home.hasLoaded) void home.loadLiveOrders()
 })
 
-onUnmounted(() => { if (poll) clearInterval(poll) })
+function openLiveOrder(order: LiveOrder) {
+  haptic('light')
+  void router.push(ROUTES.liveOrderDetail(order.id))
+}
+
+function openLiveOrders() {
+  void home.markLiveOrdersSeen()
+  navigate(ROUTES.liveOrders)
+}
+
+const { pullDistance, isPulling } = usePullToRefresh({
+  onRefresh: async () => {
+    haptic('light')
+    await Promise.all([home.refresh(), loadLiveStats(), loadCategories()])
+  },
+})
+
+const refreshLabel = computed(() =>
+  isPulling.value || home.isRefreshing
+    ? locale.t.home.refreshing
+    : locale.t.home.pullToRefresh,
+)
+
+/** Badge-only poll — never re-fetch showcase / chat lists from Home. */
+const BADGE_POLL_MS = 15_000
+let badgePollTimer: ReturnType<typeof setInterval> | null = null
+
+function refreshBadges() {
+  // Pushed over the socket — only poll when it isn't connected.
+  if (!realtime.connected) void loadLiveStats()
+  if (auth.isAuthenticated) {
+    void home.loadActivity(true)
+  }
+}
+
+function startBadgePoll() {
+  stopBadgePoll()
+  badgePollTimer = setInterval(() => {
+    if (document.visibilityState === 'visible') refreshBadges()
+  }, BADGE_POLL_MS)
+}
+
+function stopBadgePoll() {
+  if (badgePollTimer != null) {
+    clearInterval(badgePollTimer)
+    badgePollTimer = null
+  }
+}
+
+function onVisibilityChange() {
+  if (document.visibilityState === 'visible') {
+    refreshBadges()
+  }
+}
+
+onMounted(() => {
+  void home.load()
+  void loadLiveStats()
+  void loadCategories()
+  startBadgePoll()
+  document.addEventListener('visibilitychange', onVisibilityChange)
+})
+
+onUnmounted(() => {
+  stopBadgePoll()
+  document.removeEventListener('visibilitychange', onVisibilityChange)
+})
+
+watch(() => auth.isAuthenticated, (authed, wasAuthed) => {
+  if (wasAuthed === undefined || authed === wasAuthed) return
+  home.reset()
+  void home.load()
+  startBadgePoll()
+})
 </script>
 
 <template>
-  <div class="ch">
-    <header class="ch__top brand-hero safe-top">
-      <ModeSwitch
-        v-if="mode.canUseAgent"
-        :badge="home.newLiveOrdersCount"
+  <HomePageSkeleton v-if="showSkeleton" />
+
+  <div
+    v-else
+    class="home-page"
+  >
+    <div
+      class="flex items-center justify-center gap-2 overflow-hidden text-xs font-medium text-muted-foreground transition-[height,opacity] duration-200"
+      :class="pullDistance > 0 || isPulling || home.isRefreshing ? 'opacity-100' : 'h-0 opacity-0'"
+      :style="{ height: pullDistance > 0 || isPulling || home.isRefreshing ? `${Math.max(pullDistance, isPulling || home.isRefreshing ? 40 : 0)}px` : '0px' }"
+    >
+      <Loader2
+        v-if="isPulling || home.isRefreshing"
+        class="size-4 animate-spin text-primary"
       />
-      <BrandLogo
-        v-else
-        on-dark
-        size="sm"
-        class="flex-1"
-      />
-      <TopBarActions
-        show-map
-        :notification-count="home.notificationCount"
-        @map="go(ROUTES.map)"
-        @notifications="go(ROUTES.notifications)"
-      />
-    </header>
-
-    <div class="ch__sheet">
-      <div class="ch__greet">
-        <p class="ch__hello">
-          {{ hello }}
-        </p>
-        <button
-          v-if="auth.user"
-          type="button"
-          class="ch__avatar"
-          :aria-label="t.profileMenu"
-          @click="menuOpen = true"
-        >
-          <Avatar
-            :src="auth.user.avatar"
-            :name="name"
-            class="size-11 rounded-full"
-          />
-        </button>
-      </div>
-
-      <div class="ch__search">
-        <button
-          type="button"
-          class="ch__field"
-          @click="openSearch"
-        >
-          <span class="flex-1">{{ t.searchPlaceholder }}</span>
-          <Search class="size-5" />
-        </button>
-      </div>
-
-      <div class="ch__body">
-        <button
-          type="button"
-          class="ch__assistant"
-          @click="go(ROUTES.assistant)"
-        >
-          <Sparkles class="size-6 shrink-0 text-[var(--rb-glow-soft)]" />
-          <span class="ch__assistant-text">
-            <span class="ch__assistant-title">{{ t.assistantTitle }}</span>
-            <span class="ch__assistant-sub">{{ t.assistantBody }}</span>
-          </span>
-          <ChevronRight class="size-5 shrink-0 opacity-70" />
-        </button>
-
-        <section
-          v-if="activeOrders.length"
-          class="ch__orders"
-        >
-          <div class="ch__head">
-            <h2 class="ch__h2">
-              {{ t.myOrders }}
-            </h2>
-            <button
-              type="button"
-              class="ch__link"
-              @click="go(ROUTES.orders)"
-            >
-              {{ t.all }}
-            </button>
-          </div>
-          <ClientOrderCard
-            v-for="order in activeOrders"
-            :key="order.id"
-            :order="order"
-          />
-        </section>
-
-        <ClientAgencyRail :agents="home.topAgents" />
-
-        <ClientInfoTiles />
-      </div>
+      <span>{{ refreshLabel }}</span>
     </div>
 
-    <div class="ch__cta-wrap">
-      <button
-        type="button"
-        class="ch__cta"
-        @click="go(ROUTES.newOrder)"
+    <HomeHero
+      :display-name="displayName"
+      :avatar-src="avatarSrc"
+      :notification-count="home.notificationCount"
+      :agent-badge="home.newLiveOrdersCount"
+      @search="onSearch"
+      @notifications="navigate(ROUTES.notifications)"
+      @profile="navigate(ROUTES.profile)"
+      @trust="scrollToSafeDeal"
+    />
+
+    <div class="home-sheet">
+      <div class="home-stats">
+        <HomeStatCards
+          :stats="liveStats"
+          :agents="home.topAgents"
+          @open="navigate(ROUTES.agencies)"
+        />
+      </div>
+
+      <div
+        v-if="showAgentReminder"
+        class="home-block home-block--tight home-gutter"
       >
-        {{ t.cta }}
-      </button>
+        <AgentInviteCard
+          @open="applyAsProvider"
+          @hide="hideAgentReminder"
+        />
+      </div>
+
+      <!-- core features: ad map + global chat, right under the fold line -->
+      <div class="home-block home-block--tight home-gutter">
+        <HomeFeatureTiles
+          :nearby="liveStats?.agencies_total"
+          :online="liveStats?.users_online ?? undefined"
+          @map="navigate(ROUTES.map)"
+          @chat="navigate(ROUTES.chat)"
+        />
+      </div>
+
+      <!-- 1 · what I control -->
+      <div
+        v-if="auth.isAuthenticated"
+        class="home-block home-gutter"
+      >
+        <HomeDesk
+          v-reveal
+          :activity="home.activity"
+          :is-provider="home.providerApproved"
+          @open="navigate"
+        />
+      </div>
+
+      <!-- 2 · why it is safe -->
+      <div class="home-block home-gutter">
+        <HomeSafeDeal v-reveal />
+      </div>
+
+      <!-- 3 · how it works -->
+      <div class="home-block home-gutter">
+        <HomeJourney
+          v-reveal
+          @start="startDefaultOrder"
+        />
+      </div>
+
+      <!-- 4 · what you can order -->
+      <div class="home-block home-gutter">
+        <HomeServiceRail
+          v-reveal
+          :categories="categories"
+          @select="onSelectCategory"
+          @view-all="navigate(ROUTES.agencies)"
+        />
+      </div>
+
+      <div class="home-block home-gutter">
+        <HomeRoutes
+          v-reveal
+          :can-create-tender="routeStore.canCreateTender"
+          :tender-status="routeStore.tenderStatus"
+          @pick="startOrder"
+          @request-access="requestTenderAccess"
+        />
+      </div>
+
+      <!-- 5 · who does the work -->
+      <div class="home-block">
+        <HomeAgencyRail
+          v-reveal
+          :title="locale.t.home.topAgencies"
+          :agents="home.topAgents"
+          :view-all-route="ROUTES.agencies"
+          :loading="providersLoading"
+        />
+      </div>
+
+      <div
+        v-if="SHOW_TOP_DESIGNERS"
+        class="home-block"
+      >
+        <HomeAgencyRail
+          :title="locale.t.home.topDesigners"
+          :agents="home.topDesigners"
+          :view-all-route="ROUTES.designers"
+          :loading="providersLoading"
+        />
+      </div>
+
+      <!-- 6 · the market is alive -->
+      <div
+        v-if="home.liveOrders.length"
+        class="home-block"
+      >
+        <HomeLiveRequests
+          v-reveal
+          :orders="home.liveOrders"
+          @open="openLiveOrder"
+          @view-all="openLiveOrders"
+        />
+      </div>
+
+      <!-- 7 · the other side of the market -->
+      <div class="home-block home-gutter">
+        <HomeProviderZone
+          v-reveal
+          :state="providerState"
+          :new-count="home.newLiveOrdersCount"
+          @apply="applyAsProvider"
+          @open="openLiveOrders"
+        />
+      </div>
+
+      <!-- 8 · a human behind it -->
+      <div class="home-block home-gutter pb-2">
+        <HomeSupport
+          v-reveal
+          :contact="home.platformContact"
+          @assistant="navigate(ROUTES.assistant)"
+          @offer="navigate(ROUTES.publicOffer)"
+        />
+      </div>
     </div>
 
     <GlobalSearchDrawer
       v-model:open="searchOpen"
       :categories="categories"
-      @provider="(agent: PublicAgent) => router.push(`/agents/${agent.id}`)"
-      @service="(category: Category) => router.push(ROUTES.categoryDetail(category.id))"
-      @view-all="(query: string) => router.push({ path: ROUTES.agencies, query: { q: query } })"
+      @provider="openSearchProvider"
+      @service="openSearchService"
+      @view-all="openSearchResults"
     />
-    <ClientProfileMenu v-model:open="menuOpen" />
   </div>
 </template>
 
 <style scoped>
-/* The sheet runs to the very bottom: it owns the room under the fixed CTA and
-   cancels AppLayout's `pb-6` (hideTabBar pages) so no grey strip shows below. */
-.ch { display: flex; flex: 1; min-height: 100%; flex-direction: column; margin-bottom: -1.5rem; }
-.ch__top { display: flex; align-items: center; gap: 8px; padding: calc(max(env(safe-area-inset-top), 0.5rem) + 0.5rem) 16px 40px; color: #fff; }
-.ch__sheet { position: relative; z-index: 1; flex: 1; margin-top: -26px; padding-bottom: 120px; border-radius: 26px 26px 0 0; background: var(--card); }
-.ch__greet { display: flex; align-items: center; gap: 12px; padding: 18px 16px 10px; }
-.ch__hello { flex: 1; min-width: 0; margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 18px; font-weight: 600; letter-spacing: -0.01em; }
-.ch__avatar { flex-shrink: 0; padding: 0; border: 0; border-radius: 999px; background: none; cursor: pointer; box-shadow: 0 0 0 2px var(--card), 0 0 0 3px var(--border); }
-.ch__search { position: sticky; top: 0; z-index: 5; padding: 6px 16px 10px; background: var(--card); }
-.ch__field {
-  display: flex; width: 100%; min-height: 50px; align-items: center; gap: 10px; padding: 0 16px; border: 0; border-radius: 16px;
-  background: var(--background); color: var(--muted-foreground); font-family: inherit; font-size: 15px; text-align: left; cursor: pointer;
+.home-page {
+  display: flex;
+  min-height: 100%;
+  flex-direction: column;
 }
-.ch__body { display: flex; flex-direction: column; gap: 22px; padding: 4px 16px 0; }
-.ch__assistant {
-  display: flex; min-height: 68px; align-items: center; gap: 12px; padding: 12px 16px; border: 0; border-radius: 20px;
-  background: #16181d; color: #fff; font-family: inherit; text-align: left; cursor: pointer;
+
+.home-sheet {
+  position: relative;
+  z-index: 2;
+  margin-top: -2rem;
+  background: var(--background);
+  border-radius: 26px 26px 0 0;
+  padding-bottom: 1.5rem;
 }
-.ch__assistant-text { display: flex; flex: 1; min-width: 0; flex-direction: column; gap: 2px; }
-.ch__assistant-title { font-size: 15px; font-weight: 700; }
-.ch__assistant-sub { font-size: 12.5px; color: #b7c0cc; }
-.ch__orders { display: flex; flex-direction: column; gap: 8px; }
-.ch__head { display: flex; align-items: center; }
-.ch__h2 { flex: 1; margin: 0; font-size: 18px; font-weight: 600; }
-.ch__link { min-height: 44px; border: 0; background: none; color: var(--primary); font-family: inherit; font-size: 13.5px; font-weight: 600; cursor: pointer; }
-.ch__cta-wrap {
-  position: fixed; inset-inline: 0; bottom: 0; z-index: 30; margin: 0 auto; max-width: 32rem;
-  padding: 24px 16px max(env(safe-area-inset-bottom), 16px);
-  background: linear-gradient(to top, var(--card) 60%, transparent);
+
+/* The proof strip rides the seam: half on the hero, half on the sheet. */
+.home-stats {
+  position: relative;
+  z-index: 4;
+  padding-inline: var(--home-gutter);
+  margin-top: -1.6rem;
 }
-.ch__cta {
-  display: block; width: 100%; min-height: 54px; border: 0; border-radius: 16px; background: #c94f0f; color: #fff;
-  font-family: inherit; font-size: 16px; font-weight: 600; box-shadow: 0 14px 26px -12px rgba(201, 79, 15, 0.7); cursor: pointer;
+
+.home-block {
+  padding-top: 1.6rem;
 }
-.ch__avatar:focus-visible, .ch__field:focus-visible, .ch__assistant:focus-visible, .ch__link:focus-visible, .ch__cta:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.home-block--tight {
+  padding-top: 1rem;
+}
+
+/* One page container: hero, sheet sections and rails share this gutter. */
+.home-page {
+  --home-gutter: 24px;
+}
+
+.home-gutter {
+  padding-inline: var(--home-gutter);
+}
+
 </style>

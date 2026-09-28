@@ -2,7 +2,8 @@ name: CI/CD
 
 on:
   push:
-    branches: [ main ]
+    # Prod mini app is served from feat/old (server: /etc/adspace/deploy-branch-app).
+    branches: [ feat/old ]
   workflow_dispatch:
 
 concurrency:
