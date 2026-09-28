@@ -6,6 +6,14 @@ import { isBusinessUser } from '@/modules/auth/types/user'
 
 export type AppMode = 'client' | 'agent'
 
+/**
+ * The separate Agent workspace (/agent pages + the Client | Agent switch) is
+ * off for now: everyone stays in the client shell, a saved "agent" choice is
+ * ignored and /agent routes redirect home. Providers keep working through
+ * /offers, /live-orders and /earnings. Flip to `true` to bring it back.
+ */
+export const AGENT_WORKSPACE_ENABLED = false
+
 /** Route meta key a page sets to pin the workspace it belongs to. */
 declare module 'vue-router' {
   interface RouteMeta {
@@ -25,7 +33,7 @@ export const useModeStore = defineStore('app-mode', () => {
 
   const storageKey = computed(() => (auth.user ? `adspace_mode_${auth.user.id}` : null))
   /** Only provider accounts get the Agent workspace (and the switch). */
-  const canUseAgent = computed(() => Boolean(auth.user && isBusinessUser(auth.user)))
+  const canUseAgent = computed(() => AGENT_WORKSPACE_ENABLED && Boolean(auth.user && isBusinessUser(auth.user)))
   const isAgent = computed(() => canUseAgent.value && mode.value === 'agent')
 
   watch(storageKey, (key) => {
