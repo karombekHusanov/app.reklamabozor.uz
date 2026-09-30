@@ -11,6 +11,17 @@ warm CTA, 150–300 ms motion, WCAG‑AA contrast, `prefers-reduced-motion` resp
 
 Token source of truth: [`src/style.css`](src/style.css) (`:root` + `.dark`).
 
+> **2026-09-28 — light only for now.** `DARK_MODE_ENABLED = false` in `src/core/stores/theme.store.ts`:
+> the app always renders light, the theme picker is hidden and the Telegram header/background are
+> forced to `#f3f4f6`. Keep writing token-first styles that also work under `.dark` — the flag may
+> come back — but verify light first.
+>
+> **Client home palette (new layout, old colours):** gray canvas (`--background`) with white cards
+> (`--card` + `--rb-elev-1`); assistant card = blue gradient `#0b6bcb → #014ba4`; primary action =
+> coral `--rb-cta → --rb-cta-strong` + `--rb-elev-cta`; Tezkor order card = the `.brand-hero`
+> navy→blue gradient; agency rail = the "visitka" business card (paper surface, `--rb-glow → --primary`
+> edge, embossed monogram). Reference: `modules/home/pages/HomePage.vue`, `components/Client*`.
+
 ---
 
 ## 1. Aesthetic direction
@@ -86,6 +97,11 @@ animation is wrapped so it stops under `@media (prefers-reduced-motion: reduce)`
 ## 5. Component patterns (built)
 
 All under `src/modules/home/components/` + `src/modules/shell/components/TabBar.vue`:
+
+> Since 2026-09-28 the live client home uses `ClientAgencyRail` (visitka card), `ClientInfoTiles`
+> (tiles, each opening its own paged sheet — "Next" never jumps to another tile), `ClientOrderCard`
+> and a fixed bottom CTA instead of the tab bar. The `Home*` components below stay in the repo as
+> pattern references.
 
 - **Hero** (`HomeHero`) — `.brand-hero` immersive header: greeting (circular avatar + bell),
   animated‑gradient display headline, subtitle, white search field (`--rb-r-field`), floating

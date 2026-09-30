@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useWhiteCanvas } from '@/core/composables/useWhiteCanvas'
 import { Globe, Inbox, Loader2, Megaphone, ShieldBan, Timer } from '@lucide/vue'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -24,6 +25,8 @@ import { buildChatFeed } from '@/modules/chat/lib/chat-feed'
 import { resolveAgentChat } from '@/modules/chat/lib/open-agent-chat'
 import { ROUTES } from '@/modules/shell/constants/routes'
 import type { GlobalChatMessage, GlobalChatMeta, GlobalChatSender } from '@/modules/chat/types/chat'
+
+useWhiteCanvas()
 
 const auth = useAuthStore()
 const chatStore = useChatStore()

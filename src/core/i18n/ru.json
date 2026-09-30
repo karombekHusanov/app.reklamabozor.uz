@@ -635,7 +635,7 @@
     "criteriaScoreLabel": "{score}/5",
     "form": {
       "categoryLabel": "Тип услуги",
-      "categoryPlaceholder": "Не выбрано — увидят все агентства",
+      "categoryPlaceholder": "Выберите тип услуги",
       "categoryClear": "Сбросить выбор",
       "descriptionLabel": "Что вам нужно?",
       "descriptionPlaceholder": "Например: нужен билборд 3x6 м на 1 месяц",
@@ -646,7 +646,48 @@
       "locationOnMap": "Указать на карте",
       "locationHide": "Скрыть карту",
       "locationClear": "Убрать точку",
-      "optional": "необязательно"
+      "optional": "необязательно",
+      "categoryHintOther": "Если выбрать «Другое», запрос уйдёт всем агентствам.",
+      "categorySearchHint": "Не нашли подходящее — выберите «Другое»",
+      "otherBadge": "Всем",
+      "errCategory": "Выберите тип услуги или отметьте «Другое».",
+      "required": "обязательно",
+      "descriptionHint": "Что, сколько, где — чем точнее описание, тем быстрее ответы.",
+      "deadlineLabel": "Сроки",
+      "deadlinePlaceholder": "Выберите даты (с – по)",
+      "deadlineFromTo": "Срок работ",
+      "daysSuffix": "дн.",
+      "pickEndHint": "Выберите дату окончания",
+      "applyDates": "Подтвердить",
+      "prevMonth": "Предыдущий месяц",
+      "nextMonth": "Следующий месяц",
+      "errDeadline": "Выберите сроки работ в календаре.",
+      "budgetLabel": "Бюджет",
+      "budgetPlaceholder": "Например: 5 000 000",
+      "budgetSuffix": "сум",
+      "budgetHint": "Агентства предложат цену с учётом этого.",
+      "errBudget": "Укажите ваш бюджет.",
+      "locationRequiredHint": "Отметьте на карте место, где нужно выполнить работу.",
+      "errLocationRequired": "Отметьте место на карте.",
+      "extraTitle": "Дополнительно",
+      "extraHint": "Необязательно — регион и файлы",
+      "fixFields": "Заполните обязательные поля",
+      "q1": "Какая услуга нужна?",
+      "q2": "Что вы хотите?",
+      "q3": "Когда нужно?",
+      "q4": "Какой у вас бюджет?",
+      "q5": "Где будет выполняться работа?",
+      "q6": "Хотите что-то добавить?",
+      "stepOf": "Шаг {n} из {total}",
+      "skipExtras": "Необязательно — можно сразу отправить.",
+      "popular": "Популярные услуги",
+      "remaining": "Осталось обязательных полей: {n}",
+      "ready": "Всё готово",
+      "changeCategory": "Изменить",
+      "addFiles": "Фото или документ",
+      "confirmPlace": "Подтвердить место",
+      "budgetVisible": "В заявке он виден агентствам.",
+      "reviewTitle": "Перед отправкой"
     },
     "wizard": {
       "stepService": "Услуга",
@@ -739,7 +780,9 @@
       "offerError": "Ошибка при отправке предложения.",
       "errPrice": "Укажите цену.",
       "errComment": "Добавьте комментарий.",
-      "sendInterestCta": "Отправить"
+      "sendInterestCta": "Отправить",
+      "chatWithClient": "Чат с клиентом",
+      "interestPrice": "Стоимость отклика"
     },
     "pay": {
       "title": "Выберите способ оплаты",
@@ -799,7 +842,10 @@
       }
     },
     "placeOrderTitle": "Оформить заказ",
-    "useTezkorInstead": "Отправить быстрый запрос"
+    "useTezkorInstead": "Отправить быстрый запрос",
+    "factBudget": "Бюджет",
+    "factDeadline": "Сроки",
+    "factLocation": "Место"
   },
   "agent": {
     "b2bBadge": "B2B регистрация",
@@ -928,6 +974,13 @@
     "submitting": "Отправка…",
     "resubmit": "Отправить заявку снова",
     "submitVerify": "Отправить на проверку",
+    "stepCounter": "Шаг {current} из {total}",
+    "stepNext": "Продолжить",
+    "stepBack": "Назад",
+    "stepReview": "Проверка",
+    "stepReviewHint": "Проверьте данные. После отправки менеджер рассмотрит заявку.",
+    "stepEdit": "Изменить",
+    "stepUploaded": "Загружено",
     "submittedToast": "Заявка отправлена",
     "savedToast": "Сохранено",
     "errCompanyName": "Название компании обязательно.",
@@ -1736,6 +1789,7 @@
     "cta": "Рассказать о задаче",
     "next": "Дальше",
     "gotIt": "Понятно",
+    "tenderApply": "Подать заявку на участие в тендерах",
     "close": "Закрыть",
     "profileMenu": "Меню профиля",
     "menu": {
@@ -1834,6 +1888,8 @@
     "pNoReviews": "Пока нет отзывов",
     "pAllReviews": "Все отзывы ({count})",
     "pFullProfile": "Полный профиль",
-    "pLoadError": "Не удалось загрузить профиль"
+    "pLoadError": "Не удалось загрузить профиль",
+    "statusChosen": "Агентство выбрано",
+    "offersHint": "Общайтесь с агентством в чате и выберите его там же кнопкой «Выбрать», когда договоритесь."
   }
 }

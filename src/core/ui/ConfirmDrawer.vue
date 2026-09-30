@@ -92,18 +92,18 @@ function answer(ok: boolean) {
 }
 .cd__ic--danger { background: color-mix(in srgb, var(--destructive) 12%, var(--card)); color: var(--destructive); }
 .cd__title {
-  margin: 14px 0 0; max-width: 320px; font-family: var(--rb-font-display); font-size: 18px; font-weight: 800;
-  line-height: 1.25; letter-spacing: -0.015em; color: var(--foreground); text-wrap: balance;
+  margin: 14px 0 0; max-width: 320px; font-family: var(--rb-font-display); font-size: 16.5px; font-weight: 600;
+  line-height: 1.3; letter-spacing: -0.01em; color: var(--foreground); text-wrap: balance;
 }
-.cd__body { margin: 6px 0 0; max-width: 320px; font-size: 13.5px; line-height: 1.5; color: var(--muted-foreground); }
+.cd__body { margin: 6px 0 0; max-width: 320px; font-size: 13px; font-weight: 400; line-height: 1.5; color: var(--muted-foreground); }
 .cd__note {
   margin: 12px 0 0; padding: 9px 14px; border-radius: var(--rb-r-field); background: var(--secondary);
-  font-size: 12.5px; font-weight: 700; color: var(--secondary-foreground);
+  font-size: 12.5px; font-weight: 500; color: var(--secondary-foreground);
 }
 .cd__actions { display: flex; flex-direction: column; gap: 6px; width: 100%; margin-top: 18px; }
 .cd__btn {
   display: flex; align-items: center; justify-content: center; min-height: 52px; border: 0; border-radius: var(--rb-r-field);
-  font-family: var(--rb-font-display); font-size: 15px; font-weight: 800; cursor: pointer;
+  font-family: inherit; font-size: 15px; font-weight: 600; cursor: pointer;
   transition: transform var(--rb-dur) var(--rb-ease);
   -webkit-tap-highlight-color: transparent;
 }
@@ -111,5 +111,5 @@ function answer(ok: boolean) {
 .cd__btn:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
 .cd__btn--primary { color: #fff; background: linear-gradient(150deg, var(--primary) 0%, var(--brand-600) 100%); box-shadow: 0 12px 24px -12px color-mix(in srgb, var(--primary) 70%, transparent); }
 .cd__btn--danger { background: var(--destructive); box-shadow: none; }
-.cd__btn--ghost { min-height: 46px; background: none; color: var(--muted-foreground); font-family: inherit; font-size: 14px; font-weight: 700; }
+.cd__btn--ghost { min-height: 46px; background: none; color: var(--muted-foreground); font-family: inherit; font-size: 14px; font-weight: 500; }
 </style>

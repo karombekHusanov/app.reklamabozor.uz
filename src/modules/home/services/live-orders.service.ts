@@ -23,6 +23,10 @@ export interface LiveOrder {
   status: string
   views_count: number
   offers_count: number
+  deadline_from?: string | null
+  deadline_to?: string | null
+  /** Only sent to approved providers. */
+  budget_max?: string | number | null
   client?: ShowcaseClient | null
   created_at: string
 }
@@ -33,11 +37,15 @@ export interface ShowcaseOrder {
   title: string
   description: string | null
   deadline: string | null
+  deadline_from?: string | null
+  deadline_to?: string | null
   category: Category | null
   region?: OrderRegionRef | null
   district?: OrderRegionRef | null
   hashtags?: OrderHashtag[]
   attachment_files: OrderAttachment[]
+  /** Only sent to approved providers. */
+  budget_max?: string | number | null
   status: string
   views_count: number
   offers_count: number
@@ -49,6 +57,7 @@ export interface ShowcaseOrder {
     status: OfferStatus
     is_interest?: boolean
     can_accept?: boolean
+    chat_id?: number | null
   }
   can_offer: boolean
   created_at: string

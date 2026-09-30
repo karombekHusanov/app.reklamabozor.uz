@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import {
   Calendar,
+  Wallet,
   Eye,
   FileText,
   Loader2,
@@ -24,6 +25,7 @@ import { useToast } from '@/core/composables/useToast'
 import { useLocaleStore } from '@/core/i18n/locale.store'
 import { categoryName } from '@/core/i18n/category-name'
 import { formatDateTime } from '@/core/lib/date'
+import { formatDeadlineRange } from '@/modules/orders/lib/order-terms'
 import { getApiErrorMessage } from '@/core/api/api-error'
 import { confirmOtklik } from '@/modules/agent/lib/confirm-otklik'
 import { ROUTES } from '@/modules/shell/constants/routes'
@@ -56,7 +58,14 @@ const categoryLabel = computed(() =>
   order.value?.category ? categoryName(order.value.category, locale.locale) : null,
 )
 
+const budgetLabel = computed(() => {
+  const value = order.value?.budget_max
+  return value != null && Number(value) > 0 ? formatPrice(value) : null
+})
+
 const deadlineLabel = computed(() => {
+  const range = order.value ? formatDeadlineRange(order.value.deadline_from, order.value.deadline_to, locale.locale) : ''
+  if (range) return range
   if (order.value?.deadline === 'this_week') return locale.t.orders.deadlineThisWeek
   if (order.value?.deadline === 'today_tomorrow') return locale.t.orders.deadlineTodayTomorrow
   return null
@@ -199,6 +208,15 @@ watch(() => props.id, loadOrder)
           >
             {{ order.description }}
           </p>
+
+          <div
+            v-if="budgetLabel"
+            class="flex items-center gap-2 text-sm text-foreground"
+          >
+            <Wallet class="size-4 shrink-0 text-primary" />
+            <span class="text-xs font-medium text-muted-foreground">{{ locale.t.orders.factBudget }}:</span>
+            <span class="font-bold tabular-nums">{{ budgetLabel }}</span>
+          </div>
 
           <div
             v-if="deadlineLabel"

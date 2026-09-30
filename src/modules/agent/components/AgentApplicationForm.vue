@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { Loader2 } from '@lucide/vue'
-import { computed, reactive } from 'vue'
+import { computed, reactive, ref, watch } from 'vue'
 import GlassCard from '@/core/ui/GlassCard.vue'
 import FileUpload from '@/core/ui/FileUpload.vue'
-import StickyActionBar from '@/core/ui/StickyActionBar.vue'
 import { Button } from '@/core/ui/button'
 import { cn } from '@/core/lib/utils'
 import { useLocaleStore } from '@/core/i18n/locale.store'
 import { useToast } from '@/core/composables/useToast'
+import { useHideTabBar } from '@/core/composables/useTabBarHidden'
 import AgentOfferConsent from '@/modules/agent/components/AgentOfferConsent.vue'
 import type {
   AgentApplicationPayload,
@@ -16,6 +16,9 @@ import type {
 
 const locale = useLocaleStore()
 const toast = useToast()
+
+// The stepper docks its own fixed action bar where the tab bar normally sits.
+useHideTabBar()
 
 const props = defineProps<{
   initial?: AgentProfile | null
@@ -64,38 +67,134 @@ const fieldLabels = computed<Record<string, string>>(() => ({
 const digits = (value: string) => value.replace(/\D/g, '')
 const normalizePassport = (value: string) => value.replace(/\s/g, '').toUpperCase()
 
-function validate(): boolean {
-  Object.keys(fieldErrors).forEach((key) => delete fieldErrors[key])
+const TOTAL_STEPS = 4
+const step = ref(1)
 
-  if (form.company_name.trim() === '') fieldErrors.company_name = locale.t.agent.errCompanyName
-  if (form.legal_form.trim() === '') fieldErrors.legal_form = locale.t.agent.errLegalForm
-  if (!/^\d{9}$/.test(digits(form.inn))) fieldErrors.inn = locale.t.agent.errInn
-  if (form.director_name.trim() === '') fieldErrors.director_name = locale.t.agent.errDirectorName
-  if (!/^[A-Z]{2}\d{7}$/.test(normalizePassport(form.director_passport))) {
-    fieldErrors.director_passport = locale.t.agent.errPassport
-  }
-  if (form.director_passport_file_id === null) fieldErrors.director_passport_file_id = locale.t.agent.errPassportScan
-  if (form.registration_certificate_file_id === null) {
-    fieldErrors.registration_certificate_file_id = locale.t.agent.errRegCert
-  }
-  if (form.bank_name.trim() === '') fieldErrors.bank_name = locale.t.agent.errBankName
-  if (!/^\d{20,26}$/.test(digits(form.bank_account))) fieldErrors.bank_account = locale.t.agent.errAccount
-  if (!/^\d{5}$/.test(digits(form.mfo))) fieldErrors.mfo = locale.t.agent.errMfo
-  if (form.phone.trim() === '') fieldErrors.phone = locale.t.agent.errPhone
-  if (!form.accept_offer) fieldErrors.accept_offer = locale.t.agent.offerRequired
-
-  return Object.keys(fieldErrors).length === 0
+// Which fields each step owns (step 4 = consent).
+const STEP_FIELDS: Record<number, string[]> = {
+  1: ['company_name', 'legal_form', 'inn'],
+  2: ['director_name', 'director_passport', 'director_passport_file_id'],
+  3: ['registration_certificate_file_id', 'bank_name', 'bank_account', 'mfo', 'phone'],
+  4: ['accept_offer'],
 }
 
+function collectErrors(): Record<string, string> {
+  const errors: Record<string, string> = {}
+
+  if (form.company_name.trim() === '') errors.company_name = locale.t.agent.errCompanyName
+  if (form.legal_form.trim() === '') errors.legal_form = locale.t.agent.errLegalForm
+  if (!/^\d{9}$/.test(digits(form.inn))) errors.inn = locale.t.agent.errInn
+  if (form.director_name.trim() === '') errors.director_name = locale.t.agent.errDirectorName
+  if (!/^[A-Z]{2}\d{7}$/.test(normalizePassport(form.director_passport))) {
+    errors.director_passport = locale.t.agent.errPassport
+  }
+  if (form.director_passport_file_id === null) errors.director_passport_file_id = locale.t.agent.errPassportScan
+  if (form.registration_certificate_file_id === null) {
+    errors.registration_certificate_file_id = locale.t.agent.errRegCert
+  }
+  if (form.bank_name.trim() === '') errors.bank_name = locale.t.agent.errBankName
+  if (!/^\d{20,26}$/.test(digits(form.bank_account))) errors.bank_account = locale.t.agent.errAccount
+  if (!/^\d{5}$/.test(digits(form.mfo))) errors.mfo = locale.t.agent.errMfo
+  if (form.phone.trim() === '') errors.phone = locale.t.agent.errPhone
+  if (!form.accept_offer) errors.accept_offer = locale.t.agent.offerRequired
+
+  return errors
+}
+
+/** Validates the given steps; shows errors, toasts + scrolls to the first one. */
+function validateSteps(steps: number[]): boolean {
+  Object.keys(fieldErrors).forEach((key) => delete fieldErrors[key])
+  const all = collectErrors()
+  const fields = steps.flatMap(n => STEP_FIELDS[n])
+  const failed = fields.filter(field => all[field])
+
+  failed.forEach((field) => { fieldErrors[field] = all[field] })
+  if (failed.length === 0) return true
+
+  const firstField = failed[0]
+  toast.error(`${fieldLabels.value[firstField] ?? firstField}: ${all[firstField]}`)
+  document.getElementById(firstField)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  return false
+}
+
+const stepTitle = computed(() => [
+  '',
+  locale.t.agent.company,
+  locale.t.agent.director,
+  locale.t.agent.registrationBank,
+  locale.t.agent.stepReview,
+][step.value])
+
+const stepCounter = computed(() => locale.t.agent.stepCounter
+  .replace('{current}', String(step.value))
+  .replace('{total}', String(TOTAL_STEPS)))
+
+const isLastStep = computed(() => step.value === TOTAL_STEPS)
+
+watch(step, () => window.scrollTo({ top: 0, behavior: 'smooth' }))
+
+function goBack() {
+  if (step.value > 1) step.value -= 1
+}
+
+function goToStep(n: number) {
+  Object.keys(fieldErrors).forEach((key) => delete fieldErrors[key])
+  step.value = n
+}
+
+function handleNext() {
+  if (!validateSteps([step.value])) return
+  if (!isLastStep.value) step.value += 1
+}
+
+const uploaded = (fileId: number | null) => (fileId !== null ? locale.t.agent.stepUploaded : '—')
+
+const summary = computed(() => [
+  {
+    step: 1,
+    title: locale.t.agent.company,
+    rows: [
+      { key: locale.t.agent.companyName, value: form.company_name.trim() || '—' },
+      { key: locale.t.agent.legalForm, value: form.legal_form.trim() || '—' },
+      { key: locale.t.agent.innLabel, value: digits(form.inn) || '—' },
+    ],
+  },
+  {
+    step: 2,
+    title: locale.t.agent.director,
+    rows: [
+      { key: locale.t.agent.fullName, value: form.director_name.trim() || '—' },
+      { key: locale.t.agent.passport, value: normalizePassport(form.director_passport) || '—' },
+      { key: locale.t.agent.passportScan, value: uploaded(form.director_passport_file_id) },
+    ],
+  },
+  {
+    step: 3,
+    title: locale.t.agent.registrationBank,
+    rows: [
+      { key: locale.t.agent.registrationCert, value: uploaded(form.registration_certificate_file_id) },
+      { key: locale.t.agent.bankName, value: form.bank_name.trim() || '—' },
+      { key: locale.t.agent.accountNumber, value: digits(form.bank_account) || '—' },
+      { key: locale.t.agent.mfo, value: digits(form.mfo) || '—' },
+      { key: locale.t.agent.contactPhone, value: form.phone.trim() || '—' },
+    ],
+  },
+])
+
 function handleSubmit() {
-  if (!validate()) {
-    // Surface the exact field that failed at the top, and jump to it.
-    const firstField = Object.keys(fieldErrors)[0]
-    if (firstField) {
-      const label = fieldLabels.value[firstField] ?? firstField
-      toast.error(`${label}: ${fieldErrors[firstField]}`)
-      document.getElementById(firstField)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-    }
+  if (!isLastStep.value) {
+    handleNext()
+    return
+  }
+
+  // Final gate: any earlier step that is still invalid sends the user back to it.
+  const firstBadStep = [1, 2, 3, 4].find(n => STEP_FIELDS[n].some(field => collectErrors()[field]))
+  if (firstBadStep === undefined) {
+    Object.keys(fieldErrors).forEach((key) => delete fieldErrors[key])
+  }
+  else {
+    step.value = firstBadStep
+    void Promise.resolve().then(() => validateSteps([firstBadStep]))
     return
   }
 
@@ -120,15 +219,40 @@ const inputClass = 'glass-input'
 
 <template>
   <form
-    class="space-y-4"
+    class="space-y-4 pb-28"
     @submit.prevent="handleSubmit"
   >
-    <!-- Company -->
-    <GlassCard class="space-y-4">
-      <p class="text-sm font-semibold">
-        {{ locale.t.agent.company }}
-      </p>
+    <!-- Stepper -->
+    <div class="space-y-3">
+      <div
+        class="flex gap-1.5"
+        aria-hidden="true"
+      >
+        <span
+          v-for="n in TOTAL_STEPS"
+          :key="n"
+          class="h-1.5 flex-1 rounded-full transition-colors"
+          :class="n <= step ? 'bg-primary' : 'bg-border'"
+        />
+      </div>
+      <div>
+        <p class="text-xs font-semibold text-muted-foreground">
+          {{ stepCounter }}
+        </p>
+        <h2
+          class="text-xl font-extrabold leading-tight"
+          style="font-family: var(--rb-font-display)"
+        >
+          {{ stepTitle }}
+        </h2>
+      </div>
+    </div>
 
+    <!-- Company -->
+    <GlassCard
+      v-if="step === 1"
+      class="space-y-4"
+    >
       <div class="space-y-1.5">
         <label
           class="text-sm font-medium"
@@ -199,11 +323,10 @@ const inputClass = 'glass-input'
     </GlassCard>
 
     <!-- Director -->
-    <GlassCard class="space-y-4">
-      <p class="text-sm font-semibold">
-        {{ locale.t.agent.director }}
-      </p>
-
+    <GlassCard
+      v-if="step === 2"
+      class="space-y-4"
+    >
       <div class="space-y-1.5">
         <label
           class="text-sm font-medium"
@@ -261,11 +384,10 @@ const inputClass = 'glass-input'
     </GlassCard>
 
     <!-- Registration + bank -->
-    <GlassCard class="space-y-4">
-      <p class="text-sm font-semibold">
-        {{ locale.t.agent.registrationBank }}
-      </p>
-
+    <GlassCard
+      v-if="step === 3"
+      class="space-y-4"
+    >
       <FileUpload
         v-model="form.registration_certificate_file_id"
         :label="locale.t.agent.registrationCert"
@@ -366,23 +488,75 @@ const inputClass = 'glass-input'
       </div>
     </GlassCard>
 
-    <AgentOfferConsent
-      v-model="form.accept_offer"
-      :error="fieldErrors.accept_offer"
-    />
+    <!-- Review + offer -->
+    <template v-if="step === 4">
+      <p class="text-sm leading-relaxed text-muted-foreground">
+        {{ locale.t.agent.stepReviewHint }}
+      </p>
 
-    <StickyActionBar>
-      <Button
-        type="submit"
-        class="h-12 w-full rounded-2xl text-base shadow-lg shadow-primary/20"
-        :disabled="submitting"
+      <GlassCard
+        v-for="section in summary"
+        :key="section.step"
+        class="space-y-3"
       >
-        <Loader2
-          v-if="submitting"
-          class="size-4 animate-spin"
-        />
-        {{ submitting ? locale.t.agent.submitting : initial ? locale.t.agent.resubmit : locale.t.agent.submitVerify }}
-      </Button>
-    </StickyActionBar>
+        <div class="flex items-center justify-between">
+          <p class="text-base font-bold">
+            {{ section.title }}
+          </p>
+          <button
+            type="button"
+            class="min-h-11 px-1 text-sm font-semibold text-primary"
+            @click="goToStep(section.step)"
+          >
+            {{ locale.t.agent.stepEdit }}
+          </button>
+        </div>
+        <div
+          v-for="row in section.rows"
+          :key="row.key"
+          class="flex justify-between gap-4 text-sm"
+        >
+          <span class="text-muted-foreground">{{ row.key }}</span>
+          <span class="break-all text-right font-semibold">{{ row.value }}</span>
+        </div>
+      </GlassCard>
+
+      <AgentOfferConsent
+        v-model="form.accept_offer"
+        :error="fieldErrors.accept_offer"
+      />
+    </template>
+
+    <!-- Fixed action bar (replaces the tab bar on this page) -->
+    <div class="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-background/95 backdrop-blur">
+      <div class="mx-auto flex max-w-lg gap-2 px-4 pb-6 pt-3">
+        <Button
+          v-if="step > 1"
+          type="button"
+          variant="outline"
+          class="h-14 shrink-0 rounded-2xl px-5 text-base"
+          :disabled="submitting"
+          @click="goBack"
+        >
+          {{ locale.t.agent.stepBack }}
+        </Button>
+        <Button
+          type="submit"
+          class="h-14 flex-1 rounded-2xl text-base font-bold shadow-lg shadow-primary/20"
+          :disabled="submitting"
+        >
+          <Loader2
+            v-if="submitting"
+            class="size-4 animate-spin"
+          />
+          <template v-if="!isLastStep">
+            {{ locale.t.agent.stepNext }}
+          </template>
+          <template v-else>
+            {{ submitting ? locale.t.agent.submitting : initial ? locale.t.agent.resubmit : locale.t.agent.submitVerify }}
+          </template>
+        </Button>
+      </div>
+    </div>
   </form>
 </template>

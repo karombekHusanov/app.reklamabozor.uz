@@ -7,6 +7,7 @@ import PhoneGate from '@/modules/auth/components/PhoneGate.vue'
 import { useAuthStore } from '@/modules/auth/stores/auth.store'
 import { ROUTES } from '@/modules/shell/constants/routes'
 import { useModeStore } from '@/modules/shell/stores/mode.store'
+import { tabBarForcedHidden } from '@/core/composables/useTabBarHidden'
 
 const auth = useAuthStore()
 const router = useRouter()
@@ -15,7 +16,7 @@ const mode = useModeStore()
 
 // Some pages (e.g. the order wizard) provide their own bottom action bar and
 // hide the global tab bar via `meta.hideTabBar`.
-const hideTabBar = computed(() => route.meta.hideTabBar === true)
+const hideTabBar = computed(() => route.meta.hideTabBar === true || tabBarForcedHidden.value)
 
 // Native-feel navigation: deeper routes push in from the right, going back pops
 // out, and switching between tab roots cross-fades.

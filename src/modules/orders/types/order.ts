@@ -322,8 +322,8 @@ export interface OrderReview {
   id: number
   order_id: number
   direction: ReviewDirection
-  /** Weighted average across criteria (1.00–5.00). */
-  rating: number
+  /** Weighted average across rated criteria (1.00–5.00); null for comment-only reviews. */
+  rating: number | null
   criteria: ReviewCriterionScore[]
   comment: string | null
   status: ReviewStatus
@@ -406,6 +406,9 @@ export interface Order {
   title: string
   description: string
   deadline: OrderDeadline | null
+  /** Work window picked on the calendar (ISO dates). */
+  deadline_from?: string | null
+  deadline_to?: string | null
   category: Category | null
   hashtags?: OrderHashtag[]
   attachment_file_ids: number[]
@@ -487,6 +490,11 @@ export interface CreateOrderPayload {
   hashtags?: string[]
   /** Concrete deadline as an ISO date string, e.g. "2026-07-15". */
   deadline_date?: string | null
+  /** Work window from the calendar (ISO dates) — both or neither. */
+  deadline_from?: string
+  deadline_to?: string
+  /** Client budget in so'm. */
+  budget?: number
   /** Route is fixed at creation; tender needs `can_create_tender` (403 otherwise). */
   route: OrderRoute
   /** Show TZ/files on Recent / Live Orders. Default true if omitted. */
@@ -535,6 +543,8 @@ export interface AgentOrder {
   title: string
   description: string
   deadline: OrderDeadline | null
+  deadline_from?: string | null
+  deadline_to?: string | null
   category: Category | null
   hashtags?: OrderHashtag[]
   attachment_files: OrderAttachment[]
@@ -624,6 +634,9 @@ export interface AgentOfferDetail {
     title: string | null
     description: string | null
     deadline: OrderDeadline | null
+    deadline_from?: string | null
+    deadline_to?: string | null
+    budget_max?: string | number | null
     lat?: string | number | null
     lng?: string | number | null
     location_label?: string | null

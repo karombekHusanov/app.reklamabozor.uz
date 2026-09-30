@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Check, CheckCheck, FileText } from '@lucide/vue'
 import { computed } from 'vue'
-import { formatMessageTime } from '@/core/lib/date'
+import dayjs from 'dayjs'
 import type { ChatAttachment } from '@/modules/chat/types/chat'
 
 const props = withDefaults(defineProps<{
@@ -55,7 +55,8 @@ function spansFullRow(index: number): boolean {
   return images.value.length > 1 && images.value.length % 2 === 1 && index === 0
 }
 
-const time = computed(() => formatMessageTime(props.createdAt))
+// The day is already in the separator above — a bubble only needs the clock time.
+const time = computed(() => dayjs(props.createdAt).format('HH:mm'))
 
 function formatSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`
@@ -68,10 +69,10 @@ function formatSize(bytes: number): string {
   <div
     class="break-words"
     :class="[
-      hasAttachments ? 'w-[70vw] max-w-[17rem] p-1' : 'max-w-[80%] px-3.5 py-2',
+      hasAttachments ? 'w-[70vw] max-w-[17rem] p-1' : 'max-w-[84%] px-4 py-2.5',
       mine
-        ? ['bg-primary text-primary-foreground', showTail ? 'rounded-2xl rounded-br-md' : 'rounded-2xl']
-        : ['bg-card text-foreground shadow-sm dark:bg-white/10', showTail ? 'rounded-2xl rounded-bl-md' : 'rounded-2xl'],
+        ? ['bg-primary text-primary-foreground', showTail ? 'rounded-[22px] rounded-br-[8px]' : 'rounded-[22px]']
+        : ['bg-secondary text-foreground dark:bg-white/10', showTail ? 'rounded-[22px] rounded-bl-[8px]' : 'rounded-[22px]'],
     ]"
   >
     <!-- Sender name (incoming, first of a run) — taps through to the profile -->
@@ -151,15 +152,15 @@ function formatSize(bytes: number): string {
     <div :class="hasAttachments ? 'px-1.5 pb-0.5 pt-1' : ''">
       <p
         v-if="body"
-        class="whitespace-pre-line break-words text-sm leading-relaxed"
+        class="whitespace-pre-line break-words text-[16px] leading-snug"
       >
         {{ body }}
       </p>
       <div
         class="flex items-center justify-end gap-1"
-        :class="[body ? 'mt-1' : '', mine ? 'text-primary-foreground/70' : 'text-muted-foreground']"
+        :class="[body ? 'mt-1.5' : '', mine ? 'text-primary-foreground/70' : 'text-muted-foreground']"
       >
-        <span class="text-[10px]">{{ time }}</span>
+        <span class="text-[12px] tabular-nums">{{ time }}</span>
         <CheckCheck v-if="mine && showStatus && read" class="size-3.5" />
         <Check v-else-if="mine && showStatus" class="size-3.5" />
       </div>

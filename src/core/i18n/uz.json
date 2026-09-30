@@ -635,7 +635,7 @@
     "criteriaScoreLabel": "{score}/5",
     "form": {
       "categoryLabel": "Xizmat turi",
-      "categoryPlaceholder": "Tanlanmagan — barcha agentliklar ko'radi",
+      "categoryPlaceholder": "Xizmat turini tanlang",
       "categoryClear": "Tanlovni bekor qilish",
       "descriptionLabel": "Sizga nima kerak?",
       "descriptionPlaceholder": "Masalan: 3x6m billboard kerak, 1 oylik",
@@ -646,7 +646,48 @@
       "locationOnMap": "Xaritadan ko'rsatish",
       "locationHide": "Xaritani yopish",
       "locationClear": "Nuqtani o'chirish",
-      "optional": "ixtiyoriy"
+      "optional": "ixtiyoriy",
+      "categoryHintOther": "«Boshqa» tanlansa, so'rovingiz barcha agentliklarga yuboriladi.",
+      "categorySearchHint": "Mos xizmat topilmasa — «Boshqa»ni tanlang",
+      "otherBadge": "Barchaga",
+      "errCategory": "Xizmat turini tanlang yoki «Boshqa»ni belgilang.",
+      "required": "majburiy",
+      "descriptionHint": "Nima, qancha, qayerda — qanchalik aniq yozsangiz, shunchalik tez javob keladi.",
+      "deadlineLabel": "Muddat",
+      "deadlinePlaceholder": "Sanalarni tanlang (dan – gacha)",
+      "deadlineFromTo": "Ish muddati",
+      "daysSuffix": "kun",
+      "pickEndHint": "Tugash sanasini tanlang",
+      "applyDates": "Tasdiqlash",
+      "prevMonth": "Oldingi oy",
+      "nextMonth": "Keyingi oy",
+      "errDeadline": "Ish muddatini kalendardan tanlang.",
+      "budgetLabel": "Byudjet",
+      "budgetPlaceholder": "Masalan: 5 000 000",
+      "budgetSuffix": "so'm",
+      "budgetHint": "Agentliklar shunga qarab taklif beradi.",
+      "errBudget": "Byudjetingizni kiriting.",
+      "locationRequiredHint": "Xaritada ishlar bajariladigan joyni belgilang.",
+      "errLocationRequired": "Xaritadan joyni belgilang.",
+      "extraTitle": "Qo'shimcha",
+      "extraHint": "Ixtiyoriy — hudud va fayllar",
+      "fixFields": "Majburiy maydonlarni to'ldiring",
+      "q1": "Qanday xizmat kerak?",
+      "q2": "Nimani xohlaysiz?",
+      "q3": "Qachon kerak?",
+      "q4": "Qancha ajrata olasiz?",
+      "q5": "Ish qayerda bo'ladi?",
+      "q6": "Yana nimadir qo'shasizmi?",
+      "stepOf": "Qadam {n} / {total}",
+      "skipExtras": "Shart emas — to'g'ridan-to'g'ri yuborishingiz mumkin.",
+      "popular": "Mashhur xizmatlar",
+      "remaining": "{n} ta majburiy maydon qoldi",
+      "ready": "Hammasi tayyor",
+      "changeCategory": "O'zgartirish",
+      "addFiles": "Rasm yoki hujjat",
+      "confirmPlace": "Joyni tasdiqlash",
+      "budgetVisible": "Buyurtmada u agentliklarga ko'rinadi.",
+      "reviewTitle": "Yuborishdan oldin"
     },
     "wizard": {
       "stepService": "Xizmat",
@@ -739,7 +780,9 @@
       "offerError": "Taklif yuborishda xatolik yuz berdi.",
       "errPrice": "Narxni kiriting.",
       "errComment": "Izoh yozing.",
-      "sendInterestCta": "Yuborish"
+      "sendInterestCta": "Yuborish",
+      "chatWithClient": "Mijoz bilan chat",
+      "interestPrice": "Otklik narxi"
     },
     "pay": {
       "title": "To'lov usulini tanlang",
@@ -799,7 +842,10 @@
       }
     },
     "placeOrderTitle": "Buyurtma berish",
-    "useTezkorInstead": "Tezkor so'rov yuborish"
+    "useTezkorInstead": "Tezkor so'rov yuborish",
+    "factBudget": "Byudjet",
+    "factDeadline": "Muddat",
+    "factLocation": "Joy"
   },
   "agent": {
     "b2bBadge": "B2B ro'yxatdan o'tish",
@@ -928,6 +974,13 @@
     "submitting": "Yuborilmoqda…",
     "resubmit": "Arizani qayta yuborish",
     "submitVerify": "Tasdiqlash uchun yuborish",
+    "stepCounter": "Qadam {current} / {total}",
+    "stepNext": "Davom etish",
+    "stepBack": "Orqaga",
+    "stepReview": "Tekshirish",
+    "stepReviewHint": "Ma'lumotlarni tekshirib chiqing. Yuborilgach menejer arizani ko'rib chiqadi.",
+    "stepEdit": "Tahrirlash",
+    "stepUploaded": "Yuklangan",
     "submittedToast": "Ariza yuborildi",
     "savedToast": "Saqlandi",
     "errCompanyName": "Kompaniya nomi majburiy.",
@@ -1736,6 +1789,7 @@
     "cta": "Vazifa haqida ayting",
     "next": "Keyingisi",
     "gotIt": "Tushunarli",
+    "tenderApply": "Tenderda qatnashish uchun ariza berish",
     "close": "Yopish",
     "profileMenu": "Profil menyusi",
     "menu": {
@@ -1834,6 +1888,8 @@
     "pNoReviews": "Hali sharhlar yo'q",
     "pAllReviews": "Barcha sharhlar ({count})",
     "pFullProfile": "To'liq profil",
-    "pLoadError": "Profilni yuklab bo'lmadi"
+    "pLoadError": "Profilni yuklab bo'lmadi",
+    "statusChosen": "Agentlik tanlandi",
+    "offersHint": "Agentlik bilan chatda gaplashing va kelishganingizni shu yerning o'zida «Tanlash» tugmasi bilan tanlang."
   }
 }

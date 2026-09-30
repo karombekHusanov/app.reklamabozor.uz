@@ -96,26 +96,23 @@ const statusChip = computed(() => {
       </span>
 
       <span class="oli__chips">
-        <span class="oli__chip">
+        <template v-if="stars">
           <Star
             class="oli__star"
             aria-hidden="true"
           />
-          {{ stars ?? locale.t.orderView.newAgency }}
-        </span>
-        <span
-          v-if="starsCount > 0"
-          class="oli__chip"
-        >
+          {{ stars }} · {{ locale.t.agentHome.anketa.reviews.replace('{count}', String(starsCount)) }}
+        </template>
+        <template v-else>
           <MessageCircle
-            class="size-3.5"
+            class="size-3"
             aria-hidden="true"
           />
-          {{ starsCount }}
-        </span>
+          {{ locale.t.agentHome.anketa.reviewsNone }}
+        </template>
         <span
           v-if="statusChip"
-          class="oli__chip"
+          class="oli__chip oli__chip--tag"
           :class="statusChip.tone === 'ok' ? 'oli__chip--ok' : ''"
         >{{ statusChip.label }}</span>
       </span>
@@ -138,9 +135,9 @@ const statusChip = computed(() => {
 .oli {
   display: flex;
   width: 100%;
-  align-items: flex-start;
-  gap: 14px;
-  padding: 12px 4px;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
   border: 0;
   background: none;
   text-align: left;
@@ -156,68 +153,68 @@ const statusChip = computed(() => {
   display: grid;
   flex-shrink: 0;
   place-items: center;
-  width: 64px;
-  height: 80px;
+  width: 44px;
+  height: 44px;
   overflow: hidden;
-  border-radius: 18px;
+  border-radius: 14px;
   background: var(--secondary);
 }
 .oli__photo img { width: 100%; height: 100%; object-fit: cover; }
-.oli__initials { font-family: var(--rb-font-display); font-size: 20px; font-weight: 800; color: var(--muted-foreground); }
+.oli__initials { font-size: 14px; font-weight: 600; color: var(--muted-foreground); }
 
-.oli__body { display: flex; min-width: 0; flex: 1; flex-direction: column; gap: 6px; padding-top: 2px; }
+.oli__body { display: flex; min-width: 0; flex: 1; flex-direction: column; gap: 3px; }
 .oli__top { display: flex; align-items: baseline; gap: 8px; }
 .oli__name {
   min-width: 0;
   flex: 1;
   overflow: hidden;
-  font-size: 16px;
-  font-weight: 800;
+  font-size: 14px;
+  font-weight: 600;
   line-height: 1.25;
   color: var(--foreground);
   white-space: nowrap;
   text-overflow: ellipsis;
 }
-.oli__time { flex-shrink: 0; font-size: 12.5px; color: var(--muted-foreground); font-variant-numeric: tabular-nums; }
+.oli__time { flex-shrink: 0; font-size: 11.5px; color: var(--muted-foreground); font-variant-numeric: tabular-nums; }
 
-.oli__chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.oli__chips { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; font-size: 12px; color: var(--muted-foreground); }
+.oli__chip--tag { margin-left: 6px; }
 .oli__chip {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  height: 26px;
-  padding: 0 9px;
-  border-radius: var(--rb-r-chip);
-  background: var(--secondary);
-  color: var(--secondary-foreground);
-  font-size: 12.5px;
-  font-weight: 700;
+  height: auto;
+  padding: 0;
+  background: none;
+  color: var(--muted-foreground);
+  font-size: 12px;
+  font-weight: 400;
 }
-.oli__chip--ok { background: color-mix(in srgb, var(--success) 15%, var(--card)); color: var(--success); }
-.oli__star { width: 14px; height: 14px; fill: var(--rb-rating); color: var(--rb-rating); }
+.oli__chip--ok { color: var(--success); font-weight: 600; }
+.oli__star { width: 12px; height: 12px; fill: var(--rb-rating); color: var(--rb-rating); }
 
 .oli__bottom { display: flex; align-items: center; gap: 8px; }
 .oli__snippet {
   min-width: 0;
   flex: 1;
   overflow: hidden;
-  font-size: 13.5px;
+  font-size: 13px;
   color: var(--muted-foreground);
   white-space: nowrap;
   text-overflow: ellipsis;
 }
-.oli__snippet--unread { color: var(--foreground); font-weight: 600; }
+.oli__snippet--unread { color: var(--foreground); font-weight: 500; }
 .oli__badge {
   display: grid;
   flex-shrink: 0;
   place-items: center;
-  min-width: 20px;
-  height: 20px;
-  padding: 0 6px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
   border-radius: 999px;
   background: var(--primary);
   color: var(--primary-foreground);
   font-size: 11px;
-  font-weight: 800;
+  font-weight: 600;
 }
 </style>

@@ -249,7 +249,7 @@ function openFullProfile() {
             </p>
             <p class="aps__review-date">
               {{ formatDate(review.created_at) }}
-              <span class="aps__review-stars">
+              <span v-if="review.rating !== null" class="aps__review-stars">
                 <Star
                   class="aps__star"
                   aria-hidden="true"

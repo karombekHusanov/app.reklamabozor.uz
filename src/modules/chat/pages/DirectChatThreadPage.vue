@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useWhiteCanvas } from '@/core/composables/useWhiteCanvas'
 import { BadgeCheck, ChevronRight, Copy, EllipsisVertical, Loader2, LockOpen, MessageCircle, Phone, ShieldCheck, Star, UserRound, XCircle } from '@lucide/vue'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
@@ -24,9 +25,13 @@ import MessageBubble from '@/modules/chat/components/MessageBubble.vue'
 import { buildChatFeed } from '@/modules/chat/lib/chat-feed'
 import CategoryThumb from '@/modules/orders/components/CategoryThumb.vue'
 import AgentProfileSheet from '@/modules/marketplace/components/AgentProfileSheet.vue'
+import ClientProfileSheet from '@/modules/chat/components/ClientProfileSheet.vue'
+import { fetchPublicClient, type PublicClient } from '@/modules/profile/services/clients.service'
 import { useOrdersStore } from '@/modules/orders/stores/orders.store'
 import { formatPrice, isInterestOffer } from '@/modules/orders/lib/order-status'
 import type { ChatMessage } from '@/modules/chat/types/chat'
+
+useWhiteCanvas()
 
 const props = defineProps<{ chatId: string }>()
 
@@ -95,15 +100,40 @@ const orderId = computed(() => chat.currentChat?.order_id ?? activeOffer.value?.
 const orderTitle = computed(() => chat.currentChat?.order?.title ?? activeOffer.value?.order_title ?? null)
 const phone = computed(() => chat.currentChat?.other_participant.phone ?? null)
 const phoneLabel = computed(() => formatPhone(phone.value))
-const phoneHint = computed(() => (otherIsAgency.value ? locale.t.chat.agencyPhoneHint : locale.t.chat.clientPhoneHint))
 const telHref = computed(() => (phone.value ? `tel:${phone.value.replace(/[^\d+]/g, '')}` : undefined))
 
 const headerAvatar = computed(() => chat.currentChat?.other_participant.avatar ?? null)
 const agencyStarsCount = computed(() => chat.currentChat?.other_participant.stars_count ?? 0)
 const agencyStars = computed(() => {
   const s = chat.currentChat?.other_participant.stars
-  return otherIsAgency.value && agencyStarsCount.value > 0 && s != null ? Number(s).toFixed(1) : null
+  return otherIsAgency.value && s != null ? Number(s).toFixed(1) : null
 })
+
+/** The client's trust signals for the agency side of the thread (header line + profile sheet). */
+const clientInfo = ref<PublicClient | null>(null)
+const clientRating = computed(() =>
+  !otherIsAgency.value && clientInfo.value?.rating_avg != null
+    ? Number(clientInfo.value.rating_avg).toFixed(1)
+    : null,
+)
+
+/** Rating line in the header: the agency's stars, or the client's once loaded. */
+const showHeaderRating = computed(() => otherIsAgency.value ? agencyStars.value !== null : clientInfo.value !== null)
+const headerRatingValue = computed(() => agencyStars.value ?? clientRating.value ?? '—')
+const headerReviewsCount = computed(() =>
+  otherIsAgency.value ? agencyStarsCount.value : (clientInfo.value?.rating_count ?? 0),
+)
+
+watch(() => chat.currentChat?.other_participant.id, async (id) => {
+  clientInfo.value = null
+  if (id == null || otherIsAgency.value) return
+  try {
+    clientInfo.value = await fetchPublicClient(id)
+  }
+  catch {
+    // The header simply falls back to the role line.
+  }
+}, { immediate: true })
 
 const headerSubtitle = computed(() => {
   const role = otherIsAgency.value ? locale.t.chat.roleAgency : locale.t.chat.roleClient
@@ -154,10 +184,17 @@ async function pickAgency() {
 const profileOpen = ref(false)
 const agencyProfileId = computed(() => chat.currentChat?.other_participant.agent_profile_id ?? null)
 
+const clientOpen = ref(false)
+
 function openHeader() {
+  haptic('light')
   if (otherIsAgency.value && agencyProfileId.value !== null) {
-    haptic('light')
     profileOpen.value = true
+    return
+  }
+  // Agency side: who is this client?
+  if (!otherIsAgency.value) {
+    clientOpen.value = true
     return
   }
   openInfo()
@@ -295,19 +332,21 @@ function openActiveOffer() {
           <span class="min-w-0 text-left">
             <span class="block truncate text-[16px] font-bold leading-tight text-foreground">{{ headerTitle }}</span>
             <span
-              v-if="agencyStars"
+              v-if="showHeaderRating"
               class="ch-rating"
             >
               <Star
                 class="ch-rating__star"
                 aria-hidden="true"
               />
-              {{ agencyStars }}
+              {{ headerRatingValue }}
               <MessageCircle
                 class="size-3"
                 aria-hidden="true"
               />
-              {{ agencyStarsCount }}
+              {{ headerReviewsCount > 0
+                ? locale.t.agentHome.anketa.reviews.replace('{count}', String(headerReviewsCount))
+                : locale.t.agentHome.anketa.reviewsNone }}
             </span>
             <span
               v-else
@@ -324,10 +363,10 @@ function openActiveOffer() {
           <a
             v-if="telHref"
             :href="telHref"
-            class="ch-icon-btn ch-icon-btn--call"
+            class="ch-icon-btn"
             :aria-label="`${locale.t.chat.call}: ${phoneLabel}`"
           >
-            <Phone class="size-[18px]" />
+            <Phone class="size-[20px]" />
           </a>
           <button
             type="button"
@@ -335,7 +374,7 @@ function openActiveOffer() {
             :aria-label="locale.t.chat.moreActions"
             @click="openInfo"
           >
-            <EllipsisVertical class="size-[18px]" />
+            <EllipsisVertical class="size-[20px]" />
           </button>
         </div>
       </template>
@@ -424,22 +463,6 @@ function openActiveOffer() {
               aria-hidden="true"
             />
           </button>
-
-          <a
-            v-if="telHref"
-            :href="telHref"
-            class="ch-order__phone"
-          >
-            <span
-              class="ch-order__phone-ic"
-              aria-hidden="true"
-            ><Phone class="size-4" /></span>
-            <span class="min-w-0 flex-1">
-              <span class="ch-order__phone-n">{{ phoneLabel }}</span>
-              <span class="ch-order__phone-h">{{ phoneHint }}</span>
-            </span>
-            <span class="ch-order__call">{{ locale.t.chat.call }}</span>
-          </a>
         </div>
 
         <p
@@ -651,6 +674,12 @@ function openActiveOffer() {
       </div>
     </Drawer>
 
+    <ClientProfileSheet
+      v-model:open="clientOpen"
+      :client-id="!otherIsAgency ? (chat.currentChat?.other_participant.id ?? null) : null"
+      :phone="phone"
+    />
+
     <AgentProfileSheet
       v-model:open="profileOpen"
       :profile-id="agencyProfileId"
@@ -664,12 +693,11 @@ function openActiveOffer() {
 /* header */
 .ch-id { display: flex; min-width: 0; align-items: center; gap: 10px; padding: 0; border: 0; background: none; cursor: pointer; text-align: left; -webkit-tap-highlight-color: transparent; }
 .ch-icon-btn {
-  display: grid; place-items: center; width: 40px; height: 40px; border-radius: 13px; border: 1px solid var(--border);
-  background: var(--card); color: var(--foreground); cursor: pointer; transition: transform var(--rb-dur) var(--rb-ease);
+  display: grid; place-items: center; width: 44px; height: 44px; border-radius: 999px; border: 0;
+  background: none; color: var(--foreground); cursor: pointer; transition: transform var(--rb-dur) var(--rb-ease);
 }
 .ch-icon-btn:active { transform: scale(0.94); }
 .ch-icon-btn:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
-.ch-icon-btn--call { border-color: transparent; background: color-mix(in srgb, var(--success) 14%, var(--card)); color: var(--success); }
 
 /* header rating */
 .ch-rating { display: flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 600; color: var(--muted-foreground); }
@@ -680,12 +708,10 @@ function openActiveOffer() {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-bottom: 8px;
-  padding: 12px 12px 12px 14px;
-  border: 1px solid var(--border);
-  border-radius: var(--rb-r-tile);
+  margin: -12px -16px 8px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
   background: var(--card);
-  box-shadow: var(--rb-elev-1);
 }
 .ch-pick p { flex: 1; margin: 0; font-size: 13.5px; line-height: 1.35; color: var(--foreground); }
 .ch-pick__btn {
@@ -716,11 +742,6 @@ function openActiveOffer() {
 .ch-order__title { display: block; overflow: hidden; font-size: 13.5px; font-weight: 700; line-height: 1.3; color: var(--foreground); white-space: nowrap; text-overflow: ellipsis; }
 .ch-chip { flex-shrink: 0; padding: 4px 9px; border-radius: var(--rb-r-chip); background: var(--secondary); color: var(--secondary-foreground); font-size: 11px; font-weight: 800; white-space: nowrap; }
 .ch-chip--ok { background: color-mix(in srgb, var(--success) 15%, var(--card)); color: var(--success); }
-.ch-order__phone { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-top: 1px solid var(--border); color: inherit; text-decoration: none; background: color-mix(in srgb, var(--success) 5%, var(--card)); }
-.ch-order__phone-ic { display: grid; flex-shrink: 0; place-items: center; width: 38px; height: 38px; border-radius: 12px; background: color-mix(in srgb, var(--success) 15%, var(--card)); color: var(--success); }
-.ch-order__phone-n { display: block; font-size: 14px; font-weight: 800; font-variant-numeric: tabular-nums; color: var(--foreground); }
-.ch-order__phone-h { display: block; font-size: 11px; color: var(--muted-foreground); }
-.ch-order__call { flex-shrink: 0; padding: 7px 12px; border-radius: 11px; background: var(--success); color: #fff; font-size: 12.5px; font-weight: 800; }
 
 /* ended */
 .ch-ended { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 12px 14px; border-radius: 18px; background: var(--secondary); text-align: center; font-size: 13px; color: var(--muted-foreground); }

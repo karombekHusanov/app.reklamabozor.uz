@@ -48,7 +48,7 @@ function criterionLabel(code: string): string {
               </div>
             </div>
 
-            <div class="mt-2 flex items-center gap-1">
+            <div v-if="review.rating !== null" class="mt-2 flex items-center gap-1">
               <Star
                 v-for="n in 5"
                 :key="n"

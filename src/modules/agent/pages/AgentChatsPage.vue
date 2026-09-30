@@ -1,9 +1,12 @@
 <script setup lang="ts">
-import { MessagesSquare } from '@lucide/vue'
+import { MessagesSquare, Paperclip } from '@lucide/vue'
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import Avatar from '@/core/ui/Avatar.vue'
+import EmptyState from '@/core/ui/EmptyState.vue'
+import GlassCard from '@/core/ui/GlassCard.vue'
 import Skeleton from '@/core/ui/Skeleton.vue'
+import { Button } from '@/core/ui/button'
 import { useLocaleStore } from '@/core/i18n/locale.store'
 import { formatMessageTime } from '@/core/lib/date'
 import { chatOrderLabel, chatRoute, chatTitle } from '@/modules/chat/lib/chat-list'
@@ -82,28 +85,21 @@ onMounted(() => { void chat.loadChats(true) })
       </button>
     </div>
 
-    <div
-      v-if="chat.isLoading && chat.chats.length === 0"
-      class="space-y-2 px-3 pt-3"
-    >
-      <Skeleton
-        v-for="n in 4"
-        :key="n"
-        class="h-16 w-full rounded-2xl"
-      />
-    </div>
+    <section class="space-y-3 px-5 pt-4">
+      <template v-if="chat.isLoading && chat.chats.length === 0">
+        <Skeleton
+          v-for="n in 3"
+          :key="n"
+          class="h-20 w-full rounded-3xl"
+        />
+      </template>
 
-    <ul
-      v-else-if="items.length"
-      class="ac-list"
-    >
-      <li
-        v-for="item in items"
-        :key="`${item.type}-${item.id}`"
-      >
-        <button
-          type="button"
-          class="ac-row"
+      <template v-else-if="items.length">
+        <GlassCard
+          v-for="item in items"
+          :key="`${item.type}-${item.id}`"
+          interactive
+          class="flex items-center gap-3"
           @click="open(item)"
         >
           <Avatar
@@ -111,54 +107,78 @@ onMounted(() => { void chat.loadChats(true) })
             size="md"
             class="shrink-0"
           />
-          <span class="ac-row__main">
-            <span class="ac-row__top">
-              <span class="ac-row__name">{{ chatTitle(item) }}</span>
+
+          <div class="min-w-0 flex-1">
+            <div class="flex items-center justify-between gap-2">
+              <p class="truncate font-semibold leading-tight">
+                {{ chatTitle(item) }}
+              </p>
               <span
                 v-if="item.last_message"
-                class="ac-row__time"
-              >{{ formatMessageTime(item.last_message.created_at) }}</span>
-            </span>
-            <span class="ac-row__order">{{ chatOrderLabel(item, locale.t.chat, locale.locale) }}</span>
-            <span class="ac-row__bottom">
-              <span
-                class="ac-row__msg"
-                :class="{ 'is-unread': item.unread_count > 0 }"
-              >{{ item.last_message?.body || (item.last_message?.attachments?.length ? locale.t.chat.attachmentLabel : '') }}</span>
-              <span
-                v-if="item.unread_count > 0"
-                class="ac-row__badge"
-              >{{ item.unread_count > 9 ? '9+' : item.unread_count }}</span>
-            </span>
-          </span>
-        </button>
-      </li>
-    </ul>
+                class="shrink-0 text-xs text-muted-foreground"
+              >
+                {{ formatMessageTime(item.last_message.created_at) }}
+              </span>
+            </div>
+            <p class="truncate text-xs text-muted-foreground">
+              {{ chatOrderLabel(item, locale.t.chat, locale.locale) }}
+            </p>
+            <p
+              v-if="item.last_message"
+              class="flex items-center gap-1 truncate text-sm text-muted-foreground"
+              :class="{ 'font-semibold text-foreground': item.unread_count > 0 }"
+            >
+              <Paperclip
+                v-if="item.last_message.attachments?.length"
+                class="size-3.5 shrink-0"
+              />
+              <span class="truncate">
+                {{ item.last_message.body || (item.last_message.attachments?.length ? locale.t.chat.attachmentLabel : '') }}
+              </span>
+            </p>
+          </div>
 
-    <div
-      v-else
-      class="ac-empty"
-    >
-      <span class="ac-empty__ic"><MessagesSquare class="size-9" /></span>
-      <h2 class="ac-empty__title">
-        {{ empty[0] }}
-      </h2>
-      <p class="ac-empty__body">
-        {{ empty[1] }}
-      </p>
-      <button
-        type="button"
-        class="ac-empty__cta"
-        @click="router.push(ROUTES.agentHome)"
+          <span
+            v-if="item.unread_count > 0"
+            class="grid size-6 shrink-0 place-items-center rounded-full bg-primary text-xs font-semibold text-primary-foreground"
+          >
+            {{ item.unread_count > 9 ? '9+' : item.unread_count }}
+          </span>
+        </GlassCard>
+      </template>
+
+      <GlassCard
+        v-else
+        padding="none"
+        class="overflow-hidden"
       >
-        {{ t.findOrder }}
-      </button>
-    </div>
+        <EmptyState
+          :icon="MessagesSquare"
+          :title="empty[0]"
+          :description="empty[1]"
+        >
+          <Button
+            class="mt-1 rounded-2xl"
+            @click="router.push(ROUTES.agentHome)"
+          >
+            {{ t.findOrder }}
+          </Button>
+        </EmptyState>
+      </GlassCard>
+
+      <p
+        v-if="chat.error"
+        class="rounded-2xl bg-destructive/10 px-4 py-3 text-sm text-destructive"
+      >
+        {{ chat.error }}
+      </p>
+    </section>
   </div>
 </template>
 
 <style scoped>
-.ac-tabs { display: flex; gap: 18px; overflow-x: auto; padding: 0 18px; scrollbar-width: none; border-bottom: 1px solid var(--border); }
+/* Bucket tabs — underline row above the same card list the client inbox uses. */
+.ac-tabs { display: flex; gap: 18px; overflow-x: auto; padding: 0 20px; scrollbar-width: none; border-bottom: 1px solid var(--border); }
 .ac-tabs::-webkit-scrollbar { display: none; }
 .ac-tab {
   flex-shrink: 0; display: inline-flex; align-items: center; gap: 4px; min-height: 44px; padding: 0;
@@ -168,30 +188,4 @@ onMounted(() => { void chat.loadChats(true) })
 .ac-tab.is-on { border-bottom-color: var(--foreground); color: var(--foreground); font-weight: 600; }
 .ac-tab:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
 .ac-tab__n { font-size: 11px; font-weight: 600; color: var(--muted-foreground); }
-.ac-list { margin: 8px 0 0; padding: 0; list-style: none; background: var(--card); }
-.ac-list li + li .ac-row { border-top: 1px solid var(--border); }
-.ac-row {
-  display: flex; width: 100%; align-items: center; gap: 12px; padding: 12px 16px;
-  border: 0; background: none; color: var(--foreground); font-family: inherit; text-align: left; cursor: pointer;
-}
-.ac-row:focus-visible { outline: 2px solid var(--primary); outline-offset: -2px; }
-.ac-row__main { display: flex; flex: 1; min-width: 0; flex-direction: column; gap: 2px; }
-.ac-row__top, .ac-row__bottom { display: flex; align-items: center; gap: 8px; }
-.ac-row__name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14.5px; font-weight: 600; }
-.ac-row__time { flex-shrink: 0; font-size: 11.5px; color: var(--muted-foreground); }
-.ac-row__order { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; font-weight: 600; color: var(--primary); }
-.ac-row__msg { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; color: var(--muted-foreground); }
-.ac-row__msg.is-unread { color: var(--foreground); font-weight: 600; }
-.ac-row__badge {
-  flex-shrink: 0; min-width: 20px; height: 20px; padding: 0 6px; box-sizing: border-box; border-radius: 999px;
-  background: #e5484d; color: #fff; font-size: 11px; font-weight: 700; line-height: 20px; text-align: center;
-}
-.ac-empty { display: flex; flex-direction: column; align-items: center; padding: 56px 32px 0; text-align: center; }
-.ac-empty__ic { display: grid; place-items: center; width: 84px; height: 84px; border-radius: 999px; background: var(--secondary); color: var(--primary); }
-.ac-empty__title { margin: 20px 0 0; font-size: 18px; font-weight: 600; }
-.ac-empty__body { margin: 8px 0 0; font-size: 13.5px; line-height: 1.55; color: var(--muted-foreground); }
-.ac-empty__cta {
-  margin-top: 20px; min-height: 44px; padding: 0 18px; border: 0; border-radius: 12px;
-  background: var(--foreground); color: var(--background); font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer;
-}
 </style>

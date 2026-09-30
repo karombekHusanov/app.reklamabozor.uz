@@ -635,7 +635,7 @@
     "criteriaScoreLabel": "{score}/5",
     "form": {
       "categoryLabel": "Service type",
-      "categoryPlaceholder": "Not selected — every agency will see it",
+      "categoryPlaceholder": "Choose a service type",
       "categoryClear": "Clear selection",
       "descriptionLabel": "What do you need?",
       "descriptionPlaceholder": "For example: 3x6 m billboard needed, for 1 month",
@@ -646,7 +646,48 @@
       "locationOnMap": "Show on map",
       "locationHide": "Hide map",
       "locationClear": "Remove pin",
-      "optional": "optional"
+      "optional": "optional",
+      "categoryHintOther": "Pick “Other” and your request goes to every agency.",
+      "categorySearchHint": "Can't find a match — choose “Other”",
+      "otherBadge": "Everyone",
+      "errCategory": "Choose a service type or select “Other”.",
+      "required": "required",
+      "descriptionHint": "What, how much, where — the clearer you are, the faster the replies.",
+      "deadlineLabel": "Deadline",
+      "deadlinePlaceholder": "Pick dates (from – to)",
+      "deadlineFromTo": "Work period",
+      "daysSuffix": "days",
+      "pickEndHint": "Pick the end date",
+      "applyDates": "Confirm",
+      "prevMonth": "Previous month",
+      "nextMonth": "Next month",
+      "errDeadline": "Pick the work period in the calendar.",
+      "budgetLabel": "Budget",
+      "budgetPlaceholder": "e.g. 5 000 000",
+      "budgetSuffix": "UZS",
+      "budgetHint": "Agencies will quote with this in mind.",
+      "errBudget": "Enter your budget.",
+      "locationRequiredHint": "Drop a pin where the work is to be done.",
+      "errLocationRequired": "Pick a place on the map.",
+      "extraTitle": "Extras",
+      "extraHint": "Optional — region and files",
+      "fixFields": "Fill in the required fields",
+      "q1": "Which service do you need?",
+      "q2": "What do you need?",
+      "q3": "When do you need it?",
+      "q4": "What's your budget?",
+      "q5": "Where will the work happen?",
+      "q6": "Anything to add?",
+      "stepOf": "Step {n} of {total}",
+      "skipExtras": "Optional — you can send right away.",
+      "popular": "Popular services",
+      "remaining": "{n} required fields left",
+      "ready": "All set",
+      "changeCategory": "Change",
+      "addFiles": "Photo or document",
+      "confirmPlace": "Confirm place",
+      "budgetVisible": "It is shown to agencies on the request.",
+      "reviewTitle": "Before you send"
     },
     "wizard": {
       "stepService": "Service",
@@ -739,7 +780,9 @@
       "offerError": "Failed to submit your offer.",
       "errPrice": "Enter a price.",
       "errComment": "Add a comment.",
-      "sendInterestCta": "Send"
+      "sendInterestCta": "Send",
+      "chatWithClient": "Chat with client",
+      "interestPrice": "Response price"
     },
     "pay": {
       "title": "Choose how to pay",
@@ -799,7 +842,10 @@
       }
     },
     "placeOrderTitle": "Place an order",
-    "useTezkorInstead": "Send a quick request instead"
+    "useTezkorInstead": "Send a quick request instead",
+    "factBudget": "Budget",
+    "factDeadline": "Deadline",
+    "factLocation": "Location"
   },
   "agent": {
     "b2bBadge": "B2B onboarding",
@@ -928,6 +974,13 @@
     "submitting": "Submitting…",
     "resubmit": "Resubmit application",
     "submitVerify": "Submit for verification",
+    "stepCounter": "Step {current} of {total}",
+    "stepNext": "Continue",
+    "stepBack": "Back",
+    "stepReview": "Review",
+    "stepReviewHint": "Check your details. A manager reviews the application after you submit.",
+    "stepEdit": "Edit",
+    "stepUploaded": "Uploaded",
     "submittedToast": "Application submitted",
     "savedToast": "Saved",
     "errCompanyName": "Company name is required.",
@@ -1736,6 +1789,7 @@
     "cta": "Tell us about your task",
     "next": "Next",
     "gotIt": "Got it",
+    "tenderApply": "Apply to take part in tenders",
     "close": "Close",
     "profileMenu": "Profile menu",
     "menu": {
@@ -1834,6 +1888,8 @@
     "pNoReviews": "No reviews yet",
     "pAllReviews": "All reviews ({count})",
     "pFullProfile": "Full profile",
-    "pLoadError": "Couldn't load the profile"
+    "pLoadError": "Couldn't load the profile",
+    "statusChosen": "Agency chosen",
+    "offersHint": "Talk to the agency in chat and pick it there with the “Choose” button once you agree."
   }
 }

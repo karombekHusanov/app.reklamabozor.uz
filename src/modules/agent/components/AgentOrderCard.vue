@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Eye, House, Percent, UserRound } from '@lucide/vue'
+import { CalendarDays, Eye, House, Percent, UserRound, Wallet } from '@lucide/vue'
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useLocaleStore } from '@/core/i18n/locale.store'
@@ -7,6 +7,7 @@ import { categoryName } from '@/core/i18n/category-name'
 import { regionName } from '@/core/i18n/region-name'
 import { localizedDayjs } from '@/core/lib/date'
 import { fmtSom, passStrings } from '@/modules/agent/lib/pass-i18n'
+import { formatApproxBudget, formatDeadlineRange } from '@/modules/orders/lib/order-terms'
 import { ROUTES } from '@/modules/shell/constants/routes'
 import type { LiveOrder } from '@/modules/home/services/live-orders.service'
 
@@ -30,6 +31,10 @@ const place = computed(() => {
   return [o.district, o.region].filter(Boolean).map(r => regionName(r!, locale.locale)).join(', ')
 })
 const category = computed(() => (props.order.category ? categoryName(props.order.category, locale.locale) : ''))
+const budget = computed(() => formatApproxBudget(props.order.budget_max, locale.locale))
+const deadline = computed(() =>
+  formatDeadlineRange(props.order.deadline_from, props.order.deadline_to, locale.locale),
+)
 const chip = computed(() => {
   const t = locale.t.agentHome
   const action = t.respond
@@ -73,6 +78,19 @@ function open() {
       <House class="size-4 shrink-0" />
       <span class="truncate">{{ [place, category].filter(Boolean).join(' · ') }}</span>
     </span>
+    <span
+      v-if="budget || deadline"
+      class="aoc__facts"
+    >
+      <span
+        v-if="budget"
+        class="aoc__fact"
+      ><Wallet class="size-3.5 shrink-0" />{{ budget }}</span>
+      <span
+        v-if="deadline"
+        class="aoc__fact"
+      ><CalendarDays class="size-3.5 shrink-0" />{{ deadline }}</span>
+    </span>
     <span class="aoc__row aoc__row--muted">
       <span class="inline-flex items-center gap-1"><Eye class="size-3.5" />{{ order.views_count }}</span>
       <span class="inline-flex items-center gap-1"><UserRound class="size-3.5" />{{ order.offers_count }}</span>
@@ -109,6 +127,12 @@ function open() {
   display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; line-clamp: 3; overflow: hidden;
 }
 .aoc__row { display: flex; max-width: 100%; align-items: center; gap: 8px; margin-top: 10px; font-size: 13px; }
+.aoc__facts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.aoc__fact {
+  display: inline-flex; align-items: center; gap: 6px; min-height: 30px; padding: 0 10px; border-radius: 10px;
+  background: var(--secondary); color: var(--foreground); font-size: 12.5px; font-weight: 600; font-variant-numeric: tabular-nums;
+}
+.aoc__fact svg { color: var(--primary); }
 .aoc__row--muted { margin-top: 6px; gap: 12px; color: var(--muted-foreground); font-size: 12px; }
 .aoc__chip {
   display: inline-flex; align-items: center; gap: 6px; margin-top: 12px; min-height: 32px; padding: 0 10px 0 6px;

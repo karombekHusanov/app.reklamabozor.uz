@@ -10,7 +10,7 @@ export interface PublicReviewCriterion {
 
 export interface PublicReview {
   id: number
-  rating: number
+  rating: number | null
   criteria?: PublicReviewCriterion[]
   comment: string | null
   created_at: string

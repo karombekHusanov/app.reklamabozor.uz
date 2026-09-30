@@ -1,13 +1,17 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { useRouter } from 'vue-router'
+import { useAuthStore } from '@/modules/auth/stores/auth.store'
 import Drawer from '@/core/ui/Drawer.vue'
 import { useTelegram } from '@/core/composables/useTelegram'
 import { useLocaleStore } from '@/core/i18n/locale.store'
 import { INFO_TOPICS } from '@/modules/home/lib/info-topics'
 
-/** "Learn PRB" tiles; each opens a sheet, "Next" walks through all topics. */
+/** "Learn PRB" tiles; each opens its own sheet. Tender's sheet offers to apply for tender access. */
 const locale = useLocaleStore()
 const { haptic } = useTelegram()
+const router = useRouter()
+const auth = useAuthStore()
 
 const topics = computed(() => INFO_TOPICS.map(topic => ({ ...topic, ...locale.t.clientHome.info[topic.id] })))
 
@@ -17,16 +21,25 @@ const open = computed({
   set: (value) => { if (!value) active.value = -1 },
 })
 const current = computed(() => topics.value[active.value] ?? null)
-const isLast = computed(() => active.value === topics.value.length - 1)
+// Tender sheet: offer the access request unless already granted / under review.
+const canApplyTender = computed(() =>
+  current.value?.id === 'tender' && !['granted', 'pending'].includes(auth.user?.tender_access_status ?? 'none'),
+)
 
 function show(index: number) {
   haptic('light')
   active.value = index
 }
 
-function next() {
+function close() {
   haptic('light')
-  active.value = isLast.value ? -1 : active.value + 1
+  active.value = -1
+}
+
+function applyTender() {
+  haptic('light')
+  active.value = -1
+  router.push({ path: '/profile', query: { tender: '1' } })
 }
 </script>
 
@@ -87,12 +100,21 @@ function next() {
         {{ current.p2 }}
       </p>
       <button
+        v-if="canApplyTender"
         type="button"
         class="cit-sheet__btn"
-        :class="{ 'is-last': isLast }"
-        @click="next"
+        @click="applyTender"
       >
-        {{ isLast ? locale.t.clientHome.gotIt : locale.t.clientHome.next }}
+        {{ locale.t.clientHome.tenderApply }}
+      </button>
+      <button
+        type="button"
+        class="cit-sheet__btn"
+        :class="{ 'is-last': !canApplyTender }"
+        :style="canApplyTender ? 'margin-top: 8px; background: var(--muted); color: var(--foreground); box-shadow: none' : undefined"
+        @click="close"
+      >
+        {{ locale.t.clientHome.gotIt }}
       </button>
     </div>
   </Drawer>

@@ -34,7 +34,7 @@ const isPending = computed(() => props.review.status === 'pending')
       </Badge>
     </div>
 
-    <div class="flex items-center gap-2">
+    <div v-if="review.rating !== null" class="flex items-center gap-2">
       <div class="flex">
         <Star
           v-for="n in 5"

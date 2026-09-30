@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { AlertTriangle, CheckCircle2, CreditCard, Ellipsis, FileText, Loader2, MessageCircle, MessageSquareQuote, ShieldAlert, XCircle } from '@lucide/vue'
+import { AlertTriangle, Bell, CalendarDays, CheckCircle2, CreditCard, Ellipsis, Eye, FileText, Loader2, MapPin, MessageCircle, MessageSquareQuote, ShieldAlert, Wallet, XCircle, Zap } from '@lucide/vue'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AppHeader from '@/modules/shell/components/AppHeader.vue'
@@ -14,11 +14,14 @@ import { useToast } from '@/core/composables/useToast'
 import { useLocaleStore } from '@/core/i18n/locale.store'
 import { categoryName } from '@/core/i18n/category-name'
 import { formatDateTime } from '@/core/lib/date'
+import { formatDeadlineRange } from '@/modules/orders/lib/order-terms'
+import { formatPrice } from '@/modules/orders/lib/order-status'
 import { ROUTES } from '@/modules/shell/constants/routes'
 import OrderHashtagChips from '@/modules/orders/components/OrderHashtagChips.vue'
 import OrderAttachments from '@/modules/orders/components/OrderAttachments.vue'
 import OfferListItem from '@/modules/orders/components/OfferListItem.vue'
 import TezkorClaimCard from '@/modules/orders/components/TezkorClaimCard.vue'
+import OrderStatusBadge from '@/modules/orders/components/OrderStatusBadge.vue'
 import OrderStateCard from '@/modules/orders/components/OrderStateCard.vue'
 import ContractDownloadCard from '@/modules/orders/components/ContractDownloadCard.vue'
 import OrderActsCard from '@/modules/orders/components/OrderActsCard.vue'
@@ -70,6 +73,14 @@ const categoryLabel = computed(() =>
 const regionLabel = computed(() =>
   order.value ? formatOrderRegion(order.value, locale.locale) : null,
 )
+
+const deadlineText = computed(() =>
+  order.value ? formatDeadlineRange(order.value.deadline_from, order.value.deadline_to, locale.locale) : '',
+)
+const budgetText = computed(() => {
+  const value = order.value?.budget_max
+  return value != null && Number(value) > 0 ? formatPrice(value) : ''
+})
 // Tender: the state card (payment / delivery / chat) matters once a deal
 // exists; while offers are open the list above says everything.
 const showStateCard = computed(() => !isTezkor.value && !selectable.value)
@@ -158,6 +169,15 @@ const isActiveDeal = computed(() => order.value?.status === 'in_progress')
 // Rating: offered once the order completes, until a review is stored.
 const hasReview = computed(() => Boolean(order.value?.review))
 const canRate = computed(() => order.value?.status === 'completed' && !hasReview.value)
+// Status line under the header: what the client is waiting for, in plain words.
+const statusChip = computed<{ label: string, tone: 'wait' | 'ok' } | null>(() => {
+  const o = order.value
+  if (!o) return null
+  if (isTezkor.value && o.claim) return { label: locale.t.orderView.statusChosen, tone: 'ok' }
+  if (['new', 'offers_sent'].includes(o.status)) return { label: locale.t.orderView.waitingTitle, tone: 'wait' }
+  return null
+})
+
 const attachmentFiles = computed(() => order.value?.attachment_files ?? [])
 
 // Determine the provider role for criteria — prefer winning profile type
@@ -410,11 +430,46 @@ async function sendReview(criteria: ReviewCriterionScore[], comment: string | nu
       </template>
 
       <template v-else-if="order">
+        <!-- Route + where the request stands -->
+        <div class="chips">
+          <span
+            class="chip"
+            :class="isTezkor ? 'chip--tezkor' : 'chip--tender'"
+          >
+            <Zap
+              v-if="isTezkor"
+              class="size-3.5"
+            />
+            <FileText
+              v-else
+              class="size-3.5"
+            />
+            {{ isTezkor ? locale.t.route.tezkor : locale.t.route.tender }}
+          </span>
+          <span
+            v-if="statusChip"
+            class="chip"
+            :class="statusChip.tone === 'ok' ? 'chip--ok' : 'chip--wait'"
+          >
+            <span
+              v-if="statusChip.tone === 'wait'"
+              class="chip__dot"
+            />
+            {{ statusChip.label }}
+          </span>
+          <OrderStatusBadge
+            v-else
+            :status="order.status"
+          />
+        </div>
+
         <!-- Tezkor, once picked: the chosen agency and how to reach it. -->
-        <TezkorClaimCard
-          v-if="isTezkor && order.claim"
-          :order="order"
-        />
+        <template v-if="isTezkor && order.claim">
+          <h2 class="sec">
+            {{ locale.t.route.claimTitle }}
+          </h2>
+          <TezkorClaimCard :order="order" />
+        </template>
 
         <!-- Tender deal running: where the work is, and where the money is. -->
         <OrderStateCard
@@ -557,74 +612,100 @@ async function sendReview(criteria: ReviewCriterionScore[], comment: string | nu
           </div>
         </GlassCard>
 
-        <!-- Offers — the first thing the client sees (Profi-style list).
-             A picked Tezkor agency already has its own contact card above. -->
-        <GlassCard
-          v-if="!(isTezkor && order.claim)"
-          padding="none"
-          class="offers-card"
-        >
-          <div class="offers-card__head">
-            <h2 class="offers-card__title">
-              {{ acceptedOffer ? locale.t.orderView.pickedTitle : locale.t.orderView.offersTitle }}
-            </h2>
+        <!-- Offers — the first thing the client sees. A picked Tezkor agency already
+             has its own contact card above. -->
+        <template v-if="!(isTezkor && order.claim)">
+          <h2 class="sec">
+            {{ acceptedOffer ? locale.t.orderView.pickedTitle : locale.t.orderView.offersTitle }}
             <span
               v-if="!acceptedOffer && listedOffers.length"
-              class="offers-card__count"
+              class="sec__count"
             >{{ listedOffers.length }}</span>
-          </div>
+          </h2>
 
           <div
             v-if="listedOffers.length === 0"
-            class="offers-card__empty"
+            class="offers-empty"
           >
-            <p class="offers-card__empty-t">
+            <span
+              class="offers-empty__ic"
+              aria-hidden="true"
+            ><Bell class="size-7" /></span>
+            <p class="offers-empty__t">
               {{ locale.t.orderView.waitingTitle }}
             </p>
-            <p class="offers-card__empty-b">
+            <p class="offers-empty__b">
               {{ locale.t.orderView.waitingBody }}
             </p>
           </div>
 
-          <div
-            v-else
-            class="offers-card__list"
-          >
-            <OfferListItem
-              v-for="offer in listedOffers"
-              :key="offer.id"
-              :offer="offer"
-              @open="openOfferChat"
-            />
-          </div>
-        </GlassCard>
-
-        <!-- The request, in brief — the full card lives behind "Batafsil". -->
-        <GlassCard class="space-y-2">
-          <div class="flex items-center justify-between gap-3">
-            <p class="section-label">
-              {{ locale.t.orders.commentTitle }}
-            </p>
-            <button
-              type="button"
-              class="more-link"
-              @click="openDetails"
+          <template v-else>
+            <div class="offers-list">
+              <OfferListItem
+                v-for="offer in listedOffers"
+                :key="offer.id"
+                :offer="offer"
+                @open="openOfferChat"
+              />
+            </div>
+            <p
+              v-if="!acceptedOffer"
+              class="offers-hint"
             >
-              {{ locale.t.orderView.more }}
-            </button>
-          </div>
-          <p
-            v-if="order.description"
-            class="brief"
+              {{ locale.t.orderView.offersHint }}
+            </p>
+          </template>
+        </template>
+
+        <!-- The request: one fact per row, then the description and its files. -->
+        <h2 class="sec">
+          {{ locale.t.orders.factsTitle }}
+        </h2>
+        <div class="rows">
+          <div
+            v-if="budgetText"
+            class="row"
           >
+            <Wallet class="row__ic" />
+            <span class="row__k">{{ locale.t.orders.factBudget }}</span>
+            <span class="row__v">{{ budgetText }}</span>
+          </div>
+          <div
+            v-if="deadlineText"
+            class="row"
+          >
+            <CalendarDays class="row__ic" />
+            <span class="row__k">{{ locale.t.orders.factDeadline }}</span>
+            <span class="row__v">{{ deadlineText }}</span>
+          </div>
+          <div class="row">
+            <MapPin class="row__ic" />
+            <span class="row__k">{{ locale.t.orders.factLocation }}</span>
+            <span class="row__v">{{ regionLabel ?? locale.t.orders.factNotSet }}</span>
+          </div>
+          <div class="row">
+            <Eye class="row__ic" />
+            <span class="row__k">{{ locale.t.orders.showcase.viewsLabel }}</span>
+            <span class="row__v">{{ order.views_count ?? 0 }}</span>
+          </div>
+        </div>
+
+        <template v-if="order.description">
+          <h2 class="sec">
+            {{ locale.t.orders.wizard.descriptionLabel }}
+          </h2>
+          <p class="brief">
             {{ order.description }}
           </p>
-          <p class="brief-meta">
-            <span v-if="categoryLabel">{{ categoryLabel }}</span>
-            <span v-if="regionLabel">{{ regionLabel }}</span>
-            <span class="tabular-nums">{{ formatDateTime(order.created_at) }}</span>
-          </p>
-        </GlassCard>
+        </template>
+
+        <OrderAttachments
+          v-if="attachmentFiles.length"
+          class="att"
+          :files="attachmentFiles"
+          hide-title
+          carousel
+        />
 
         <!-- Service contract (generated once the deal started). -->
         <ContractDownloadCard
@@ -747,6 +828,24 @@ async function sendReview(criteria: ReviewCriterionScore[], comment: string | nu
               <dt>{{ locale.t.orders.factCategory }}</dt>
               <dd :class="categoryLabel ? '' : 'fact__empty'">
                 {{ categoryLabel ?? locale.t.orders.factNotSet }}
+              </dd>
+            </div>
+            <div
+              v-if="budgetText"
+              class="fact"
+            >
+              <dt>{{ locale.t.orders.factBudget }}</dt>
+              <dd class="tabular-nums">
+                {{ budgetText }}
+              </dd>
+            </div>
+            <div
+              v-if="deadlineText"
+              class="fact"
+            >
+              <dt>{{ locale.t.orders.factDeadline }}</dt>
+              <dd class="tabular-nums">
+                {{ deadlineText }}
               </dd>
             </div>
             <div class="fact">
@@ -989,41 +1088,62 @@ async function sendReview(criteria: ReviewCriterionScore[], comment: string | nu
 .menu-btn {
   display: grid;
   place-items: center;
-  width: 40px;
-  height: 40px;
-  border: 1px solid var(--border);
-  border-radius: 13px;
-  background: var(--card);
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 999px;
+  background: none;
   color: var(--foreground);
   cursor: pointer;
   transition: transform var(--rb-dur) var(--rb-ease);
 }
-.menu-btn:active { transform: scale(0.94); }
+.menu-btn:active { transform: scale(0.92); }
 .menu-btn:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
 
-.offers-card { overflow: hidden; }
-.offers-card__head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 18px 18px 4px; }
-.offers-card__title { margin: 0; font-family: var(--rb-font-display); font-size: 22px; font-weight: 800; letter-spacing: -0.01em; color: var(--foreground); }
-.offers-card__count { font-size: 20px; font-weight: 700; color: var(--muted-foreground); font-variant-numeric: tabular-nums; }
-.offers-card__list { display: flex; flex-direction: column; padding: 4px 14px 8px; }
-.offers-card__list > * + * { border-top: 1px solid color-mix(in srgb, var(--border) 65%, transparent); }
-.offers-card__empty { padding: 6px 18px 20px; }
-.offers-card__empty-t { margin: 0; font-size: 15px; font-weight: 700; color: var(--foreground); }
-.offers-card__empty-b { margin: 4px 0 0; font-size: 13.5px; line-height: 1.5; color: var(--muted-foreground); }
+/* status chips */
+.chips { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.chip { display: inline-flex; align-items: center; gap: 6px; min-height: 28px; padding: 0 11px; border-radius: 999px; font-size: 12px; font-weight: 600; }
+.chip--tezkor { background: color-mix(in srgb, var(--rb-cta) 14%, var(--card)); color: #9a3a0a; }
+.chip--tender { background: var(--secondary); color: var(--foreground); }
+.chip--wait { background: color-mix(in oklab, var(--primary) 12%, transparent); color: var(--primary); }
+.chip--ok { background: color-mix(in srgb, var(--success) 14%, var(--card)); color: #14532d; }
+.chip__dot { width: 7px; height: 7px; border-radius: 999px; background: currentColor; }
 
-.more-link { padding: 4px 0; border: 0; background: none; color: var(--primary); font-size: 13px; font-weight: 700; cursor: pointer; }
+/* section headings */
+.sec { display: flex; align-items: center; gap: 8px; margin: 20px 4px 8px; font-size: 15px; font-weight: 600; color: var(--foreground); }
+.sec--between { justify-content: space-between; }
+.sec__t { margin: 0; font-size: 15px; font-weight: 600; }
+.sec__count { display: inline-grid; place-items: center; min-width: 22px; height: 22px; padding: 0 6px; border-radius: 999px; background: color-mix(in oklab, var(--primary) 12%, transparent); color: var(--primary); font-size: 12px; font-weight: 600; }
+
+/* offers */
+.offers-list { display: flex; flex-direction: column; padding: 2px 0; border-radius: 22px; background: var(--card); overflow: hidden; }
+.offers-list > * + * { border-top: 1px solid var(--border); }
+.offers-hint { margin: 10px 4px 0; font-size: 13px; line-height: 1.45; color: var(--muted-foreground); }
+.offers-empty { padding: 26px 24px; border-radius: 22px; background: var(--card); text-align: center; }
+.offers-empty__ic { display: grid; place-items: center; width: 60px; height: 60px; margin: 0 auto; border-radius: 20px; background: color-mix(in oklab, var(--primary) 12%, transparent); color: var(--primary); }
+.offers-empty__t { margin: 14px 0 0; font-size: 15.5px; font-weight: 600; color: var(--foreground); }
+.offers-empty__b { margin: 6px auto 0; max-width: 280px; font-size: 13px; line-height: 1.5; color: var(--muted-foreground); }
+
+/* one fact per row */
+.rows { padding: 2px 16px; border-radius: 22px; background: var(--card); }
+.row { display: flex; align-items: center; gap: 10px; min-height: 42px; font-size: 13.5px; }
+.row + .row { border-top: 1px solid var(--border); }
+.row__ic { width: 18px; height: 18px; flex-shrink: 0; color: var(--muted-foreground); }
+.row__k { flex: 1; min-width: 0; color: var(--muted-foreground); }
+.row__v { max-width: 62%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: right; color: var(--foreground); font-variant-numeric: tabular-nums; }
+
+.att { margin-top: 14px; }
+.more-link { padding: 4px 0; border: 0; background: none; color: var(--primary); font-size: 13px; font-weight: 600; cursor: pointer; }
 .brief {
-  display: -webkit-box;
   margin: 0;
-  overflow: hidden;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  font-size: 14px;
+  padding: 14px 16px;
+  border-radius: 22px;
+  background: var(--card);
+  font-size: 13.5px;
   line-height: 1.5;
   color: var(--foreground);
   white-space: pre-line;
 }
-.brief-meta { display: flex; flex-wrap: wrap; gap: 4px 12px; margin: 0; font-size: 12.5px; color: var(--muted-foreground); }
 
 .menu { display: flex; flex-direction: column; gap: 8px; }
 .menu__item {

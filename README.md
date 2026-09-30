@@ -1,6 +1,13 @@
 # AdSpace Mini App
 
-Modern Telegram Mini App frontend for the AdSpace marketplace — built with Vue 3, TypeScript, Tailwind CSS v4, and a macOS Tahoe-inspired glass UI.
+Telegram Mini App for the PRB (Reklama Bozor) marketplace — Vue 3, TypeScript, Tailwind CSS v4.
+Prod: `https://app.reklamamarket.uz` (deployed from `main` by CI; bot @prb_official_bot).
+Project guide: root `CLAUDE.md` §9 and `PROJECT_LOGIC.md` §11; UI rules: `DESIGN_SYSTEM.md`.
+
+**Current state (2026-09-28):** light theme only (`DARK_MODE_ENABLED=false`); client home = new design
+with the old palette + Client | Agent switch for everyone; client ↔ agent chat is realtime over one
+Centrifugo socket (`core/stores/realtime.store.ts`, polling only while offline; agents can't send
+images); Propusk / wallet top-up by card (ATMOS) incl. saved cards; AI assistant tab; uz/ru/en.
 
 ## Stack
 
@@ -18,7 +25,7 @@ npm install
 npm run dev
 ```
 
-Frontend: `http://localhost:5173`  
+Frontend: `http://localhost:5175`  
 Backend: `http://localhost:8000`
 
 Vite proxies `/api` to the Laravel backend in development.
@@ -114,6 +121,6 @@ status card (+ optional edit), `rejected` → status card with reviewer feedback
 
 ## Notes
 
-- Marketplace agents still use mock data until backend listing APIs are ready
+- Marketplace, orders, chats and payments all use the live backend API (no mock data)
 - Admin approval of agent applications happens in `adspace_admin` (not the mini app)
 - Flutter mobile auth will reuse the same backend `/api/v1/auth/telegram` endpoint

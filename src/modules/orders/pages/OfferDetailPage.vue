@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import {
   Calendar,
+  Wallet,
   CheckCircle2,
   ChevronDown,
   ChevronRight,
@@ -32,6 +33,7 @@ import { useToast } from '@/core/composables/useToast'
 import { useLocaleStore } from '@/core/i18n/locale.store'
 import { categoryName } from '@/core/i18n/category-name'
 import { formatDateTime } from '@/core/lib/date'
+import { formatDeadlineRange } from '@/modules/orders/lib/order-terms'
 import { getApiErrorMessage } from '@/core/api/api-error'
 import { ROUTES } from '@/modules/shell/constants/routes'
 import CriteriaReviewForm from '@/modules/orders/components/CriteriaReviewForm.vue'
@@ -95,7 +97,14 @@ const title = computed(() => {
     || `#${order.value.id}`
 })
 
+const budgetLabel = computed(() => {
+  const value = order.value?.budget_max
+  return value != null && Number(value) > 0 ? formatPrice(value) : null
+})
+
 const deadlineLabel = computed(() => {
+  const range = order.value ? formatDeadlineRange(order.value.deadline_from, order.value.deadline_to, locale.locale) : ''
+  if (range) return range
   if (order.value?.deadline === 'this_week') return locale.t.orders.deadlineThisWeek
   if (order.value?.deadline === 'today_tomorrow') return locale.t.orders.deadlineTodayTomorrow
   return null
@@ -546,6 +555,13 @@ watch(() => props.id, loadOffer)
 
           <div class="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[11px] text-muted-foreground">
             <span v-if="order.created_at">{{ formatDateTime(order.created_at) }}</span>
+            <span
+              v-if="budgetLabel"
+              class="inline-flex items-center gap-1 font-bold tabular-nums text-foreground"
+            >
+              <Wallet class="size-3" />
+              {{ budgetLabel }}
+            </span>
             <span
               v-if="deadlineLabel"
               class="inline-flex items-center gap-1 font-medium text-primary"

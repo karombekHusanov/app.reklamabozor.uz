@@ -163,5 +163,5 @@ function openFilters() {
 }
 .ah__chip.is-on { border-color: var(--foreground); background: var(--foreground); color: var(--background); }
 .ah__chip:focus-visible, .ah__filter:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
-.ah__list { display: flex; flex-direction: column; gap: 8px; padding: 4px 0 16px; }
+.ah__list { display: flex; flex-direction: column; gap: 10px; padding: 4px 16px 16px; }
 </style>

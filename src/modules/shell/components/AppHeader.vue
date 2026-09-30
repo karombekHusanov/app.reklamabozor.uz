@@ -1,11 +1,8 @@
 <script setup lang="ts">
-import { ChevronLeft } from '@lucide/vue'
 import { onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import type { HTMLAttributes } from 'vue'
 import WebApp from '@twa-dev/sdk'
-import GlassCard from '@/core/ui/GlassCard.vue'
-import { useLocaleStore } from '@/core/i18n/locale.store'
 import { navigateBack } from '@/core/lib/navigation'
 import { isInsideTelegram, supportsVersion } from '@/core/lib/telegram-init'
 
@@ -25,16 +22,13 @@ const props = withDefaults(defineProps<{
   trailingOverlay: false,
 })
 
-const locale = useLocaleStore()
 const router = useRouter()
 
 function goBack() {
   navigateBack(router)
 }
 
-// Also wire Telegram's native BackButton when available — but keep the in-page
-// chevron visible. After expand(), many clients hide or relocate the native
-// control, so relying on it alone leaves prod users with no back affordance.
+// Back navigation is Telegram's native BackButton — the header draws no back control.
 const nativeBackActive = ref(false)
 
 onMounted(() => {
@@ -64,38 +58,25 @@ onBeforeUnmount(() => {
 <template>
   <div class="app-header-wrap" :class="props.class">
     <div class="app-header-dock">
-      <GlassCard
-        frosted
-        padding="xs"
+      <div
         class="app-header-card"
-        :class="trailingOverlay && $slots.trailing ? 'app-header-card--art !overflow-visible' : ''"
+        :class="trailingOverlay && $slots.trailing ? 'app-header-card--art' : ''"
       >
         <div
-          class="flex min-h-10 items-center gap-2.5 pl-2.5 pr-1"
+          class="flex items-center gap-2.5"
           :class="trailingOverlay && $slots.trailing ? 'pr-16' : ''"
         >
-          <button
-            v-if="showBack"
-            type="button"
-            class="app-header-back pressable"
-            :aria-label="locale.t.common.back"
-            @click="goBack"
-          >
-            <ChevronLeft class="size-5" />
-          </button>
-
           <div class="min-w-0 flex-1">
             <slot name="heading">
               <div class="min-w-0">
                 <p
                   v-if="subtitle"
-                  class="truncate text-[10.5px] font-medium uppercase tracking-[0.1em] text-muted-foreground"
+                  class="truncate text-[12.5px] font-medium text-muted-foreground"
                 >
                   {{ subtitle }}
                 </p>
                 <h1
-                  class="rb-font-display truncate text-[18px] font-bold leading-tight tracking-[-0.01em] text-foreground"
-                  :class="subtitle && 'mt-0.5'"
+                  class="rb-font-display mt-0.5 truncate text-[26px] font-extrabold leading-[1.15] tracking-[-0.02em] text-foreground"
                 >
                   {{ title }}
                 </h1>
@@ -112,11 +93,7 @@ onBeforeUnmount(() => {
             <slot name="trailing" />
           </div>
         </div>
-      </GlassCard>
+      </div>
     </div>
-    <div
-      class="app-header-spacer"
-      aria-hidden="true"
-    />
   </div>
 </template>

@@ -114,6 +114,8 @@ onMounted(() => {
 
     // The container may have been laid out after init (inside a card) — recalc size.
     requestAnimationFrame(() => map?.invalidateSize())
+    // Inside an animating sheet the first measure is off — measure again once it settles.
+    window.setTimeout(() => map?.invalidateSize(), 400)
     status.value = 'ready'
   }
   catch (e) {

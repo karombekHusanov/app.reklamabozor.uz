@@ -435,7 +435,7 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .map-page-search {
-  top: calc(var(--app-header-offset) + 0.5rem);
+  top: calc(var(--app-header-offset) + 4.5rem);
 }
 
 .map-category-option {

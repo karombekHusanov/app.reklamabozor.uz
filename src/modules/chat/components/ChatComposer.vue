@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ArrowUp, FileText, Loader2, Paperclip, X } from '@lucide/vue'
+import { ArrowUp, CirclePlus, FileText, Loader2, X } from '@lucide/vue'
 import { computed, ref } from 'vue'
 import { useFileUpload } from '@/core/composables/useFileUpload'
 import { useLocaleStore } from '@/core/i18n/locale.store'
@@ -132,7 +132,7 @@ function onFocus() {
 
     <!-- Input shell with attach (prefix) + send (suffix) inside it -->
     <div
-      class="flex items-end gap-1 rounded-3xl border border-border bg-card py-1 pl-1 pr-1 shadow-sm transition focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/15 dark:bg-white/5"
+      class="flex items-end gap-1 rounded-3xl bg-secondary py-1 pl-1 pr-1 transition focus-within:ring-2 focus-within:ring-primary/25"
     >
       <input
         ref="fileInput"
@@ -151,7 +151,7 @@ function onFocus() {
         @click="pickFiles"
       >
         <Loader2 v-if="isUploading" class="size-5 animate-spin" />
-        <Paperclip v-else class="size-5" />
+        <CirclePlus v-else class="size-6" />
       </button>
 
       <textarea

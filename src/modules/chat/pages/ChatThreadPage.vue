@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useWhiteCanvas } from '@/core/composables/useWhiteCanvas'
 import { MessageCircle } from '@lucide/vue'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import AppHeader from '@/modules/shell/components/AppHeader.vue'
@@ -17,6 +18,8 @@ import ChatComposerDock from '@/modules/chat/components/ChatComposerDock.vue'
 import MessageBubble from '@/modules/chat/components/MessageBubble.vue'
 import { buildChatFeed } from '@/modules/chat/lib/chat-feed'
 import type { ChatMessage } from '@/modules/chat/types/chat'
+
+useWhiteCanvas()
 
 const props = defineProps<{ orderId: string }>()
 

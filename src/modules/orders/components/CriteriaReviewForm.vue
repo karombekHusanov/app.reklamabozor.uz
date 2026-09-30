@@ -32,18 +32,17 @@ function criterionLabel(code: string): string {
   return criteriaLabels.value[code] ?? code
 }
 
-const allScored = computed(() =>
-  criteriaDefs.value.length > 0
-  && criteriaDefs.value.every(c => (scores.value[c.code] ?? 0) >= 1),
-)
+const ratedDefs = computed(() => criteriaDefs.value.filter(c => (scores.value[c.code] ?? 0) >= 1))
 
+// At least one score OR a comment is enough to leave a review.
+const canSubmit = computed(() => ratedDefs.value.length > 0 || comment.value.trim().length > 0)
+
+// Weighted average over the criteria the user actually rated.
 const previewScore = computed(() => {
-  if (!allScored.value) return null
   let sum = 0
   let wSum = 0
-  for (const c of criteriaDefs.value) {
-    const s = scores.value[c.code] ?? 0
-    sum += c.weight * s
+  for (const c of ratedDefs.value) {
+    sum += c.weight * scores.value[c.code]
     wSum += c.weight
   }
   return wSum > 0 ? (sum / wSum).toFixed(1) : null
@@ -64,13 +63,14 @@ onMounted(async () => {
   }
 })
 
+// Tapping the current score again clears it (rating is optional per criterion).
 function setScore(code: string, value: number) {
-  scores.value[code] = value
+  scores.value[code] = scores.value[code] === value ? 0 : value
 }
 
 function handleSubmit() {
-  if (!allScored.value) return
-  const criteria: ReviewCriterionScore[] = criteriaDefs.value.map(c => ({
+  if (!canSubmit.value) return
+  const criteria: ReviewCriterionScore[] = ratedDefs.value.map(c => ({
     code: c.code,
     score: scores.value[c.code],
   }))
@@ -79,7 +79,7 @@ function handleSubmit() {
 </script>
 
 <template>
-  <GlassCard class="space-y-3">
+  <GlassCard class="mt-6 space-y-3">
     <h3 class="text-base font-semibold">
       {{ title }}
     </h3>
@@ -144,7 +144,7 @@ function handleSubmit() {
 
       <Button
         class="h-11 w-full rounded-2xl"
-        :disabled="!allScored || submitting"
+        :disabled="!canSubmit || submitting"
         @click="handleSubmit"
       >
         <Loader2

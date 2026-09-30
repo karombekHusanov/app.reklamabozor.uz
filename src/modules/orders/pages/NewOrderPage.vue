@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ArrowRight, CircleCheck, Clock, Lock, LogIn } from '@lucide/vue'
+import { CircleCheck, LogIn } from '@lucide/vue'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AppHeader from '@/modules/shell/components/AppHeader.vue'
@@ -19,7 +19,7 @@ import { useOrdersStore } from '@/modules/orders/stores/orders.store'
 import { useOrderRouteStore } from '@/modules/orders/stores/order-route.store'
 import { fetchPublicAgent } from '@/modules/marketplace/services/agents.service'
 import type { Category } from '@/modules/agent/types/agent'
-import type { CreateOrderPayload, Order } from '@/modules/orders/types/order'
+import type { CreateOrderPayload, Order, OrderRoute } from '@/modules/orders/types/order'
 import type { Region } from '@/modules/orders/types/region'
 
 const route = useRoute()
@@ -91,29 +91,12 @@ async function loadCatalog() {
 }
 
 /**
- * Tender | Tezkor. Tender needs manager-granted access: with access it is the
- * default tab; without, it shows locked and Tezkor is the default. Picking the
- * locked tab explains why and offers the access request (the backend would
- * refuse a tender from this account with 403).
+ * Tender | Tezkor. Accounts without Tender access never see the switch — their
+ * request is always Tezkor. With access the switch appears on the first step and
+ * Tender is the default (until the user picks otherwise).
  */
 const tenderAccessible = computed(() => routeStore.canCreateTender)
-const showTenderLock = computed(() => routeStore.active === 'tender' && !tenderAccessible.value)
-
-const tenderLockCopy = computed(() => {
-  if (routeStore.tenderStatus === 'pending') return locale.t.route.accessPending
-  if (routeStore.tenderStatus === 'revoked') return locale.t.route.accessRevoked
-  return locale.t.route.lockedBody
-})
-
-function requestTenderAccess() {
-  haptic('light')
-  void router.push({ path: ROUTES.profile, query: { tender: '1' } })
-}
-
-function useTezkor() {
-  haptic('light')
-  routeStore.set('tezkor')
-}
+const activeRoute = computed<OrderRoute>(() => (tenderAccessible.value ? routeStore.active : 'tezkor'))
 
 onMounted(() => {
   void loadCatalog()
@@ -205,79 +188,25 @@ async function handleSubmit(payload: CreateOrderPayload) {
 
       <!-- Tender | Tezkor + the request form -->
       <template v-else>
-        <OrderRouteTabs
-          :model-value="routeStore.active"
-          :tender-locked="!tenderAccessible"
-          @update:model-value="routeStore.set"
-        />
-
-        <GlassCard
-          v-if="showTenderLock"
-          class="tender-lock"
-        >
-          <span
-            class="tender-lock__ic"
-            aria-hidden="true"
-          ><Lock class="size-6" /></span>
-          <h2 class="tender-lock__title">
-            {{ locale.t.route.tenderLocked }}
-          </h2>
-          <p class="tender-lock__body">
-            <Clock
-              v-if="routeStore.tenderStatus === 'pending'"
-              class="mr-1 inline size-4 align-[-3px]"
-            />
-            {{ tenderLockCopy }}
-          </p>
-          <div class="tender-lock__perks">
-            <span>{{ locale.t.landing.td1 }}</span>
-            <span>{{ locale.t.landing.td2 }}</span>
-            <span>{{ locale.t.landing.td3 }}</span>
-          </div>
-          <button
-            v-if="routeStore.tenderStatus !== 'pending'"
-            type="button"
-            class="rb-primary-btn w-full"
-            @click="requestTenderAccess"
-          >
-            {{ locale.t.route.requestAccess }}
-            <ArrowRight class="size-4" />
-          </button>
-          <button
-            type="button"
-            class="tender-lock__alt"
-            @click="useTezkor"
-          >
-            {{ locale.t.orders.useTezkorInstead }}
-          </button>
-        </GlassCard>
-
         <OrderForm
-          v-else
           :categories="categories"
           :regions="regions"
           :submitting="orders.isSubmitting"
           :target-agent="targetAgent"
-          :route="routeStore.active"
+          :route="activeRoute"
           @submit="handleSubmit"
-        />
+        >
+          <template
+            v-if="tenderAccessible"
+            #route-tabs
+          >
+            <OrderRouteTabs
+              :model-value="routeStore.active"
+              @update:model-value="routeStore.set"
+            />
+          </template>
+        </OrderForm>
       </template>
     </section>
   </div>
 </template>
-
-<style scoped>
-.tender-lock { display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; padding-block: 22px; }
-.tender-lock__ic { display: grid; place-items: center; width: 56px; height: 56px; border-radius: 18px; background: var(--secondary); color: var(--primary); }
-.tender-lock__title { margin: 4px 0 0; font-family: var(--rb-font-display); font-size: 19px; font-weight: 800; letter-spacing: -0.015em; color: var(--foreground); }
-.tender-lock__body { margin: 0; max-width: 300px; font-size: 13px; line-height: 1.5; color: var(--muted-foreground); }
-.tender-lock__perks { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin: 4px 0 6px; }
-.tender-lock__perks span {
-  padding: 5px 10px; border-radius: var(--rb-r-chip); background: var(--secondary); color: var(--secondary-foreground);
-  font-size: 11.5px; font-weight: 700;
-}
-.tender-lock__alt {
-  min-height: 44px; padding: 0 12px; border: 0; background: none; cursor: pointer;
-  font-size: 13.5px; font-weight: 700; color: var(--primary);
-}
-</style>
