@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { Loader2 } from '@lucide/vue'
+import { Check, ChevronDown, Loader2 } from '@lucide/vue'
 import { computed, reactive, ref, watch } from 'vue'
+import Drawer from '@/core/ui/Drawer.vue'
 import GlassCard from '@/core/ui/GlassCard.vue'
 import FileUpload from '@/core/ui/FileUpload.vue'
 import { Button } from '@/core/ui/button'
@@ -33,7 +34,10 @@ const form = reactive({
   company_name: props.initial?.company_name ?? '',
   legal_form: props.initial?.legal_form ?? '',
   inn: props.initial?.inn ?? '',
+  legal_address: props.initial?.legal_address ?? '',
   director_name: props.initial?.director_name ?? '',
+  director_pinfl: props.initial?.director_pinfl ?? '',
+  director_position: props.initial?.director_position ?? '',
   director_passport: props.initial?.director_passport ?? '',
   director_passport_file_id: props.initial?.director_passport_file_id ?? null as number | null,
   registration_certificate_file_id: props.initial?.registration_certificate_file_id ?? null as number | null,
@@ -52,6 +56,9 @@ const fieldLabels = computed<Record<string, string>>(() => ({
   company_name: locale.t.agent.companyName,
   legal_form: locale.t.agent.legalForm,
   inn: locale.t.agent.innLabel,
+  legal_address: locale.t.agent.legalAddress,
+  director_pinfl: locale.t.agent.pinfl,
+  director_position: locale.t.agent.position,
   director_name: locale.t.agent.fullName,
   director_passport: locale.t.agent.passport,
   director_passport_file_id: locale.t.agent.passportScan,
@@ -67,13 +74,38 @@ const fieldLabels = computed<Record<string, string>>(() => ({
 const digits = (value: string) => value.replace(/\D/g, '')
 const normalizePassport = (value: string) => value.replace(/\s/g, '').toUpperCase()
 
+// Legal form picker: fixed options in a drawer.
+const LEGAL_FORMS = ['YaTT', 'MChJ', 'AJ'] as const
+const legalFormHints = computed<Record<string, string>>(() => ({
+  YaTT: locale.t.agent.legalFormYaTT,
+  MChJ: locale.t.agent.legalFormMChJ,
+  AJ: locale.t.agent.legalFormAJ,
+}))
+const legalFormOpen = ref(false)
+
+function openLegalForm() {
+  legalFormOpen.value = true
+}
+
+/** MChJ / AJ are companies (they have a manager title); a YaTT is the entrepreneur themself. */
+const isCompany = computed(() => form.legal_form === 'MChJ' || form.legal_form === 'AJ')
+
+function pickLegalForm(value: string) {
+  form.legal_form = value
+  // Suggest the usual manager title; a YaTT has none.
+  if (value === 'YaTT') form.director_position = ''
+  else if (form.director_position.trim() === '') form.director_position = value === 'AJ' ? locale.t.agent.positionBoard : locale.t.agent.positionDirector
+  delete fieldErrors.legal_form
+  legalFormOpen.value = false
+}
+
 const TOTAL_STEPS = 4
 const step = ref(1)
 
 // Which fields each step owns (step 4 = consent).
 const STEP_FIELDS: Record<number, string[]> = {
-  1: ['company_name', 'legal_form', 'inn'],
-  2: ['director_name', 'director_passport', 'director_passport_file_id'],
+  1: ['company_name', 'legal_form', 'inn', 'legal_address'],
+  2: ['director_name', 'director_pinfl', 'director_position', 'director_passport', 'director_passport_file_id'],
   3: ['registration_certificate_file_id', 'bank_name', 'bank_account', 'mfo', 'phone'],
   4: ['accept_offer'],
 }
@@ -84,7 +116,12 @@ function collectErrors(): Record<string, string> {
   if (form.company_name.trim() === '') errors.company_name = locale.t.agent.errCompanyName
   if (form.legal_form.trim() === '') errors.legal_form = locale.t.agent.errLegalForm
   if (!/^\d{9}$/.test(digits(form.inn))) errors.inn = locale.t.agent.errInn
+  if (form.legal_address.trim() === '') errors.legal_address = locale.t.agent.errLegalAddress
   if (form.director_name.trim() === '') errors.director_name = locale.t.agent.errDirectorName
+  if (!/^\d{14}$/.test(digits(form.director_pinfl))) errors.director_pinfl = locale.t.agent.errPinfl
+  if (isCompany.value) {
+    if (form.director_position.trim() === '') errors.director_position = locale.t.agent.errPosition
+  }
   if (!/^[A-Z]{2}\d{7}$/.test(normalizePassport(form.director_passport))) {
     errors.director_passport = locale.t.agent.errPassport
   }
@@ -157,6 +194,7 @@ const summary = computed(() => [
       { key: locale.t.agent.companyName, value: form.company_name.trim() || '—' },
       { key: locale.t.agent.legalForm, value: form.legal_form.trim() || '—' },
       { key: locale.t.agent.innLabel, value: digits(form.inn) || '—' },
+      { key: locale.t.agent.legalAddress, value: form.legal_address.trim() || '—' },
     ],
   },
   {
@@ -164,6 +202,12 @@ const summary = computed(() => [
     title: locale.t.agent.director,
     rows: [
       { key: locale.t.agent.fullName, value: form.director_name.trim() || '—' },
+      { key: locale.t.agent.pinfl, value: digits(form.director_pinfl) || '—' },
+      ...(isCompany.value
+        ? [
+            { key: locale.t.agent.position, value: form.director_position.trim() || '—' },
+          ]
+        : []),
       { key: locale.t.agent.passport, value: normalizePassport(form.director_passport) || '—' },
       { key: locale.t.agent.passportScan, value: uploaded(form.director_passport_file_id) },
     ],
@@ -202,7 +246,10 @@ function handleSubmit() {
     company_name: form.company_name.trim(),
     legal_form: form.legal_form.trim(),
     inn: digits(form.inn),
+    legal_address: form.legal_address.trim(),
     director_name: form.director_name.trim(),
+    director_pinfl: digits(form.director_pinfl),
+    director_position: isCompany.value ? form.director_position.trim() : null,
     director_passport: normalizePassport(form.director_passport),
     director_passport_file_id: form.director_passport_file_id!,
     registration_certificate_file_id: form.registration_certificate_file_id!,
@@ -278,19 +325,17 @@ const inputClass = 'glass-input'
           class="text-sm font-medium"
           for="legal_form"
         >{{ locale.t.agent.legalForm }}</label>
-        <input
+        <button
           id="legal_form"
-          v-model="form.legal_form"
-          type="text"
-          list="legal-forms"
-          placeholder="MChJ"
-          :class="inputClass"
+          type="button"
+          :class="cn(inputClass, 'flex w-full items-center justify-between gap-2 text-left')"
+          @click="openLegalForm"
         >
-        <datalist id="legal-forms">
-          <option value="YaTT" />
-          <option value="MChJ" />
-          <option value="AJ" />
-        </datalist>
+          <span :class="form.legal_form ? '' : 'text-muted-foreground'">
+            {{ form.legal_form || locale.t.agent.legalFormPlaceholder }}
+          </span>
+          <ChevronDown class="size-4 shrink-0 text-muted-foreground" />
+        </button>
         <p
           v-if="fieldErrors.legal_form"
           class="text-xs text-destructive"
@@ -320,6 +365,27 @@ const inputClass = 'glass-input'
           {{ fieldErrors.inn }}
         </p>
       </div>
+
+      <div class="space-y-1.5">
+        <label
+          class="text-sm font-medium"
+          for="legal_address"
+        >{{ form.legal_form === 'YaTT' ? locale.t.agent.legalAddressYatt : locale.t.agent.legalAddress }}</label>
+        <input
+          id="legal_address"
+          v-model="form.legal_address"
+          type="text"
+          maxlength="300"
+          :class="inputClass"
+        >
+        <p
+          v-if="fieldErrors.legal_address"
+          class="text-xs text-destructive"
+        >
+          {{ fieldErrors.legal_address }}
+        </p>
+      </div>
+
     </GlassCard>
 
     <!-- Director -->
@@ -346,6 +412,51 @@ const inputClass = 'glass-input'
           {{ fieldErrors.director_name }}
         </p>
       </div>
+
+      <div class="space-y-1.5">
+        <label
+          class="text-sm font-medium"
+          for="director_pinfl"
+        >{{ locale.t.agent.pinfl }}</label>
+        <input
+          id="director_pinfl"
+          v-model="form.director_pinfl"
+          type="text"
+          inputmode="numeric"
+          maxlength="14"
+          placeholder="12345678901234"
+          :class="inputClass"
+        >
+        <p
+          v-if="fieldErrors.director_pinfl"
+          class="text-xs text-destructive"
+        >
+          {{ fieldErrors.director_pinfl }}
+        </p>
+      </div>
+
+      <template v-if="isCompany">
+        <div class="space-y-1.5">
+          <label
+            class="text-sm font-medium"
+            for="director_position"
+          >{{ locale.t.agent.position }}</label>
+          <input
+            id="director_position"
+            v-model="form.director_position"
+            type="text"
+            maxlength="100"
+            :class="inputClass"
+          >
+          <p
+            v-if="fieldErrors.director_position"
+            class="text-xs text-destructive"
+          >
+            {{ fieldErrors.director_position }}
+          </p>
+        </div>
+
+      </template>
 
       <div class="space-y-1.5">
         <label
@@ -558,5 +669,32 @@ const inputClass = 'glass-input'
         </Button>
       </div>
     </div>
+
+    <Drawer
+      v-model:open="legalFormOpen"
+      :title="locale.t.agent.legalFormPick"
+    >
+      <div class="space-y-2 px-5 pb-4">
+        <button
+          v-for="option in LEGAL_FORMS"
+          :key="option"
+          type="button"
+          :class="cn(
+            'flex min-h-14 w-full items-center justify-between gap-3 rounded-2xl border px-4 py-3 text-left transition active:scale-[0.99]',
+            form.legal_form === option ? 'border-primary bg-primary/5' : 'border-border bg-card',
+          )"
+          @click="pickLegalForm(option)"
+        >
+          <span>
+            <span class="block text-sm font-semibold">{{ option }}</span>
+            <span class="block text-xs text-muted-foreground">{{ legalFormHints[option] }}</span>
+          </span>
+          <Check
+            v-if="form.legal_form === option"
+            class="size-5 shrink-0 text-primary"
+          />
+        </button>
+      </div>
+    </Drawer>
   </form>
 </template>

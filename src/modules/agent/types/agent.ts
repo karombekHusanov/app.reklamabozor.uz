@@ -78,7 +78,10 @@ export interface AgentProfile {
   company_name: string
   legal_form: string | null
   inn: string | null
+  legal_address: string | null
   director_name: string | null
+  director_pinfl: string | null
+  director_position: string | null
   director_passport: string | null
   director_passport_file_id: number | null
   director_passport_file: string | null
@@ -130,7 +133,10 @@ export interface AgentApplicationPayload {
   company_name: string
   legal_form: string
   inn: string
+  legal_address: string
   director_name: string
+  director_pinfl: string
+  director_position: string | null
   director_passport: string
   director_passport_file_id: number
   registration_certificate_file_id: number

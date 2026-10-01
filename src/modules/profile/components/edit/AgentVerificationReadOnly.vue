@@ -55,6 +55,19 @@ function display(value: string | null | undefined): string {
           {{ display(profile.inn) }}
         </p>
       </div>
+
+      <div
+        v-if="profile.legal_address"
+        class="profile-edit-readonly-field"
+      >
+        <p class="profile-edit-readonly-field__label">
+          {{ locale.t.agent.legalAddress }}
+        </p>
+        <p class="profile-edit-readonly-field__value">
+          {{ profile.legal_address }}
+        </p>
+      </div>
+
     </GlassCard>
 
     <GlassCard class="space-y-4">
@@ -68,6 +81,30 @@ function display(value: string | null | undefined): string {
         </p>
         <p class="profile-edit-readonly-field__value">
           {{ display(profile.director_name) }}
+        </p>
+      </div>
+
+      <div
+        v-if="profile.director_pinfl"
+        class="profile-edit-readonly-field"
+      >
+        <p class="profile-edit-readonly-field__label">
+          {{ locale.t.agent.pinfl }}
+        </p>
+        <p class="profile-edit-readonly-field__value">
+          {{ profile.director_pinfl }}
+        </p>
+      </div>
+
+      <div
+        v-if="profile.director_position"
+        class="profile-edit-readonly-field"
+      >
+        <p class="profile-edit-readonly-field__label">
+          {{ locale.t.agent.position }}
+        </p>
+        <p class="profile-edit-readonly-field__value">
+          {{ profile.director_position }}
         </p>
       </div>
 
