@@ -6,7 +6,6 @@ import type {
   AcceptOfferResult,
   AgentOffer,
   AgentOfferDetail,
-  AgentOrder,
   CreateOfferPayload,
   CreateOrderPayload,
   Amendment,
@@ -15,7 +14,6 @@ import type {
   ContractDocument,
   Offer,
   Order,
-  OrderRoute,
   OrderReview,
   Payment,
   PricelistItemInput,
@@ -145,7 +143,7 @@ export async function reportNoStart(orderId: number): Promise<Order> {
 }
 
 /** Fetch the criteria catalog for a given reviewer role. */
-export async function fetchReviewCriteria(role: 'agent' | 'designer' | 'client'): Promise<ReviewCriterionDef[]> {
+export async function fetchReviewCriteria(role: 'agent' | 'client'): Promise<ReviewCriterionDef[]> {
   const { data } = await api.get<ApiSuccess<ReviewCriterionDef[]>>('/api/v1/review-criteria', {
     params: { role },
   })
@@ -200,33 +198,12 @@ export async function fetchMyRating(role?: string): Promise<RatingInfo | null> {
 
 // --- Agent ------------------------------------------------------------------
 
-export async function fetchAgentOrders(route?: OrderRoute): Promise<AgentOrder[]> {
-  const { data } = await api.get<ApiSuccess<AgentOrder[]>>('/api/v1/agent/orders', {
-    params: route ? { route } : undefined,
-  })
-
-  return data.data
-}
-
-/** Single open opportunity the agent may bid on. */
-export async function fetchAgentOrder(orderId: number): Promise<AgentOrder> {
-  const { data } = await api.get<ApiSuccess<AgentOrder>>(`/api/v1/agent/orders/${orderId}`)
-
-  return data.data
-}
-
 export async function submitOffer(orderId: number, payload: CreateOfferPayload): Promise<Offer> {
   const { data } = await api.post<ApiSuccess<Offer>>(
     `/api/v1/agent/orders/${orderId}/offers`,
     payload,
     { skipErrorToast: true },
   )
-
-  return data.data
-}
-
-export async function fetchAgentOffers(): Promise<AgentOffer[]> {
-  const { data } = await api.get<ApiSuccess<AgentOffer[]>>('/api/v1/agent/offers')
 
   return data.data
 }

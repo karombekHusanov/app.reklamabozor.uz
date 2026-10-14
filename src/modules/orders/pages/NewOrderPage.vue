@@ -69,7 +69,7 @@ async function loadCatalog() {
       const [cats, regs] = await Promise.all([
         agent.categories.length > 0
           ? Promise.resolve(agent.categories)
-          : fetchCategories(agent.provider_type),
+          : fetchCategories(),
         regionsPromise,
       ])
       categories.value = cats

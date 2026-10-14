@@ -1,5 +1,4 @@
 import { defineStore } from 'pinia'
-import { usePassStore } from '@/modules/agent/stores/pass.store'
 import { ref } from 'vue'
 import { getApiErrorMessage } from '@/core/api/api-error'
 import {
@@ -9,22 +8,16 @@ import {
   confirmCompletion as confirmCompletionRequest,
   createOrder as createOrderRequest,
   disputeCompletion as disputeCompletionRequest,
-  fetchAgentOffers,
-  fetchAgentOrders,
   fetchMyOrders,
   fetchOrder,
   fetchOrderPayment,
   reportNoStart as reportNoStartRequest,
   startOfflinePayment as startOfflinePaymentRequest,
-  submitOffer as submitOfferRequest,
   submitProviderReview as submitProviderReviewRequest,
   submitReview as submitReviewRequest,
   submitWork as submitWorkRequest,
 } from '@/modules/orders/services/orders.service'
 import type {
-  AgentOffer,
-  AgentOrder,
-  CreateOfferPayload,
   CreateOrderPayload,
   Order,
   ReviewCriterionScore,
@@ -38,16 +31,10 @@ export const useOrdersStore = defineStore('orders', () => {
   const isSubmitting = ref(false)
   const error = ref<string | null>(null)
 
-  // Agent state.
-  const availableOrders = ref<AgentOrder[]>([])
-  const myOffers = ref<AgentOffer[]>([])
-  const isLoadingAgent = ref(false)
   const myOrdersLoaded = ref(false)
-  const workspaceLoaded = ref(false)
 
-  /** Coalesce parallel Home / Offers callers into one in-flight request. */
+  /** Coalesce parallel callers into one in-flight request. */
   let myOrdersInflight: Promise<void> | null = null
-  let workspaceInflight: Promise<void> | null = null
 
   async function loadMyOrders(force = false) {
     if (myOrdersLoaded.value && !force) return
@@ -296,61 +283,12 @@ export const useOrdersStore = defineStore('orders', () => {
     }
   }
 
-  async function loadAgentWorkspace(force = false) {
-    if (workspaceLoaded.value && !force) return
-    if (workspaceInflight) return workspaceInflight
-
-    workspaceInflight = (async () => {
-      isLoadingAgent.value = true
-      error.value = null
-      try {
-        const [orders, offers] = await Promise.all([fetchAgentOrders(), fetchAgentOffers()])
-        availableOrders.value = orders
-        myOffers.value = offers
-        workspaceLoaded.value = true
-      }
-      catch (e) {
-        error.value = getApiErrorMessage(e)
-      }
-      finally {
-        isLoadingAgent.value = false
-      }
-    })().finally(() => {
-      workspaceInflight = null
-    })
-
-    return workspaceInflight
-  }
-
-  async function sendOffer(orderId: number, payload: CreateOfferPayload, onPassBought?: () => unknown) {
-    isSubmitting.value = true
-    error.value = null
-    try {
-      await submitOfferRequest(orderId, payload)
-      await loadAgentWorkspace(true)
-      return true
-    }
-    catch (e) {
-      // 402 Propusk / balance gates are surfaced by the pass store (drawer / toast).
-      if (usePassStore().handleClaimError(e, onPassBought)) {
-        error.value = null
-        return false
-      }
-      error.value = getApiErrorMessage(e)
-      return false
-    }
-    finally {
-      isSubmitting.value = false
-    }
-  }
-
   /** Winning agent marks the work as delivered. */
   async function submitWork(orderId: number) {
     isSubmitting.value = true
     error.value = null
     try {
       await submitWorkRequest(orderId)
-      await loadAgentWorkspace(true)
       return true
     }
     catch (e) {
@@ -365,13 +303,9 @@ export const useOrdersStore = defineStore('orders', () => {
   function reset() {
     myOrders.value = []
     currentOrder.value = null
-    availableOrders.value = []
-    myOffers.value = []
     myOrdersLoaded.value = false
-    workspaceLoaded.value = false
     error.value = null
     myOrdersInflight = null
-    workspaceInflight = null
   }
 
   return {
@@ -380,10 +314,6 @@ export const useOrdersStore = defineStore('orders', () => {
     isLoading,
     isSubmitting,
     error,
-    availableOrders,
-    myOffers,
-    isLoadingAgent,
-    workspaceLoaded,
     loadMyOrders,
     loadOrder,
     create,
@@ -397,8 +327,6 @@ export const useOrdersStore = defineStore('orders', () => {
     closeTezkor,
     submitReview,
     submitProviderReview,
-    loadAgentWorkspace,
-    sendOffer,
     submitWork,
     reset,
   }

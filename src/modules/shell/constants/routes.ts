@@ -23,8 +23,6 @@ export const ROUTES = {
   chatOrder: (id: number | string) => `/chat/${id}`,
   notifications: '/notifications',
   orders: '/orders',
-  offers: '/offers',
-  offerOpportunity: (orderId: number | string) => `/offers/order/${orderId}`,
   offerDetail: (id: number | string) => `/offers/${id}`,
   newOrder: '/orders/new',
   profile: '/profile', // personal account only (tab)

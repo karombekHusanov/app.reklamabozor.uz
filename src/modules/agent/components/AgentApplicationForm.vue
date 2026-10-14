@@ -639,7 +639,7 @@ const inputClass = 'glass-input'
     </template>
 
     <!-- Fixed action bar (replaces the tab bar on this page) -->
-    <div class="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-background/95 backdrop-blur">
+    <div class="fixed inset-x-0 bottom-0 z-30 rounded-t-[28px] border-t border-border bg-card shadow-[0_-8px_24px_-12px_rgba(15,23,42,0.18)]">
       <div class="mx-auto flex max-w-lg gap-2 px-4 pb-6 pt-3">
         <Button
           v-if="step > 1"

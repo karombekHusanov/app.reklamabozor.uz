@@ -180,16 +180,8 @@ const statusChip = computed<{ label: string, tone: 'wait' | 'ok' } | null>(() =>
 
 const attachmentFiles = computed(() => order.value?.attachment_files ?? [])
 
-// Determine the provider role for criteria — prefer winning profile type
-// (matches backend ReviewService), fall back to category type.
-const providerRole = computed<'agent' | 'designer'>(() => {
-  const accepted = order.value?.offers?.find(o => o.status === 'accepted')
-  const fromProfile = accepted?.agent?.provider_type
-  if (fromProfile === 'agent' || fromProfile === 'designer') {
-    return fromProfile
-  }
-  return order.value?.category?.type ?? 'agent'
-})
+// Every executor (legal entity or individual) is reviewed on the agent criteria.
+const providerRole = 'agent' as const
 
 // Confirm in a bottom drawer before killing a live request.
 const cancelDrawerOpen = ref(false)

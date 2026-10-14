@@ -3,11 +3,13 @@ import { computed, ref } from 'vue'
 import { getApiErrorMessage } from '@/core/api/api-error'
 import {
   acceptAgentOffer,
-  createDesignerProfile,
   fetchAgentCategories,
   fetchMyAgentProfile,
+  requestLegalUpgrade,
   resubmitAgentApplication,
+  resubmitIndividualApplication,
   submitAgentApplication,
+  submitIndividualApplication,
   updateAgentDetails,
 } from '@/modules/agent/services/agent.service'
 import type {
@@ -15,7 +17,7 @@ import type {
   AgentDetailsPayload,
   AgentProfile,
   Category,
-  DesignerProfilePayload,
+  IndividualApplicationPayload,
 } from '@/modules/agent/types/agent'
 
 export const useAgentStore = defineStore('agent', () => {
@@ -36,6 +38,8 @@ export const useAgentStore = defineStore('agent', () => {
   const isRejected = computed(() => status.value === 'rejected')
   /** A user can fill the application form when they have no profile yet, or were rejected. */
   const canApply = computed(() => !hasProfile.value || isRejected.value)
+  /** Individual ("jismoniy") executor track — Tezkor only until upgraded. */
+  const isIndividual = computed(() => profile.value?.provider_type === 'individual')
   /** Phase-2 presentation completeness (0–100), only meaningful once approved. */
   const completion = computed(() => profile.value?.completion_percent ?? 0)
 
@@ -103,13 +107,38 @@ export const useAgentStore = defineStore('agent', () => {
     }
   }
 
-  /** Designer profili: minimal forma, KYC'siz — darhol approved bo'ladi. */
-  async function submitDesigner(payload: DesignerProfilePayload) {
+  /** Individual executor application (light KYC) — admin-approved like an agency. */
+  async function submitIndividual(payload: IndividualApplicationPayload) {
     isSubmitting.value = true
     error.value = null
 
     try {
-      profile.value = await createDesignerProfile(payload)
+      profile.value = hasProfile.value
+        ? await resubmitIndividualApplication(payload)
+        : await submitIndividualApplication(payload)
+      loaded.value = true
+      return true
+    }
+    catch (e) {
+      error.value = getApiErrorMessage(e)
+      return false
+    }
+    finally {
+      isSubmitting.value = false
+    }
+  }
+
+  /**
+   * Approved individual → legal-entity request. The profile keeps working;
+   * it is reloaded so `profile.upgrade` reflects the pending request.
+   */
+  async function requestUpgrade(payload: AgentApplicationPayload) {
+    isSubmitting.value = true
+    error.value = null
+
+    try {
+      await requestLegalUpgrade(payload)
+      profile.value = await fetchMyAgentProfile()
       loaded.value = true
       return true
     }
@@ -184,12 +213,14 @@ export const useAgentStore = defineStore('agent', () => {
     isApproved,
     isPending,
     isRejected,
+    isIndividual,
     canApply,
     completion,
     loadProfile,
     loadCategories,
     submit,
-    submitDesigner,
+    submitIndividual,
+    requestUpgrade,
     submitDetails,
     acceptOffer,
     reset,

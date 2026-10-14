@@ -14,6 +14,9 @@ const props = defineProps<{
 
 const locale = useLocaleStore()
 
+// Individuals have no company — their own name stands in.
+const title = computed(() => props.profile.company_name || props.profile.director_name || props.profile.display_name)
+
 const meta = computed(() => {
   switch (props.profile.status) {
     case 'approved':
@@ -52,7 +55,7 @@ const meta = computed(() => {
         <Avatar
           v-if="profile.status === 'approved' && profile.company_logo"
           :src="profile.company_logo"
-          :name="profile.company_name"
+          :name="title"
           size="md"
         />
         <div
@@ -67,7 +70,7 @@ const meta = computed(() => {
         </div>
         <div class="min-w-0">
           <h2 class="truncate text-lg font-semibold leading-tight">
-            {{ profile.company_name }}
+            {{ title }}
           </h2>
           <p class="mt-0.5 text-sm text-muted-foreground">
             {{ meta.message }}

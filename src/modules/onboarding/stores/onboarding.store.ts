@@ -16,6 +16,8 @@ export const useOnboardingStore = defineStore('onboarding', () => {
   const completed = ref(false)
   const step = ref<OnboardingStep>('language')
   const termsAccepted = ref(false)
+  // «Tanishdim» tick — lives in the store so it survives a trip to the offer page.
+  const offerChecked = ref(false)
   // Latches true once the flow is under way, so onboarding stays open through
   // the post-role person_type step (selecting a role sets role_selected_at,
   // which would otherwise flip needsOnboarding to false mid-flow).
@@ -79,6 +81,7 @@ export const useOnboardingStore = defineStore('onboarding', () => {
   return {
     step,
     termsAccepted,
+    offerChecked,
     needsOnboarding,
     goTo,
     acceptTerms,

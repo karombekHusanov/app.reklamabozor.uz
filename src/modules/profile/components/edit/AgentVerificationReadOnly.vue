@@ -24,7 +24,10 @@ function display(value: string | null | undefined): string {
       </p>
     </div>
 
-    <GlassCard class="space-y-4">
+    <GlassCard
+      v-if="!profile.is_individual"
+      class="space-y-4"
+    >
       <p class="text-sm font-semibold text-foreground">
         {{ locale.t.agent.company }}
       </p>
@@ -72,7 +75,7 @@ function display(value: string | null | undefined): string {
 
     <GlassCard class="space-y-4">
       <p class="text-sm font-semibold text-foreground">
-        {{ locale.t.agent.director }}
+        {{ profile.is_individual ? locale.t.executor.personalData : locale.t.agent.director }}
       </p>
 
       <div class="profile-edit-readonly-field">
@@ -108,7 +111,10 @@ function display(value: string | null | undefined): string {
         </p>
       </div>
 
-      <div class="profile-edit-readonly-field">
+      <div
+        v-if="!profile.is_individual"
+        class="profile-edit-readonly-field"
+      >
         <p class="profile-edit-readonly-field__label">
           {{ locale.t.agent.passport }}
         </p>
@@ -127,9 +133,46 @@ function display(value: string | null | undefined): string {
         <FileText class="size-4 shrink-0" />
         <span class="truncate">{{ locale.t.agent.passportScan }}</span>
       </a>
+
+      <template v-if="profile.is_individual">
+        <a
+          v-if="profile.selfie"
+          :href="profile.selfie"
+          target="_blank"
+          rel="noopener"
+          class="profile-edit-readonly-file"
+        >
+          <FileText class="size-4 shrink-0" />
+          <span class="truncate">{{ locale.t.executor.selfie }}</span>
+        </a>
+
+        <div class="profile-edit-readonly-field">
+          <p class="profile-edit-readonly-field__label">
+            {{ locale.t.agent.contactPhone }}
+          </p>
+          <p class="profile-edit-readonly-field__value">
+            {{ display(profile.phone) }}
+          </p>
+        </div>
+
+        <div
+          v-if="profile.alt_contact"
+          class="profile-edit-readonly-field"
+        >
+          <p class="profile-edit-readonly-field__label">
+            {{ locale.t.executor.altContact }}
+          </p>
+          <p class="profile-edit-readonly-field__value">
+            {{ profile.alt_contact }}
+          </p>
+        </div>
+      </template>
     </GlassCard>
 
-    <GlassCard class="space-y-4">
+    <GlassCard
+      v-if="!profile.is_individual"
+      class="space-y-4"
+    >
       <p class="text-sm font-semibold text-foreground">
         {{ locale.t.agent.registrationBank }}
       </p>

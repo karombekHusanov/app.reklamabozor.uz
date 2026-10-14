@@ -1,4 +1,4 @@
-export type UserRole = 'client' | 'agent' | 'designer' | 'admin' | 'seller'
+export type UserRole = 'client' | 'agent' | 'admin' | 'seller'
 
 export type PersonType = 'individual' | 'legal_entity'
 
@@ -32,7 +32,7 @@ export interface User {
   person_type: PersonType | null
   /** Whether the legal-entity status is confirmed (agents/sellers are; self-declared isn't yet). */
   person_type_verified: boolean
-  /** Raw self-declared value (client/designer); null = never chosen. */
+  /** Raw self-declared value (clients); null = never chosen. */
   person_type_declared: PersonType | null
   /** Verification request state for the badge/CTA; null = nothing submitted. */
   legal_entity_status: LegalEntityStatus | null
@@ -45,7 +45,7 @@ export interface User {
 }
 
 /** Roles that represent a business presence in the marketplace (has / can have an agent profile). */
-const BUSINESS_ROLES: readonly UserRole[] = ['agent', 'designer', 'seller']
+const BUSINESS_ROLES: readonly UserRole[] = ['agent', 'seller']
 
 export function fullName(user: Pick<User, 'first_name' | 'last_name'>): string {
   return [user.first_name, user.last_name].filter(Boolean).join(' ').trim()
@@ -66,7 +66,7 @@ export function userHasRole(user: Pick<User, 'role' | 'roles'>, role: UserRole):
 }
 
 /**
- * Whether the user holds any marketplace provider role (agent/designer/seller).
+ * Whether the user holds any marketplace provider role (agent/seller).
  * Drives whether the profile shows the provider surface. Reads the held `roles`
  * set, not the single active role.
  */
@@ -77,16 +77,15 @@ export function isBusinessUser(user: Pick<User, 'role' | 'roles'>): boolean {
 /** @deprecated Use {@link isBusinessUser} — both now read the held roles set. */
 export const holdsBusinessRole = isBusinessUser
 
-/** Roles that self-declare their legal nature; agents/sellers are auto legal. */
+/** Roles that self-declare their legal nature; executors follow their KYC track, sellers are legal. */
 export function roleChoosesPersonType(role: UserRole): boolean {
-  return role === 'client' || role === 'designer'
+  return role === 'client'
 }
 
 export function roleLabel(role: UserRole): string {
   const labels: Record<UserRole, string> = {
     client: 'Client',
     agent: 'Agent',
-    designer: 'Designer',
     admin: 'Admin',
     seller: 'Seller',
   }

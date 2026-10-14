@@ -174,7 +174,7 @@ export const MAX_PRICELIST_ITEMS = 50
 export interface OfferAgent {
   id: number
   profile_id: number | null
-  provider_type?: 'agent' | 'designer' | null
+  provider_type?: 'agent' | 'individual' | null
   company_name: string | null
   company_logo: string | null
   /** The agent's Telegram avatar — shown when there is no company logo. */

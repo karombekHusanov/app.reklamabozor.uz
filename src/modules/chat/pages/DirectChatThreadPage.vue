@@ -303,13 +303,13 @@ async function handleReopen() {
 function openActiveOffer() {
   if (!chat.currentChat) return
   infoOpen.value = false
-  // Client → their order page; agency → their offer (or the opportunity).
+  // Client → their order page; agency → their offer (or the request).
   if (otherIsAgency.value && orderId.value !== null) {
     router.push(`/orders/${orderId.value}`)
     return
   }
   if (activeOffer.value) router.push(ROUTES.offerDetail(activeOffer.value.id))
-  else if (orderId.value !== null) router.push(ROUTES.offerOpportunity(orderId.value))
+  else if (orderId.value !== null) router.push(ROUTES.liveOrderDetail(orderId.value))
 }
 </script>
 

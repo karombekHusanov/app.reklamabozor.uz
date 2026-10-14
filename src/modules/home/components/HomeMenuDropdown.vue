@@ -64,7 +64,7 @@ const items = computed<MenuItem[]>(() => {
     list.push({
       key: 'offers',
       label: locale.t.home.menuOffers,
-      to: ROUTES.offers,
+      to: ROUTES.agentHome,
       icon: Send,
       tone: 'amber',
       badge: props.offersCount && props.offersCount > 0 ? props.offersCount : undefined,

@@ -26,8 +26,9 @@ export interface PublicAgent {
   display_name: string
   /** User Telegram avatari (dizaynerlar uchun asosiy rasm). */
   avatar: string | null
-  provider_type: 'agent' | 'designer'
-  /** Legal nature of the provider (agents are verified legal; designers may vary). */
+  /** Executor legal track: legal entity (`agent`) or individual. */
+  provider_type: 'agent' | 'individual'
+  /** Legal nature of the executor — follows its track. */
   person_type: 'individual' | 'legal_entity' | null
   person_type_verified: boolean
   company_logo: string | null
@@ -73,7 +74,7 @@ export interface AgentsListFilters {
 export async function fetchTopAgents(
   limit = 10,
   type?: 'agent' | 'designer',
-  providerType?: 'agent' | 'designer',
+  providerType?: 'agent' | 'individual',
   filters: AgentsListFilters = {},
 ): Promise<PublicAgent[]> {
   const { data } = await api.get<ApiSuccess<PublicAgent[]>>('/api/v1/agents', {

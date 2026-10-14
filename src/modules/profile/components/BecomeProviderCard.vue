@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Briefcase, Palette } from '@lucide/vue'
+import { Building2, User } from '@lucide/vue'
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import GlassCard from '@/core/ui/GlassCard.vue'
@@ -8,9 +8,9 @@ import { useTelegram } from '@/core/composables/useTelegram'
 import { useAuthStore } from '@/modules/auth/stores/auth.store'
 import { isBusinessUser } from '@/modules/auth/types/user'
 
-// Entry to becoming a provider — replaces the old role-switch flow. Submitting
-// the target form grants the role (designer) or starts KYC (agent); there is no
-// its own onboarding flow. Hidden once the user already runs a provider profile.
+// Entry to becoming an executor ("ijrochi") — one agent role on one of two legal
+// tracks: individual (light KYC, Tezkor) or legal entity (full KYC, Tender).
+// Both are admin-approved. Hidden once the user already runs a provider profile.
 const auth = useAuthStore()
 const locale = useLocaleStore()
 const router = useRouter()
@@ -18,9 +18,9 @@ const { haptic } = useTelegram()
 
 const show = computed(() => auth.user != null && !isBusinessUser(auth.user))
 
-function go(as: 'agent' | 'designer') {
+function go(track: 'individual' | 'legal') {
   haptic('light')
-  void router.push({ path: '/profile/edit', query: { as } })
+  void router.push({ path: '/profile/edit', query: { as: 'agent', track } })
 }
 </script>
 
@@ -40,18 +40,18 @@ function go(as: 'agent' | 'designer') {
       <button
         type="button"
         class="glass-chip flex flex-col items-center gap-1.5 rounded-2xl px-3 py-3 text-[13px] font-semibold"
-        @click="go('agent')"
+        @click="go('individual')"
       >
-        <Briefcase class="size-4 text-primary" />
-        {{ locale.t.roles.agent }}
+        <User class="size-4 text-primary" />
+        {{ locale.t.executor.trackIndividual }}
       </button>
       <button
         type="button"
         class="glass-chip flex flex-col items-center gap-1.5 rounded-2xl px-3 py-3 text-[13px] font-semibold"
-        @click="go('designer')"
+        @click="go('legal')"
       >
-        <Palette class="size-4 text-primary" />
-        {{ locale.t.roles.designer }}
+        <Building2 class="size-4 text-primary" />
+        {{ locale.t.executor.trackLegal }}
       </button>
     </div>
   </GlassCard>

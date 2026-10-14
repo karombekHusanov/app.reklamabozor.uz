@@ -84,10 +84,7 @@ const subtitle = computed(() => {
   const labels = props.profile?.categories.map(c => categoryName(c, props.locale.locale)) ?? []
   if (labels.length) {
     const categories = labels.slice(0, 2).join(' & ')
-    const key = props.user.role === 'designer'
-      ? props.locale.t.profile.designerCategoriesLine
-      : props.locale.t.profile.agentCategoriesLine
-    return key.replace('{categories}', categories)
+    return props.locale.t.profile.agentCategoriesLine.replace('{categories}', categories)
   }
   return props.locale.t.profile.agentFallbackBody
 })
@@ -95,11 +92,7 @@ const subtitle = computed(() => {
 const isApproved = computed(() => props.profile?.status === 'approved')
 const needsVerification = computed(() => !props.profile || props.profile.status !== 'approved')
 
-const pageTitle = computed(() =>
-  props.user.role === 'designer'
-    ? props.locale.t.profile.designerPageTitle
-    : props.locale.t.profile.agentPageTitle,
-)
+const pageTitle = computed(() => props.locale.t.profile.agentPageTitle)
 
 const hasRatedReviews = computed(() => (myRating.value?.stars_count ?? 0) > 0)
 
@@ -184,7 +177,7 @@ const profileIncomplete = computed(() => {
 
 /** Day-to-day screens, one tap from the top of the page. */
 const activity = computed(() => [
-  { key: 'offers', icon: Inbox, label: props.locale.t.profile.agentShortcutOffers, sub: null as string | null, to: ROUTES.offers },
+  { key: 'offers', icon: Inbox, label: props.locale.t.profile.agentShortcutOffers, sub: null as string | null, to: ROUTES.agentHome },
   { key: 'orders', icon: ClipboardList, label: props.locale.t.profile.agentShortcutOrders, sub: null as string | null, to: ROUTES.orders },
   {
     key: 'earnings',

@@ -2,11 +2,11 @@ import { api } from '@/core/api/client'
 import type { ApiSuccess } from '@/core/types/api'
 import type {
   Advantage,
-  DesignerProfilePayload,
   AgentApplicationPayload,
   AgentDetailsPayload,
   AgentProfile,
   Category,
+  IndividualApplicationPayload,
   PortfolioItem,
   PortfolioItemPayload,
   PortfolioItemUpdatePayload,
@@ -96,9 +96,29 @@ export async function deletePortfolioItem(id: number): Promise<void> {
   await api.delete(`/api/v1/agent/portfolio/${id}`)
 }
 
-/** Designer profili: minimal forma, KYC'siz, darhol approved. */
-export async function createDesignerProfile(payload: DesignerProfilePayload): Promise<AgentProfile> {
-  const { data } = await api.post<ApiSuccess<AgentProfile>>('/api/v1/designer/profile', payload)
+/** Individual ("jismoniy") executor — submit a new light-KYC application. */
+export async function submitIndividualApplication(
+  payload: IndividualApplicationPayload,
+): Promise<AgentProfile> {
+  const { data } = await api.post<ApiSuccess<AgentProfile>>('/api/v1/individual/profile', payload)
 
   return data.data
+}
+
+/** Individual executor — resubmit a pending or rejected application. */
+export async function resubmitIndividualApplication(
+  payload: IndividualApplicationPayload,
+): Promise<AgentProfile> {
+  const { data } = await api.put<ApiSuccess<AgentProfile>>('/api/v1/individual/profile', payload)
+
+  return data.data
+}
+
+/**
+ * Approved individual executor asks to be raised to the legal-entity track
+ * (Tender access). Same payload as the agent application; the profile keeps
+ * working while a manager reviews it.
+ */
+export async function requestLegalUpgrade(payload: AgentApplicationPayload): Promise<void> {
+  await api.post('/api/v1/agent/profile/upgrade', payload)
 }

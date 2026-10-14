@@ -57,9 +57,9 @@ const tiles = computed<Tile[]>(() => {
     const pending = p?.offers_pending ?? 0
     const deals = (p?.deals_in_progress ?? 0) + (p?.deals_work_submitted ?? 0)
     return [
-      { key: 'opps', icon: Radar, label: t.deskOpportunities, count: fresh, sub: fresh ? fill(t.deskOpportunitiesSub, fresh) : t.deskClear, to: ROUTES.offers, hot: fresh > 0 },
-      { key: 'bids', icon: Send, label: t.deskBids, count: pending, sub: fill(t.deskBidsSub, pending), to: `${ROUTES.offers}?tab=offers`, hot: false },
-      { key: 'deals', icon: BriefcaseBusiness, label: t.deskDeals, count: deals, sub: fill(t.deskDealsSub, deals), to: `${ROUTES.offers}?tab=offers`, hot: false },
+      { key: 'opps', icon: Radar, label: t.deskOpportunities, count: fresh, sub: fresh ? fill(t.deskOpportunitiesSub, fresh) : t.deskClear, to: ROUTES.agentHome, hot: fresh > 0 },
+      { key: 'bids', icon: Send, label: t.deskBids, count: pending, sub: fill(t.deskBidsSub, pending), to: ROUTES.agentChats, hot: false },
+      { key: 'deals', icon: BriefcaseBusiness, label: t.deskDeals, count: deals, sub: fill(t.deskDealsSub, deals), to: ROUTES.agentChats, hot: false },
       { key: 'earn', icon: Wallet, label: t.deskEarnings, count: p?.deals_completed ?? 0, sub: t.deskEarningsSub, to: ROUTES.earnings, hot: false },
     ]
   }

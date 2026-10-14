@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
-import { RouterView, useRouter } from 'vue-router'
+import { RouterView, useRoute, useRouter } from 'vue-router'
 import { useAuthBootstrap } from '@/modules/auth'
 import { useAuthStore } from '@/modules/auth/stores/auth.store'
 import { useRealtimeStore } from '@/core/stores/realtime.store'
@@ -14,6 +14,7 @@ import { SplashScreen, OnboardingFlow, TermsGate, useOnboardingStore } from '@/m
 useAuthBootstrap()
 
 const router = useRouter()
+const route = useRoute()
 const auth = useAuthStore()
 const onboarding = useOnboardingStore()
 const realtime = useRealtimeStore()
@@ -54,6 +55,8 @@ onMounted(() => {
     void router.replace(`/orders/${orderId}`)
   }
 })
+// Legal pages (public offer, agent offer) stay reachable while the onboarding overlay is up.
+const isLegalPage = computed(() => route.path.startsWith('/legal/'))
 </script>
 
 <template>
@@ -61,6 +64,8 @@ onMounted(() => {
   <PropuskDrawer />
   <ConfirmDrawer />
   <SplashScreen v-if="showSplash" />
+  <!-- The offer pages open over onboarding / re-acceptance so the user can read them first. -->
+  <RouterView v-else-if="isLegalPage" />
   <OnboardingFlow v-else-if="onboarding.needsOnboarding" />
   <!-- Returning user whose accepted offer version is outdated must re-accept. -->
   <TermsGate v-else-if="auth.needsTerms" />

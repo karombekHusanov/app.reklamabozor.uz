@@ -39,7 +39,7 @@ export async function updateCurrentUser(payload: {
 
 /**
  * Self-declare the legal nature — PATCH /api/v1/me/person-type. Only meaningful
- * for client/designer users; agents/sellers derive it from their role.
+ * for clients; executors derive it from their KYC track, sellers from their role.
  */
 export async function setUserPersonType(personType: PersonType): Promise<User> {
   const { data } = await api.patch<ApiSuccess<User>>('/api/v1/me/person-type', {

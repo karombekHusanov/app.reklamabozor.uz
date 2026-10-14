@@ -121,8 +121,9 @@ export const useHomeStore = defineStore('home', () => {
           : Promise.resolve()
 
         const [agentsData, designersData, liveOrdersData, contactData] = await Promise.all([
-          fetchTopAgents(TOP_AGENTS_LIMIT, undefined, 'agent').catch(() => [] as PublicAgent[]),
-          fetchTopAgents(TOP_AGENTS_LIMIT, undefined, 'designer').catch(() => [] as PublicAgent[]),
+          // Rails are capability groups (categories served), not legal tracks.
+          fetchTopAgents(TOP_AGENTS_LIMIT, 'agent').catch(() => [] as PublicAgent[]),
+          fetchTopAgents(TOP_AGENTS_LIMIT, 'designer').catch(() => [] as PublicAgent[]),
           fetchLiveOrders(LIVE_ORDERS_LIMIT, { route: useOrderRouteStore().active }).catch(() => [] as LiveOrder[]),
           fetchPlatformContact().catch(() => null),
         ])

@@ -9,7 +9,7 @@ import type { ReviewCriterionDef, ReviewCriterionScore } from '@/modules/orders/
 
 const props = defineProps<{
   /** The role being rated — determines which criteria catalog to fetch. */
-  targetRole: 'agent' | 'designer' | 'client'
+  targetRole: 'agent' | 'client'
   title: string
   body: string
   submitting?: boolean

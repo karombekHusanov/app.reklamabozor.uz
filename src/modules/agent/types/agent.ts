@@ -69,10 +69,28 @@ export interface Category {
   sort_order: number
 }
 
+/**
+ * Executor ("ijrochi") legal track: `agent` = legal entity (full KYC, Tender),
+ * `individual` = jismoniy shaxs (passport + selfie, Tezkor only).
+ */
+export type ProviderType = 'agent' | 'individual'
+
+export type AgentProfileUpgradeStatus = 'pending' | 'approved' | 'rejected'
+
+/** Summary of the latest individual → legal-entity upgrade request. */
+export interface AgentProfileUpgradeSummary {
+  id: number
+  status: AgentProfileUpgradeStatus
+  rejection_reason: string | null
+  submitted_at: string
+  reviewed_at: string | null
+}
+
 export interface AgentProfile {
   id: number
   display_name: string
-  provider_type: 'agent' | 'designer'
+  provider_type: ProviderType
+  is_individual: boolean
 
   // Phase 1 — verification / KYC.
   company_name: string
@@ -91,6 +109,11 @@ export interface AgentProfile {
   bank_account: string | null
   mfo: string | null
   phone: string
+  /** Individual track: selfie scan (light KYC). */
+  selfie_file_id: number | null
+  selfie: string | null
+  /** Optional second contact (phone / Telegram). */
+  alt_contact: string | null
 
   // Phase 2 — client-facing presentation.
   company_logo_file_id: number | null
@@ -112,10 +135,15 @@ export interface AgentProfile {
   status: AgentProfileStatus
   rejection_reason: string | null
   approved_at: string | null
-  /** Platform agreement (agents only; null for designers). */
+  /** Platform agreement (legal entities only; null for individuals). */
   contract?: AgentContract | null
-  /** Agency partnership offer acceptance (agents only; null for designers). */
+  /** Agency partnership offer acceptance (legal entities only; null for individuals). */
   offer?: AgentOfferAcceptance | null
+  /** Individual → legal-entity upgrade: whether a request may be sent + the latest one. */
+  upgrade?: {
+    can_request: boolean
+    latest: AgentProfileUpgradeSummary | null
+  }
   created_at: string
   updated_at: string
 }
@@ -163,10 +191,12 @@ export interface AgentDetailsPayload {
   workflow_steps?: WorkflowStep[] | null
 }
 
-/** POST /designer/profile payload — minimal, KYC'siz. */
-export interface DesignerProfilePayload {
-  company_name?: string | null
-  bio?: string | null
+/** POST (apply) / PUT (resubmit) /api/v1/individual/profile — light KYC. */
+export interface IndividualApplicationPayload {
+  full_name: string
+  alt_contact: string | null
+  passport_file_id: number
+  selfie_file_id: number
   category_ids: number[]
 }
 
