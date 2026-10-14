@@ -12,6 +12,7 @@ import AgentDetailsForm from '@/modules/agent/components/AgentDetailsForm.vue'
 import AgentOfferCard from '@/modules/agent/components/AgentOfferCard.vue'
 import IndividualApplicationForm from '@/modules/agent/components/IndividualApplicationForm.vue'
 import LegalUpgradeCard from '@/modules/agent/components/LegalUpgradeCard.vue'
+import WorkReadinessCard from '@/modules/agent/components/WorkReadinessCard.vue'
 import AgentProfileCompletionBar from '@/modules/profile/components/edit/AgentProfileCompletionBar.vue'
 import AgentStatusCard from '@/modules/agent/components/AgentStatusCard.vue'
 import AgentVerificationReadOnly from '@/modules/profile/components/edit/AgentVerificationReadOnly.vue'
@@ -204,6 +205,8 @@ async function handleSaveDetails(payload: AgentDetailsPayload) {
       </template>
 
       <template v-else-if="showDetails && profile">
+        <!-- Required before work starts — the matching tabs are right below. -->
+        <WorkReadinessCard hide-cta />
         <LegalUpgradeCard
           :profile="profile"
           @start="startUpgrade"

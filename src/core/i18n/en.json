@@ -1086,7 +1086,15 @@
     "upgradePendingBody": "You keep working as an individual until a manager approves it.",
     "upgradeRejected": "Your previous request was rejected",
     "upgradeFormIntro": "Full KYC: company, manager, registration certificate and bank requisites. Your profile keeps working while it is reviewed.",
-    "upgradeSubmittedToast": "Request sent — a manager will review it"
+    "upgradeSubmittedToast": "Request sent — a manager will review it",
+    "readyTitle": "Complete your profile to start working",
+    "readyBody": "Your profile is approved. Before responding to requests, set which services you offer and where you are on the map.",
+    "readyCategories": "Service areas (at least one)",
+    "readyLocation": "Location on the map",
+    "readyMissing": "Missing",
+    "readyCta": "Complete the profile",
+    "requiredToWork": "Pick at least one area to be able to respond to requests.",
+    "requiredToWorkLocation": "Mark your location on the map to be able to respond to requests."
   },
   "auth": {
     "phoneTitle": "We need your phone number",

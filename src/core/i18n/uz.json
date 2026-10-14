@@ -1086,7 +1086,15 @@
     "upgradePendingBody": "Menejer tasdiqlaguncha jismoniy shaxs sifatida ishlashda davom etasiz.",
     "upgradeRejected": "Oldingi ariza rad etildi",
     "upgradeFormIntro": "To'liq KYC: korxona, rahbar, guvohnoma va bank rekvizitlari. Ko'rib chiqilayotganda profilingiz ishlashda davom etadi.",
-    "upgradeSubmittedToast": "Ariza yuborildi — menejer ko'rib chiqadi"
+    "upgradeSubmittedToast": "Ariza yuborildi — menejer ko'rib chiqadi",
+    "readyTitle": "Ish boshlash uchun profilni to'ldiring",
+    "readyBody": "Profilingiz tasdiqlangan. So'rovlarga otklik yuborishdan oldin qaysi xizmatlarni ko'rsatishingiz va xaritada qayerda joylashganingizni belgilang.",
+    "readyCategories": "Xizmat yo'nalishlari (kamida bittasi)",
+    "readyLocation": "Xaritadagi joylashuv",
+    "readyMissing": "Yetishmayapti",
+    "readyCta": "Profilni to'ldirish",
+    "requiredToWork": "So'rovlarga javob berish uchun kamida bitta yo'nalish tanlang.",
+    "requiredToWorkLocation": "So'rovlarga javob berish uchun xaritada joylashuvingizni belgilang."
   },
   "auth": {
     "phoneTitle": "Telefon raqamingiz kerak",

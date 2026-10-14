@@ -8,6 +8,7 @@ import { useTelegram } from '@/core/composables/useTelegram'
 import { useLocaleStore } from '@/core/i18n/locale.store'
 import AgentOrderCard from '@/modules/agent/components/AgentOrderCard.vue'
 import AgentStories from '@/modules/agent/components/AgentStories.vue'
+import WorkReadinessCard from '@/modules/agent/components/WorkReadinessCard.vue'
 import { usePassStore } from '@/modules/agent/stores/pass.store'
 import LiveOrdersFilterDrawer from '@/modules/home/components/LiveOrdersFilterDrawer.vue'
 import { useLiveOrdersFeed } from '@/modules/home/composables/useLiveOrdersFeed'
@@ -60,6 +61,9 @@ function openFilters() {
 
     <div class="ah__sheet">
       <AgentStories class="pt-4" />
+
+      <!-- Approved but no categories / map pin yet: can't respond until filled. -->
+      <WorkReadinessCard class="mx-4 mt-3" />
 
       <div class="ah__search">
         <div class="ah__row">

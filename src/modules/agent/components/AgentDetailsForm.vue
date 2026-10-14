@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Loader2 } from '@lucide/vue'
 import { computed, onMounted, reactive, ref } from 'vue'
+import { useRoute } from 'vue-router'
 import StickyActionBar from '@/core/ui/StickyActionBar.vue'
 import ImageUpload from '@/core/ui/ImageUpload.vue'
 import LocationPicker from '@/core/ui/LocationPicker.vue'
@@ -37,7 +38,20 @@ const emit = defineEmits<{
   save: [payload: AgentDetailsPayload]
 }>()
 
-const activeTab = ref<EditTab>('verification')
+// `?tab=` opens a section directly (e.g. from the "complete your profile to
+// start working" prompt, which points at categories or the map location).
+const TAB_KEYS: EditTab[] = ['verification', 'brand', 'categories', 'links', 'portfolio', 'advantages', 'workflow']
+const route = useRoute()
+const requestedTab = route.query.tab
+const activeTab = ref<EditTab>(
+  typeof requestedTab === 'string' && (TAB_KEYS as string[]).includes(requestedTab)
+    ? requestedTab as EditTab
+    : 'verification',
+)
+
+// Categories and a map pin are required before the executor may start working.
+const needsCategories = computed(() => selectedCategoryIds.value.length === 0)
+const needsLocation = computed(() => form.lat === null || form.lng === null)
 
 const tabs = computed(() => [
   { key: 'verification' as const, label: locale.t.agent.editTabVerification },
@@ -200,6 +214,12 @@ function handleSave() {
         :title="locale.t.agent.serviceCategories"
         :subtitle="locale.t.agent.servicePickHint"
       >
+        <p
+          v-if="needsCategories"
+          class="rounded-xl bg-amber-500/10 px-3 py-2 text-xs text-amber-700"
+        >
+          {{ locale.t.executor.requiredToWork }}
+        </p>
         <CategoryCheckboxList
           v-model="selectedCategoryIds"
           :categories="categories"
@@ -242,6 +262,12 @@ function handleSave() {
           :label="locale.t.agent.location"
           html-for="location_label"
         >
+          <p
+            v-if="needsLocation"
+            class="rounded-xl bg-amber-500/10 px-3 py-2 text-xs text-amber-700"
+          >
+            {{ locale.t.executor.requiredToWorkLocation }}
+          </p>
           <LocationPicker
             :lat="form.lat"
             :lng="form.lng"
