@@ -21,6 +21,10 @@ export interface LiveOrder {
   district?: OrderRegionRef | null
   hashtags?: OrderHashtag[]
   status: string
+  /** Approximate public circle around the request (never the exact point). */
+  lat?: number | null
+  lng?: number | null
+  location_radius_m?: number | null
   views_count: number
   offers_count: number
   deadline_from?: string | null
@@ -47,6 +51,10 @@ export interface ShowcaseOrder {
   /** Only sent to approved providers. */
   budget_max?: string | number | null
   status: string
+  /** Approximate public circle around the request (never the exact point). */
+  lat?: number | null
+  lng?: number | null
+  location_radius_m?: number | null
   views_count: number
   offers_count: number
   client: ShowcaseClient | null

@@ -303,7 +303,10 @@
     "searchPlaceholder": "Search",
     "listView": "List",
     "categoriesTitle": "Categories",
-    "allCategories": "All categories"
+    "allCategories": "All categories",
+    "requestsSubtitle": "Open requests nearby",
+    "approxArea": "Approximate area (~1 km) — the exact spot shows once work starts",
+    "approxAreaShort": "approx. area ~1 km"
   },
   "chat": {
     "subtitle": "Messages",
@@ -1094,7 +1097,8 @@
     "readyMissing": "Missing",
     "readyCta": "Complete the profile",
     "requiredToWork": "Pick at least one area to be able to respond to requests.",
-    "requiredToWorkLocation": "Mark your location on the map to be able to respond to requests."
+    "requiredToWorkLocation": "Mark your location on the map to be able to respond to requests.",
+    "partnerLocationTitle": "Agency location"
   },
   "auth": {
     "phoneTitle": "We need your phone number",
@@ -1432,7 +1436,8 @@
     "errGeolocation": "Geolocation is not available.",
     "errLocation": "Could not get your location.",
     "errMapContainer": "Map container is unavailable.",
-    "errMapLoad": "Failed to load the map."
+    "errMapLoad": "Failed to load the map.",
+    "approxAreaHint": "Approximate area, radius ~{km} km. The exact location opens once work starts."
   },
   "amendments": {
     "sectionTitle": "Additional agreements",

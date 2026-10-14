@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import 'leaflet/dist/leaflet.css'
 import L from 'leaflet'
-import { BadgeCheck, Check, ChevronRight, List, LocateFixed, MapPin, Search, Star, X } from '@lucide/vue'
+import { BadgeCheck, Check, ChevronRight, FileText, List, LocateFixed, MapPin, Search, Star, X, Zap } from '@lucide/vue'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import Avatar from '@/core/ui/Avatar.vue'
@@ -15,14 +15,32 @@ import { getUserLocation, hasLocationAccess, warmupLocationManager } from '@/cor
 import { isInsideTelegram, supportsVersion } from '@/core/lib/telegram-init'
 import { fetchTopAgents, type PublicAgent } from '@/modules/marketplace/services/agents.service'
 import { fetchCategories } from '@/modules/orders/services/orders.service'
+import { fetchLiveOrders, type LiveOrder } from '@/modules/home/services/live-orders.service'
+import { useModeStore } from '@/modules/shell/stores/mode.store'
+import { ROUTES } from '@/modules/shell/constants/routes'
 import type { Category } from '@/modules/agent/types/agent'
+
+/**
+ * One shared map, two audiences: clients see agencies, executors (agent mode)
+ * see open requests. Locations are never exact here — the API sends a circle
+ * centre + radius (1 km) and we draw the area, not a pin. Exact points appear
+ * only inside a started deal.
+ */
 
 const locale = useLocaleStore()
 const router = useRouter()
 const toast = useToast()
 const { haptic, WebApp } = useTelegram()
 
+const mode = useModeStore()
+const showRequests = computed(() => mode.isAgent)
+
 const selectedAgent = ref<PublicAgent | null>(null)
+const selectedOrder = ref<LiveOrder | null>(null)
+const hasSelection = computed(() => selectedAgent.value !== null || selectedOrder.value !== null)
+
+const OPEN_STATUSES = new Set(['new', 'offers_sent'])
+const DEFAULT_RADIUS_M = 1000
 
 const selectedRating = computed(() =>
   selectedAgent.value ? (4.5 + (selectedAgent.value.completion_percent / 100) * 0.5).toFixed(1) : '',
@@ -33,9 +51,31 @@ const selectedCategory = computed(() =>
 
 function selectAgent(agent: PublicAgent) {
   haptic('light')
+  selectedOrder.value = null
   selectedAgent.value = agent
   map?.panTo([Number(agent.lat), Number(agent.lng)], { animate: true })
 }
+
+function selectOrder(order: LiveOrder) {
+  haptic('light')
+  selectedAgent.value = null
+  selectedOrder.value = order
+  map?.panTo([Number(order.lat), Number(order.lng)], { animate: true })
+}
+
+function openOrder(order: LiveOrder) {
+  haptic('medium')
+  router.push(ROUTES.liveOrderDetail(order.id))
+}
+
+function clearSelection() {
+  selectedAgent.value = null
+  selectedOrder.value = null
+}
+
+const selectedOrderCategory = computed(() =>
+  selectedOrder.value?.category ? categoryName(selectedOrder.value.category, locale.locale) : '',
+)
 
 function openAgent(agent: PublicAgent) {
   haptic('medium')
@@ -52,6 +92,7 @@ let markerLayer: L.LayerGroup | null = null
 let userLocationLayer: L.LayerGroup | null = null
 
 const agents = ref<PublicAgent[]>([])
+const orders = ref<LiveOrder[]>([])
 /** Full agent-type catalog — not derived from loaded markers. */
 const categories = ref<Category[]>([])
 const query = ref('')
@@ -59,15 +100,20 @@ const activeCategory = ref<number | null>(null)
 const locating = ref(false)
 const categoryDrawerOpen = ref(false)
 
-const PIN = L.divIcon({
-  className: 'rb-pin',
-  html: `<div style="display:flex;flex-direction:column;align-items:center">
-    <img src="/brand/prb-logo-circle.png" style="width:36px;height:36px;border-radius:9999px;box-shadow:0 4px 10px rgba(140,52,8,.4)" />
-    <div style="width:0;height:0;border-left:7px solid transparent;border-right:7px solid transparent;border-top:11px solid #E9601A;margin-top:-3px;filter:drop-shadow(0 2px 1px rgba(140,52,8,.35))"></div>
-  </div>`,
-  iconSize: [36, 49],
-  iconAnchor: [18, 47],
-  popupAnchor: [0, -44],
+// Area badge at a circle's centre — round, no pointer tip: the centre is not
+// the exact point, only a tap target for the shaded area around it.
+const AGENCY_BADGE = L.divIcon({
+  className: 'rb-area-badge',
+  html: `<img src="/brand/prb-logo-circle.png" style="width:30px;height:30px;border-radius:9999px;box-shadow:0 3px 8px rgba(2,48,92,.35);border:2px solid #fff" />`,
+  iconSize: [30, 30],
+  iconAnchor: [15, 15],
+})
+
+const REQUEST_BADGE = L.divIcon({
+  className: 'rb-area-badge',
+  html: `<div style="width:30px;height:30px;border-radius:9999px;background:#E9601A;border:2px solid #fff;box-shadow:0 3px 8px rgba(140,52,8,.4);display:flex;align-items:center;justify-content:center;color:#fff;font:700 13px/1 sans-serif">•</div>`,
+  iconSize: [30, 30],
+  iconAnchor: [15, 15],
 })
 
 const USER_PIN = L.divIcon({
@@ -108,13 +154,52 @@ const filteredAgents = computed(() => {
   })
 })
 
+const filteredOrders = computed(() => {
+  const q = query.value.trim().toLowerCase()
+  return orders.value.filter((o) => {
+    const lat = Number(o.lat)
+    const lng = Number(o.lng)
+    if (o.lat == null || o.lng == null || !Number.isFinite(lat) || !Number.isFinite(lng)) return false
+    if (!OPEN_STATUSES.has(o.status)) return false
+
+    const matchCat = activeCategory.value === null || o.category?.id === activeCategory.value
+    const matchQ = !q
+      || o.title.toLowerCase().includes(q)
+      || (o.description?.toLowerCase().includes(q) ?? false)
+    return matchCat && matchQ
+  })
+})
+
+/** A shaded circle (the public area) with a round badge at its centre. */
+function drawArea(lat: number, lng: number, radius: number | null | undefined, tone: 'agency' | 'request', onTap: () => void) {
+  if (!markerLayer) return
+  const color = tone === 'agency' ? '#2563eb' : '#E9601A'
+  L.circle([lat, lng], {
+    radius: radius && radius > 0 ? radius : DEFAULT_RADIUS_M,
+    color,
+    weight: 1.5,
+    fillColor: color,
+    fillOpacity: 0.14,
+  }).on('click', (e) => {
+    L.DomEvent.stopPropagation(e)
+    onTap()
+  }).addTo(markerLayer)
+  L.marker([lat, lng], { icon: tone === 'agency' ? AGENCY_BADGE : REQUEST_BADGE })
+    .on('click', onTap)
+    .addTo(markerLayer)
+}
+
 function renderMarkers() {
   if (!map || !markerLayer) return
   markerLayer.clearLayers()
+  if (showRequests.value) {
+    for (const o of filteredOrders.value) {
+      drawArea(Number(o.lat), Number(o.lng), o.location_radius_m, 'request', () => selectOrder(o))
+    }
+    return
+  }
   for (const a of filteredAgents.value) {
-    L.marker([Number(a.lat), Number(a.lng)], { icon: PIN })
-      .on('click', () => selectAgent(a))
-      .addTo(markerLayer)
+    drawArea(Number(a.lat), Number(a.lng), a.location_radius_m, 'agency', () => selectAgent(a))
   }
 }
 
@@ -170,6 +255,16 @@ function pickCategory(id: number | null) {
 }
 
 async function load() {
+  if (showRequests.value) {
+    const [ordersResult, categoriesResult] = await Promise.allSettled([
+      fetchLiveOrders(50),
+      fetchCategories(),
+    ])
+    orders.value = ordersResult.status === 'fulfilled' ? ordersResult.value : []
+    categories.value = categoriesResult.status === 'fulfilled' ? categoriesResult.value : []
+    return
+  }
+
   const [agentsResult, categoriesResult] = await Promise.allSettled([
     fetchTopAgents(50),
     fetchCategories('agent'),
@@ -193,7 +288,7 @@ onMounted(async () => {
   markerLayer = L.layerGroup().addTo(map)
   userLocationLayer = L.layerGroup().addTo(map)
 
-  map.on('click', () => { selectedAgent.value = null })
+  map.on('click', clearSelection)
 
   await warmupLocationManager()
 
@@ -212,9 +307,18 @@ onMounted(async () => {
 })
 
 watch(filteredAgents, (list) => {
+  if (showRequests.value) return
   renderMarkers()
   if (selectedAgent.value && !list.some(a => a.id === selectedAgent.value!.id)) {
     selectedAgent.value = null
+  }
+})
+
+watch(filteredOrders, (list) => {
+  if (!showRequests.value) return
+  renderMarkers()
+  if (selectedOrder.value && !list.some(o => o.id === selectedOrder.value!.id)) {
+    selectedOrder.value = null
   }
 })
 
@@ -235,7 +339,7 @@ onBeforeUnmount(() => {
 
     <AppHeader
       :title="locale.t.shell.tabs.map"
-      :subtitle="locale.t.map.subtitle"
+      :subtitle="showRequests ? locale.t.map.requestsSubtitle : locale.t.map.subtitle"
       show-back
     />
 
@@ -254,7 +358,7 @@ onBeforeUnmount(() => {
     <button
       type="button"
       class="absolute right-4 z-[70] flex size-13 items-center justify-center rounded-full bg-primary text-white shadow-xl shadow-[#02305C]/40 transition-all active:scale-95"
-      :class="selectedAgent ? 'bottom-44' : 'bottom-28'"
+      :class="hasSelection ? 'bottom-44' : 'bottom-28'"
       @click="centerOnUser"
     >
       <LocateFixed
@@ -264,7 +368,7 @@ onBeforeUnmount(() => {
     </button>
 
     <div
-      v-if="!selectedAgent"
+      v-if="!hasSelection"
       class="safe-bottom absolute inset-x-0 bottom-0 z-[70] flex flex-col items-center gap-2 px-6 pb-4"
     >
       <p
@@ -365,12 +469,66 @@ onBeforeUnmount(() => {
                   · {{ selectedCategory }}
                 </span>
               </div>
-              <p
-                v-if="selectedAgent.location_label"
-                class="mt-1 flex items-center gap-1 text-xs text-slate-500"
-              >
+              <!-- District + city only; the circle is the ~1 km area. -->
+              <p class="mt-1 flex items-center gap-1 text-xs text-slate-500">
                 <MapPin class="size-3.5 shrink-0" />
-                <span class="truncate">{{ selectedAgent.location_label }}</span>
+                <span class="truncate">{{ selectedAgent.location_label ? `${selectedAgent.location_label} · ${locale.t.map.approxAreaShort}` : locale.t.map.approxArea }}</span>
+              </p>
+            </div>
+
+            <span class="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+              <ChevronRight class="size-5" />
+            </span>
+          </button>
+        </div>
+      </div>
+    </Transition>
+
+    <!-- Agent mode: a tapped open request (its area, never the exact point). -->
+    <Transition name="agent-card">
+      <div
+        v-if="selectedOrder"
+        class="safe-bottom absolute inset-x-0 bottom-0 z-[75] px-4 pb-4"
+      >
+        <div class="relative rounded-3xl bg-white p-3 shadow-2xl shadow-[#02305C]/35">
+          <button
+            type="button"
+            class="absolute right-2.5 top-2.5 z-10 flex size-7 items-center justify-center rounded-full bg-slate-100 text-slate-500 transition active:scale-90"
+            :aria-label="locale.t.common.cancel"
+            @click.stop="selectedOrder = null"
+          >
+            <X class="size-4" />
+          </button>
+
+          <button
+            type="button"
+            class="flex w-full items-center gap-3 pr-7 text-left"
+            @click="openOrder(selectedOrder)"
+          >
+            <span
+              class="flex size-[3.75rem] shrink-0 items-center justify-center rounded-2xl"
+              :class="selectedOrder.route === 'tezkor' ? 'bg-orange-100 text-orange-600' : 'bg-primary/10 text-primary'"
+            >
+              <Zap
+                v-if="selectedOrder.route === 'tezkor'"
+                class="size-6"
+              />
+              <FileText
+                v-else
+                class="size-6"
+              />
+            </span>
+            <div class="min-w-0 flex-1">
+              <p class="truncate font-bold text-slate-900">
+                {{ selectedOrder.title }}
+              </p>
+              <p class="mt-0.5 truncate text-xs font-semibold text-slate-700">
+                {{ selectedOrder.route === 'tezkor' ? locale.t.route.tezkor : locale.t.route.tender }}<template v-if="selectedOrderCategory">
+                  · {{ selectedOrderCategory }}</template>
+              </p>
+              <p class="mt-1 flex items-center gap-1 text-xs text-slate-500">
+                <MapPin class="size-3.5 shrink-0" />
+                <span class="truncate">{{ locale.t.map.approxArea }}</span>
               </p>
             </div>
 
@@ -386,6 +544,11 @@ onBeforeUnmount(() => {
 
 <style>
 .rb-user-location {
+  background: transparent;
+  border: none;
+}
+
+.rb-area-badge {
   background: transparent;
   border: none;
 }

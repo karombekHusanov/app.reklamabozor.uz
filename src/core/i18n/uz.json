@@ -303,7 +303,10 @@
     "searchPlaceholder": "Qidirish",
     "listView": "Ro'yxat",
     "categoriesTitle": "Kategoriyalar",
-    "allCategories": "Barcha kategoriyalar"
+    "allCategories": "Barcha kategoriyalar",
+    "requestsSubtitle": "Yaqin atrofdagi ochiq so'rovlar",
+    "approxArea": "Taxminiy hudud (~1 km) — aniq joy ish boshlanganda ko'rinadi",
+    "approxAreaShort": "taxminiy hudud ~1 km"
   },
   "chat": {
     "subtitle": "Xabarlar",
@@ -1094,7 +1097,8 @@
     "readyMissing": "Yetishmayapti",
     "readyCta": "Profilni to'ldirish",
     "requiredToWork": "So'rovlarga javob berish uchun kamida bitta yo'nalish tanlang.",
-    "requiredToWorkLocation": "So'rovlarga javob berish uchun xaritada joylashuvingizni belgilang."
+    "requiredToWorkLocation": "So'rovlarga javob berish uchun xaritada joylashuvingizni belgilang.",
+    "partnerLocationTitle": "Agentlik joylashuvi"
   },
   "auth": {
     "phoneTitle": "Telefon raqamingiz kerak",
@@ -1432,7 +1436,8 @@
     "errGeolocation": "Geolokatsiya mavjud emas.",
     "errLocation": "Joylashuvni aniqlab bo'lmadi.",
     "errMapContainer": "Xarita konteyneri mavjud emas.",
-    "errMapLoad": "Xaritani yuklab bo'lmadi."
+    "errMapLoad": "Xaritani yuklab bo'lmadi.",
+    "approxAreaHint": "Taxminiy hudud, radius ~{km} km. Aniq joylashuv ish boshlanganda ochiladi."
   },
   "amendments": {
     "sectionTitle": "Qo'shimcha kelishuvlar",

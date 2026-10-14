@@ -180,6 +180,10 @@ export interface OfferAgent {
   /** The agent's Telegram avatar — shown when there is no company logo. */
   avatar?: string | null
   location_label: string | null
+  lat?: string | number | null
+  lng?: string | number | null
+  /** Set (metres) when the location is an approximate public circle; null = exact. */
+  location_radius_m?: number | null
   stars?: number | null
   stars_count?: number
 }
@@ -391,6 +395,9 @@ export interface OrderClaim {
     company_name: string | null
     company_logo: string | null
     location_label: string | null
+    lat?: string | number | null
+    lng?: string | number | null
+    location_radius_m?: number | null
     stars: number | null
     stars_count: number | null
     grade: number | null
@@ -553,6 +560,8 @@ export interface AgentOrder {
   lat?: string | number | null
   lng?: string | number | null
   location_label?: string | null
+  /** Set (metres) when the location is an approximate public circle; null = exact. */
+  location_radius_m?: number | null
   region?: OrderRegionRef | null
   district?: OrderRegionRef | null
   status: OrderStatus
@@ -640,6 +649,8 @@ export interface AgentOfferDetail {
     lat?: string | number | null
     lng?: string | number | null
     location_label?: string | null
+    /** Set (metres) when the location is an approximate public circle; null = exact. */
+    location_radius_m?: number | null
     region?: OrderRegionRef | null
     district?: OrderRegionRef | null
     status: OrderStatus | null

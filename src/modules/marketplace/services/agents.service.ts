@@ -37,6 +37,8 @@ export interface PublicAgent {
   /** Decimal strings (decimal:7) or null when the agent hasn't set a location. */
   lat: string | null
   lng: string | null
+  /** Public surface: centre of a circle of this radius (metres), not the exact point. */
+  location_radius_m?: number | null
   website_url: string | null
   linkedin_url: string | null
   results_text: string | null

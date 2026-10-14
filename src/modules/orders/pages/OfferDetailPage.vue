@@ -586,11 +586,13 @@ watch(() => props.id, loadOffer)
             </span>
           </div>
 
+          <!-- A 1 km circle until the client starts work with this executor. -->
           <LocationMap
             v-if="order.lat != null && order.lng != null"
             :lat="order.lat"
             :lng="order.lng"
             :label="order.location_label"
+            :radius-m="order.location_radius_m"
           />
 
           <div v-if="order.description">

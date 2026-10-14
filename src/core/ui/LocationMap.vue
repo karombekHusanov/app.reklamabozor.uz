@@ -10,7 +10,15 @@ const props = defineProps<{
   lat: number | string | null | undefined
   lng: number | string | null | undefined
   label?: string | null
+  /**
+   * Approximate location: the API sends a circle centre + radius instead of the
+   * exact point (public surfaces, before work starts). Drawn as a shaded area
+   * with no pin and no "open in maps" — there is no exact point to open.
+   */
+  radiusM?: number | null
 }>()
+
+const approximate = computed(() => (props.radiusM ?? 0) > 0)
 
 const locale = useLocaleStore()
 
@@ -58,14 +66,27 @@ function initMap() {
       boxZoom: false,
       keyboard: false,
       touchZoom: false,
-    }).setView([lat, lng], 15)
+    }).setView([lat, lng], approximate.value ? 13 : 15)
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '© OpenStreetMap',
       maxZoom: 19,
     }).addTo(map)
 
-    L.marker([lat, lng], { icon: PIN_ICON, interactive: false }).addTo(map)
+    if (approximate.value) {
+      const circle = L.circle([lat, lng], {
+        radius: props.radiusM!,
+        color: '#2563eb',
+        weight: 1.5,
+        fillColor: '#3b82f6',
+        fillOpacity: 0.18,
+        interactive: false,
+      }).addTo(map)
+      map.fitBounds(circle.getBounds(), { padding: [12, 12] })
+    }
+    else {
+      L.marker([lat, lng], { icon: PIN_ICON, interactive: false }).addTo(map)
+    }
 
     requestAnimationFrame(() => map?.invalidateSize())
     status.value = 'ready'
@@ -129,7 +150,16 @@ onBeforeUnmount(destroyMap)
       </div>
     </div>
 
+    <p
+      v-if="approximate"
+      class="flex items-start gap-1.5 text-xs leading-snug text-muted-foreground"
+    >
+      <MapPin class="mt-0.5 size-3.5 shrink-0" />
+      {{ locale.t.ui.approxAreaHint.replace('{km}', String(Math.round((radiusM ?? 0) / 100) / 10)) }}
+    </p>
+
     <button
+      v-else
       type="button"
       class="pressable inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-border bg-card px-3 py-2.5 text-sm font-medium text-foreground transition active:scale-[0.98]"
       @click="openYandex"

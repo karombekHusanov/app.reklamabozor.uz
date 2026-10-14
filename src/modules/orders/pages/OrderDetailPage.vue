@@ -53,6 +53,14 @@ const offers = computed(() => order.value?.offers ?? [])
 // Once the client picks an offer, the losing bids are no longer relevant —
 // show only the accepted one so the order detail focuses on the chosen agency.
 const acceptedOffer = computed(() => offers.value.find(o => o.status === 'accepted') ?? null)
+
+// Once work starts the API sends the chosen agency's exact location (radius
+// null); until then only public circles — nothing to show here.
+const partnerLocation = computed(() => {
+  const agent = order.value?.claim?.agent ?? acceptedOffer.value?.agent
+  if (!agent || agent.lat == null || agent.lng == null || agent.location_radius_m != null) return null
+  return { lat: agent.lat, lng: agent.lng, label: agent.location_label }
+})
 // Once an offer is chosen only it stays in the list; before that, live
 // otkliks first and the withdrawn/declined ones after them.
 const listedOffers = computed(() => {
@@ -647,6 +655,18 @@ async function sendReview(criteria: ReviewCriterionScore[], comment: string | nu
               {{ locale.t.orderView.offersHint }}
             </p>
           </template>
+        </template>
+
+        <!-- Work started: the chosen agency's exact location. -->
+        <template v-if="partnerLocation">
+          <h2 class="sec">
+            {{ locale.t.executor.partnerLocationTitle }}
+          </h2>
+          <LocationMap
+            :lat="partnerLocation.lat"
+            :lng="partnerLocation.lng"
+            :label="partnerLocation.label"
+          />
         </template>
 
         <!-- The request: one fact per row, then the description and its files. -->
