@@ -472,7 +472,12 @@
     "otkliksTitle": "Responses · {count}",
     "pickBody": "Chat with the agencies and pick the one you agreed with.",
     "pick": "Agreed",
-    "waitingPickBody": "Your response was sent to the client. They pick the agency among the responses — reach them in the chat."
+    "waitingPickBody": "Your response was sent to the client. They pick the agency among the responses — reach them in the chat.",
+    "pickConfirm": "Pick this agency? It has to pay to take the job — once it confirms, the request closes.",
+    "pickedToast": "Agency picked — waiting for it to confirm.",
+    "pickWaitingTitle": "Waiting for the agency to confirm",
+    "pickWaitingBody": "The agency you picked has until {time} to take the job. If it does not, you can pick another.",
+    "pickWaitingOther": "You picked another agency — waiting for its answer."
   },
   "orders": {
     "myOrdersTitle": "My Orders",
@@ -1741,24 +1746,26 @@
     },
     "balance": {
       "title": "Balance",
-      "enough": "Enough for {count} responses",
+      "enough": "Enough for {count} orders",
       "amount": "Top-up amount",
-      "amountHint": "{amount} — {count} responses",
+      "amountHint": "{amount} — {count} orders",
       "thousand": "{n}k",
       "rules": [
-        "To talk to a client you send a response — {fee} each",
-        "You are charged only when you send a response — the balance never expires",
-        "If a response is declined, the money returns to your balance"
+        "You pay once per order — {fee}",
+        "On Tezkor you may pay after the client picks you — the balance never expires",
+        "If the action does not go through (response rejected), nothing is charged"
       ],
       "whyTitle": "What you pay for",
-      "whyBody": "You pay for responses — offering your service to a client. In Tezkor a response assigns the order to you; in Tender it lets you send a price list.",
+      "whyBody": "You pay once per order: when you respond, or (Tezkor “pay on pick”) when the client picks you and you take the job.",
       "history": "Recent activity",
       "historyEmpty": "No activity yet",
       "types": {
-        "topup": "Balance top-up",
+        "topup": "Top-up",
         "pass": "Pass",
         "response_fee": "Response",
-        "adjustment": "Adjustment"
+        "take_fee": "Job taken",
+        "adjustment": "Adjustment",
+        "refund": "Refund"
       },
       "topup": "Top up balance",
       "disabled": "Top-ups are not enabled yet — contact your manager."

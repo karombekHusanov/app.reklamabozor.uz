@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { AlertTriangle, Bell, CalendarDays, CheckCircle2, CreditCard, Ellipsis, Eye, FileText, Loader2, MapPin, MessageCircle, MessageSquareQuote, ShieldAlert, Wallet, XCircle, Zap } from '@lucide/vue'
+import { AlertTriangle, Bell, CalendarDays, CheckCircle2, Clock, CreditCard, Ellipsis, Eye, FileText, Loader2, MapPin, MessageCircle, MessageSquareQuote, ShieldAlert, Wallet, XCircle, Zap } from '@lucide/vue'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AppHeader from '@/modules/shell/components/AppHeader.vue'
@@ -182,11 +182,20 @@ const statusChip = computed<{ label: string, tone: 'wait' | 'ok' } | null>(() =>
   const o = order.value
   if (!o) return null
   if (isTezkor.value && o.claim) return { label: locale.t.orderView.statusChosen, tone: 'ok' }
+  if (isTezkor.value && o.pick) return { label: locale.t.route.pickWaitingTitle, tone: 'wait' }
   if (['new', 'offers_sent'].includes(o.status)) return { label: locale.t.orderView.waitingTitle, tone: 'wait' }
   return null
 })
 
 const attachmentFiles = computed(() => order.value?.attachment_files ?? [])
+
+// Tezkor "pay on pick": the agency the client picked, until it pays and takes the job.
+const pickedAgencyName = computed(() => {
+  const pick = order.value?.pick
+  if (!pick) return null
+  const offer = order.value?.offers?.find(o => o.id === pick.offer_id)
+  return offer?.agent.company_name || null
+})
 
 // Every executor (legal entity or individual) is reviewed on the agent criteria.
 const providerRole = 'agent' as const
@@ -461,6 +470,28 @@ async function sendReview(criteria: ReviewCriterionScore[], comment: string | nu
             v-else
             :status="order.status"
           />
+        </div>
+
+        <!-- Tezkor "pay on pick": picked, waiting for the agency to pay and take the job. -->
+        <div
+          v-if="isTezkor && order.pick && !order.claim"
+          class="pick-wait"
+          role="status"
+        >
+          <Clock
+            class="size-5 shrink-0"
+            aria-hidden="true"
+          />
+          <div class="min-w-0">
+            <p class="pick-wait__t">
+              {{ locale.t.route.pickWaitingTitle }}<template v-if="pickedAgencyName">
+                · {{ pickedAgencyName }}
+              </template>
+            </p>
+            <p class="pick-wait__b">
+              {{ locale.t.route.pickWaitingBody.replace('{time}', formatDateTime(order.pick.expires_at)) }}
+            </p>
+          </div>
         </div>
 
         <!-- Tezkor, once picked: the chosen agency and how to reach it. -->
@@ -1057,6 +1088,9 @@ async function sendReview(criteria: ReviewCriterionScore[], comment: string | nu
   </div>
 </template>
 <style scoped>
+.pick-wait { display: flex; align-items: flex-start; gap: 10px; padding: 14px 16px; border-radius: var(--rb-r-card); background: color-mix(in srgb, var(--rb-glow) 10%, var(--card)); border: 1px solid color-mix(in srgb, var(--rb-glow) 35%, var(--border)); color: var(--foreground); }
+.pick-wait__t { margin: 0; font-size: 14px; font-weight: 700; }
+.pick-wait__b { margin: 2px 0 0; font-size: 12.5px; line-height: 1.45; color: var(--muted-foreground); }
 .section-label {
   margin: 0;
   font-size: 11px;

@@ -472,7 +472,12 @@
     "otkliksTitle": "Otkliklar · {count}",
     "pickBody": "Agentliklar bilan chatda gaplashing va kelishganingizni tanlang.",
     "pick": "Kelishildi",
-    "waitingPickBody": "Otklikingiz mijozga yuborildi. Mijoz otkliklarni ko'rib, agentlikni o'zi tanlaydi — chat orqali bog'laning."
+    "waitingPickBody": "Otklikingiz mijozga yuborildi. Mijoz otkliklarni ko'rib, agentlikni o'zi tanlaydi — chat orqali bog'laning.",
+    "pickConfirm": "Shu agentlikni tanlaysizmi? Agentlik ishni olish uchun to'lov qilishi kerak — tasdiqlagach, so'rov yopiladi.",
+    "pickedToast": "Agentlik tanlandi — tasdig'i kutilmoqda.",
+    "pickWaitingTitle": "Agentlik tasdig'i kutilmoqda",
+    "pickWaitingBody": "Siz tanlagan agentlik ishni olishni {time} gacha tasdiqlashi kerak. Tasdiqlamasa, boshqasini tanlay olasiz.",
+    "pickWaitingOther": "Siz boshqa agentlikni tanladingiz — uning javobi kutilmoqda."
   },
   "orders": {
     "myOrdersTitle": "Buyurtmalarim",
@@ -1741,24 +1746,26 @@
     },
     "balance": {
       "title": "Balans",
-      "enough": "{count} ta otklikka yetadi",
+      "enough": "{count} ta buyurtmaga yetadi",
       "amount": "To‘ldirish summasi",
-      "amountHint": "{amount} — {count} ta otklik",
+      "amountHint": "{amount} — {count} ta buyurtma",
       "thousand": "{n} ming",
       "rules": [
-        "Mijoz bilan gaplashish uchun otklik yuborish kerak — har biri {fee}",
-        "Pul faqat otklik yuborilganda yechiladi — balans muddatsiz saqlanadi",
-        "Otklik rad etilsa, pul balansga qaytadi"
+        "Har bir buyurtma uchun bir marta to‘laysiz — {fee}",
+        "Tezkorda mijoz sizni tanlagandan keyin to‘lash ham mumkin — balans muddatsiz saqlanadi",
+        "Amal bajarilmasa (otklik rad etilsa), pul yechilmaydi"
       ],
       "whyTitle": "Nima uchun to‘laysiz",
-      "whyBody": "Siz otkliklar uchun to‘laysiz — mijozga o‘z xizmatingizni taklif qilish uchun. Tezkorda otklik so‘rovni sizga biriktiradi, Tenderda narxlar ro‘yxatini yuborish imkonini beradi.",
+      "whyBody": "Har bir buyurtma uchun bir marta to‘laysiz: otklik yuborganda yoki (Tezkor «tanlangandan keyin to‘lov» bo‘lsa) mijoz sizni tanlab, ishni olganingizda.",
       "history": "So‘nggi amallar",
       "historyEmpty": "Hozircha amallar yo‘q",
       "types": {
         "topup": "Balans to‘ldirildi",
         "pass": "Propusk",
         "response_fee": "Otklik",
-        "adjustment": "Tuzatish"
+        "take_fee": "Ishni olish",
+        "adjustment": "Tuzatish",
+        "refund": "Qaytarish"
       },
       "topup": "Balansni to‘ldirish",
       "disabled": "Balansni to‘ldirish hozircha yoqilmagan — menejerga murojaat qiling."

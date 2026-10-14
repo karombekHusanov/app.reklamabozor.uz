@@ -1,3 +1,4 @@
+import type { OrderBilling } from '@/modules/agent/types/pass'
 import { api } from '@/core/api/client'
 import type { ApiSuccess } from '@/core/types/api'
 import type { Category } from '@/modules/agent/types/agent'
@@ -13,6 +14,8 @@ export interface ShowcaseClient {
 export interface LiveOrder {
   id: number
   route?: OrderRoute
+  /** When the per-order fee is taken and how much. */
+  billing?: OrderBilling
   can_offer?: boolean
   title: string
   description: string | null
@@ -38,6 +41,8 @@ export interface LiveOrder {
 export interface ShowcaseOrder {
   id: number
   route?: OrderRoute
+  /** When the per-order fee is taken and how much. */
+  billing?: OrderBilling
   title: string
   description: string | null
   deadline: string | null

@@ -229,6 +229,28 @@ export async function withdrawOffer(offerId: number): Promise<AgentOffer> {
   return data.data
 }
 
+/**
+ * Tezkor "pay on pick": the client picked this otklik — pay the per-order fee
+ * and take the job. A short balance is a 402 `insufficient_balance` (no toast
+ * here — the pass store opens the top-up drawer).
+ */
+export async function takePickedOffer(offerId: number): Promise<AgentOfferDetail> {
+  const { data } = await api.post<ApiSuccess<AgentOfferDetail>>(
+    `/api/v1/agent/offers/${offerId}/take`,
+    {},
+    { skipErrorToast: true },
+  )
+
+  return data.data
+}
+
+/** Tezkor "pay on pick": turn the client's pick down — the otklik is withdrawn. */
+export async function declinePick(offerId: number): Promise<AgentOfferDetail> {
+  const { data } = await api.post<ApiSuccess<AgentOfferDetail>>(`/api/v1/agent/offers/${offerId}/decline-pick`)
+
+  return data.data
+}
+
 /** Adjust pending offer price (max 5 edits). */
 export async function updateOfferPrice(
   offerId: number,

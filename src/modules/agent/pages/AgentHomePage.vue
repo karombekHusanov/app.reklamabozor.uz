@@ -128,7 +128,7 @@ function openFilters() {
             v-for="order in orders"
             :key="order.id"
             :order="order"
-            :fee-som="pass.otklikFeeSom"
+            :fee-som="pass.feeSom"
           />
         </template>
       </section>

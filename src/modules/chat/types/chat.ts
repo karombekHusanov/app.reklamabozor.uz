@@ -48,6 +48,10 @@ export interface Chat {
     title: string | null
     status: OrderStatus | null
     route?: 'tender' | 'tezkor' | null
+    /** Tezkor: pay_on_pick turns "Kelishildi" into a pick the agency pays to take. */
+    tezkor_billing?: 'pay_to_respond' | 'pay_on_pick' | null
+    /** Tezkor pay_on_pick: live pick waiting for the agency (null = none). */
+    pick?: { offer_id: number, picked_at: string, expires_at: string } | null
     category: Category | null
   } | null
   other_participant: {

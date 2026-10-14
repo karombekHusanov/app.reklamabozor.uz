@@ -1,3 +1,4 @@
+import type { OfferPick, OrderBilling, TezkorBilling } from '@/modules/agent/types/pass'
 import type { Category } from '@/modules/agent/types/agent'
 import type { OrderRegionRef } from '@/modules/orders/types/region'
 
@@ -404,10 +405,21 @@ export interface OrderClaim {
   }
 }
 
+/** Tezkor pay_on_pick: the picked agency has until `expires_at` to pay and take the job. */
+export interface OrderPick {
+  offer_id: number
+  picked_at: string
+  expires_at: string
+}
+
 export interface Order {
   id: number
   route?: OrderRoute
-  /** Tezkor: client may pick one of the otkliks and close the request as agreed. */
+  /** Tezkor: when the per-order fee is taken (frozen at creation). */
+  tezkor_billing?: TezkorBilling | null
+  /** Tezkor pay_on_pick: the live pick waiting for the agency (null = none). */
+  pick?: OrderPick | null
+  /** Tezkor: client may pick one of the otkliks (not while a pick is waiting). */
   can_close?: boolean
   claim?: OrderClaim | null
   title: string
@@ -544,6 +556,7 @@ export interface OrderDraft {
 export interface AgentOrder {
   id: number
   route?: OrderRoute
+  billing?: OrderBilling
   /** Tezkor: the client picked this agent ("Kelishildi"). */
   claimed_by_me?: boolean
   can_offer?: boolean
@@ -595,8 +608,12 @@ export interface AgentOffer {
   is_interest?: boolean
   can_accept?: boolean
   can_withdraw?: boolean
+  /** Tezkor pay_on_pick: the client picked this otklik. */
+  pick?: OfferPick | null
   order: {
     id: number
+    route?: OrderRoute
+    billing?: OrderBilling | null
     title: string | null
     description?: string | null
     status: OrderStatus | null
@@ -631,6 +648,8 @@ export interface AgentOfferDetail {
   price_edits_remaining?: number
   max_price_edits?: number
   can_edit_price?: boolean
+  /** Tezkor pay_on_pick: the client picked this otklik — take it before it lapses. */
+  pick?: OfferPick | null
   contract?: OfferContractState | null
   items?: OfferItem[]
   chat?: { id: number, blocked: boolean } | null
@@ -640,6 +659,7 @@ export interface AgentOfferDetail {
     id: number
     /** Tezkor: no pricelist/contract/payment — agreed off-platform. */
     route?: OrderRoute
+    billing?: OrderBilling | null
     title: string | null
     description: string | null
     deadline: OrderDeadline | null

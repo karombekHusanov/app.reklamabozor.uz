@@ -45,6 +45,7 @@ import AmendmentsSection from '@/modules/orders/components/AmendmentsSection.vue
 import PricelistBuilder from '@/modules/orders/components/PricelistBuilder.vue'
 import ContractAgreementDrawer from '@/modules/orders/components/ContractAgreementDrawer.vue'
 import PricelistTable from '@/modules/orders/components/PricelistTable.vue'
+import TezkorTakeCard from '@/modules/orders/components/TezkorTakeCard.vue'
 import { formatPrice, isInterestOffer, offerStatusVariant, orderStatusVariant } from '@/modules/orders/lib/order-status'
 import { formatOrderRegion } from '@/modules/orders/lib/region-label'
 import {
@@ -131,6 +132,7 @@ const badge = computed(() => {
 const statusNote = computed(() => {
   if (!offer.value) return null
   if (offer.value.status === 'withdrawn') return locale.t.agent.offerWithdrawnNote
+  if (offer.value.pick) return null
   if (tezkorPending.value) return locale.t.route.waitingPickBody
   if (offer.value.status === 'pending') return locale.t.agent.offerPendingNote
   if (offer.value.status === 'rejected') return locale.t.agent.offerRejectedNote
@@ -376,6 +378,11 @@ async function handleWithdrawOffer() {
   }
 }
 
+/** Took the job (request closed) or declined it (otklik withdrawn) — reload the full detail. */
+function onPickUpdated() {
+  void loadOffer()
+}
+
 function openClient(clientId: number) {
   router.push(ROUTES.clientDetail(clientId))
 }
@@ -455,6 +462,13 @@ watch(() => props.id, loadOffer)
             </p>
           </div>
         </div>
+
+        <!-- Tezkor "pay on pick": the client picked you — take the job (pay) or decline -->
+        <TezkorTakeCard
+          v-if="offer.pick"
+          :offer="offer"
+          @updated="onPickUpdated"
+        />
 
         <!-- Pricelist the agent sent (line items) -->
         <div

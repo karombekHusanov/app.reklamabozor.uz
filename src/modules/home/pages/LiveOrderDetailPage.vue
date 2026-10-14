@@ -100,9 +100,17 @@ const dockMode = computed<'interest' | 'chat' | null>(() => {
   return null
 })
 
-// What one otklik costs — shown right above the button (hidden when otklik is free).
+// What this otklik costs — shown on the button (hidden when the otklik is free).
+// Under Tezkor "pay on pick" the otklik is free and the picked agency pays later.
+const otklikFeeSom = computed(() => (pass.feesOn ? (order.value?.billing?.otklik_fee_som ?? pass.feeSom) : 0))
+const takeFeeSom = computed(() => (pass.feesOn ? (order.value?.billing?.take_fee_som ?? 0) : 0))
 const feeLabel = computed(() =>
-  pass.otklikFeeSom > 0 ? fmtSom(pass.otklikFeeSom, passStrings(locale.locale).unit) : '',
+  otklikFeeSom.value > 0 ? fmtSom(otklikFeeSom.value, passStrings(locale.locale).unit) : '',
+)
+const takeHint = computed(() =>
+  dockMode.value === 'interest' && takeFeeSom.value > 0
+    ? passStrings(locale.locale).freeOtklik.replace('{price}', fmtSom(takeFeeSom.value, passStrings(locale.locale).unit))
+    : '',
 )
 
 const showFee = computed(() => dockMode.value === 'interest' && feeLabel.value !== '')
@@ -167,7 +175,7 @@ function onDockClick() {
     return
   }
   if (!order.value || submitting.value) return
-  void confirmOtklik(() => sendInterest())
+  void confirmOtklik(() => sendInterest(), otklikFeeSom.value)
 }
 
 let measureTimer: number | undefined
@@ -305,6 +313,12 @@ onBeforeUnmount(() => {
       class="lod__dock"
       :style="{ bottom: `${dockBottom}px` }"
     >
+      <p
+        v-if="takeHint"
+        class="lod__take-hint"
+      >
+        {{ takeHint }}
+      </p>
       <button
         type="button"
         class="lod__cta"
@@ -339,6 +353,7 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .lod--docked { padding-bottom: 6rem; }
+.lod__take-hint { margin: 0 0 8px; padding: 8px 12px; border-radius: 12px; background: color-mix(in srgb, var(--rb-glow) 12%, var(--card)); font-size: 12.5px; font-weight: 600; line-height: 1.35; color: var(--foreground); }
 .lod__body { display: flex; flex-direction: column; gap: 14px; }
 .lod__chip { display: inline-flex; align-items: center; gap: 6px; min-height: 30px; padding: 0 12px; border-radius: 999px; font-size: 12.5px; font-weight: 700; }
 .lod__chip--tezkor { background: color-mix(in srgb, var(--rb-cta) 14%, var(--card)); color: #9a3a0a; }

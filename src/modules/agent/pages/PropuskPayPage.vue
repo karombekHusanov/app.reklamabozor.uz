@@ -1,9 +1,8 @@
 <script setup lang="ts">
 /**
- * Card payment (ATMOS merchant flow): card number + expiry → ATMOS texts an
- * SMS code → confirm. Two uses: buy a Propusk (daily-pass mode), or — with
- * `?topup=1` — top up the balance each otklik fee is taken from (per-otklik
- * mode). Card data lives only in this component's memory for the resend
+ * Card top-up (ATMOS merchant flow): card number + expiry → ATMOS texts an
+ * SMS code → confirm. Tops up the balance each per-order fee is taken from
+ * (otklik, or taking a Tezkor job the client picked). Card data lives only in this component's memory for the resend
  * button; it is never persisted. With "save card" the SMS code binds the card
  * at ATMOS (we keep only its token server-side); a saved card is then charged
  * at once — no card number, no SMS step.
@@ -19,7 +18,7 @@ import { useLocaleStore } from '@/core/i18n/locale.store'
 import { navigateBack } from '@/core/lib/navigation'
 import { fmtSom, passStrings } from '@/modules/agent/lib/pass-i18n'
 import { DEFAULT_TOPUP_SOM, TOPUP_PRESETS } from '@/modules/agent/lib/topup'
-import { confirmCardPayment, fetchSavedCards, removeSavedCard, startCardPayment, startWalletTopup } from '@/modules/agent/services/pass.service'
+import { confirmCardPayment, fetchSavedCards, removeSavedCard, startWalletTopup } from '@/modules/agent/services/pass.service'
 import { usePassStore } from '@/modules/agent/stores/pass.store'
 import type { CardInput, CardPaymentStart, SavedCard } from '@/modules/agent/types/pass'
 
@@ -36,9 +35,7 @@ const { pass } = storeToRefs(store)
 const { haptic } = useTelegram()
 
 const t = computed(() => passStrings(locale.locale))
-const hours = computed(() => pass.value?.hours ?? 24)
-/* ── what is being paid for ───────────────────────────────────────── */
-const isTopup = computed(() => route.query.topup === '1')
+/* ── how much to top up ───────────────────────────────────────────── */
 const feeSom = computed(() => pass.value?.response_price_som ?? 1000)
 const topupOptions = computed(() => TOPUP_PRESETS.filter(v => v >= feeSom.value))
 // Preselected from the "not enough balance" sheet (`?amount=`), else 10 000.
@@ -46,11 +43,8 @@ const queryAmount = Number(route.query.amount)
 const topupSom = ref(TOPUP_PRESETS.includes(queryAmount) ? queryAmount : DEFAULT_TOPUP_SOM)
 const balanceBefore = ref(0)
 
-const amountSom = computed(() => (isTopup.value ? topupSom.value : (pass.value?.price_som ?? 0)))
-const amount = computed(() => fmtSom(amountSom.value, t.value.unit))
-const serviceLabel = computed(() =>
-  isTopup.value ? t.value.topupService : t.value.payService.replace('{hours}', String(hours.value)),
-)
+const amount = computed(() => fmtSom(topupSom.value, t.value.unit))
+const serviceLabel = computed(() => t.value.topupService)
 
 const step = ref<Step>('card')
 const busy = ref(false)
@@ -195,9 +189,7 @@ async function pay() {
     const card: CardInput = selectedCardId.value !== null
       ? { card_id: selectedCardId.value }
       : { card_number: cardDigits.value, expiry: expiryInput.value, save_card: saveCard.value }
-    const res = isTopup.value
-      ? await startWalletTopup(topupSom.value, card)
-      : await startCardPayment(card)
+    const res = await startWalletTopup(topupSom.value, card)
     if (!res.requires_otp) {
       settle(res)
       return
@@ -245,15 +237,13 @@ function settle(res: CardPaymentStart) {
   else error.value = t.value.genericError
 }
 
-/** The bank answered late — the pass endpoint settles pending payments. */
+/** The bank answered late — the summary endpoint settles pending payments. */
 function waitForBank() {
   step.value = 'pending'
   const startedAt = Date.now()
   pollTimer = setInterval(async () => {
     const data = await store.load()
-    const settled = isTopup.value
-      ? (data?.balance_som ?? 0) >= balanceBefore.value + topupSom.value
-      : data?.active
+    const settled = (data?.balance_som ?? 0) >= balanceBefore.value + topupSom.value
     if (data && settled) finish(data)
     else if (Date.now() - startedAt > 90_000 && pollTimer) {
       clearInterval(pollTimer)
@@ -264,8 +254,7 @@ function waitForBank() {
 
 function finish(summary: NonNullable<typeof pass.value>) {
   if (pollTimer) clearInterval(pollTimer)
-  if (isTopup.value) store.completeTopup(summary)
-  else store.completeCardPayment(summary)
+  store.completeTopup(summary)
   step.value = 'done'
   haptic('medium')
 }
@@ -298,7 +287,7 @@ onBeforeUnmount(() => {
 <template>
   <div class="pay">
     <AppHeader
-      :title="isTopup ? t.topupTitle : t.payTitle"
+      :title="t.topupTitle"
       show-back
     />
 
@@ -315,9 +304,9 @@ onBeforeUnmount(() => {
         </div>
       </section>
 
-      <!-- top-up amount (per-otklik mode) -->
+      <!-- top-up amount -->
       <section
-        v-if="isTopup && step === 'card'"
+        v-if="step === 'card'"
         class="pay-card"
       >
         <p class="pay-label">
@@ -563,12 +552,10 @@ onBeforeUnmount(() => {
           aria-hidden="true"
         ><CheckCircle2 class="size-9" /></span>
         <h2 class="pay-otp__title">
-          {{ isTopup ? t.topupSuccessTitle : t.successTitle }}
+          {{ t.topupSuccessTitle }}
         </h2>
         <p class="pay-otp__body">
-          {{ isTopup
-            ? t.topupSuccessBody.replace('{amount}', fmtSom(pass?.balance_som ?? 0, t.unit))
-            : t.successBody.replace('{hours}', String(hours)) }}
+          {{ t.topupSuccessBody.replace('{amount}', fmtSom(pass?.balance_som ?? 0, t.unit)) }}
         </p>
       </section>
 
@@ -597,7 +584,7 @@ onBeforeUnmount(() => {
           v-if="busy"
           class="size-4 animate-spin"
         />
-        {{ busy ? t.paySending : (isTopup ? t.topupCta : t.payCta).replace('{amount}', amount) }}
+        {{ busy ? t.paySending : t.topupCta.replace('{amount}', amount) }}
       </button>
       <button
         v-else-if="step === 'otp'"

@@ -7,8 +7,9 @@ import { useAgentStore } from '@/modules/agent/stores/agent.store'
 import { usePassStore } from '@/modules/agent/stores/pass.store'
 
 /**
- * Send an otklik (interest) right away — no confirmation sheet. Two things
- * interrupt it:
+ * Send an otklik (interest) right away — no confirmation sheet. `feeSom` is
+ * this order's otklik fee (its `billing.otklik_fee_som`; 0 when the otklik is
+ * free, e.g. Tezkor "pay on pick"). Two things interrupt it:
  * - an approved profile without service categories or a map location: the
  *   executor may not start working yet, so we explain what is missing and
  *   offer to open that profile tab instead of sending;
@@ -17,7 +18,7 @@ import { usePassStore } from '@/modules/agent/stores/pass.store'
  *   with 402.
  * The server stays the judge for everything else.
  */
-export async function confirmOtklik(send: () => unknown): Promise<void> {
+export async function confirmOtklik(send: () => unknown, feeSom?: number): Promise<void> {
   const agent = useAgentStore()
   await agent.loadProfile()
 
@@ -43,8 +44,9 @@ export async function confirmOtklik(send: () => unknown): Promise<void> {
   const store = usePassStore()
   await store.ensureLoaded()
 
-  if (store.otklikFeeSom > 0 && !store.canAffordOtklik) {
-    store.promptTopup(send)
+  const fee = feeSom ?? store.feeSom
+  if (store.feesOn && fee > 0 && !store.canAfford(fee)) {
+    store.promptTopup(send, fee)
     return
   }
 

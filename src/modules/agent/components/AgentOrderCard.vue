@@ -38,7 +38,9 @@ const deadline = computed(() =>
 const chip = computed(() => {
   const t = locale.t.agentHome
   const action = t.respond
-  return props.feeSom ? `${action} · ${fmtSom(props.feeSom, passStrings(locale.locale).unit)}` : action
+  // The order's own otklik fee wins (0 under Tezkor "pay on pick").
+  const fee = props.order.billing?.otklik_fee_som ?? props.feeSom
+  return fee ? `${action} · ${fmtSom(fee, passStrings(locale.locale).unit)}` : action
 })
 
 function open() {

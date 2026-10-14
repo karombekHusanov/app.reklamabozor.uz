@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useWhiteCanvas } from '@/core/composables/useWhiteCanvas'
-import { BadgeCheck, ChevronRight, Copy, EllipsisVertical, Loader2, LockOpen, MessageCircle, Phone, ShieldCheck, Star, UserRound, XCircle } from '@lucide/vue'
+import { BadgeCheck, ChevronRight, Clock, Copy, EllipsisVertical, Loader2, LockOpen, MessageCircle, Phone, ShieldCheck, Star, UserRound, XCircle } from '@lucide/vue'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import AppHeader from '@/modules/shell/components/AppHeader.vue'
@@ -13,7 +13,7 @@ import { useTelegram } from '@/core/composables/useTelegram'
 import { useToast } from '@/core/composables/useToast'
 import { useAuthStore } from '@/modules/auth/stores/auth.store'
 import { useLocaleStore } from '@/core/i18n/locale.store'
-import { formatDaySeparator } from '@/core/lib/date'
+import { formatDateTime, formatDaySeparator } from '@/core/lib/date'
 import { formatPhone } from '@/core/lib/phone'
 import { confirmAction } from '@/core/lib/confirm-action'
 import { ROUTES } from '@/modules/shell/constants/routes'
@@ -147,11 +147,19 @@ const orderOpen = computed(() =>
   ['new', 'offers_sent'].includes(chat.currentChat?.order?.status ?? ''),
 )
 const isTezkorThread = computed(() => chat.currentChat?.order?.route === 'tezkor')
+// Tezkor "pay on pick": the pick reserves a window for the agency to pay and take the job.
+const payOnPick = computed(() => chat.currentChat?.order?.tezkor_billing === 'pay_on_pick')
+const livePick = computed(() => chat.currentChat?.order?.pick ?? null)
 const canPick = computed(() =>
   otherIsAgency.value
   && activeOffer.value?.status === 'pending'
   && orderOpen.value
+  && livePick.value === null
   && (isTezkorThread.value || activeOffer.value?.can_accept === true),
+)
+/** This agency was picked and has until `expires_at` to take the job. */
+const pickWaiting = computed(() =>
+  otherIsAgency.value && livePick.value !== null && livePick.value.offer_id === activeOffer.value?.id,
 )
 const picked = computed(() => otherIsAgency.value && activeOffer.value?.status === 'accepted')
 
@@ -166,13 +174,13 @@ async function pickAgency() {
     return
   }
 
-  if (!(await confirmAction(locale.t.route.closeConfirm))) return
+  if (!(await confirmAction(payOnPick.value ? locale.t.route.pickConfirm : locale.t.route.closeConfirm))) return
   picking.value = true
   const ok = await orders.closeTezkor(orderId.value, offer.id)
   picking.value = false
   if (ok) {
     haptic('medium')
-    toast.success(locale.t.route.closedToast)
+    toast.success(payOnPick.value ? locale.t.route.pickedToast : locale.t.route.closedToast)
     await chat.refreshDirectThread(directChatId.value)
   }
   else {
@@ -418,6 +426,16 @@ function openActiveOffer() {
             />
             {{ locale.t.orderView.pickButton }}
           </button>
+        </div>
+        <div
+          v-else-if="pickWaiting && livePick"
+          class="ch-pick ch-pick--done"
+        >
+          <Clock
+            class="size-5 shrink-0"
+            aria-hidden="true"
+          />
+          <p>{{ locale.t.route.pickWaitingBody.replace('{time}', formatDateTime(livePick.expires_at)) }}</p>
         </div>
         <div
           v-else-if="picked"
