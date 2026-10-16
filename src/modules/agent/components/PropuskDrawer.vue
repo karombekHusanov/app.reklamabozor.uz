@@ -90,7 +90,6 @@ watch(drawerOpen, (v) => { if (v) topupSom.value = topupOptions.value.includes(1
         {{ t.topupCta.replace('{amount}', fmtSom(topupSom, t.unit)) }}
       </button>
     </div>
-
   </Drawer>
 </template>
 

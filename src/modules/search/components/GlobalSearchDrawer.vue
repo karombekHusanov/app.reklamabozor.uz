@@ -300,7 +300,10 @@ function providerStars(agent: PublicAgent): string | null {
               @click="pickService(category)"
             >
               <span class="search-row__tile">
-                <CategoryThumb :category="category" :size="19" />
+                <CategoryThumb
+                  :category="category"
+                  :size="19"
+                />
               </span>
               <span class="search-row__body">
                 <span class="search-row__name">{{ categoryName(category, locale.locale) }}</span>

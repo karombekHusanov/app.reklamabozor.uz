@@ -47,13 +47,19 @@ function openOrder(id: number) {
 
     <section class="space-y-3 px-5">
       <template v-if="!auth.isAuthenticated">
-        <GlassCard padding="none" class="overflow-hidden">
+        <GlassCard
+          padding="none"
+          class="overflow-hidden"
+        >
           <EmptyState
             :icon="LogIn"
             :title="locale.t.orders.signInTitle"
             :description="locale.t.orders.signInBody"
           >
-            <Button class="mt-1 rounded-2xl" @click="router.push(ROUTES.profile)">
+            <Button
+              class="mt-1 rounded-2xl"
+              @click="router.push(ROUTES.profile)"
+            >
               {{ locale.t.orders.goToProfile }}
             </Button>
           </EmptyState>
@@ -61,11 +67,18 @@ function openOrder(id: number) {
       </template>
 
       <template v-else-if="orders.isLoading && orders.myOrders.length === 0">
-        <Skeleton v-for="n in 3" :key="n" class="h-[220px] w-full rounded-[1.35rem]" />
+        <Skeleton
+          v-for="n in 3"
+          :key="n"
+          class="h-[220px] w-full rounded-[1.35rem]"
+        />
       </template>
 
       <template v-else-if="orders.myOrders.length === 0">
-        <GlassCard padding="none" class="overflow-hidden">
+        <GlassCard
+          padding="none"
+          class="overflow-hidden"
+        >
           <EmptyState
             :icon="ClipboardList"
             :title="locale.t.orders.emptyTitle"

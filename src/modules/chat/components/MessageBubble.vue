@@ -161,8 +161,14 @@ function formatSize(bytes: number): string {
         :class="[body ? 'mt-1.5' : '', mine ? 'text-primary-foreground/70' : 'text-muted-foreground']"
       >
         <span class="text-[12px] tabular-nums">{{ time }}</span>
-        <CheckCheck v-if="mine && showStatus && read" class="size-3.5" />
-        <Check v-else-if="mine && showStatus" class="size-3.5" />
+        <CheckCheck
+          v-if="mine && showStatus && read"
+          class="size-3.5"
+        />
+        <Check
+          v-else-if="mine && showStatus"
+          class="size-3.5"
+        />
       </div>
     </div>
   </div>

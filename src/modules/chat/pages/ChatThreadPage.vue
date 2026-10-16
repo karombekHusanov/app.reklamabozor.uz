@@ -141,8 +141,14 @@ async function handleSend(body: string, fileIds: number[]): Promise<boolean> {
           {{ locale.t.chat.threadEmpty }}
         </p>
 
-        <template v-for="item in feed" :key="item.key">
-          <div v-if="item.kind === 'date'" class="chat-day-pill my-1">
+        <template
+          v-for="item in feed"
+          :key="item.key"
+        >
+          <div
+            v-if="item.kind === 'date'"
+            class="chat-day-pill my-1"
+          >
             {{ daySeparatorLabel(item.date) }}
           </div>
 

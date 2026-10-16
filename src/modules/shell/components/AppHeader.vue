@@ -56,7 +56,10 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="app-header-wrap" :class="props.class">
+  <div
+    class="app-header-wrap"
+    :class="props.class"
+  >
     <div class="app-header-dock">
       <div
         class="app-header-card"

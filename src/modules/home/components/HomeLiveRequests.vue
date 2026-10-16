@@ -50,7 +50,10 @@ function metaText(order: LiveOrder): string {
         class="fcard"
       >
         <span class="fcard__ic">
-          <CategoryThumb :category="order.category" :size="21" />
+          <CategoryThumb
+            :category="order.category"
+            :size="21"
+          />
         </span>
         <div class="fcard__main">
           <p class="fcard__t">

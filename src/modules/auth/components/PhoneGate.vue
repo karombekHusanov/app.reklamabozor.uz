@@ -94,8 +94,14 @@ async function retryVerify() {
         :disabled="busy"
         @click="share"
       >
-        <Loader2 v-if="busy" class="size-4 animate-spin" />
-        <Phone v-else class="size-4" />
+        <Loader2
+          v-if="busy"
+          class="size-4 animate-spin"
+        />
+        <Phone
+          v-else
+          class="size-4"
+        />
         <template v-if="state === 'sharing'">
           {{ locale.t.auth.phoneOpening }}
         </template>
@@ -114,11 +120,18 @@ async function retryVerify() {
         {{ locale.t.auth.phoneDeclined }}
       </p>
 
-      <div v-else-if="state === 'timeout'" class="space-y-2">
+      <div
+        v-else-if="state === 'timeout'"
+        class="space-y-2"
+      >
         <p class="text-xs text-muted-foreground">
           {{ locale.t.auth.phoneTimeout }}
         </p>
-        <Button variant="outline" class="h-10 w-full rounded-2xl" @click="retryVerify">
+        <Button
+          variant="outline"
+          class="h-10 w-full rounded-2xl"
+          @click="retryVerify"
+        >
           {{ locale.t.auth.phoneRetry }}
         </Button>
       </div>

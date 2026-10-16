@@ -306,8 +306,12 @@ onBeforeUnmount(() => {
       >
         <Megaphone class="mt-0.5 size-4 shrink-0 text-primary" />
         <div class="min-w-0">
-          <p class="text-xs font-semibold uppercase tracking-wide text-primary">{{ t.pinned }}</p>
-          <p class="mt-0.5 whitespace-pre-line text-sm">{{ meta.pinned_message }}</p>
+          <p class="text-xs font-semibold uppercase tracking-wide text-primary">
+            {{ t.pinned }}
+          </p>
+          <p class="mt-0.5 whitespace-pre-line text-sm">
+            {{ meta.pinned_message }}
+          </p>
         </div>
       </GlassCard>
 
@@ -325,16 +329,28 @@ onBeforeUnmount(() => {
           :disabled="isLoadingOlder"
           @click="loadOlder"
         >
-          <Loader2 v-if="isLoadingOlder" class="inline size-3 animate-spin" />
+          <Loader2
+            v-if="isLoadingOlder"
+            class="inline size-3 animate-spin"
+          />
           {{ t.loadOlder }}
         </button>
 
-        <p v-if="messages.length === 0" class="py-8 text-center text-sm text-muted-foreground">
+        <p
+          v-if="messages.length === 0"
+          class="py-8 text-center text-sm text-muted-foreground"
+        >
           {{ t.empty }}
         </p>
 
-        <template v-for="item in feed" :key="item.key">
-          <div v-if="item.kind === 'date'" class="chat-day-pill my-1">
+        <template
+          v-for="item in feed"
+          :key="item.key"
+        >
+          <div
+            v-if="item.kind === 'date'"
+            class="chat-day-pill my-1"
+          >
             {{ daySeparatorLabel(item.date) }}
           </div>
 
@@ -348,7 +364,10 @@ onBeforeUnmount(() => {
           >
             <!-- Telegram-style avatar gutter: shown on the last bubble of an
                  incoming run, an empty spacer otherwise so bubbles stay aligned. -->
-            <div v-if="!isMine(item.message)" class="w-[30px] shrink-0 self-end">
+            <div
+              v-if="!isMine(item.message)"
+              class="w-[30px] shrink-0 self-end"
+            >
               <button
                 v-if="item.last"
                 type="button"
@@ -382,7 +401,10 @@ onBeforeUnmount(() => {
         <div ref="bottomAnchor" />
       </template>
 
-      <p v-if="error" class="rounded-2xl bg-destructive/10 px-4 py-3 text-sm text-destructive">
+      <p
+        v-if="error"
+        class="rounded-2xl bg-destructive/10 px-4 py-3 text-sm text-destructive"
+      >
         {{ error }}
       </p>
     </section>

@@ -28,13 +28,20 @@ const isPending = computed(() => props.review.status === 'pending')
       <p class="text-sm font-semibold text-foreground">
         {{ label }}
       </p>
-      <Badge v-if="isPending" variant="warning" class="gap-1 text-[10px]">
+      <Badge
+        v-if="isPending"
+        variant="warning"
+        class="gap-1 text-[10px]"
+      >
         <Clock class="size-3" />
         {{ locale.t.orders.ratePending }}
       </Badge>
     </div>
 
-    <div v-if="review.rating !== null" class="flex items-center gap-2">
+    <div
+      v-if="review.rating !== null"
+      class="flex items-center gap-2"
+    >
       <div class="flex">
         <Star
           v-for="n in 5"

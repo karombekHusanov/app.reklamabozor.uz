@@ -71,7 +71,6 @@ function display(value: string | null | undefined): string {
           {{ profile.legal_address }}
         </p>
       </div>
-
     </GlassCard>
 
     <GlassCard class="space-y-4">

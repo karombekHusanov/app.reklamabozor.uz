@@ -87,7 +87,10 @@ function handleSubmit() {
       {{ body }}
     </p>
 
-    <div v-if="loading" class="flex justify-center py-4">
+    <div
+      v-if="loading"
+      class="flex justify-center py-4"
+    >
       <Loader2 class="size-5 animate-spin text-muted-foreground" />
     </div>
 

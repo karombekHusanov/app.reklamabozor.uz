@@ -385,7 +385,6 @@ const inputClass = 'glass-input'
           {{ fieldErrors.legal_address }}
         </p>
       </div>
-
     </GlassCard>
 
     <!-- Director -->
@@ -455,7 +454,6 @@ const inputClass = 'glass-input'
             {{ fieldErrors.director_position }}
           </p>
         </div>
-
       </template>
 
       <div class="space-y-1.5">

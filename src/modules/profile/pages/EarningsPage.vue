@@ -63,18 +63,28 @@ onMounted(() => {
 
 <template>
   <div class="pb-24">
-    <AppHeader :title="t.title" :subtitle="t.subtitle" show-back />
+    <AppHeader
+      :title="t.title"
+      :subtitle="t.subtitle"
+      show-back
+    />
 
     <section class="space-y-4 px-4">
       <PropuskCard />
 
       <!-- Balance -->
-      <GlassCard v-if="loading" class="space-y-3">
+      <GlassCard
+        v-if="loading"
+        class="space-y-3"
+      >
         <Skeleton class="h-4 w-24" />
         <Skeleton class="h-9 w-40" />
       </GlassCard>
 
-      <GlassCard v-else-if="balance" class="space-y-4">
+      <GlassCard
+        v-else-if="balance"
+        class="space-y-4"
+      >
         <div>
           <p class="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
             {{ t.owed }}
@@ -86,12 +96,20 @@ onMounted(() => {
 
         <div class="grid grid-cols-2 gap-2">
           <div class="glass-chip rounded-xl px-3 py-2">
-            <p class="text-[10px] font-semibold uppercase text-muted-foreground">{{ t.processing }}</p>
-            <p class="text-sm font-bold text-foreground">{{ money(balance.processing_som) }}</p>
+            <p class="text-[10px] font-semibold uppercase text-muted-foreground">
+              {{ t.processing }}
+            </p>
+            <p class="text-sm font-bold text-foreground">
+              {{ money(balance.processing_som) }}
+            </p>
           </div>
           <div class="glass-chip rounded-xl px-3 py-2">
-            <p class="text-[10px] font-semibold uppercase text-muted-foreground">{{ t.paid }}</p>
-            <p class="text-sm font-bold text-foreground">{{ money(balance.paid_som) }}</p>
+            <p class="text-[10px] font-semibold uppercase text-muted-foreground">
+              {{ t.paid }}
+            </p>
+            <p class="text-sm font-bold text-foreground">
+              {{ money(balance.paid_som) }}
+            </p>
           </div>
         </div>
 
@@ -100,11 +118,20 @@ onMounted(() => {
           <div class="glass-chip flex items-start gap-3 rounded-xl px-3 py-3">
             <span class="earnings-flow-icon shrink-0"><Building2 class="size-4" /></span>
             <div class="min-w-0">
-              <p class="text-[13px] font-bold text-foreground">{{ t.bankTitle }}</p>
-              <p class="mt-0.5 text-[11px] leading-snug text-muted-foreground">{{ t.bankHint }}</p>
+              <p class="text-[13px] font-bold text-foreground">
+                {{ t.bankTitle }}
+              </p>
+              <p class="mt-0.5 text-[11px] leading-snug text-muted-foreground">
+                {{ t.bankHint }}
+              </p>
 
-              <div v-if="bank?.complete" class="mt-2 space-y-0.5">
-                <p class="text-[12px] font-semibold text-foreground">{{ bank.bank_name }}</p>
+              <div
+                v-if="bank?.complete"
+                class="mt-2 space-y-0.5"
+              >
+                <p class="text-[12px] font-semibold text-foreground">
+                  {{ bank.bank_name }}
+                </p>
                 <p class="text-[11px] tabular-nums text-muted-foreground">
                   {{ t.bankAccount }}: {{ bank.bank_account }}
                 </p>
@@ -130,10 +157,19 @@ onMounted(() => {
 
       <!-- History -->
       <div>
-        <h2 class="rb-sec__title mb-3 px-1 !text-[16px]">{{ t.history }}</h2>
+        <h2 class="rb-sec__title mb-3 px-1 !text-[16px]">
+          {{ t.history }}
+        </h2>
 
-        <div v-if="loading" class="space-y-2">
-          <Skeleton v-for="i in 3" :key="i" class="h-16 w-full rounded-2xl" />
+        <div
+          v-if="loading"
+          class="space-y-2"
+        >
+          <Skeleton
+            v-for="i in 3"
+            :key="i"
+            class="h-16 w-full rounded-2xl"
+          />
         </div>
 
         <EmptyState
@@ -142,17 +178,32 @@ onMounted(() => {
           :description="t.emptyHint"
         />
 
-        <div v-else class="space-y-2">
-          <GlassCard v-for="p in payouts" :key="p.id" padding="sm" class="flex items-center gap-3">
+        <div
+          v-else
+          class="space-y-2"
+        >
+          <GlassCard
+            v-for="p in payouts"
+            :key="p.id"
+            padding="sm"
+            class="flex items-center gap-3"
+          >
             <div class="min-w-0 flex-1">
               <p class="truncate text-[13px] font-semibold text-foreground">
                 {{ p.order_title || `#${p.order_id}` }}
               </p>
-              <p class="text-[11px] text-muted-foreground">{{ t.tranche[p.tranche] }}</p>
+              <p class="text-[11px] text-muted-foreground">
+                {{ t.tranche[p.tranche] }}
+              </p>
             </div>
             <div class="shrink-0 text-right">
-              <p class="text-[13px] font-bold text-foreground">{{ money(p.amount_som) }}</p>
-              <span class="earnings-chip" :class="statusTone(p.status)">{{ t.status[p.status] }}</span>
+              <p class="text-[13px] font-bold text-foreground">
+                {{ money(p.amount_som) }}
+              </p>
+              <span
+                class="earnings-chip"
+                :class="statusTone(p.status)"
+              >{{ t.status[p.status] }}</span>
             </div>
           </GlassCard>
         </div>

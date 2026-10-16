@@ -524,7 +524,8 @@ onBeforeUnmount(() => {
               </p>
               <p class="mt-0.5 truncate text-xs font-semibold text-slate-700">
                 {{ selectedOrder.route === 'tezkor' ? locale.t.route.tezkor : locale.t.route.tender }}<template v-if="selectedOrderCategory">
-                  · {{ selectedOrderCategory }}</template>
+                  · {{ selectedOrderCategory }}
+                </template>
               </p>
               <p class="mt-1 flex items-center gap-1 text-xs text-slate-500">
                 <MapPin class="size-3.5 shrink-0" />

@@ -94,7 +94,10 @@ function onFocus() {
 <template>
   <div class="space-y-2">
     <!-- Selected attachments -->
-    <div v-if="attachments.length > 0" class="flex gap-2 overflow-x-auto pb-1">
+    <div
+      v-if="attachments.length > 0"
+      class="flex gap-2 overflow-x-auto pb-1"
+    >
       <div
         v-for="file in attachments"
         :key="file.id"
@@ -126,7 +129,10 @@ function onFocus() {
       </div>
     </div>
 
-    <p v-if="error" class="px-1 text-xs text-destructive">
+    <p
+      v-if="error"
+      class="px-1 text-xs text-destructive"
+    >
       {{ error }}
     </p>
 
@@ -137,7 +143,7 @@ function onFocus() {
       <input
         ref="fileInput"
         type="file"
-:accept="allowImages ? 'image/*,application/pdf' : 'application/pdf'"
+        :accept="allowImages ? 'image/*,application/pdf' : 'application/pdf'"
         multiple
         class="hidden"
         @change="onFilesChange"
@@ -150,8 +156,14 @@ function onFocus() {
         :disabled="isUploading || sending"
         @click="pickFiles"
       >
-        <Loader2 v-if="isUploading" class="size-5 animate-spin" />
-        <CirclePlus v-else class="size-6" />
+        <Loader2
+          v-if="isUploading"
+          class="size-5 animate-spin"
+        />
+        <CirclePlus
+          v-else
+          class="size-6"
+        />
       </button>
 
       <textarea
@@ -174,8 +186,14 @@ function onFocus() {
         :disabled="!canSend"
         @click="submit"
       >
-        <Loader2 v-if="sending" class="size-4 animate-spin" />
-        <ArrowUp v-else class="size-5" />
+        <Loader2
+          v-if="sending"
+          class="size-4 animate-spin"
+        />
+        <ArrowUp
+          v-else
+          class="size-5"
+        />
       </button>
     </div>
   </div>
