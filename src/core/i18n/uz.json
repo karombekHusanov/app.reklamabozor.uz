@@ -1442,7 +1442,12 @@
     "errLocation": "Joylashuvni aniqlab bo'lmadi.",
     "errMapContainer": "Xarita konteyneri mavjud emas.",
     "errMapLoad": "Xaritani yuklab bo'lmadi.",
-    "approxAreaHint": "Taxminiy hudud, radius ~{km} km. Aniq joylashuv ish boshlanganda ochiladi."
+    "approxAreaHint": "Taxminiy hudud, radius ~{km} km. Aniq joylashuv ish boshlanganda ochiladi.",
+    "viewFile": "Ko'rish",
+    "fileLoading": "Fayl yuklanmoqda…",
+    "fileDownload": "Yuklab olish",
+    "filePreviewUnavailable": "Bu qurilmada oldindan ko'rib bo'lmaydi — faylni yuklab oling.",
+    "fileOpenError": "Faylni ochib bo'lmadi."
   },
   "amendments": {
     "sectionTitle": "Qo'shimcha kelishuvlar",

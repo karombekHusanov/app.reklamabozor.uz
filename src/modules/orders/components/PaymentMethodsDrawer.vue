@@ -7,6 +7,7 @@ import Badge from '@/core/ui/Badge.vue'
 import { useLocaleStore } from '@/core/i18n/locale.store'
 import { useToast } from '@/core/composables/useToast'
 import { useTelegram } from '@/core/composables/useTelegram'
+import ProtectedFileLink from '@/core/ui/ProtectedFileLink.vue'
 import { formatPrice } from '@/modules/orders/lib/order-status'
 import { useOrdersStore } from '@/modules/orders/stores/orders.store'
 import type { Payment } from '@/modules/orders/types/order'
@@ -236,16 +237,15 @@ async function chooseOffline(method: 'cash' | 'bank_transfer', percent: 100 | 50
           </Badge>
         </div>
 
-        <a
+        <ProtectedFileLink
           v-if="invoice?.invoice_url"
           :href="invoice.invoice_url"
-          target="_blank"
-          rel="noopener"
+          name="invoice"
           class="pressable flex items-center justify-center gap-2 rounded-2xl border border-primary/30 bg-primary/5 px-4 py-3 text-sm font-semibold text-primary"
         >
           <Download class="size-4" />
           {{ locale.t.orders.pay.downloadInvoice }}
-        </a>
+        </ProtectedFileLink>
 
         <Button
           variant="outline"

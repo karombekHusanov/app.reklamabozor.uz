@@ -2,6 +2,7 @@
 import { Download, FileCheck2 } from '@lucide/vue'
 import GlassCard from '@/core/ui/GlassCard.vue'
 import { useLocaleStore } from '@/core/i18n/locale.store'
+import ProtectedFileLink from '@/core/ui/ProtectedFileLink.vue'
 import { formatPrice } from '@/modules/orders/lib/order-status'
 import type { OrderDocument } from '@/modules/orders/types/order'
 
@@ -33,12 +34,11 @@ const locale = useLocaleStore()
       </div>
     </div>
 
-    <a
+    <ProtectedFileLink
       v-for="document in documents"
       :key="document.id"
-      :href="document.pdf_url ?? undefined"
-      target="_blank"
-      rel="noopener"
+      :href="document.pdf_url"
+      :name="document.number"
       class="pressable flex items-center gap-3 rounded-2xl border border-border/70 px-3.5 py-3"
     >
       <span class="min-w-0 flex-1">
@@ -50,6 +50,6 @@ const locale = useLocaleStore()
         </span>
       </span>
       <Download class="size-4 shrink-0 text-primary" />
-    </a>
+    </ProtectedFileLink>
   </GlassCard>
 </template>

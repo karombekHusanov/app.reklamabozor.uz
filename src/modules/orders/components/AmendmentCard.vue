@@ -6,6 +6,7 @@ import Badge from '@/core/ui/Badge.vue'
 import { Button } from '@/core/ui/button'
 import { useLocaleStore } from '@/core/i18n/locale.store'
 import { formatDateTime } from '@/core/lib/date'
+import ProtectedFileLink from '@/core/ui/ProtectedFileLink.vue'
 import { formatPrice } from '@/modules/orders/lib/order-status'
 import type { Amendment } from '@/modules/orders/types/order'
 
@@ -188,16 +189,15 @@ const moneyTone = computed(() =>
       {{ locale.t.amendments.rejectedReason }}: {{ a.rejection_reason }}
     </p>
 
-    <a
+    <ProtectedFileLink
       v-if="a.pdf_url"
       :href="a.pdf_url"
-      target="_blank"
-      rel="noopener"
+      :name="a.number ?? undefined"
       class="inline-flex items-center gap-1.5 text-xs font-semibold text-primary"
     >
       <FileText class="size-3.5" />
       {{ locale.t.amendments.downloadPdf }}
-    </a>
+    </ProtectedFileLink>
 
     <!-- Actions -->
     <div

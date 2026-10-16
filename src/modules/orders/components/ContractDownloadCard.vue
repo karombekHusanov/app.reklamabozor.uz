@@ -2,6 +2,7 @@
 import { Download, FileText } from '@lucide/vue'
 import GlassCard from '@/core/ui/GlassCard.vue'
 import { useLocaleStore } from '@/core/i18n/locale.store'
+import ProtectedFileLink from '@/core/ui/ProtectedFileLink.vue'
 import { formatPrice } from '@/modules/orders/lib/order-status'
 import type { OrderContract } from '@/modules/orders/types/order'
 
@@ -26,15 +27,14 @@ const locale = useLocaleStore()
       </div>
     </div>
 
-    <a
+    <ProtectedFileLink
       v-if="contract.pdf_url"
       :href="contract.pdf_url"
-      target="_blank"
-      rel="noopener"
+      :name="`contract-${contract.number}`"
       class="pressable flex items-center justify-center gap-2 rounded-2xl border border-primary/30 bg-primary/5 px-4 py-3 text-sm font-semibold text-primary"
     >
       <Download class="size-4" />
       {{ locale.t.orders.contract.download }}
-    </a>
+    </ProtectedFileLink>
   </GlassCard>
 </template>

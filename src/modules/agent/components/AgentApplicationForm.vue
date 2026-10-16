@@ -484,6 +484,7 @@ const inputClass = 'glass-input'
         :label="locale.t.agent.passportScan"
         :hint="locale.t.agent.photoOrPdf"
         :current-name="initial?.director_passport_file ? locale.t.agent.passportScanName : null"
+        :current-url="initial?.director_passport_file"
         :invalid="!!fieldErrors.director_passport_file_id"
       />
       <p
@@ -504,6 +505,7 @@ const inputClass = 'glass-input'
         :label="locale.t.agent.registrationCert"
         :hint="locale.t.agent.photoOrPdf"
         :current-name="initial?.registration_certificate_file ? locale.t.agent.regCertName : null"
+        :current-url="initial?.registration_certificate_file"
         :invalid="!!fieldErrors.registration_certificate_file_id"
       />
       <p

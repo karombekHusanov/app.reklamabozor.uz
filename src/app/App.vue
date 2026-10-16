@@ -7,6 +7,7 @@ import { useRealtimeStore } from '@/core/stores/realtime.store'
 import { useChatStore } from '@/modules/chat/stores/chat.store'
 import Toaster from '@/core/ui/Toaster.vue'
 import ConfirmDrawer from '@/core/ui/ConfirmDrawer.vue'
+import ProtectedFileViewer from '@/core/ui/ProtectedFileViewer.vue'
 import PropuskDrawer from '@/modules/agent/components/PropuskDrawer.vue'
 import { parseOrderStartParam, readTelegramStartParam } from '@/core/lib/telegram-init'
 import { SplashScreen, OnboardingFlow, TermsGate, useOnboardingStore } from '@/modules/onboarding'
@@ -63,6 +64,7 @@ const isLegalPage = computed(() => route.path.startsWith('/legal/'))
   <Toaster />
   <PropuskDrawer />
   <ConfirmDrawer />
+  <ProtectedFileViewer />
   <SplashScreen v-if="showSplash" />
   <!-- The offer pages open over onboarding / re-acceptance so the user can read them first. -->
   <RouterView v-else-if="isLegalPage" />

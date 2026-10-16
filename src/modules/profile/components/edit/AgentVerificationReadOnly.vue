@@ -2,6 +2,7 @@
 import { FileText, Lock } from '@lucide/vue'
 import GlassCard from '@/core/ui/GlassCard.vue'
 import { useLocaleStore } from '@/core/i18n/locale.store'
+import ProtectedFileLink from '@/core/ui/ProtectedFileLink.vue'
 import type { AgentProfile } from '@/modules/agent/types/agent'
 
 defineProps<{
@@ -123,28 +124,26 @@ function display(value: string | null | undefined): string {
         </p>
       </div>
 
-      <a
+      <ProtectedFileLink
         v-if="profile.director_passport_file"
         :href="profile.director_passport_file"
-        target="_blank"
-        rel="noopener"
+        name="passport"
         class="profile-edit-readonly-file"
       >
         <FileText class="size-4 shrink-0" />
         <span class="truncate">{{ locale.t.agent.passportScan }}</span>
-      </a>
+      </ProtectedFileLink>
 
       <template v-if="profile.is_individual">
-        <a
+        <ProtectedFileLink
           v-if="profile.selfie"
           :href="profile.selfie"
-          target="_blank"
-          rel="noopener"
+          name="selfie"
           class="profile-edit-readonly-file"
         >
           <FileText class="size-4 shrink-0" />
           <span class="truncate">{{ locale.t.executor.selfie }}</span>
-        </a>
+        </ProtectedFileLink>
 
         <div class="profile-edit-readonly-field">
           <p class="profile-edit-readonly-field__label">
@@ -177,16 +176,15 @@ function display(value: string | null | undefined): string {
         {{ locale.t.agent.registrationBank }}
       </p>
 
-      <a
+      <ProtectedFileLink
         v-if="profile.registration_certificate_file"
         :href="profile.registration_certificate_file"
-        target="_blank"
-        rel="noopener"
+        name="registration-certificate"
         class="profile-edit-readonly-file"
       >
         <FileText class="size-4 shrink-0" />
         <span class="truncate">{{ locale.t.agent.registrationCert }}</span>
-      </a>
+      </ProtectedFileLink>
 
       <div class="profile-edit-readonly-field">
         <p class="profile-edit-readonly-field__label">

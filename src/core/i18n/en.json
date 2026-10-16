@@ -1442,7 +1442,12 @@
     "errLocation": "Could not get your location.",
     "errMapContainer": "Map container is unavailable.",
     "errMapLoad": "Failed to load the map.",
-    "approxAreaHint": "Approximate area, radius ~{km} km. The exact location opens once work starts."
+    "approxAreaHint": "Approximate area, radius ~{km} km. The exact location opens once work starts.",
+    "viewFile": "View",
+    "fileLoading": "Loading file…",
+    "fileDownload": "Download",
+    "filePreviewUnavailable": "Preview isn't available on this device — download the file.",
+    "fileOpenError": "Could not open the file."
   },
   "amendments": {
     "sectionTitle": "Additional agreements",

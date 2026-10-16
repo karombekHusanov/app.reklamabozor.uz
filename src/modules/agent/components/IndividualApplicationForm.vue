@@ -123,6 +123,7 @@ function handleSubmit() {
           :label="locale.t.agent.passportScan"
           :hint="locale.t.agent.photoOrPdf"
           :current-name="initial?.director_passport_file ? locale.t.agent.passportScanName : null"
+          :current-url="initial?.director_passport_file"
           :invalid="!!fieldErrors.passport_file_id"
         />
       </div>
@@ -133,6 +134,7 @@ function handleSubmit() {
           :hint="locale.t.executor.selfieHint"
           accept="image/png,image/jpeg,image/webp"
           :current-name="initial?.selfie ? locale.t.executor.selfieName : null"
+          :current-url="initial?.selfie"
           :invalid="!!fieldErrors.selfie_file_id"
         />
       </div>

@@ -35,6 +35,8 @@ const form = reactive({
   registration_certificate_file_id: null as number | null,
 })
 const rejectionReason = ref<string | null>(null)
+// Previously submitted certificate — lets the user re-check the scan (protected URL).
+const certificateUrl = ref<string | null>(null)
 const submitting = ref(false)
 const error = ref<string | null>(null)
 
@@ -52,6 +54,7 @@ onMounted(async () => {
       form.inn = existing.inn
       form.company_name = existing.company_name ?? ''
       form.registration_certificate_file_id = existing.registration_certificate_file_id
+      certificateUrl.value = existing.registration_certificate
       rejectionReason.value = existing.status === 'rejected' ? existing.rejection_reason : null
     }
   }
@@ -165,6 +168,7 @@ async function submit() {
           v-model="form.registration_certificate_file_id"
           :label="locale.t.legalVerify.doc"
           :hint="locale.t.legalVerify.docHint"
+          :current-url="certificateUrl"
         />
       </div>
 
