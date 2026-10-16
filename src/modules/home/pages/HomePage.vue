@@ -73,6 +73,18 @@ function openSearch() {
   searchOpen.value = true
 }
 
+function openProviderFromSearch(agent: PublicAgent) {
+  void router.push(`/agents/${agent.id}`)
+}
+
+function openServiceFromSearch(category: Category) {
+  void router.push(ROUTES.categoryDetail(category.id))
+}
+
+function viewAllFromSearch(query: string) {
+  void router.push({ path: ROUTES.agencies, query: { q: query } })
+}
+
 let poll: ReturnType<typeof setInterval> | null = null
 
 onMounted(async () => {
@@ -188,9 +200,9 @@ onUnmounted(() => { if (poll) clearInterval(poll) })
     <GlobalSearchDrawer
       v-model:open="searchOpen"
       :categories="categories"
-      @provider="(agent: PublicAgent) => router.push(`/agents/${agent.id}`)"
-      @service="(category: Category) => router.push(ROUTES.categoryDetail(category.id))"
-      @view-all="(query: string) => router.push({ path: ROUTES.agencies, query: { q: query } })"
+      @provider="openProviderFromSearch"
+      @service="openServiceFromSearch"
+      @view-all="viewAllFromSearch"
     />
     <ClientProfileMenu v-model:open="menuOpen" />
   </div>

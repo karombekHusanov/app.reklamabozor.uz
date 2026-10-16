@@ -51,7 +51,6 @@ const sendingOrder = ref(false)
 const sentOrderId = ref<number | null>(null)
 
 const feedRef = ref<HTMLElement | null>(null)
-const inputRef = ref<HTMLTextAreaElement | null>(null)
 
 const suggestions = computed(() => [
   locale.t.assistant.suggestion1,
@@ -444,7 +443,6 @@ function onKeydown(event: KeyboardEvent) {
       <div class="assistant-composer">
         <div class="assistant-composer__inner">
           <textarea
-            ref="inputRef"
             v-model="input"
             rows="1"
             :placeholder="locale.t.assistant.placeholder"
