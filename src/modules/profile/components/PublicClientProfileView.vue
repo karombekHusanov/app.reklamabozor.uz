@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { LocaleStore } from '@/core/i18n/locale.store'
 import { CheckCircle2, RefreshCw, ShoppingBag, XCircle } from '@lucide/vue'
 import { computed } from 'vue'
 import { memberDuration } from '@/core/lib/date'
@@ -10,7 +11,7 @@ import { fullName } from '@/modules/auth/types/user'
 
 const props = defineProps<{
   client: PublicClient
-  locale: any
+  locale: LocaleStore
 }>()
 
 const displayName = computed(() => fullName(props.client))

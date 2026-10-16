@@ -34,7 +34,7 @@ function preferSameOriginStorage(): boolean {
 export function mediaUrl(path: string | null | undefined): string | null {
   if (!path) return null
 
-  let storagePath: string | null = null
+  let storagePath: string
 
   if (/^https?:\/\//i.test(path)) {
     try {

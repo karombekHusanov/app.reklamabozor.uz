@@ -1,10 +1,11 @@
 <script setup lang="ts">
+import type { LocaleStore } from '@/core/i18n/locale.store'
 import { CalendarDays, CheckCircle2, TrendingUp } from '@lucide/vue'
 import { computed } from 'vue'
 import ClientProfileSectionShell from '@/modules/profile/components/client-sections/ClientProfileSectionShell.vue'
 
 const props = defineProps<{
-  locale: any
+  locale: LocaleStore
   platformLabel: string
   avgOrderLabel?: string | null
   completedLabel?: string | null

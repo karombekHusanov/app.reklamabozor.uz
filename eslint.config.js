@@ -20,4 +20,12 @@ export default defineConfig([
       },
     },
   },
+  {
+    // shadcn-style primitives keep their one-word names (Button, Badge…);
+    // they are always registered under an import, never as global tags.
+    files: ['src/core/ui/**/*.vue'],
+    rules: {
+      'vue/multi-word-component-names': 'off',
+    },
+  },
 ])

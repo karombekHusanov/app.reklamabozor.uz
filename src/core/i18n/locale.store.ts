@@ -70,3 +70,6 @@ export const useLocaleStore = defineStore('locale', () => {
     hydrate,
   }
 })
+
+/** The locale store instance — the type to use for a `locale` prop. */
+export type LocaleStore = ReturnType<typeof useLocaleStore>

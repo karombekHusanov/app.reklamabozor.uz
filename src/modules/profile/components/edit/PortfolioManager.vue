@@ -416,7 +416,7 @@ function displayImages(item: PortfolioItem): Array<{ url: string, original_name:
             class="portfolio-item-card__body space-y-5"
           >
             <PortfolioDraftFields
-              :draft="editDraft"
+              v-model:draft="editDraft"
               :is-uploading="isUploading"
               @pick-images="pickImages"
               @pick-attachments="pickAttachments"
@@ -472,7 +472,7 @@ function displayImages(item: PortfolioItem): Array<{ url: string, original_name:
 
         <div class="portfolio-item-card__body space-y-5">
           <PortfolioDraftFields
-            :draft="addDraft"
+            v-model:draft="addDraft"
             :is-uploading="isUploading"
             @pick-images="pickImages"
             @pick-attachments="pickAttachments"

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { LocaleStore } from '@/core/i18n/locale.store'
 import { computed } from 'vue'
 import Badge from '@/core/ui/Badge.vue'
 import OrderTile from '@/modules/orders/components/OrderTile.vue'
@@ -8,7 +9,7 @@ import { ROUTES } from '@/modules/shell/constants/routes'
 import type { Order } from '@/modules/orders/types/order'
 
 const props = defineProps<{
-  locale: any
+  locale: LocaleStore
   orders: Order[]
 }>()
 

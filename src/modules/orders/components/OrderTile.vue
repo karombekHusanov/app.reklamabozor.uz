@@ -110,7 +110,7 @@ const offersLabel = computed(() =>
         {{ displayTitle }}
       </h3>
       <p class="live-order-tile__desc">
-        {{ description || ' ' }}
+        {{ description || '\u00A0' }}
       </p>
     </div>
 

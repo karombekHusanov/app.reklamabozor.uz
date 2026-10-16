@@ -8,8 +8,11 @@ import type { PortfolioItemDraft } from '@/modules/profile/types/portfolio'
 const MAX_IMAGES = 10
 const MAX_ATTACHMENTS = 5
 
+// The draft is a reactive object the parent owns; the fields edit it in
+// place, so it is bound as a model (`v-model:draft`) rather than a prop.
+const draft = defineModel<PortfolioItemDraft>('draft', { required: true })
+
 defineProps<{
-  draft: PortfolioItemDraft
   isUploading: boolean
 }>()
 
