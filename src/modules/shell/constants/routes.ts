@@ -14,7 +14,6 @@ export const ROUTES = {
   categoryDetail: (id: number | string) => `/categories/${id}`,
   products: '/products',
   assistant: '/assistant',
-  designers: '/designers',
   tender: '/tender',
   map: '/map',
   chat: '/chat',

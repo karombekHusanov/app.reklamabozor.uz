@@ -1,1 +1,0 @@
-export { designersRoutes } from './routes'

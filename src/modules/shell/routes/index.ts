@@ -1,8 +1,8 @@
 import type { RouteRecordRaw } from 'vue-router'
+import { ROUTES } from '@/modules/shell/constants/routes'
 import { agentRoutes } from '@/modules/agent/routes'
 import { assistantRoutes } from '@/modules/assistant/routes'
 import { chatRoutes } from '@/modules/chat/routes'
-import { designersRoutes } from '@/modules/designers'
 import { homeRoutes } from '@/modules/home/routes'
 import { mapRoutes } from '@/modules/map/routes'
 import { notificationsRoutes } from '@/modules/notifications'
@@ -21,7 +21,8 @@ export const shellRoutes: RouteRecordRaw[] = [
       ...homeRoutes,
       ...agentRoutes,
       ...marketplaceRoutes,
-      ...designersRoutes,
+      // Designer role retired (2026-10-14): keep the old deep link alive.
+      { path: 'designers', redirect: ROUTES.agencies },
       ...tenderRoutes,
       ...mapRoutes,
       ...chatRoutes,

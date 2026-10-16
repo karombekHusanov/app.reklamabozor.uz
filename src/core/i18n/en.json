@@ -279,23 +279,6 @@
     "filterReset": "Reset",
     "filterEmpty": "No agencies match your search or filters"
   },
-  "designers": {
-    "title": "Designers",
-    "subtitle": "Creative studios & freelancers",
-    "all": "All",
-    "emptyTitle": "No designers found",
-    "emptyApproved": "Approved designers will appear here soon.",
-    "emptyTry": "Try a different category.",
-    "comingSoonTitle": "Designers coming soon",
-    "comingSoonBody": "Verified designer profiles will appear here once the design marketplace goes live.",
-    "searchPlaceholder": "Designer, studio, or location…",
-    "filterTitle": "Filter",
-    "filterCategory": "Category",
-    "filterAll": "All",
-    "filterApply": "Apply",
-    "filterReset": "Reset",
-    "filterEmpty": "No designers match your search or filters"
-  },
   "map": {
     "subtitle": "Providers nearby",
     "comingSoonTitle": "Map coming soon",

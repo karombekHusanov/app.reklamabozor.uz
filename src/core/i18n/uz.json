@@ -279,23 +279,6 @@
     "filterReset": "Tozalash",
     "filterEmpty": "Qidiruv yoki filtr bo‘yicha agentlik topilmadi"
   },
-  "designers": {
-    "title": "Dizaynerlar",
-    "subtitle": "Ijodiy studiyalar va frilanserlar",
-    "all": "Barchasi",
-    "emptyTitle": "Dizaynerlar topilmadi",
-    "emptyApproved": "Tasdiqlangan dizaynerlar tez orada shu yerda paydo bo'ladi.",
-    "emptyTry": "Boshqa kategoriyani sinab ko'ring.",
-    "comingSoonTitle": "Dizaynerlar tez orada",
-    "comingSoonBody": "Dizayn bozori ishga tushgach, tasdiqlangan dizaynerlar shu yerda paydo bo'ladi.",
-    "searchPlaceholder": "Dizayner, studio yoki joylashuv…",
-    "filterTitle": "Filtr",
-    "filterCategory": "Kategoriya",
-    "filterAll": "Hammasi",
-    "filterApply": "Qo‘llash",
-    "filterReset": "Tozalash",
-    "filterEmpty": "Qidiruv yoki filtr bo‘yicha dizayner topilmadi"
-  },
   "map": {
     "subtitle": "Yaqin atrofdagi ijrochilar",
     "comingSoonTitle": "Xarita tez orada",
