@@ -10,6 +10,9 @@ const props = withDefaults(defineProps<{
   src?: string | null
   size?: 'sm' | 'md' | 'lg' | 'xl'
 }>(), {
+  class: undefined,
+  name: undefined,
+  src: undefined,
   size: 'md',
 })
 

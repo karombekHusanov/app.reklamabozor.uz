@@ -18,6 +18,9 @@ const props = withDefaults(defineProps<{
   class?: HTMLAttributes['class']
 }>(), {
   previewUrl: null,
+  label: undefined,
+  hint: undefined,
+  class: undefined,
 })
 
 const emit = defineEmits<{

@@ -9,6 +9,7 @@ const props = withDefaults(defineProps<{
   /** Logo tile edge length. */
   size?: 'sm' | 'md' | 'lg' | 'xl'
 }>(), {
+  class: undefined,
   size: 'md',
 })
 

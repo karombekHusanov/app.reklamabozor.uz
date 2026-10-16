@@ -11,6 +11,7 @@ const props = withDefaults(defineProps<{
   /** Frosted glass surface with gradient border overlay. */
   frosted?: boolean
 }>(), {
+  class: undefined,
   padding: 'md',
   interactive: false,
   rounded: false,

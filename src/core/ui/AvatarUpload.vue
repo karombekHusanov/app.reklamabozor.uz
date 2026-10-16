@@ -13,6 +13,7 @@ const props = withDefaults(defineProps<{
   size?: 'md' | 'lg' | 'xl'
 }>(), {
   previewUrl: null,
+  name: undefined,
   size: 'lg',
 })
 

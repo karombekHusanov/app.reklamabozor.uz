@@ -20,6 +20,8 @@ const props = withDefaults(defineProps<{
   accept?: string
   invalid?: boolean
 }>(), {
+  label: undefined,
+  hint: undefined,
   currentName: null,
   currentUrl: null,
   accept: 'image/png,image/jpeg,image/webp,application/pdf',

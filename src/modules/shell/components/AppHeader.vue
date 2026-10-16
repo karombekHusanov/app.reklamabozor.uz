@@ -16,6 +16,7 @@ const props = withDefaults(defineProps<{
   /** Pin `#trailing` to the card's right edge (illustration overlays, text stays in flow). */
   trailingOverlay?: boolean
 }>(), {
+  class: undefined,
   showBack: false,
   title: undefined,
   subtitle: undefined,
