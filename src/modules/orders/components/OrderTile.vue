@@ -4,7 +4,7 @@ import { computed } from 'vue'
 import type { HTMLAttributes } from 'vue'
 import Avatar from '@/core/ui/Avatar.vue'
 import { cn } from '@/core/lib/utils'
-import { categoryName } from '@/core/i18n/category-name'
+import { categoryFullName } from '@/core/i18n/category-name'
 import { regionName } from '@/core/i18n/region-name'
 import { useLocaleStore } from '@/core/i18n/locale.store'
 import { formatDateTime } from '@/core/lib/date'
@@ -39,11 +39,11 @@ const locale = useLocaleStore()
 
 const displayTitle = computed(() =>
   props.title
-  || (props.category ? categoryName(props.category, locale.locale) : ''),
+  || (props.category ? categoryFullName(props.category, locale.locale) : ''),
 )
 
 const categoryLabel = computed(() =>
-  props.category ? categoryName(props.category, locale.locale) : '—',
+  props.category ? categoryFullName(props.category, locale.locale) : '—',
 )
 
 const cityLabel = computed(() => {

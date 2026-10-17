@@ -4,7 +4,7 @@ import { ArrowRight, Loader2, Search, SearchX, Star, X } from '@lucide/vue'
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@/core/ui/drawer'
 import Avatar from '@/core/ui/Avatar.vue'
 import CategoryThumb from '@/modules/orders/components/CategoryThumb.vue'
-import { categoryName } from '@/core/i18n/category-name'
+import { categoryFullName, categoryName } from '@/core/i18n/category-name'
 import { useLocaleStore } from '@/core/i18n/locale.store'
 import { useTelegram } from '@/core/composables/useTelegram'
 import {
@@ -306,7 +306,7 @@ function providerStars(agent: PublicAgent): string | null {
                 />
               </span>
               <span class="search-row__body">
-                <span class="search-row__name">{{ categoryName(category, locale.locale) }}</span>
+                <span class="search-row__name">{{ categoryFullName(category, locale.locale) }}</span>
                 <span class="search-row__meta">
                   {{ category.type === 'designer' ? locale.t.search.designers : locale.t.search.agencies }}
                 </span>

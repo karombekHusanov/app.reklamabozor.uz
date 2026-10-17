@@ -65,6 +65,8 @@ const categoryOptions = computed(() =>
   props.categories.map(category => ({
     id: category.id,
     name: categoryName(category, locale.locale),
+    // Sub-categories are indented under their section (tree order from the API).
+    depth: category.depth ?? 0,
   })),
 )
 
@@ -261,6 +263,7 @@ function reset() {
               :key="category.id"
               class="live-orders-filter-region pressable"
               :class="isCategorySelected(category.id) && 'live-orders-filter-region--selected'"
+              :style="category.depth > 0 ? { marginLeft: `${category.depth * 16}px` } : undefined"
               @click="setCategoryChecked(category.id, !isCategorySelected(category.id))"
             >
               <Checkbox

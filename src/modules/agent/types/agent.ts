@@ -59,8 +59,17 @@ export interface WorkflowStep {
 
 export interface Category {
   id: number
+  /** null = root. Sub-categories inherit the root's `type`. */
+  parent_id?: number | null
+  /** Number of ancestors (root = 0). */
+  depth?: number
+  /** Root → … → this node ids. */
+  path_ids?: number[]
   name_uz: string
   name_ru: string
+  /** Full ancestor chain, e.g. "Dizayn › Logotip". */
+  full_name_uz?: string
+  full_name_ru?: string
   type: 'agent' | 'designer'
   /** Admin-uploaded illustration; null = fall back to the generated icon. */
   image?: string | null

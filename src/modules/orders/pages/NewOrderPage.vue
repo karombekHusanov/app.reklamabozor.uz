@@ -50,10 +50,8 @@ const loadingCategories = ref(false)
 const submitted = ref(false)
 const createdOrder = ref<Order | null>(null)
 
-const headerSubtitle = computed(() => {
-  if (targetAgent.value) return targetAgent.value.company_name
-  return serviceType.value === 'designer' ? locale.t.orders.findDesigner : locale.t.orders.findAgency
-})
+// Only a directed order needs a subtitle — the agency it goes to.
+const headerSubtitle = computed(() => targetAgent.value?.company_name)
 
 async function loadCatalog() {
   if (!auth.isAuthenticated) return
@@ -133,23 +131,22 @@ async function handleSubmit(payload: CreateOrderPayload) {
       <!-- Success -->
       <GlassCard
         v-if="submitted"
-        class="space-y-3 text-center"
+        class="space-y-4 text-center"
       >
-        <div class="mx-auto flex size-14 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
+        <div class="mx-auto flex size-14 items-center justify-center rounded-full bg-success/15 text-success">
           <CircleCheck class="size-8" />
         </div>
-        <h2 class="text-xl font-semibold">
-          {{ locale.t.orders.successTitle }}
-        </h2>
-        <p
-          v-if="createdOrder"
-          class="text-base font-semibold text-primary"
-        >
-          #{{ createdOrder.id }}
-        </p>
-        <p class="text-sm leading-relaxed text-muted-foreground">
-          {{ locale.t.orders.successBody }}
-        </p>
+        <div class="space-y-1">
+          <h2 class="rb-font-display text-xl font-bold tracking-tight">
+            {{ locale.t.orders.successTitle }}
+          </h2>
+          <p
+            v-if="createdOrder"
+            class="text-sm font-semibold tabular-nums text-muted-foreground"
+          >
+            #{{ createdOrder.id }}
+          </p>
+        </div>
         <Button
           class="h-11 w-full rounded-2xl"
           @click="router.replace(ROUTES.orders)"

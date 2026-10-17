@@ -31,7 +31,7 @@ import { Button } from '@/core/ui/button'
 import { useTelegram } from '@/core/composables/useTelegram'
 import { useToast } from '@/core/composables/useToast'
 import { useLocaleStore } from '@/core/i18n/locale.store'
-import { categoryName } from '@/core/i18n/category-name'
+import { categoryFullName } from '@/core/i18n/category-name'
 import { formatDateTime } from '@/core/lib/date'
 import { formatDeadlineRange } from '@/modules/orders/lib/order-terms'
 import { getApiErrorMessage } from '@/core/api/api-error'
@@ -94,7 +94,7 @@ const orderStatus = computed(() => order.value?.status ?? null)
 const title = computed(() => {
   if (!order.value) return ''
   return order.value.title
-    || (order.value.category ? categoryName(order.value.category, locale.locale) : '')
+    || (order.value.category ? categoryFullName(order.value.category, locale.locale) : '')
     || `#${order.value.id}`
 })
 

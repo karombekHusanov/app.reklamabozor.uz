@@ -9,7 +9,7 @@ import Drawer from '@/core/ui/Drawer.vue'
 import AppHeader from '@/modules/shell/components/AppHeader.vue'
 import { useTelegram } from '@/core/composables/useTelegram'
 import { useLocaleStore } from '@/core/i18n/locale.store'
-import { categoryName } from '@/core/i18n/category-name'
+import { categoryFullName, categoryName } from '@/core/i18n/category-name'
 import { useToast } from '@/core/composables/useToast'
 import { getUserLocation, hasLocationAccess, warmupLocationManager } from '@/core/lib/user-location'
 import { isInsideTelegram, supportsVersion } from '@/core/lib/telegram-init'
@@ -74,7 +74,7 @@ function clearSelection() {
 }
 
 const selectedOrderCategory = computed(() =>
-  selectedOrder.value?.category ? categoryName(selectedOrder.value.category, locale.locale) : '',
+  selectedOrder.value?.category ? categoryFullName(selectedOrder.value.category, locale.locale) : '',
 )
 
 function openAgent(agent: PublicAgent) {

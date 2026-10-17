@@ -1,4 +1,4 @@
-import { categoryName } from '@/core/i18n/category-name'
+import { categoryFullName } from '@/core/i18n/category-name'
 import type { Locale } from '@/core/i18n/messages'
 import { ROUTES } from '@/modules/shell/constants/routes'
 import type { Chat } from '@/modules/chat/types/chat'
@@ -12,7 +12,7 @@ export function chatTitle(chat: Chat): string {
 /** "#12 · Banner" for order threads, the direct-chat label otherwise. */
 export function chatOrderLabel(chat: Chat, labels: { orderChip: string, directLabel: string }, locale: Locale): string {
   if (chat.order_id == null) return labels.directLabel
-  const title = chat.order?.title || (chat.order?.category ? categoryName(chat.order.category, locale) : '')
+  const title = chat.order?.title || (chat.order?.category ? categoryFullName(chat.order.category, locale) : '')
   return labels.orderChip.replace('{id}', String(chat.order_id)).replace('{title}', title)
 }
 

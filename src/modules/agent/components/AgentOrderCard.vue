@@ -3,7 +3,7 @@ import { CalendarDays, Eye, House, Percent, UserRound, Wallet } from '@lucide/vu
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useLocaleStore } from '@/core/i18n/locale.store'
-import { categoryName } from '@/core/i18n/category-name'
+import { categoryFullName } from '@/core/i18n/category-name'
 import { regionName } from '@/core/i18n/region-name'
 import { localizedDayjs } from '@/core/lib/date'
 import { fmtSom, passStrings } from '@/modules/agent/lib/pass-i18n'
@@ -30,7 +30,7 @@ const place = computed(() => {
   const o = props.order
   return [o.district, o.region].filter(Boolean).map(r => regionName(r!, locale.locale)).join(', ')
 })
-const category = computed(() => (props.order.category ? categoryName(props.order.category, locale.locale) : ''))
+const category = computed(() => (props.order.category ? categoryFullName(props.order.category, locale.locale) : ''))
 const budget = computed(() => formatApproxBudget(props.order.budget_max, locale.locale))
 const deadline = computed(() =>
   formatDeadlineRange(props.order.deadline_from, props.order.deadline_to, locale.locale),

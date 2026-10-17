@@ -8,7 +8,7 @@ import EmptyState from '@/core/ui/EmptyState.vue'
 import Skeleton from '@/core/ui/Skeleton.vue'
 import { useToast } from '@/core/composables/useToast'
 import { useLocaleStore } from '@/core/i18n/locale.store'
-import { categoryName } from '@/core/i18n/category-name'
+import { categoryFullName } from '@/core/i18n/category-name'
 import { formatDateTime } from '@/core/lib/date'
 import { formatApproxBudget, formatDeadlineRange } from '@/modules/orders/lib/order-terms'
 import { formatOrderRegion } from '@/modules/orders/lib/region-label'
@@ -37,11 +37,11 @@ const submitting = ref(false)
 const title = computed(() => {
   if (!order.value) return ''
   return order.value.title
-    || (order.value.category ? categoryName(order.value.category, locale.locale) : '')
+    || (order.value.category ? categoryFullName(order.value.category, locale.locale) : '')
 })
 
 const categoryLabel = computed(() =>
-  order.value?.category ? categoryName(order.value.category, locale.locale) : null,
+  order.value?.category ? categoryFullName(order.value.category, locale.locale) : null,
 )
 const isTezkor = computed(() => order.value?.route === 'tezkor')
 

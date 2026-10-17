@@ -10,3 +10,15 @@ export function categoryName(
 ): string {
   return locale === 'ru' ? category.name_ru : category.name_uz
 }
+
+/**
+ * The full ancestor chain ("Dizayn › Logotip") for a nested category — the
+ * plain name for a root or when the API did not send the path.
+ */
+export function categoryFullName(
+  category: { name_uz: string, name_ru: string, full_name_uz?: string, full_name_ru?: string },
+  locale: Locale,
+): string {
+  const full = locale === 'ru' ? category.full_name_ru : category.full_name_uz
+  return full || categoryName(category, locale)
+}

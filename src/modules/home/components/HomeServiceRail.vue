@@ -26,7 +26,8 @@ const locale = useLocaleStore()
 const TOP = 5
 
 /** Named services first ("Boshqa" catch-alls only live in the full list). */
-const top = computed(() => props.categories.filter(c => !c.is_other).slice(0, TOP))
+// Root sections only — sub-categories are reached through the order form drill-down.
+const top = computed(() => props.categories.filter(c => !c.is_other && !c.parent_id).slice(0, TOP))
 </script>
 
 <template>

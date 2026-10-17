@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import { ArrowLeft, ArrowRight, Check, ChevronRight, FileText, ImageIcon, Loader2, MapPin, Paperclip, Pencil, Search, Send, X, Zap } from '@lucide/vue'
 import { computed, onMounted, ref, watch } from 'vue'
+import CategoryTreePicker from '@/core/ui/CategoryTreePicker.vue'
 import DateRangePicker from '@/core/ui/DateRangePicker.vue'
 import Drawer from '@/core/ui/Drawer.vue'
 import LocationPicker from '@/core/ui/LocationPicker.vue'
 import { useFileUpload } from '@/core/composables/useFileUpload'
 import { useTelegram } from '@/core/composables/useTelegram'
 import { useToast } from '@/core/composables/useToast'
-import { categoryName } from '@/core/i18n/category-name'
+import { categoryFullName } from '@/core/i18n/category-name'
 import { regionName } from '@/core/i18n/region-name'
 import { useLocaleStore } from '@/core/i18n/locale.store'
 import { formatMoneyInput, parseMoneyInput } from '@/core/lib/money'
@@ -78,7 +79,6 @@ const selectedCategory = computed(() =>
 )
 const otherSelected = computed(() => !!selectedCategory.value?.is_other)
 const routeLabel = computed(() => (props.route === 'tender' ? locale.t.route.tender : locale.t.route.tezkor))
-const routeNote = computed(() => (props.route === 'tender' ? locale.t.route.formTender : locale.t.route.formTezkor))
 
 const tashkentRegion = computed(() =>
   props.regions.find(region => region.code === TASHKENT_REGION_CODE) ?? null,
@@ -93,19 +93,6 @@ watch(tashkentRegion, (tashkent) => {
 const selectedRegion = computed(() =>
   props.regions.find(region => region.id === regionId.value) ?? null,
 )
-
-const filteredCategories = computed(() => {
-  const query = categoryQuery.value.trim().toLowerCase()
-  const list = query
-    ? props.categories.filter(category =>
-      category.name_uz.toLowerCase().includes(query)
-      || category.name_ru.toLowerCase().includes(query),
-    )
-    : props.categories
-
-  // The catch-all always closes the list, whatever the backend order.
-  return [...list.filter(c => !c.is_other), ...list.filter(c => c.is_other)]
-})
 
 const deadlineText = computed(() => formatDeadlineRange(deadlineFrom.value, deadlineTo.value, locale.locale))
 const deadlineDays = computed(() =>
@@ -284,12 +271,21 @@ function submit() {
       name="route-tabs"
     />
 
+    <!-- One segment per step; the current one fills in -->
     <div
-      v-if="targetAgent"
-      class="wiz__directed"
+      class="wiz__steps"
+      role="progressbar"
+      :aria-valuenow="step + 1"
+      :aria-valuemin="1"
+      :aria-valuemax="TOTAL"
+      :aria-label="t.stepOf.replace('{n}', String(step + 1)).replace('{total}', String(TOTAL))"
     >
-      <span>{{ locale.t.orders.wizard.directedTo }}</span>
-      <b>{{ targetAgent.company_name }}</b>
+      <span
+        v-for="index in TOTAL"
+        :key="index"
+        class="wiz__seg"
+        :class="{ 'wiz__seg--done': index - 1 < step, 'wiz__seg--now': index - 1 === step }"
+      />
     </div>
 
     <!-- Later steps: the chosen route and service as chips -->
@@ -313,44 +309,18 @@ function submit() {
         class="chip chip--cat"
         @click="goTo(0, 'back')"
       >
-        {{ selectedCategory ? categoryName(selectedCategory, locale.locale) : '' }}
-        <Pencil class="size-3" />
+        <span class="truncate">{{ selectedCategory ? categoryFullName(selectedCategory, locale.locale) : '' }}</span>
+        <Pencil class="size-3 shrink-0" />
       </button>
     </div>
 
-    <div
-      class="wiz__top"
-      role="progressbar"
-      :aria-valuenow="step + 1"
-      :aria-valuemin="1"
-      :aria-valuemax="TOTAL"
-    >
-      <div class="wiz__track">
-        <span
-          class="wiz__fill"
-          :style="{ width: `${((step + 1) / TOTAL) * 100}%` }"
-        />
-      </div>
-      <span class="wiz__count">{{ step + 1 }}/{{ TOTAL }}</span>
-    </div>
-
-    <div class="space-y-1.5">
-      <h2 class="wiz__q">
-        {{ question }}
-      </h2>
-      <p
-        v-if="step === 0"
-        class="wiz__note"
-      >
-        {{ routeNote }}
-      </p>
-      <p
-        v-else-if="isLast"
-        class="wiz__note"
-      >
-        {{ t.skipExtras }}
-      </p>
-    </div>
+    <h2 class="wiz__q">
+      {{ question }}
+      <span
+        v-if="isLast"
+        class="wiz__opt"
+      >{{ t.optional }}</span>
+    </h2>
 
     <Transition
       :name="direction === 'fwd' ? 'wiz-fwd' : 'wiz-back'"
@@ -373,35 +343,16 @@ function submit() {
           >
         </label>
 
-        <p class="wiz__caption">
-          {{ categoryQuery.trim() ? '' : t.popular }}
-        </p>
-
-        <ul class="svc-list">
-          <li
-            v-for="category in filteredCategories"
-            :key="category.id"
-          >
-            <button
-              type="button"
-              class="svc"
-              @click="pickCategory(category.id)"
-            >
-              <span>{{ categoryName(category, locale.locale) }}</span>
-              <span
-                v-if="category.is_other"
-                class="svc__badge"
-              >{{ t.otherBadge }}</span>
-            </button>
-          </li>
-        </ul>
-
-        <p
-          v-if="filteredCategories.length === 0"
-          class="wiz__note"
-        >
-          {{ locale.t.orders.wizard.serviceSearchEmpty }}
-        </p>
+        <!-- Drill-down over the category tree: sections open, leaves (or the
+             open section itself) get picked -->
+        <CategoryTreePicker
+          mode="single"
+          :categories="categories"
+          :selected-id="categoryId"
+          :query="categoryQuery"
+          :other-badge="t.otherBadge"
+          @select="pickCategory"
+        />
       </div>
 
       <!-- 2 · Description -->
@@ -416,30 +367,26 @@ function submit() {
         >
           {{ t.categoryHintOther }}
         </p>
-        <textarea
-          id="order-description"
-          v-model="description"
-          rows="7"
-          maxlength="2000"
-          class="big-field"
-          :class="{ 'is-invalid': error }"
-          :placeholder="t.descriptionPlaceholder"
-          :aria-invalid="!!error"
-          @input="error = null"
-        />
+        <div class="big-wrap">
+          <textarea
+            id="order-description"
+            v-model="description"
+            rows="7"
+            maxlength="2000"
+            class="big-field"
+            :class="{ 'is-invalid': error }"
+            :placeholder="t.descriptionPlaceholder"
+            :aria-invalid="!!error"
+            @input="error = null"
+          />
+          <span class="big-wrap__count">{{ description.length }}/2000</span>
+        </div>
         <p
           v-if="error"
           class="wiz__error"
           role="alert"
         >
           {{ error }}
-        </p>
-        <p
-          v-else
-          class="wiz__note flex justify-between"
-        >
-          <span>{{ t.descriptionHint }}</span>
-          <span class="tabular-nums">{{ description.length }}/2000</span>
         </p>
       </div>
 
@@ -476,7 +423,7 @@ function submit() {
           <input
             id="order-budget"
             :value="budgetDisplay"
-            :style="{ width: `${Math.max(budgetDisplay.length + 1, 9)}ch` }"
+            :style="{ width: `${Math.max(budgetDisplay.length + 1, budgetDisplay ? 9 : t.budgetPlaceholder.length + 1)}ch` }"
             type="text"
             inputmode="numeric"
             autocomplete="off"
@@ -508,12 +455,6 @@ function submit() {
         >
           {{ error }}
         </p>
-        <p
-          v-else
-          class="wiz__note"
-        >
-          {{ t.budgetHint }} {{ t.budgetVisible }}
-        </p>
       </div>
 
       <!-- 5 · Place -->
@@ -544,12 +485,6 @@ function submit() {
           role="alert"
         >
           {{ error }}
-        </p>
-        <p
-          v-else
-          class="wiz__note"
-        >
-          {{ t.locationRequiredHint }}
         </p>
       </div>
 
@@ -627,9 +562,10 @@ function submit() {
         </button>
 
         <div class="review">
-          <p class="review__title">
-            {{ t.reviewTitle }}
-          </p>
+          <div class="review__row">
+            <span>{{ t.categoryLabel }}</span>
+            <b class="truncate">{{ selectedCategory ? categoryFullName(selectedCategory, locale.locale) : '—' }}</b>
+          </div>
           <div class="review__row">
             <span>{{ t.deadlineLabel }}</span>
             <b>{{ deadlineText }}<template v-if="deadlineDays"> · {{ deadlineDays }} {{ t.daysSuffix }}</template></b>
@@ -720,39 +656,29 @@ function submit() {
 </template>
 
 <style scoped>
-.wiz { display: flex; flex-direction: column; gap: 16px; }
+.wiz { display: flex; flex-direction: column; gap: 14px; }
 .wiz--docked { padding-bottom: 6.5rem; }
-.wiz__directed { display: flex; gap: 6px; padding: 10px 14px; border-radius: 16px; background: var(--secondary); font-size: 13px; color: var(--muted-foreground); }
-.wiz__directed b { color: var(--foreground); }
-.wiz__chips { display: flex; align-items: center; gap: 8px; }
-.chip { display: inline-flex; align-items: center; gap: 6px; min-height: 30px; padding: 0 12px; border: 0; border-radius: 999px; font-size: 12.5px; font-weight: 700; }
-.chip--route { background: var(--secondary); color: var(--foreground); }
-.chip--cat { background: color-mix(in oklab, var(--primary) 12%, transparent); color: var(--primary); cursor: pointer; }
-.wiz__top { display: flex; align-items: center; gap: 10px; }
-.wiz__track { flex: 1; height: 4px; border-radius: 999px; background: var(--border); overflow: hidden; }
-.wiz__fill { display: block; height: 100%; border-radius: 999px; background: var(--primary); transition: width 260ms var(--rb-ease); }
-.wiz__count { font-size: 12.5px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--muted-foreground); }
-.wiz__q { margin: 0; font-family: var(--rb-font-display); font-size: 20px; font-weight: 600; letter-spacing: -0.01em; line-height: 1.25; color: var(--foreground); }
-.wiz__note { margin: 0; font-size: 13px; line-height: 1.45; color: var(--muted-foreground); }
-.wiz__caption { margin: 14px 4px 0; min-height: 18px; font-size: 13px; font-weight: 700; color: var(--muted-foreground); }
+.wiz__chips { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.chip { display: inline-flex; align-items: center; gap: 6px; min-height: 30px; padding: 0 12px; border: 0; border-radius: var(--rb-r-chip); font-size: 12.5px; font-weight: 700; }
+.chip--route { flex-shrink: 0; background: var(--secondary); color: var(--foreground); }
+.chip--cat { min-width: 0; background: color-mix(in oklab, var(--primary) 12%, transparent); color: var(--primary); cursor: pointer; }
+.wiz__steps { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 5px; }
+.wiz__seg { display: block; height: 4px; border-radius: var(--rb-r-chip); background: var(--border); transition: background-color var(--rb-dur-slow) var(--rb-ease); }
+.wiz__seg--done { background: color-mix(in oklab, var(--primary) 55%, var(--border)); }
+.wiz__seg--now { background: var(--primary); }
+.wiz__q { display: flex; align-items: baseline; gap: 10px; margin: 0; font-family: var(--rb-font-display); font-size: 22px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.2; color: var(--foreground); text-wrap: balance; }
+.wiz__opt { font-family: inherit; font-size: 12px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted-foreground); }
 .wiz__error { margin: 0 4px; font-size: 12.5px; font-weight: 600; color: var(--destructive); }
 .wiz__tint { margin: 0; padding: 10px 14px; border-radius: 14px; background: color-mix(in oklab, var(--primary) 8%, transparent); font-size: 13px; line-height: 1.45; color: var(--foreground); }
 
-.search-field { display: flex; align-items: center; gap: 10px; min-height: 56px; padding: 0 16px; border-radius: 18px; background: var(--secondary); color: var(--muted-foreground); }
-.search-field:focus-within { box-shadow: 0 0 0 2px var(--primary); }
-.search-field input { flex: 1; min-width: 0; background: transparent; outline: none; font-size: 18px; font-weight: 500; color: var(--foreground); }
-.svc-list { margin: 0; padding: 0; list-style: none; }
-.svc {
-  display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; min-height: 54px; padding: 0 4px;
-  border: 0; border-bottom: 1px solid color-mix(in oklab, var(--border) 70%, transparent); background: none;
-  text-align: left; font-size: 18px; font-weight: 500; color: var(--foreground); cursor: pointer;
-}
-.svc:active { opacity: 0.55; }
-.svc__badge { padding: 3px 10px; border-radius: 999px; background: var(--secondary); color: var(--primary); font-size: 12px; font-weight: 700; }
-
+.search-field { display: flex; align-items: center; gap: 10px; min-height: 50px; margin-bottom: 6px; padding: 0 14px; border-radius: var(--rb-r-field); background: var(--card); border: 1px solid var(--border); color: var(--muted-foreground); box-shadow: var(--rb-elev-1); }
+.search-field:focus-within { border-color: var(--primary); box-shadow: 0 0 0 3px color-mix(in oklab, var(--primary) 12%, transparent); }
+.search-field input { flex: 1; min-width: 0; background: transparent; outline: none; font-size: 16px; font-weight: 500; color: var(--foreground); }
+.big-wrap { position: relative; }
+.big-wrap__count { position: absolute; right: 14px; bottom: 12px; font-size: 11.5px; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--muted-foreground); pointer-events: none; }
 .big-field {
-  width: 100%; min-height: 230px; padding: 16px; resize: none; outline: none;
-  border: 1.5px solid var(--border); border-radius: 20px; background: var(--card);
+  width: 100%; min-height: 230px; padding: 16px 16px 32px; resize: none; outline: none;
+  border: 1.5px solid var(--border); border-radius: var(--rb-r-card); background: var(--card);
   font-size: 17px; line-height: 1.5; color: var(--foreground);
 }
 .big-field:focus { border-color: var(--primary); box-shadow: 0 0 0 4px color-mix(in oklab, var(--primary) 10%, transparent); }
@@ -774,8 +700,7 @@ function submit() {
 .frow__value { flex: 1; min-width: 0; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .frow__value--empty { color: var(--muted-foreground); font-weight: 400; }
 
-.review { margin-top: 8px; padding: 6px 16px; border-radius: 20px; background: var(--card); box-shadow: var(--rb-elev-1); }
-.review__title { margin: 0; padding: 8px 0 2px; font-size: 12.5px; font-weight: 700; color: var(--muted-foreground); }
+.review { margin-top: 8px; padding: 4px 16px; border-radius: var(--rb-r-card); background: var(--card); box-shadow: var(--rb-elev-1); }
 .review__row { display: flex; align-items: center; justify-content: space-between; gap: 14px; min-height: 40px; font-size: 14.5px; }
 .review__row + .review__row { border-top: 1px solid var(--border); }
 .review__row span { color: var(--muted-foreground); }
