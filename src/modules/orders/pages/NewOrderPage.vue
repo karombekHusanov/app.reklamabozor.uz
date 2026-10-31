@@ -18,9 +18,13 @@ import { fetchRegions } from '@/modules/orders/services/regions.service'
 import { useOrdersStore } from '@/modules/orders/stores/orders.store'
 import { useOrderRouteStore } from '@/modules/orders/stores/order-route.store'
 import { fetchPublicAgent } from '@/modules/marketplace/services/agents.service'
+import { PLACEMENT_ORDERING_ENABLED } from '@/modules/placements/lib/feature'
+import { fetchPlacement } from '@/modules/placements/services/placements.service'
+import { usePlacementSelectionStore } from '@/modules/placements/stores/placement-selection.store'
 import type { Category } from '@/modules/agent/types/agent'
 import type { CreateOrderPayload, Order, OrderRoute } from '@/modules/orders/types/order'
 import type { Region } from '@/modules/orders/types/region'
+import type { Placement } from '@/modules/placements/types/placement'
 
 const route = useRoute()
 const router = useRouter()
@@ -30,6 +34,7 @@ const locale = useLocaleStore()
 const { haptic } = useTelegram()
 const toast = useToast()
 const routeStore = useOrderRouteStore()
+const selection = usePlacementSelectionStore()
 
 const serviceType = computed(() => {
   const type = route.query.type
@@ -43,15 +48,51 @@ const targetAgentId = computed(() => {
   return Number.isInteger(id) && id > 0 ? id : null
 })
 
+// Map order: `?placements=1,2,3` — the screens picked on the map, in order.
+// The basket store already holds them; anything missing (deep link, cleared
+// storage) is fetched by id. Bookable screens only — the API 404s the rest.
+const placementIds = computed(() => {
+  if (!PLACEMENT_ORDERING_ENABLED) return []
+  const raw = String(route.query.placements ?? '')
+  return [...new Set(raw.split(',').map(Number).filter(id => Number.isInteger(id) && id > 0))]
+})
+
 const categories = ref<Category[]>([])
 const regions = ref<Region[]>([])
+const placements = ref<Placement[]>([])
 const targetAgent = ref<{ id: number, company_name: string } | null>(null)
 const loadingCategories = ref(false)
 const submitted = ref(false)
 const createdOrder = ref<Order | null>(null)
 
-// Only a directed order needs a subtitle — the agency it goes to.
-const headerSubtitle = computed(() => targetAgent.value?.company_name)
+// Subtitle: the agency a directed order goes to, or the number of picked screens.
+const headerSubtitle = computed(() =>
+  placements.value.length
+    ? locale.t.placements.newOrderSubtitle.replace('{n}', String(placements.value.length))
+    : targetAgent.value?.company_name,
+)
+
+async function loadPlacements(): Promise<Placement[]> {
+  const ids = placementIds.value
+  if (!ids.length) return []
+  selection.keep(ids)
+  const known = new Map(selection.items.map(p => [p.id, p] as const))
+  const fetched = await Promise.all(ids.map(async (id) => {
+    const hit = known.get(id)
+    if (hit) return hit
+    try {
+      const detail = await fetchPlacement(id)
+      selection.add(detail)
+      return detail as Placement
+    }
+    catch {
+      return null
+    }
+  }))
+  const list = fetched.filter((p): p is Placement => p !== null)
+  if (list.length < ids.length) toast.error(locale.t.placements.notFound)
+  return list
+}
 
 async function loadCatalog() {
   if (!auth.isAuthenticated) return
@@ -59,7 +100,14 @@ async function loadCatalog() {
   try {
     const regionsPromise = fetchRegions().catch(() => [] as Region[])
 
-    if (targetAgentId.value !== null) {
+    if (placementIds.value.length) {
+      const [list, cats, regs] = await Promise.all([loadPlacements(), fetchCategories(), regionsPromise])
+      placements.value = list
+      targetAgent.value = null
+      categories.value = cats
+      regions.value = regs
+    }
+    else if (targetAgentId.value !== null) {
       // Directed order — prefer the agency's categories; fall back to the full
       // catalog when the profile has none configured yet.
       const agent = await fetchPublicAgent(targetAgentId.value)
@@ -94,12 +142,16 @@ async function loadCatalog() {
  * Tender is the default (until the user picks otherwise).
  */
 const tenderAccessible = computed(() => routeStore.canCreateTender)
-const activeRoute = computed<OrderRoute>(() => (tenderAccessible.value ? routeStore.active : 'tezkor'))
+// Map orders are always Tender (priced offers from the screen owners) — no gate.
+const isPlacementOrder = computed(() => placements.value.length > 0)
+const activeRoute = computed<OrderRoute>(() =>
+  isPlacementOrder.value ? 'tender' : (tenderAccessible.value ? routeStore.active : 'tezkor'),
+)
 
 onMounted(() => {
   void loadCatalog()
 })
-watch([() => auth.isAuthenticated, serviceType, targetAgentId], loadCatalog)
+watch([() => auth.isAuthenticated, serviceType, targetAgentId, placementIds], loadCatalog)
 
 async function handleSubmit(payload: CreateOrderPayload) {
   haptic('light')
@@ -109,6 +161,7 @@ async function handleSubmit(payload: CreateOrderPayload) {
     haptic('medium')
     createdOrder.value = order
     submitted.value = true
+    if (isPlacementOrder.value) selection.clear()
     // Let the success screen breathe, then send the user to their orders.
     setTimeout(() => router.replace(ROUTES.orders), 2400)
   }
@@ -191,10 +244,11 @@ async function handleSubmit(payload: CreateOrderPayload) {
           :submitting="orders.isSubmitting"
           :target-agent="targetAgent"
           :route="activeRoute"
+          :placements="placements"
           @submit="handleSubmit"
         >
           <template
-            v-if="tenderAccessible"
+            v-if="tenderAccessible && !isPlacementOrder"
             #route-tabs
           >
             <OrderRouteTabs

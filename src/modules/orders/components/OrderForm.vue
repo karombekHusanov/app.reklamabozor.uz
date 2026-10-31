@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ArrowLeft, ArrowRight, Check, ChevronRight, FileText, ImageIcon, Loader2, MapPin, Paperclip, Pencil, Search, Send, X, Zap } from '@lucide/vue'
+import { ArrowLeft, ArrowRight, Check, ChevronRight, FileText, ImageIcon, Loader2, MapPin, MonitorPlay, Paperclip, Pencil, Search, Send, X, Zap } from '@lucide/vue'
 import { computed, onMounted, ref, watch } from 'vue'
 import CategoryTreePicker from '@/core/ui/CategoryTreePicker.vue'
 import DateRangePicker from '@/core/ui/DateRangePicker.vue'
@@ -15,6 +15,8 @@ import { formatMoneyInput, parseMoneyInput } from '@/core/lib/money'
 import { formatDeadlineRange } from '@/modules/orders/lib/order-terms'
 import { formatFileSize, isImageFile } from '@/modules/orders/lib/wizard'
 import { useOrderDraftStore } from '@/modules/orders/stores/order-draft.store'
+import OrderPlacementsCard from '@/modules/placements/components/OrderPlacementsCard.vue'
+import type { OrderPlacement, Placement } from '@/modules/placements/types/placement'
 import type { Category } from '@/modules/agent/types/agent'
 import type { CreateOrderPayload, OrderRoute } from '@/modules/orders/types/order'
 import type { Region } from '@/modules/orders/types/region'
@@ -27,6 +29,12 @@ const props = defineProps<{
   targetAgent: { id: number, company_name: string } | null
   /** Tender | Tezkor — chosen on the first step (tabs live in the `route-tabs` slot). */
   route: OrderRoute
+  /**
+   * Screens picked on the map. The order is filed under their category and
+   * placed at their centroid, so the Service and Place steps are skipped and
+   * the request is always a Tender (priced offers from the screen owners).
+   */
+  placements?: Placement[]
 }>()
 
 const emit = defineEmits<{
@@ -39,9 +47,10 @@ const BUDGET_PRESETS = [1_000_000, 3_000_000, 5_000_000, 10_000_000]
 const TASHKENT_REGION_CODE = 'toshkent-shahri'
 
 // Six steps, one question each. 1–5 are required; 6 (extras) never blocks.
+// A map order already knows its service and place — four steps.
 type StepKey = 'category' | 'description' | 'deadline' | 'budget' | 'location' | 'extras'
-const STEP_KEYS: StepKey[] = ['category', 'description', 'deadline', 'budget', 'location', 'extras']
-const TOTAL = STEP_KEYS.length
+const ALL_STEPS: StepKey[] = ['category', 'description', 'deadline', 'budget', 'location', 'extras']
+const PLACEMENT_STEPS: StepKey[] = ['description', 'deadline', 'budget', 'extras']
 
 const locale = useLocaleStore()
 const { haptic } = useTelegram()
@@ -69,10 +78,24 @@ const fileInput = ref<HTMLInputElement | null>(null)
 
 const t = computed(() => locale.t.orders.form)
 const budget = computed(() => parseMoneyInput(budgetDisplay.value))
-const isLast = computed(() => step.value === TOTAL - 1)
 
-const QUESTIONS = computed(() => [t.value.q1, t.value.q2, t.value.q3, t.value.q4, t.value.q5, t.value.q6])
-const question = computed(() => QUESTIONS.value[step.value])
+const hasPlacements = computed(() => (props.placements?.length ?? 0) > 0)
+const STEP_KEYS = computed<StepKey[]>(() => (hasPlacements.value ? PLACEMENT_STEPS : ALL_STEPS))
+const TOTAL = computed(() => STEP_KEYS.value.length)
+const stepKey = computed<StepKey>(() => STEP_KEYS.value[step.value] ?? 'extras')
+const isLast = computed(() => step.value === TOTAL.value - 1)
+// The dock (Back / Next) shows from the second step; a map order starts there.
+const docked = computed(() => step.value > 0 || hasPlacements.value)
+
+const QUESTIONS = computed<Record<StepKey, string>>(() => ({
+  category: t.value.q1,
+  description: t.value.q2,
+  deadline: t.value.q3,
+  budget: t.value.q4,
+  location: t.value.q5,
+  extras: t.value.q6,
+}))
+const question = computed(() => QUESTIONS.value[stepKey.value])
 
 const selectedCategory = computed(() =>
   props.categories.find(category => category.id === categoryId.value) ?? null,
@@ -104,6 +127,43 @@ const placeTitle = computed(() =>
   location.value ? (location.value.label ?? `${location.value.lat.toFixed(4)}, ${location.value.lng.toFixed(4)}`) : '',
 )
 
+// Map order: service = the screens' category, place = their centroid.
+watch(() => props.placements, (list) => {
+  if (!list?.length) return
+  const first = list[0]!
+  if (first.category_id !== null) categoryId.value = first.category_id
+  const lat = list.reduce((sum, p) => sum + Number(p.lat), 0) / list.length
+  const lng = list.reduce((sum, p) => sum + Number(p.lng), 0) / list.length
+  location.value = { lat, lng, label: list.length === 1 ? first.address : null }
+}, { immediate: true })
+
+/** Review rows for the picked screens, with a per-screen estimate when the owner published a day rate. */
+const reviewPlacements = computed<OrderPlacement[]>(() =>
+  (props.placements ?? []).map((p, index) => ({
+    id: p.id,
+    placement_id: p.id,
+    address: p.address,
+    owner_name: p.owner.name,
+    kind: p.kind,
+    lat: p.lat,
+    lng: p.lng,
+    unit: p.has_price && deadlineDays.value ? locale.t.placements.dayUnit : null,
+    quantity: p.has_price && deadlineDays.value ? deadlineDays.value : null,
+    slot_seconds: null,
+    shows_per_hour: null,
+    date_from: deadlineFrom.value,
+    date_to: deadlineTo.value,
+    estimated_price_som: p.min_day_price_som !== null && deadlineDays.value ? p.min_day_price_som * deadlineDays.value : null,
+    sort_order: index,
+  })),
+)
+const placementsEstimate = computed(() =>
+  reviewPlacements.value.reduce((sum, p) => sum + (p.estimated_price_som ?? 0), 0),
+)
+const placementsAllPriced = computed(() =>
+  hasPlacements.value && reviewPlacements.value.every(p => p.estimated_price_som !== null),
+)
+
 // A draft handed over by the AI assistant pre-fills the form once; the client
 // still reviews and sends it themselves.
 onMounted(() => {
@@ -118,8 +178,8 @@ onMounted(() => {
 })
 
 function focusField() {
-  const id = STEP_KEYS[step.value] === 'description' ? 'order-description'
-    : STEP_KEYS[step.value] === 'budget' ? 'order-budget' : null
+  const id = stepKey.value === 'description' ? 'order-description'
+    : stepKey.value === 'budget' ? 'order-budget' : null
   if (id) window.setTimeout(() => document.getElementById(id)?.focus({ preventScroll: true }), 280)
 }
 
@@ -132,7 +192,7 @@ function goTo(index: number, dir: 'fwd' | 'back') {
 }
 
 function validateStep(index: number): string | null {
-  switch (STEP_KEYS[index]) {
+  switch (STEP_KEYS.value[index]) {
     case 'category': return categoryId.value === null ? t.value.errCategory : null
     case 'description': return description.value.trim().length < MIN_DESCRIPTION ? t.value.errDescription : null
     case 'deadline': return !deadlineFrom.value || !deadlineTo.value ? t.value.errDeadline : null
@@ -234,7 +294,7 @@ function removeFile(index: number) {
 function submit() {
   // Steps are only passed once valid, but an AI draft or a fast tap can leave a
   // gap — jump back to the first invalid step instead of sending a bad request.
-  const bad = STEP_KEYS.findIndex((_, index) => validateStep(index) !== null)
+  const bad = STEP_KEYS.value.findIndex((_, index) => validateStep(index) !== null)
   if (bad !== -1) {
     haptic('heavy')
     toast.error(t.value.fixFields)
@@ -244,9 +304,10 @@ function submit() {
   }
 
   emit('submit', {
-    category_id: categoryId.value!,
+    ...(categoryId.value !== null ? { category_id: categoryId.value } : {}),
     description: description.value.trim(),
-    route: props.route,
+    // Screens are priced per slot by their owners — always a Tender.
+    route: hasPlacements.value ? 'tender' : props.route,
     attachment_file_ids: files.value.map(file => file.id),
     budget: budget.value,
     deadline_from: deadlineFrom.value!,
@@ -256,6 +317,7 @@ function submit() {
     location_label: location.value!.label,
     ...(regionId.value !== null ? { region_id: regionId.value } : {}),
     ...(props.targetAgent ? { agent_profile_id: props.targetAgent.id } : {}),
+    ...(hasPlacements.value ? { placements: props.placements!.map(p => p.id) } : {}),
   })
 }
 </script>
@@ -263,11 +325,11 @@ function submit() {
 <template>
   <div
     class="wiz"
-    :class="{ 'wiz--docked': step > 0 }"
+    :class="{ 'wiz--docked': docked }"
   >
     <!-- Tender | Tezkor switch — only rendered by the page for accounts with Tender access -->
     <slot
-      v-if="step === 0"
+      v-if="step === 0 && !hasPlacements"
       name="route-tabs"
     />
 
@@ -290,21 +352,29 @@ function submit() {
 
     <!-- Later steps: the chosen route and service as chips -->
     <div
-      v-if="step > 0"
+      v-if="docked"
       class="wiz__chips"
     >
       <span class="chip chip--route">
         <Zap
-          v-if="route === 'tezkor'"
+          v-if="route === 'tezkor' && !hasPlacements"
           class="size-3.5"
         />
         <FileText
           v-else
           class="size-3.5"
         />
-        {{ routeLabel }}
+        {{ hasPlacements ? locale.t.route.tender : routeLabel }}
+      </span>
+      <span
+        v-if="hasPlacements"
+        class="chip chip--cat"
+      >
+        <MonitorPlay class="size-3.5 shrink-0" />
+        <span class="truncate">{{ locale.t.placements.formChip.replace('{n}', String(placements!.length)) }}</span>
       </span>
       <button
+        v-else
         type="button"
         class="chip chip--cat"
         @click="goTo(0, 'back')"
@@ -328,7 +398,7 @@ function submit() {
     >
       <!-- 1 · Service -->
       <div
-        v-if="step === 0"
+        v-if="stepKey === 'category'"
         key="s0"
         class="space-y-1"
       >
@@ -357,12 +427,18 @@ function submit() {
 
       <!-- 2 · Description -->
       <div
-        v-else-if="step === 1"
+        v-else-if="stepKey === 'description'"
         key="s1"
         class="space-y-2.5"
       >
         <p
-          v-if="otherSelected"
+          v-if="hasPlacements"
+          class="wiz__tint"
+        >
+          {{ locale.t.placements.formHint }}
+        </p>
+        <p
+          v-else-if="otherSelected"
           class="wiz__tint"
         >
           {{ t.categoryHintOther }}
@@ -392,7 +468,7 @@ function submit() {
 
       <!-- 3 · Deadline -->
       <div
-        v-else-if="step === 2"
+        v-else-if="stepKey === 'deadline'"
         key="s2"
         class="space-y-2.5"
       >
@@ -412,7 +488,7 @@ function submit() {
 
       <!-- 4 · Budget -->
       <div
-        v-else-if="step === 3"
+        v-else-if="stepKey === 'budget'"
         key="s3"
         class="space-y-3.5"
       >
@@ -459,7 +535,7 @@ function submit() {
 
       <!-- 5 · Place -->
       <div
-        v-else-if="step === 4"
+        v-else-if="stepKey === 'location'"
         key="s4"
         class="space-y-3"
       >
@@ -561,8 +637,17 @@ function submit() {
           <span class="frow__value frow__value--empty">{{ t.addFiles }}</span>
         </button>
 
+        <OrderPlacementsCard
+          v-if="hasPlacements"
+          :placements="reviewPlacements"
+          class="mt-2"
+        />
+
         <div class="review">
-          <div class="review__row">
+          <div
+            v-if="!hasPlacements"
+            class="review__row"
+          >
             <span>{{ t.categoryLabel }}</span>
             <b class="truncate">{{ selectedCategory ? categoryFullName(selectedCategory, locale.locale) : '—' }}</b>
           </div>
@@ -574,9 +659,19 @@ function submit() {
             <span>{{ t.budgetLabel }}</span>
             <b>{{ budgetDisplay }} {{ t.budgetSuffix }}</b>
           </div>
-          <div class="review__row">
+          <div
+            v-if="!hasPlacements"
+            class="review__row"
+          >
             <span>{{ locale.t.orders.factLocation }}</span>
             <b class="truncate">{{ placeTitle }}</b>
+          </div>
+          <div
+            v-else-if="placementsAllPriced"
+            class="review__row"
+          >
+            <span>{{ locale.t.placements.estimateLabel }}</span>
+            <b>{{ formatMoneyInput(placementsEstimate) }} {{ t.budgetSuffix }}</b>
           </div>
         </div>
       </div>
@@ -584,7 +679,7 @@ function submit() {
 
     <!-- Bottom sheet dock — step 1 advances by tapping a service, so no button there -->
     <div
-      v-if="step > 0"
+      v-if="docked"
       class="dock"
     >
       <div class="dock__inner">

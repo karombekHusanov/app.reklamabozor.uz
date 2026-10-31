@@ -2,6 +2,7 @@ import type { OrderBilling } from '@/modules/agent/types/pass'
 import { api } from '@/core/api/client'
 import type { ApiSuccess } from '@/core/types/api'
 import type { Category } from '@/modules/agent/types/agent'
+import type { OrderPlacement } from '@/modules/placements/types/placement'
 import type { OfferStatus, OrderAttachment, OrderHashtag, OrderRoute } from '@/modules/orders/types/order'
 import type { OrderRegionRef } from '@/modules/orders/types/region'
 
@@ -23,6 +24,8 @@ export interface LiveOrder {
   region?: OrderRegionRef | null
   district?: OrderRegionRef | null
   hashtags?: OrderHashtag[]
+  /** Screens picked on the map (placement orders). */
+  placements?: OrderPlacement[]
   status: string
   /** Approximate public circle around the request (never the exact point). */
   lat?: number | null
@@ -39,6 +42,8 @@ export interface LiveOrder {
 }
 
 export interface ShowcaseOrder {
+  /** Screens picked on the map (map orders only). */
+  placements?: OrderPlacement[]
   id: number
   route?: OrderRoute
   /** When the per-order fee is taken and how much. */

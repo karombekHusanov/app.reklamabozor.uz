@@ -18,6 +18,7 @@ import { formatDeadlineRange } from '@/modules/orders/lib/order-terms'
 import { formatPrice } from '@/modules/orders/lib/order-status'
 import { ROUTES } from '@/modules/shell/constants/routes'
 import OrderHashtagChips from '@/modules/orders/components/OrderHashtagChips.vue'
+import OrderPlacementsCard from '@/modules/placements/components/OrderPlacementsCard.vue'
 import OrderAttachments from '@/modules/orders/components/OrderAttachments.vue'
 import OfferListItem from '@/modules/orders/components/OfferListItem.vue'
 import TezkorClaimCard from '@/modules/orders/components/TezkorClaimCard.vue'
@@ -732,6 +733,12 @@ async function sendReview(criteria: ReviewCriterionScore[], comment: string | nu
             <span class="row__v">{{ order.views_count ?? 0 }}</span>
           </div>
         </div>
+
+        <!-- Map order: the exact screens the client picked -->
+        <OrderPlacementsCard
+          v-if="order.placements?.length"
+          :placements="order.placements"
+        />
 
         <template v-if="order.description">
           <h2 class="sec">

@@ -45,6 +45,7 @@ import AmendmentsSection from '@/modules/orders/components/AmendmentsSection.vue
 import PricelistBuilder from '@/modules/orders/components/PricelistBuilder.vue'
 import ContractAgreementDrawer from '@/modules/orders/components/ContractAgreementDrawer.vue'
 import PricelistTable from '@/modules/orders/components/PricelistTable.vue'
+import OrderPlacementsCard from '@/modules/placements/components/OrderPlacementsCard.vue'
 import TezkorTakeCard from '@/modules/orders/components/TezkorTakeCard.vue'
 import { formatPrice, isInterestOffer, offerStatusVariant, orderStatusVariant } from '@/modules/orders/lib/order-status'
 import { formatOrderRegion } from '@/modules/orders/lib/region-label'
@@ -59,6 +60,7 @@ import { useOrdersStore } from '@/modules/orders/stores/orders.store'
 import type {
   AgentOfferDetail,
   ContractDocument,
+  OfferItem,
   PricelistItemInput,
   ReviewCriterionScore,
 } from '@/modules/orders/types/order'
@@ -192,6 +194,29 @@ const canWithdraw = computed(() => offer.value?.can_withdraw === true)
 
 const pricelistItems = computed(() => offer.value?.items ?? [])
 const offerHasItems = computed(() => pricelistItems.value.length > 0)
+
+/**
+ * Map order without a pricelist yet: seed the builder with one row per screen
+ * (address · day · N days · price to fill in) so the agent prices what the
+ * client actually picked instead of retyping addresses.
+ */
+const builderSeedItems = computed<OfferItem[]>(() => {
+  if (offerHasItems.value) return pricelistItems.value
+  const screens = order.value?.placements ?? []
+  if (!screens.length) return []
+  const from = order.value?.deadline_from
+  const to = order.value?.deadline_to
+  const days = from && to ? Math.max(1, Math.round((Date.parse(to) - Date.parse(from)) / 86_400_000) + 1) : 1
+  return screens.map((s, index) => ({
+    id: -(index + 1),
+    name: s.address,
+    unit: locale.t.placements.dayUnit,
+    quantity: s.quantity ?? days,
+    unit_price: 0,
+    line_total: 0,
+    sort_order: index,
+  }))
+})
 
 // The agent can send / revise the pricelist while the bid is pending and the
 // order is still open for selection. Once accepted, the pricelist is locked.
@@ -609,6 +634,13 @@ watch(() => props.id, loadOffer)
             :radius-m="order.location_radius_m"
           />
 
+          <!-- Map order: the exact screens the client picked -->
+          <OrderPlacementsCard
+            v-if="order.placements?.length"
+            :placements="order.placements"
+            bare
+          />
+
           <div v-if="order.description">
             <p
               class="whitespace-pre-line text-sm leading-relaxed text-muted-foreground"
@@ -750,7 +782,7 @@ watch(() => props.id, loadOffer)
       :title="locale.t.orders.pricelist.title"
     >
       <PricelistBuilder
-        :initial-items="pricelistItems"
+        :initial-items="builderSeedItems"
         :initial-deadline-days="offer?.deadline_days ?? null"
         :submitting="pricelistSaving"
         :submit-label="locale.t.common.next"

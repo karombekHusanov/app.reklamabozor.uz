@@ -1,5 +1,6 @@
 import type { OfferPick, OrderBilling, TezkorBilling } from '@/modules/agent/types/pass'
 import type { Category } from '@/modules/agent/types/agent'
+import type { OrderPlacement } from '@/modules/placements/types/placement'
 import type { OrderRegionRef } from '@/modules/orders/types/region'
 
 export type OrderStatus
@@ -430,6 +431,8 @@ export interface Order {
   deadline_to?: string | null
   category: Category | null
   hashtags?: OrderHashtag[]
+  /** Screens picked on the map (placement orders) — empty otherwise. */
+  placements?: OrderPlacement[]
   attachment_file_ids: number[]
   attachment_files: OrderAttachment[]
   budget_min: string | null
@@ -516,6 +519,8 @@ export interface CreateOrderPayload {
   budget?: number
   /** Route is fixed at creation; tender needs `can_create_tender` (403 otherwise). */
   route: OrderRoute
+  /** Screens picked on the map (ad_placements ids). Forces the Tender route, no gate. */
+  placements?: number[]
   /** Show TZ/files on Recent / Live Orders. Default true if omitted. */
   show_files_in_showcase?: boolean
 }
@@ -567,6 +572,8 @@ export interface AgentOrder {
   deadline_to?: string | null
   category: Category | null
   hashtags?: OrderHashtag[]
+  /** Screens picked on the map (placement orders) — exact public structures. */
+  placements?: OrderPlacement[]
   attachment_files: OrderAttachment[]
   budget_min: string | null
   budget_max: string | null
@@ -675,6 +682,8 @@ export interface AgentOfferDetail {
     district?: OrderRegionRef | null
     status: OrderStatus | null
     category: Category | null
+    /** Screens picked on the map — the pricelist builder pre-fills one row each. */
+    placements?: OrderPlacement[]
     attachment_files: OrderAttachment[]
     contract?: OrderContract | null
   documents?: OrderDocument[]

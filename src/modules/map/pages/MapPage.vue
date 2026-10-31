@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import 'leaflet/dist/leaflet.css'
+import 'leaflet.markercluster/dist/MarkerCluster.css'
 import L from 'leaflet'
-import { BadgeCheck, Check, ChevronRight, FileText, List, LocateFixed, MapPin, Search, Star, X, Zap } from '@lucide/vue'
+import 'leaflet.markercluster'
+import { BadgeCheck, Check, ChevronRight, FileText, List, LocateFixed, MapPin, Search, SlidersHorizontal, Star, X, Zap } from '@lucide/vue'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import Avatar from '@/core/ui/Avatar.vue'
@@ -10,21 +12,30 @@ import AppHeader from '@/modules/shell/components/AppHeader.vue'
 import { useTelegram } from '@/core/composables/useTelegram'
 import { useLocaleStore } from '@/core/i18n/locale.store'
 import { categoryFullName, categoryName } from '@/core/i18n/category-name'
+import { regionName } from '@/core/i18n/region-name'
 import { useToast } from '@/core/composables/useToast'
 import { getUserLocation, hasLocationAccess, warmupLocationManager } from '@/core/lib/user-location'
 import { isInsideTelegram, supportsVersion } from '@/core/lib/telegram-init'
 import { fetchTopAgents, type PublicAgent } from '@/modules/marketplace/services/agents.service'
 import { fetchCategories } from '@/modules/orders/services/orders.service'
 import { fetchLiveOrders, type LiveOrder } from '@/modules/home/services/live-orders.service'
+import PlacementBasketBar from '@/modules/placements/components/PlacementBasketBar.vue'
+import PlacementSheet from '@/modules/placements/components/PlacementSheet.vue'
+import { clusterIcon, placementIcon, shortPrice } from '@/modules/placements/lib/placement-marker'
+import { fetchPlacements } from '@/modules/placements/services/placements.service'
+import { PLACEMENT_ORDERING_ENABLED } from '@/modules/placements/lib/feature'
+import { usePlacementSelectionStore } from '@/modules/placements/stores/placement-selection.store'
+import type { Placement } from '@/modules/placements/types/placement'
 import { useModeStore } from '@/modules/shell/stores/mode.store'
 import { ROUTES } from '@/modules/shell/constants/routes'
 import type { Category } from '@/modules/agent/types/agent'
 
 /**
- * One shared map, two audiences: clients see agencies, executors (agent mode)
- * see open requests. Locations are never exact here — the API sends a circle
- * centre + radius (1 km) and we draw the area, not a pin. Exact points appear
- * only inside a started deal.
+ * One shared map, three layers. Clients: agencies (fuzzy 1 km circles) or
+ * advertising screens (exact pins — a structure on a street is public, and the
+ * client orders *that* screen). Executors (agent mode): open requests (fuzzy).
+ * Agency/request locations are never exact here; exact points appear only
+ * inside a started deal.
  */
 
 const locale = useLocaleStore()
@@ -35,9 +46,23 @@ const { haptic, WebApp } = useTelegram()
 const mode = useModeStore()
 const showRequests = computed(() => mode.isAgent)
 
+type ClientLayer = 'agencies' | 'screens'
+const layer = ref<ClientLayer>('agencies')
+const showScreens = computed(() => !showRequests.value && layer.value === 'screens')
+
+const selection = usePlacementSelectionStore()
+const placements = ref<Placement[]>([])
+const placementsLoaded = ref(false)
+const selectedPlacement = ref<Placement | null>(null)
+const placementDistrict = ref<number | null>(null)
+const onlyPriced = ref(false)
+const placementFiltersOpen = ref(false)
+
 const selectedAgent = ref<PublicAgent | null>(null)
 const selectedOrder = ref<LiveOrder | null>(null)
-const hasSelection = computed(() => selectedAgent.value !== null || selectedOrder.value !== null)
+const hasSelection = computed(() => selectedAgent.value !== null || selectedOrder.value !== null || selectedPlacement.value !== null)
+/** Basket bar shows while screens are picked and no card is open (map ordering flag). */
+const showBasket = computed(() => PLACEMENT_ORDERING_ENABLED && showScreens.value && !selection.isEmpty && !hasSelection.value)
 
 const OPEN_STATUSES = new Set(['new', 'offers_sent'])
 const DEFAULT_RADIUS_M = 1000
@@ -71,6 +96,93 @@ function openOrder(order: LiveOrder) {
 function clearSelection() {
   selectedAgent.value = null
   selectedOrder.value = null
+  selectedPlacement.value = null
+}
+
+// --- Screens layer -----------------------------------------------------------
+
+const placementDistricts = computed(() => {
+  const seen = new Map<number, { id: number, name: string }>()
+  for (const p of placements.value) {
+    if (p.district && !seen.has(p.district.id)) seen.set(p.district.id, { id: p.district.id, name: regionName(p.district, locale.locale) })
+  }
+  return [...seen.values()].sort((a, b) => a.name.localeCompare(b.name))
+})
+
+const placementDistrictLabel = computed(() =>
+  placementDistricts.value.find(d => d.id === placementDistrict.value)?.name ?? locale.t.placements.allDistricts,
+)
+
+const filteredPlacements = computed(() => {
+  const q = query.value.trim().toLowerCase()
+  return placements.value.filter((p) => {
+    if (placementDistrict.value !== null && p.district?.id !== placementDistrict.value) return false
+    if (onlyPriced.value && !p.has_price) return false
+    return !q || p.address.toLowerCase().includes(q) || p.owner.name.toLowerCase().includes(q)
+  })
+})
+
+const selectedGroupSize = computed(() => {
+  const key = selectedPlacement.value?.group_key
+  return key ? placements.value.filter(p => p.group_key === key).length : 1
+})
+
+function selectPlacement(placement: Placement) {
+  haptic('light')
+  selectedAgent.value = null
+  selectedOrder.value = null
+  selectedPlacement.value = placement
+}
+
+/** From the basket list: fly to the screen and open its card. */
+function focusPlacement(id: number) {
+  const placement = placements.value.find(p => p.id === id)
+  if (!placement || !map) return
+  map.setView([Number(placement.lat), Number(placement.lng)], 17, { animate: true })
+  selectPlacement(placement)
+}
+
+function pickLayer(next: ClientLayer) {
+  if (layer.value === next) return
+  haptic('light')
+  layer.value = next
+  clearSelection()
+}
+
+function pickPlacementDistrict(id: number | null) {
+  haptic('light')
+  placementDistrict.value = id
+  placementFiltersOpen.value = false
+}
+
+async function loadPlacements() {
+  if (placementsLoaded.value) return
+  try {
+    placements.value = await fetchPlacements()
+    placementsLoaded.value = true
+  }
+  catch {
+    toast.error(locale.t.placements.loadError)
+  }
+}
+
+function renderPlacements() {
+  if (!map || !placementLayer) return
+  placementLayer.clearLayers()
+  if (!showScreens.value) return
+
+  for (const p of filteredPlacements.value) {
+    const lat = Number(p.lat)
+    const lng = Number(p.lng)
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) continue
+    const marker = L.marker([lat, lng], {
+      icon: placementIcon({ selected: selection.has(p.id), priced: p.has_price, label: shortPrice(p.min_day_price_som) }),
+      zIndexOffset: selection.has(p.id) ? 500 : 0,
+    })
+    ;(marker as L.Marker & { placementId?: number }).placementId = p.id
+    marker.on('click', () => selectPlacement(p))
+    placementLayer.addLayer(marker)
+  }
 }
 
 const selectedOrderCategory = computed(() =>
@@ -90,6 +202,7 @@ const mapEl = ref<HTMLElement | null>(null)
 let map: L.Map | null = null
 let markerLayer: L.LayerGroup | null = null
 let userLocationLayer: L.LayerGroup | null = null
+let placementLayer: L.MarkerClusterGroup | null = null
 
 const agents = ref<PublicAgent[]>([])
 const orders = ref<LiveOrder[]>([])
@@ -192,6 +305,7 @@ function drawArea(lat: number, lng: number, radius: number | null | undefined, t
 function renderMarkers() {
   if (!map || !markerLayer) return
   markerLayer.clearLayers()
+  if (showScreens.value) return
   if (showRequests.value) {
     for (const o of filteredOrders.value) {
       drawArea(Number(o.lat), Number(o.lng), o.location_radius_m, 'request', () => selectOrder(o))
@@ -287,6 +401,19 @@ onMounted(async () => {
 
   markerLayer = L.layerGroup().addTo(map)
   userLocationLayer = L.layerGroup().addTo(map)
+  // 300+ screens city-wide: cluster into district bubbles until street zoom;
+  // two faces of one pole spiderfy at max zoom instead of overlapping.
+  placementLayer = L.markerClusterGroup({
+    showCoverageOnHover: false,
+    spiderfyOnMaxZoom: true,
+    disableClusteringAtZoom: 16,
+    maxClusterRadius: 60,
+    iconCreateFunction: (cluster) => {
+      const markers = cluster.getAllChildMarkers() as Array<L.Marker & { placementId?: number }>
+      const hasSelected = markers.some(m => m.placementId !== undefined && selection.has(m.placementId))
+      return clusterIcon(cluster.getChildCount(), hasSelected)
+    },
+  }).addTo(map)
 
   map.on('click', clearSelection)
 
@@ -322,11 +449,27 @@ watch(filteredOrders, (list) => {
   }
 })
 
+// Screens layer: load on first switch, redraw on filter/selection changes.
+watch(showScreens, async (on) => {
+  if (on) await loadPlacements()
+  renderMarkers()
+  renderPlacements()
+})
+
+watch([filteredPlacements, () => selection.ids], ([list]) => {
+  if (!showScreens.value) return
+  renderPlacements()
+  if (selectedPlacement.value && !list.some(p => p.id === selectedPlacement.value!.id)) {
+    selectedPlacement.value = null
+  }
+})
+
 onBeforeUnmount(() => {
   map?.remove()
   map = null
   markerLayer = null
   userLocationLayer = null
+  placementLayer = null
 })
 </script>
 
@@ -339,11 +482,11 @@ onBeforeUnmount(() => {
 
     <AppHeader
       :title="locale.t.shell.tabs.map"
-      :subtitle="showRequests ? locale.t.map.requestsSubtitle : locale.t.map.subtitle"
+      :subtitle="showRequests ? locale.t.map.requestsSubtitle : (showScreens ? locale.t.placements.subtitle : locale.t.map.subtitle)"
       show-back
     />
 
-    <div class="map-page-search pointer-events-none fixed inset-x-0 z-[45] px-4">
+    <div class="map-page-search pointer-events-none fixed inset-x-0 z-[45] space-y-2 px-4">
       <div class="pointer-events-auto flex h-11 items-center gap-2.5 rounded-2xl border border-border/60 bg-card/95 px-3.5 shadow-sm backdrop-blur-md">
         <Search class="size-4 shrink-0 text-muted-foreground" />
         <input
@@ -353,12 +496,45 @@ onBeforeUnmount(() => {
           class="w-full bg-transparent text-base text-foreground outline-none placeholder:text-muted-foreground"
         >
       </div>
+
+      <!-- Client mode: agencies (fuzzy areas) | screens (exact pins) -->
+      <div
+        v-if="!showRequests"
+        class="map-layer-tabs pointer-events-auto"
+        role="tablist"
+        :aria-label="locale.t.shell.tabs.map"
+      >
+        <button
+          type="button"
+          role="tab"
+          class="map-layer-tab"
+          :class="layer === 'agencies' && 'is-active'"
+          :aria-selected="layer === 'agencies'"
+          @click="pickLayer('agencies')"
+        >
+          {{ locale.t.placements.layerAgencies }}
+        </button>
+        <button
+          type="button"
+          role="tab"
+          class="map-layer-tab"
+          :class="layer === 'screens' && 'is-active'"
+          :aria-selected="layer === 'screens'"
+          @click="pickLayer('screens')"
+        >
+          {{ locale.t.placements.layerScreens }}
+          <span
+            v-if="PLACEMENT_ORDERING_ENABLED && selection.count && layer !== 'screens'"
+            class="map-layer-tab__badge"
+          >{{ selection.count }}</span>
+        </button>
+      </div>
     </div>
 
     <button
       type="button"
       class="absolute right-4 z-[70] flex size-13 items-center justify-center rounded-full bg-primary text-white shadow-xl shadow-[#02305C]/40 transition-all active:scale-95"
-      :class="hasSelection ? 'bottom-44' : 'bottom-28'"
+      :class="hasSelection || showBasket ? 'bottom-44' : 'bottom-28'"
       @click="centerOnUser"
     >
       <LocateFixed
@@ -367,8 +543,41 @@ onBeforeUnmount(() => {
       />
     </button>
 
+    <!-- Screens layer: filters (no selection yet) or the basket bar -->
     <div
-      v-if="!hasSelection"
+      v-if="showScreens && !hasSelection && (!PLACEMENT_ORDERING_ENABLED || selection.isEmpty)"
+      class="safe-bottom absolute inset-x-0 bottom-0 z-[70] flex flex-col items-center gap-2 px-6 pb-4"
+    >
+      <p
+        v-if="placementDistrict !== null || onlyPriced"
+        class="rounded-full bg-white/95 px-3 py-1 text-xs font-semibold text-primary shadow-md"
+      >
+        {{ placementDistrictLabel }}<template v-if="onlyPriced">
+          · {{ locale.t.placements.onlyPriced }}
+        </template>
+      </p>
+      <button
+        type="button"
+        class="btn-brand flex h-12 w-full max-w-xs items-center justify-center gap-2 rounded-full text-sm font-semibold"
+        @click="placementFiltersOpen = true"
+      >
+        <SlidersHorizontal class="size-5" />
+        {{ locale.t.placements.filtersTitle }}
+        <span class="rounded-full bg-white/20 px-2 py-0.5 text-xs">{{ filteredPlacements.length }}</span>
+      </button>
+    </div>
+
+    <Transition name="agent-card">
+      <div
+        v-if="showBasket"
+        class="safe-bottom absolute inset-x-0 bottom-0 z-[75] px-4 pb-4"
+      >
+        <PlacementBasketBar @focus="focusPlacement" />
+      </div>
+    </Transition>
+
+    <div
+      v-if="!showScreens && !hasSelection"
       class="safe-bottom absolute inset-x-0 bottom-0 z-[70] flex flex-col items-center gap-2 px-6 pb-4"
     >
       <p
@@ -386,6 +595,69 @@ onBeforeUnmount(() => {
         {{ locale.t.map.listView }}
       </button>
     </div>
+
+    <Drawer
+      v-model:open="placementFiltersOpen"
+      :title="locale.t.placements.filtersTitle"
+    >
+      <div class="space-y-2 pb-2">
+        <button
+          type="button"
+          class="map-category-option pressable"
+          :class="onlyPriced && 'map-category-option--active'"
+          @click="onlyPriced = !onlyPriced"
+        >
+          <span class="min-w-0 flex-1 text-left text-sm font-semibold">{{ locale.t.placements.onlyPriced }}</span>
+          <Check
+            v-if="onlyPriced"
+            class="size-4 shrink-0 text-primary"
+          />
+        </button>
+
+        <p class="px-1 pt-2 text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
+          {{ locale.t.placements.districtLabel }}
+        </p>
+        <button
+          type="button"
+          class="map-category-option pressable"
+          :class="placementDistrict === null && 'map-category-option--active'"
+          @click="pickPlacementDistrict(null)"
+        >
+          <span class="min-w-0 flex-1 text-left text-sm font-semibold">{{ locale.t.placements.allDistricts }}</span>
+          <Check
+            v-if="placementDistrict === null"
+            class="size-4 shrink-0 text-primary"
+          />
+        </button>
+        <button
+          v-for="district in placementDistricts"
+          :key="district.id"
+          type="button"
+          class="map-category-option pressable"
+          :class="placementDistrict === district.id && 'map-category-option--active'"
+          @click="pickPlacementDistrict(district.id)"
+        >
+          <span class="min-w-0 flex-1 text-left text-sm font-semibold">{{ district.name }}</span>
+          <Check
+            v-if="placementDistrict === district.id"
+            class="size-4 shrink-0 text-primary"
+          />
+        </button>
+      </div>
+    </Drawer>
+
+    <Transition name="agent-card">
+      <div
+        v-if="selectedPlacement"
+        class="safe-bottom absolute inset-x-0 bottom-0 z-[75] px-4 pb-4"
+      >
+        <PlacementSheet
+          :placement="selectedPlacement"
+          :group-size="selectedGroupSize"
+          @close="selectedPlacement = null"
+        />
+      </div>
+    </Transition>
 
     <Drawer
       v-model:open="categoryDrawerOpen"
@@ -595,11 +867,147 @@ onBeforeUnmount(() => {
     opacity: 0;
   }
 }
+
+/* --- Advertising screens: exact pins + cluster bubbles ------------------- */
+.rb-screen-pin-wrap,
+.rb-screen-cluster-wrap {
+  background: transparent;
+  border: none;
+}
+
+.rb-screen-pin {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 28px;
+}
+
+.rb-screen-pin__glyph {
+  display: block;
+  width: 24px;
+  height: 18px;
+  border-radius: 4px;
+  background: var(--primary, #0b6bcb);
+  border: 2px solid #fff;
+  box-shadow: 0 3px 8px rgba(2, 48, 92, 0.35);
+  position: relative;
+}
+
+/* Pole under the screen. */
+.rb-screen-pin__glyph::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 100%;
+  width: 2px;
+  height: 9px;
+  transform: translateX(-50%);
+  background: var(--primary, #0b6bcb);
+  box-shadow: 0 1px 2px rgba(2, 48, 92, 0.35);
+}
+
+.rb-screen-pin__glyph--lg {
+  width: 32px;
+  height: 24px;
+  border-radius: 6px;
+  box-shadow: none;
+}
+
+.rb-screen-pin__glyph--lg::after {
+  display: none;
+}
+
+.rb-screen-pin--unpriced .rb-screen-pin__glyph,
+.rb-screen-pin--unpriced .rb-screen-pin__glyph::after {
+  background: #64748b;
+}
+
+.rb-screen-pin--selected .rb-screen-pin__glyph {
+  background: var(--rb-cta, #e9601a);
+  outline: 3px solid color-mix(in oklab, var(--rb-glow, #22d3ee) 70%, transparent);
+  outline-offset: 1px;
+}
+
+.rb-screen-pin--selected .rb-screen-pin__glyph::after {
+  background: var(--rb-cta, #e9601a);
+}
+
+.rb-screen-pin__label {
+  position: absolute;
+  top: -16px;
+  padding: 1px 6px;
+  border-radius: 9999px;
+  background: #fff;
+  color: #0f172a;
+  font: 700 10px/14px var(--rb-font-body, system-ui, sans-serif);
+  white-space: nowrap;
+  box-shadow: 0 1px 4px rgba(2, 48, 92, 0.25);
+}
+
+.rb-screen-cluster {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  background: var(--primary, #0b6bcb);
+  color: #fff;
+  border: 3px solid #fff;
+  box-shadow: 0 4px 12px rgba(2, 48, 92, 0.35);
+  font: 700 13px/1 var(--rb-font-body, system-ui, sans-serif);
+}
+
+.rb-screen-cluster--selected {
+  background: var(--rb-cta, #e9601a);
+}
 </style>
 
 <style scoped>
 .map-page-search {
   top: calc(var(--app-header-offset) + 4.5rem);
+}
+
+.map-layer-tabs {
+  display: flex;
+  padding: 3px;
+  border-radius: 9999px;
+  border: 1px solid color-mix(in oklab, var(--border) 60%, transparent);
+  background: color-mix(in oklab, var(--card) 95%, transparent);
+  box-shadow: var(--rb-elev-1);
+  backdrop-filter: blur(12px);
+}
+
+.map-layer-tab {
+  position: relative;
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 36px;
+  border: 0;
+  border-radius: 9999px;
+  background: transparent;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--muted-foreground);
+}
+
+.map-layer-tab.is-active {
+  background: var(--primary);
+  color: #fff;
+}
+
+.map-layer-tab__badge {
+  display: inline-grid;
+  place-items: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9999px;
+  background: var(--rb-cta);
+  color: #fff;
+  font-size: 10px;
 }
 
 .map-category-option {

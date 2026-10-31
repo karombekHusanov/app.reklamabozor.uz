@@ -17,6 +17,7 @@ import { confirmOtklik } from '@/modules/agent/lib/confirm-otklik'
 import { ROUTES } from '@/modules/shell/constants/routes'
 import OrderHashtagChips from '@/modules/orders/components/OrderHashtagChips.vue'
 import OrderAttachments from '@/modules/orders/components/OrderAttachments.vue'
+import OrderPlacementsCard from '@/modules/placements/components/OrderPlacementsCard.vue'
 import { fmtSom, passStrings } from '@/modules/agent/lib/pass-i18n'
 import { usePassStore } from '@/modules/agent/stores/pass.store'
 import { submitOffer } from '@/modules/orders/services/orders.service'
@@ -264,6 +265,12 @@ onBeforeUnmount(() => {
             <span class="lod__v">{{ row.value }}</span>
           </component>
         </div>
+
+        <!-- Map order: the exact screens the client picked -->
+        <OrderPlacementsCard
+          v-if="order.placements?.length"
+          :placements="order.placements"
+        />
 
         <!-- Description -->
         <div
