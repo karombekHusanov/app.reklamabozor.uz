@@ -3,18 +3,18 @@ import 'leaflet/dist/leaflet.css'
 import 'leaflet.markercluster/dist/MarkerCluster.css'
 import L from 'leaflet'
 import 'leaflet.markercluster'
-import { BadgeCheck, Check, ChevronRight, FileText, List, LocateFixed, MapPin, Search, SlidersHorizontal, Star, X, Zap } from '@lucide/vue'
+import { ArrowLeft, BadgeCheck, Check, ChevronRight, FileText, List, LocateFixed, MapPin, Search, SlidersHorizontal, Star, X, Zap } from '@lucide/vue'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import Avatar from '@/core/ui/Avatar.vue'
 import Drawer from '@/core/ui/Drawer.vue'
-import AppHeader from '@/modules/shell/components/AppHeader.vue'
 import { useTelegram } from '@/core/composables/useTelegram'
 import { useLocaleStore } from '@/core/i18n/locale.store'
 import { categoryFullName, categoryName } from '@/core/i18n/category-name'
 import { regionName } from '@/core/i18n/region-name'
 import { useToast } from '@/core/composables/useToast'
 import { getUserLocation, hasLocationAccess, warmupLocationManager } from '@/core/lib/user-location'
+import { navigateBack } from '@/core/lib/navigation'
 import { isInsideTelegram, supportsVersion } from '@/core/lib/telegram-init'
 import { fetchTopAgents, type PublicAgent } from '@/modules/marketplace/services/agents.service'
 import { fetchCategories } from '@/modules/orders/services/orders.service'
@@ -388,7 +388,26 @@ async function load() {
   categories.value = categoriesResult.status === 'fulfilled' ? categoriesResult.value : []
 }
 
+// No header card on this page — the map needs the space on a phone. Back is
+// Telegram's native BackButton; outside Telegram a small control sits by the
+// search field.
+const nativeBackActive = ref(false)
+function goBack() {
+  navigateBack(router)
+}
+
 onMounted(async () => {
+  if (isInsideTelegram() && supportsVersion('6.1')) {
+    try {
+      WebApp.BackButton.onClick(goBack)
+      WebApp.BackButton.show()
+      nativeBackActive.value = true
+    }
+    catch {
+      nativeBackActive.value = false
+    }
+  }
+
   if (!mapEl.value) return
 
   map = L.map(mapEl.value, { zoomControl: false, attributionControl: true })
@@ -465,6 +484,15 @@ watch([filteredPlacements, () => selection.ids], ([list]) => {
 })
 
 onBeforeUnmount(() => {
+  if (nativeBackActive.value) {
+    try {
+      WebApp.BackButton.offClick(goBack)
+      WebApp.BackButton.hide()
+    }
+    catch {
+      // old client
+    }
+  }
   map?.remove()
   map = null
   markerLayer = null
@@ -480,21 +508,27 @@ onBeforeUnmount(() => {
       class="absolute inset-0 z-0"
     />
 
-    <AppHeader
-      :title="locale.t.shell.tabs.map"
-      :subtitle="showRequests ? locale.t.map.requestsSubtitle : (showScreens ? locale.t.placements.subtitle : locale.t.map.subtitle)"
-      show-back
-    />
-
     <div class="map-page-search pointer-events-none fixed inset-x-0 z-[45] space-y-2 px-4">
-      <div class="pointer-events-auto flex h-11 items-center gap-2.5 rounded-2xl border border-border/60 bg-card/95 px-3.5 shadow-sm backdrop-blur-md">
-        <Search class="size-4 shrink-0 text-muted-foreground" />
-        <input
-          v-model="query"
-          type="search"
-          :placeholder="locale.t.map.searchPlaceholder"
-          class="w-full bg-transparent text-base text-foreground outline-none placeholder:text-muted-foreground"
+      <div class="flex items-center gap-2">
+        <button
+          v-if="!nativeBackActive"
+          type="button"
+          class="pointer-events-auto flex size-11 shrink-0 items-center justify-center rounded-2xl border border-border/60 bg-card/95 text-foreground shadow-sm backdrop-blur-md active:scale-95"
+          :aria-label="locale.t.common.back"
+          @click="goBack"
         >
+          <ArrowLeft class="size-5" />
+        </button>
+        <div class="pointer-events-auto flex h-11 min-w-0 flex-1 items-center gap-2.5 rounded-2xl border border-border/60 bg-card/95 px-3.5 shadow-sm backdrop-blur-md">
+          <Search class="size-4 shrink-0 text-muted-foreground" />
+          <input
+            v-model="query"
+            type="search"
+            :placeholder="locale.t.map.searchPlaceholder"
+            :aria-label="locale.t.shell.tabs.map"
+            class="w-full bg-transparent text-base text-foreground outline-none placeholder:text-muted-foreground"
+          >
+        </div>
       </div>
 
       <!-- Client mode: agencies (fuzzy areas) | screens (exact pins) -->
@@ -964,7 +998,9 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .map-page-search {
-  top: calc(var(--app-header-offset) + 4.5rem);
+  /* No header card on this page: same top breathing room the header dock
+     uses (`--app-header-offset` is scoped to the header, not available here). */
+  top: max(env(safe-area-inset-top), 1.375rem);
 }
 
 .map-layer-tabs {
