@@ -9,3 +9,13 @@
  * bring it back.
  */
 export const PLACEMENT_ORDERING_ENABLED = false
+
+/**
+ * Price calculator: pick priced screens on the map → `/map/calculator` (clip
+ * length × days from the owners' rate cards). Independent of ordering — the
+ * client still closes the deal with the owner directly.
+ */
+export const PLACEMENT_CALCULATOR_ENABLED = true
+
+/** The map's selection basket is shared by both flows. */
+export const PLACEMENT_SELECTION_ENABLED = PLACEMENT_ORDERING_ENABLED || PLACEMENT_CALCULATOR_ENABLED

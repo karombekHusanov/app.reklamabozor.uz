@@ -1,16 +1,18 @@
 <script setup lang="ts">
-import { ArrowRight, ListChecks, Trash2, X } from '@lucide/vue'
+import { ArrowRight, Calculator, ListChecks, Trash2, X } from '@lucide/vue'
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import Drawer from '@/core/ui/Drawer.vue'
 import { useLocaleStore } from '@/core/i18n/locale.store'
 import { useTelegram } from '@/core/composables/useTelegram'
 import { ROUTES } from '@/modules/shell/constants/routes'
+import { PLACEMENT_ORDERING_ENABLED } from '@/modules/placements/lib/feature'
 import { usePlacementSelectionStore } from '@/modules/placements/stores/placement-selection.store'
 
 /**
  * Cart-style bar at the bottom of the map: how many screens are picked, a list
- * to review/remove them, and "Continue" into the order form.
+ * to review/remove them, and "Continue" into the order form — or, while map
+ * ordering is off, "Calculate" into the price calculator.
  */
 const emit = defineEmits<{ focus: [id: number] }>()
 
@@ -21,13 +23,15 @@ const { haptic } = useTelegram()
 
 const t = computed(() => locale.t.placements)
 const listOpen = ref(false)
+const ordering = PLACEMENT_ORDERING_ENABLED
 
 const title = computed(() => t.value.basketTitle.replace('{n}', String(selection.count)))
 
 function proceed() {
   if (selection.isEmpty) return
   haptic('medium')
-  router.push({ path: ROUTES.newOrder, query: { placements: selection.ids.join(',') } })
+  if (PLACEMENT_ORDERING_ENABLED) router.push({ path: ROUTES.newOrder, query: { placements: selection.ids.join(',') } })
+  else router.push(ROUTES.placementCalculator)
 }
 
 function remove(id: number) {
@@ -61,7 +65,7 @@ function focus(id: number) {
         </span>
         <span class="min-w-0">
           <span class="block truncate text-[15px] font-bold text-slate-900">{{ title }}</span>
-          <span class="block truncate text-xs text-slate-500">{{ t.basketHint }}</span>
+          <span class="block truncate text-xs text-slate-500">{{ ordering ? t.basketHint : t.calc.basketHint }}</span>
         </span>
       </button>
       <button
@@ -69,8 +73,14 @@ function focus(id: number) {
         class="btn-brand flex h-11 shrink-0 items-center gap-1.5 rounded-full px-4 text-sm font-bold"
         @click="proceed"
       >
-        {{ t.continueBtn }}
-        <ArrowRight class="size-4" />
+        <template v-if="ordering">
+          {{ t.continueBtn }}
+          <ArrowRight class="size-4" />
+        </template>
+        <template v-else>
+          <Calculator class="size-4" />
+          {{ t.calc.open }}
+        </template>
       </button>
     </div>
 
@@ -90,7 +100,7 @@ function focus(id: number) {
             class="min-w-0 flex-1 text-left"
             @click="focus(item.id)"
           >
-            <span class="block truncate text-sm font-semibold text-foreground">{{ item.address }}</span>
+            <span class="block truncate text-sm font-semibold text-foreground">{{ item.name ?? item.address }}</span>
             <span class="block truncate text-xs text-muted-foreground">{{ item.owner.name }}</span>
           </button>
           <button
@@ -118,7 +128,7 @@ function focus(id: number) {
           class="btn-brand flex h-11 flex-1 items-center justify-center gap-1.5 rounded-full text-sm font-bold"
           @click="proceed"
         >
-          {{ t.continueBtn }}
+          {{ ordering ? t.continueBtn : t.calc.open }}
           <ArrowRight class="size-4" />
         </button>
       </div>

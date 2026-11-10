@@ -8,4 +8,10 @@ export const mapRoutes: RouteRecordRaw[] = [
     meta: { hideTabBar: true },
     component: () => import('@/modules/map/pages/MapPage.vue'),
   },
+  {
+    path: ROUTES.placementCalculator,
+    name: 'placement-calculator',
+    meta: { hideTabBar: true },
+    component: () => import('@/modules/placements/pages/PlacementCalculatorPage.vue'),
+  },
 ]

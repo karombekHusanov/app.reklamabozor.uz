@@ -8,6 +8,9 @@ export interface Placement {
   id: number
   kind: PlacementKind
   status: PlacementStatus
+  /** Owner's own name for the screen ("Magic city") and its size in metres ("16×6"). */
+  name: string | null
+  size: string | null
   address: string
   lat: string | number
   lng: string | number
@@ -27,6 +30,10 @@ export interface Placement {
   has_price: boolean
   min_day_price_tiyin: number | null
   min_day_price_som: number | null
+  /** Headline price — owners quote by the month (cheapest clip length). */
+  min_month_price_som: number | null
+  /** Clip lengths (seconds) on the rate card — the calculator's choices. */
+  slot_options: number[]
   audience_tags: string[]
   photo: string | null
   /** Category a map order is filed under ("Tashqi reklama › LED ekran"). */
@@ -80,4 +87,34 @@ export interface PlacementListParams {
   with_price?: boolean
   q?: string
   limit?: number
+}
+
+/** One screen in a calculator result (POST /api/v1/placements/estimate). */
+export interface PlacementEstimateItem {
+  placement_id: number
+  name: string | null
+  size: string | null
+  address: string
+  owner_name: string
+  slot_options: number[]
+  /** False when the owner does not sell the chosen clip length. */
+  priced: boolean
+  rate: { unit: 'day' | 'week' | 'month', slot_seconds: number, price_som: number } | null
+  day_price_som: number | null
+  price_som: number | null
+}
+
+export interface PlacementEstimate {
+  days: number
+  slot_seconds: number
+  month_days: number
+  /** Shortest booking the calculator quotes (owners sell by the month). */
+  min_days: number
+  items: PlacementEstimateItem[]
+  priced_count: number
+  unpriced_count: number
+  subtotal_som: number
+  vat_percent: number
+  vat_som: number
+  total_som: number
 }

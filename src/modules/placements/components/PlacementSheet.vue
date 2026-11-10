@@ -1,18 +1,19 @@
 <script setup lang="ts">
-import { AtSign, BadgeCheck, Check, ExternalLink, Globe, MapPin, Phone, Plus, X } from '@lucide/vue'
+import { AtSign, BadgeCheck, Calculator, Check, ExternalLink, Globe, MapPin, Phone, Plus, X } from '@lucide/vue'
 import { computed } from 'vue'
 import { useLocaleStore } from '@/core/i18n/locale.store'
 import { regionName } from '@/core/i18n/region-name'
 import { useTelegram } from '@/core/composables/useTelegram'
 import { formatPrice } from '@/modules/orders/lib/order-status'
-import { PLACEMENT_ORDERING_ENABLED } from '@/modules/placements/lib/feature'
+import { PLACEMENT_CALCULATOR_ENABLED, PLACEMENT_ORDERING_ENABLED } from '@/modules/placements/lib/feature'
 import { usePlacementSelectionStore } from '@/modules/placements/stores/placement-selection.store'
 import type { Placement } from '@/modules/placements/types/placement'
 
 /**
  * Bottom card for a tapped screen on the map: what it is, whose it is, what it
- * costs (or "price on request") and how to reach the owner. Adding it to the
- * order selection is behind {@link PLACEMENT_ORDERING_ENABLED}.
+ * costs (or "price on request") and how to reach the owner. Priced screens can
+ * be added to the calculator; picking for an order is behind
+ * {@link PLACEMENT_ORDERING_ENABLED}.
  */
 const props = defineProps<{
   placement: Placement
@@ -30,11 +31,20 @@ const t = computed(() => locale.t.placements)
 const isSelected = computed(() => selection.has(props.placement.id))
 const kindLabel = computed(() => t.value.kind[props.placement.kind] ?? t.value.kind.other)
 const district = computed(() => (props.placement.district ? regionName(props.placement.district, locale.locale) : null))
-const priceLine = computed(() => (props.placement.min_day_price_som
-  ? t.value.fromPerDay.replace('{price}', formatPrice(props.placement.min_day_price_som).replace(/\s*so‘m$/, ''))
+const priceLine = computed(() => (props.placement.min_month_price_som
+  ? t.value.fromPerMonth.replace('{price}', formatPrice(props.placement.min_month_price_som).replace(/\s*so‘m$/, ''))
   : t.value.priceOnRequest))
 
 const orderingEnabled = PLACEMENT_ORDERING_ENABLED
+/** Ordering picks any screen; the calculator only ones with a rate card. */
+const canSelect = computed(() => PLACEMENT_ORDERING_ENABLED || (PLACEMENT_CALCULATOR_ENABLED && props.placement.has_price))
+const selectLabel = computed(() => (PLACEMENT_ORDERING_ENABLED
+  ? (isSelected.value ? t.value.selected : t.value.select)
+  : (isSelected.value ? t.value.calc.added : t.value.calc.add)))
+const specLine = computed(() => [
+  props.placement.size ? `${props.placement.size} m` : null,
+  props.placement.slot_options?.length ? `${props.placement.slot_options.join(' / ')} ${t.value.calc.secShort}` : null,
+].filter(Boolean).join(' · '))
 const websiteUrl = computed(() => {
   const site = props.placement.owner.website
   return site ? (/^https?:\/\//i.test(site) ? site : `https://${site}`) : null
@@ -111,6 +121,12 @@ function openInMaps() {
           </template>
         </p>
         <p class="mt-0.5 line-clamp-2 text-[15px] font-bold leading-snug text-slate-900">
+          {{ placement.name ?? placement.address }}
+        </p>
+        <p
+          v-if="placement.name"
+          class="mt-0.5 line-clamp-2 text-xs text-slate-600"
+        >
           {{ placement.address }}
         </p>
         <p class="mt-1 flex items-center gap-1 text-xs text-slate-600">
@@ -131,6 +147,12 @@ function openInMaps() {
           :class="placement.has_price ? 'text-slate-900' : 'text-slate-600'"
         >
           {{ priceLine }}
+        </p>
+        <p
+          v-if="specLine"
+          class="truncate text-[11.5px] font-semibold text-slate-600"
+        >
+          {{ specLine }}
         </p>
         <p class="truncate text-[11.5px] text-slate-500">
           {{ placement.owner.on_platform ? t.onPlatform : t.notOnPlatform }}<template v-if="groupSize && groupSize > 1">
@@ -208,7 +230,7 @@ function openInMaps() {
     </div>
 
     <button
-      v-if="orderingEnabled"
+      v-if="canSelect"
       type="button"
       class="mt-3 flex h-12 w-full items-center justify-center gap-2 rounded-full text-sm font-bold transition active:scale-[0.98]"
       :class="isSelected ? 'bg-slate-900 text-white' : 'btn-brand'"
@@ -218,11 +240,15 @@ function openInMaps() {
         v-if="isSelected"
         class="size-5"
       />
+      <Calculator
+        v-else-if="!orderingEnabled"
+        class="size-5"
+      />
       <Plus
         v-else
         class="size-5"
       />
-      {{ isSelected ? t.selected : t.select }}
+      {{ selectLabel }}
       <MapPin class="sr-only" />
     </button>
   </div>

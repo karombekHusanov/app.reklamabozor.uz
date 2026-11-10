@@ -5,7 +5,7 @@ import L from 'leaflet'
 import 'leaflet.markercluster'
 import { ArrowLeft, BadgeCheck, Check, ChevronRight, FileText, List, LocateFixed, MapPin, Search, SlidersHorizontal, Star, X, Zap } from '@lucide/vue'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import Avatar from '@/core/ui/Avatar.vue'
 import Drawer from '@/core/ui/Drawer.vue'
 import { useTelegram } from '@/core/composables/useTelegram'
@@ -23,7 +23,7 @@ import PlacementBasketBar from '@/modules/placements/components/PlacementBasketB
 import PlacementSheet from '@/modules/placements/components/PlacementSheet.vue'
 import { clusterIcon, placementIcon, shortPrice } from '@/modules/placements/lib/placement-marker'
 import { fetchPlacements } from '@/modules/placements/services/placements.service'
-import { PLACEMENT_ORDERING_ENABLED } from '@/modules/placements/lib/feature'
+import { PLACEMENT_SELECTION_ENABLED } from '@/modules/placements/lib/feature'
 import { usePlacementSelectionStore } from '@/modules/placements/stores/placement-selection.store'
 import type { Placement } from '@/modules/placements/types/placement'
 import { useModeStore } from '@/modules/shell/stores/mode.store'
@@ -39,6 +39,7 @@ import type { Category } from '@/modules/agent/types/agent'
  */
 
 const locale = useLocaleStore()
+const route = useRoute()
 const router = useRouter()
 const toast = useToast()
 const { haptic, WebApp } = useTelegram()
@@ -61,8 +62,8 @@ const placementFiltersOpen = ref(false)
 const selectedAgent = ref<PublicAgent | null>(null)
 const selectedOrder = ref<LiveOrder | null>(null)
 const hasSelection = computed(() => selectedAgent.value !== null || selectedOrder.value !== null || selectedPlacement.value !== null)
-/** Basket bar shows while screens are picked and no card is open (map ordering flag). */
-const showBasket = computed(() => PLACEMENT_ORDERING_ENABLED && showScreens.value && !selection.isEmpty && !hasSelection.value)
+/** Basket bar shows while screens are picked and no card is open (ordering or calculator). */
+const showBasket = computed(() => PLACEMENT_SELECTION_ENABLED && showScreens.value && !selection.isEmpty && !hasSelection.value)
 
 const OPEN_STATUSES = new Set(['new', 'offers_sent'])
 const DEFAULT_RADIUS_M = 1000
@@ -176,7 +177,7 @@ function renderPlacements() {
     const lng = Number(p.lng)
     if (!Number.isFinite(lat) || !Number.isFinite(lng)) continue
     const marker = L.marker([lat, lng], {
-      icon: placementIcon({ selected: selection.has(p.id), priced: p.has_price, label: shortPrice(p.min_day_price_som) }),
+      icon: placementIcon({ selected: selection.has(p.id), priced: p.has_price, label: shortPrice(p.min_month_price_som) }),
       zIndexOffset: selection.has(p.id) ? 500 : 0,
     })
     ;(marker as L.Marker & { placementId?: number }).placementId = p.id
@@ -446,6 +447,9 @@ onMounted(async () => {
   await load()
   renderMarkers()
 
+  // Coming back from the calculator ("add more screens") lands on the screens layer.
+  if (route.query.layer === 'screens' && !showRequests.value) layer.value = 'screens'
+
   // Only auto-center when permission was already granted — first-time prompts need a tap.
   if (hasLocationAccess()) {
     await centerOnUser()
@@ -558,7 +562,7 @@ onBeforeUnmount(() => {
         >
           {{ locale.t.placements.layerScreens }}
           <span
-            v-if="PLACEMENT_ORDERING_ENABLED && selection.count && layer !== 'screens'"
+            v-if="PLACEMENT_SELECTION_ENABLED && selection.count && layer !== 'screens'"
             class="map-layer-tab__badge"
           >{{ selection.count }}</span>
         </button>
@@ -579,7 +583,7 @@ onBeforeUnmount(() => {
 
     <!-- Screens layer: filters (no selection yet) or the basket bar -->
     <div
-      v-if="showScreens && !hasSelection && (!PLACEMENT_ORDERING_ENABLED || selection.isEmpty)"
+      v-if="showScreens && !hasSelection && (!PLACEMENT_SELECTION_ENABLED || selection.isEmpty)"
       class="safe-bottom absolute inset-x-0 bottom-0 z-[70] flex flex-col items-center gap-2 px-6 pb-4"
     >
       <p

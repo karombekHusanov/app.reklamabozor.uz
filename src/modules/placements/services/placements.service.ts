@@ -1,6 +1,6 @@
 import { api } from '@/core/api/client'
 import type { ApiSuccess } from '@/core/types/api'
-import type { Placement, PlacementDetail, PlacementListParams } from '@/modules/placements/types/placement'
+import type { Placement, PlacementDetail, PlacementEstimate, PlacementListParams } from '@/modules/placements/types/placement'
 
 /** Public map layer — works for guests too. The whole city fits in one call. */
 export async function fetchPlacements(params: PlacementListParams = {}): Promise<Placement[]> {
@@ -17,6 +17,17 @@ export async function fetchPlacements(params: PlacementListParams = {}): Promise
 
 export async function fetchPlacement(id: number): Promise<PlacementDetail> {
   const { data } = await api.get<ApiSuccess<PlacementDetail>>(`/api/v1/placements/${id}`)
+
+  return data.data
+}
+
+/** Calculator — the server owns the maths (rate by clip length, pro-rated by days, VAT). */
+export async function estimatePlacements(placementIds: number[], days: number, slotSeconds: number): Promise<PlacementEstimate> {
+  const { data } = await api.post<ApiSuccess<PlacementEstimate>>('/api/v1/placements/estimate', {
+    placement_ids: placementIds,
+    days,
+    slot_seconds: slotSeconds,
+  })
 
   return data.data
 }
