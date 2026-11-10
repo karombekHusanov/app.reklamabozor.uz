@@ -17,6 +17,7 @@ export const ROUTES = {
   tender: '/tender',
   map: '/map',
   placementCalculator: '/map/calculator',
+  metroAds: '/map/metro',
   chat: '/chat',
   chatThreads: '/chat/threads',
   chatDirect: (id: number | string) => `/chat/direct/${id}`,

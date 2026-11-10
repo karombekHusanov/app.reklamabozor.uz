@@ -111,10 +111,78 @@ export interface PlacementEstimate {
   /** Shortest booking the calculator quotes (owners sell by the month). */
   min_days: number
   items: PlacementEstimateItem[]
+  format_items: FormatEstimateItem[]
   priced_count: number
   unpriced_count: number
   subtotal_som: number
   vat_percent: number
   vat_som: number
   total_som: number
+}
+
+export type MetroLine = 'chilonzor' | 'ozbekiston' | 'yunusobod' | 'halqa'
+
+/** A per-unit format sold across the metro (GET /api/v1/ad-formats). */
+export interface AdFormat {
+  id: number
+  code: string
+  venue: string
+  medium: 'digital' | 'static'
+  name_uz: string
+  name_ru: string
+  specs: { size?: string, resolution?: string, material?: string, hours?: string, note?: string }
+  total_count: number
+  line_counts: Partial<Record<MetroLine, number>>
+  /** Sold only as the whole network set — no quantity to choose. */
+  is_package: boolean
+  min_months: number
+  /** False for static formats: printing + mounting are billed separately. */
+  production_included: boolean
+  daily_reach: number | null
+  slot_options: number[]
+  rates: { slot_seconds: number, price_som: number }[]
+  min_month_price_som: number | null
+  owner: { name: string, phones: string[], website: string | null }
+}
+
+/** A format picked for the calculator. */
+export interface SelectedFormat {
+  format: AdFormat
+  quantity: number
+}
+
+/** One metro format in a calculator result. */
+export interface FormatEstimateItem {
+  format_id: number
+  code: string
+  medium: 'digital' | 'static'
+  name_uz: string
+  name_ru: string
+  owner_name: string
+  is_package: boolean
+  quantity: number
+  total_count: number
+  slot_options: number[]
+  priced: boolean
+  month_price_som: number | null
+  billed_days: number
+  /** The term was stretched to the format's minimum / a whole month. */
+  term_adjusted: boolean
+  production_included: boolean
+  price_som: number | null
+}
+
+export interface MetroStation {
+  name_uz: string
+  name_ru: string
+  lat: number
+  lng: number
+}
+
+/** One metro line with its stations in travel order (GET /api/v1/metro/lines). */
+export interface MetroLineData {
+  code: MetroLine
+  name_uz: string
+  name_ru: string
+  stations: MetroStation[]
 }

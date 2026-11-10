@@ -120,6 +120,11 @@
     --rb-glow: #38bdf8;           /* cyan — running borders, seals, glows */
     --rb-glow-soft: #9becff;
     --rb-rating: #f5a524;         /* stars */
+    /* Tashkent metro line colours (official scheme) — metro ad catalogue only. */
+    --rb-metro-chilonzor: #e0393e;
+    --rb-metro-ozbekiston: #2f6fd6;
+    --rb-metro-yunusobod: #1fa85a;
+    --rb-metro-halqa: #e3a52b;
     --rb-hero-grad: linear-gradient(158deg, #02305c 0%, #014ba4 55%, #0386d9 125%);
 
     /* Radii */

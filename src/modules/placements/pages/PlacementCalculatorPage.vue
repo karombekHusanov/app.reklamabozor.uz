@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Minus, Phone, Plus, X } from '@lucide/vue'
+import { Minus, Phone, Plus, TrainFront, X } from '@lucide/vue'
 import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import EmptyState from '@/core/ui/EmptyState.vue'
@@ -7,6 +7,7 @@ import Skeleton from '@/core/ui/Skeleton.vue'
 import { useTelegram } from '@/core/composables/useTelegram'
 import { useToast } from '@/core/composables/useToast'
 import { useLocaleStore } from '@/core/i18n/locale.store'
+import { categoryName } from '@/core/i18n/category-name'
 import AppHeader from '@/modules/shell/components/AppHeader.vue'
 import { ROUTES } from '@/modules/shell/constants/routes'
 import { estimatePlacements } from '@/modules/placements/services/placements.service'
@@ -14,7 +15,8 @@ import { usePlacementSelectionStore } from '@/modules/placements/stores/placemen
 import type { PlacementEstimate } from '@/modules/placements/types/placement'
 
 /**
- * Price calculator for the screens picked on the map: clip length × term.
+ * Price calculator for the screens picked on the map and the metro formats
+ * picked in the metro catalogue: clip length × term (× units for the metro).
  * Owners quote by the month, so the monthly price is what is shown; days past
  * a whole month are pro-rated and nothing shorter than `min_days` is quoted.
  * The server owns the maths (owner's rate for the exact clip length, pro-rated
@@ -34,10 +36,13 @@ const selection = usePlacementSelectionStore()
 const { haptic } = useTelegram()
 
 const t = computed(() => locale.t.placements.calc)
+const tm = computed(() => locale.t.placements.metro)
+const pickedCount = computed(() => selection.count + selection.formatCount)
 
 const slotOptions = computed(() => {
   const all = new Set<number>()
   for (const p of selection.items) for (const s of p.slot_options ?? []) all.add(s)
+  for (const f of selection.formats) for (const s of f.format.slot_options) all.add(s)
   return all.size ? [...all].sort((a, b) => a - b) : DEFAULT_SLOTS
 })
 
@@ -52,20 +57,25 @@ const money = (som: number) => new Intl.NumberFormat('uz-UZ').format(som)
 
 /** One owner with a phone → a direct "call" action under the total. */
 const ownerPhone = computed(() => {
-  const owners = new Set(selection.items.map(p => p.owner.name))
-  return owners.size === 1 ? (selection.items[0]?.owner.phones[0] ?? null) : null
+  const owners = [...selection.items.map(p => p.owner), ...selection.formats.map(f => f.format.owner)]
+  return new Set(owners.map(o => o.name)).size === 1 ? (owners[0]?.phones[0] ?? null) : null
 })
 
 let requestSeq = 0
 async function recalc() {
-  if (selection.isEmpty) {
+  if (selection.nothingPicked) {
     estimate.value = null
     return
   }
   const seq = ++requestSeq
   loading.value = true
   try {
-    const result = await estimatePlacements(selection.ids, days.value, slotSeconds.value)
+    const result = await estimatePlacements(
+      selection.ids,
+      days.value,
+      slotSeconds.value,
+      selection.formats.map(f => ({ format_id: f.format.id, quantity: f.quantity })),
+    )
     if (seq === requestSeq) {
       estimate.value = result
       minDays.value = result.min_days
@@ -79,7 +89,12 @@ async function recalc() {
   }
 }
 
-watch([() => selection.ids.join(','), days, slotSeconds], recalc, { immediate: true })
+const pickedKey = computed(() => [
+  selection.ids.join(','),
+  selection.formats.map(f => `${f.format.id}x${f.quantity}`).join(','),
+].join('|'))
+
+watch([pickedKey, days, slotSeconds], recalc, { immediate: true })
 
 function setDays(next: number) {
   const clamped = Math.min(MAX_DAYS, Math.max(minDays.value, Math.round(next) || minDays.value))
@@ -98,6 +113,16 @@ function remove(id: number) {
   selection.remove(id)
 }
 
+function removeFormat(id: number) {
+  haptic('light')
+  selection.removeFormat(id)
+}
+
+function toMetro() {
+  haptic('light')
+  router.push(ROUTES.metroAds)
+}
+
 function toMap() {
   haptic('light')
   router.push({ path: ROUTES.map, query: { layer: 'screens' } })
@@ -114,12 +139,12 @@ function call(phone: string) {
   <div class="pb-8">
     <AppHeader
       :title="t.title"
-      :subtitle="selection.isEmpty ? undefined : t.subtitle.replace('{n}', String(selection.count))"
+      :subtitle="selection.nothingPicked ? undefined : t.subtitle.replace('{n}', String(pickedCount))"
       show-back
     />
 
     <div
-      v-if="selection.isEmpty"
+      v-if="selection.nothingPicked"
       class="px-4 pt-6"
     >
       <EmptyState
@@ -132,6 +157,14 @@ function call(phone: string) {
         @click="toMap"
       >
         {{ t.toMap }}
+      </button>
+      <button
+        type="button"
+        class="mx-auto mt-2 flex h-12 w-full max-w-xs items-center justify-center gap-2 rounded-full bg-secondary text-sm font-semibold text-foreground"
+        @click="toMetro"
+      >
+        <TrainFront class="size-4" />
+        {{ tm.title }}
       </button>
     </div>
 
@@ -220,23 +253,23 @@ function call(phone: string) {
         </div>
       </section>
 
+      <div
+        v-if="!estimate"
+        class="space-y-2"
+      >
+        <Skeleton
+          v-for="n in pickedCount"
+          :key="n"
+          class="h-[4.5rem] w-full rounded-2xl"
+        />
+      </div>
+
       <!-- Per-screen breakdown -->
-      <section>
+      <section v-if="estimate?.items.length">
         <h2 class="calc-label mb-2 px-1">
           {{ t.screensTitle }}
         </h2>
-        <div
-          v-if="!estimate"
-          class="space-y-2"
-        >
-          <Skeleton
-            v-for="n in selection.count"
-            :key="n"
-            class="h-[4.5rem] w-full rounded-2xl"
-          />
-        </div>
         <ul
-          v-else
           class="space-y-2"
           :class="loading && 'opacity-60'"
         >
@@ -278,6 +311,68 @@ function call(phone: string) {
               class="-mr-1.5 -mt-1.5 grid size-11 shrink-0 place-items-center rounded-full text-muted-foreground active:opacity-70"
               :aria-label="locale.t.placements.remove"
               @click="remove(item.placement_id)"
+            >
+              <X class="size-4" />
+            </button>
+          </li>
+        </ul>
+      </section>
+
+      <!-- Metro formats: units × term; static ones are billed by whole months -->
+      <section v-if="estimate?.format_items.length">
+        <h2 class="calc-label mb-2 flex items-center gap-1.5 px-1">
+          <TrainFront class="size-4 text-primary" />
+          {{ tm.calcSection }}
+        </h2>
+        <ul
+          class="space-y-2"
+          :class="loading && 'opacity-60'"
+        >
+          <li
+            v-for="item in estimate.format_items"
+            :key="item.format_id"
+            class="rb-card flex items-start gap-3 p-3.5"
+          >
+            <div class="min-w-0 flex-1">
+              <p class="truncate text-[15px] font-bold text-foreground">
+                {{ categoryName(item, locale.locale) }}
+              </p>
+              <p class="truncate text-xs text-muted-foreground">
+                {{ item.is_package ? tm.calcPackage.replace('{n}', String(item.total_count)) : tm.calcQty.replace('{n}', String(item.quantity)) }}
+                <template v-if="item.month_price_som !== null">
+                  · {{ t.perMonth.replace('{price}', money(item.month_price_som)) }}
+                </template>
+              </p>
+              <p
+                v-if="!item.priced"
+                class="mt-1 text-xs font-semibold text-destructive"
+              >
+                {{ t.noRate }}
+              </p>
+              <p
+                v-else-if="item.term_adjusted"
+                class="mt-1 text-xs font-semibold text-foreground"
+              >
+                {{ tm.calcTerm.replace('{n}', String(Math.round(item.billed_days / estimate.month_days))) }}
+              </p>
+              <p
+                v-if="item.priced && !item.production_included"
+                class="mt-0.5 text-xs text-muted-foreground"
+              >
+                {{ tm.productionExtra }}
+              </p>
+            </div>
+            <p
+              v-if="item.price_som !== null"
+              class="calc-num shrink-0 pt-0.5 text-right text-[15px] font-extrabold text-foreground"
+            >
+              {{ money(item.price_som) }}
+            </p>
+            <button
+              type="button"
+              class="-mr-1.5 -mt-1.5 grid size-11 shrink-0 place-items-center rounded-full text-muted-foreground active:opacity-70"
+              :aria-label="locale.t.placements.remove"
+              @click="removeFormat(item.format_id)"
             >
               <X class="size-4" />
             </button>
@@ -332,6 +427,14 @@ function call(phone: string) {
         >
           <Plus class="size-4" />
           {{ t.addMore }}
+        </button>
+        <button
+          type="button"
+          class="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-secondary text-sm font-semibold text-foreground active:opacity-80"
+          @click="toMetro"
+        >
+          <TrainFront class="size-4" />
+          {{ tm.title }}
         </button>
       </div>
     </div>

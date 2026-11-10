@@ -9,6 +9,12 @@ export const mapRoutes: RouteRecordRaw[] = [
     component: () => import('@/modules/map/pages/MapPage.vue'),
   },
   {
+    path: ROUTES.metroAds,
+    name: 'metro-ads',
+    meta: { hideTabBar: true },
+    component: () => import('@/modules/placements/pages/MetroAdsPage.vue'),
+  },
+  {
     path: ROUTES.placementCalculator,
     name: 'placement-calculator',
     meta: { hideTabBar: true },

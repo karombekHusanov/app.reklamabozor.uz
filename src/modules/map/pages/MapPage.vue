@@ -20,12 +20,13 @@ import { fetchTopAgents, type PublicAgent } from '@/modules/marketplace/services
 import { fetchCategories } from '@/modules/orders/services/orders.service'
 import { fetchLiveOrders, type LiveOrder } from '@/modules/home/services/live-orders.service'
 import PlacementBasketBar from '@/modules/placements/components/PlacementBasketBar.vue'
+import MetroLineSheet from '@/modules/placements/components/MetroLineSheet.vue'
 import PlacementSheet from '@/modules/placements/components/PlacementSheet.vue'
 import { clusterIcon, placementIcon, shortPrice } from '@/modules/placements/lib/placement-marker'
-import { fetchPlacements } from '@/modules/placements/services/placements.service'
+import { fetchAdFormats, fetchMetroLines, fetchPlacements } from '@/modules/placements/services/placements.service'
 import { PLACEMENT_SELECTION_ENABLED } from '@/modules/placements/lib/feature'
 import { usePlacementSelectionStore } from '@/modules/placements/stores/placement-selection.store'
-import type { Placement } from '@/modules/placements/types/placement'
+import type { AdFormat, MetroLineData, MetroStation, Placement } from '@/modules/placements/types/placement'
 import { useModeStore } from '@/modules/shell/stores/mode.store'
 import { ROUTES } from '@/modules/shell/constants/routes'
 import type { Category } from '@/modules/agent/types/agent'
@@ -47,9 +48,17 @@ const { haptic, WebApp } = useTelegram()
 const mode = useModeStore()
 const showRequests = computed(() => mode.isAgent)
 
-type ClientLayer = 'agencies' | 'screens'
+type ClientLayer = 'agencies' | 'screens' | 'metro'
 const layer = ref<ClientLayer>('agencies')
 const showScreens = computed(() => !showRequests.value && layer.value === 'screens')
+const showMetro = computed(() => !showRequests.value && layer.value === 'metro')
+
+// Metro layer: lines + stations from reference data; formats are sold per line.
+const metroLines = ref<MetroLineData[]>([])
+const metroFormats = ref<AdFormat[]>([])
+const metroLoaded = ref(false)
+const selectedLine = ref<MetroLineData | null>(null)
+const selectedStation = ref<MetroStation | null>(null)
 
 const selection = usePlacementSelectionStore()
 const placements = ref<Placement[]>([])
@@ -61,7 +70,7 @@ const placementFiltersOpen = ref(false)
 
 const selectedAgent = ref<PublicAgent | null>(null)
 const selectedOrder = ref<LiveOrder | null>(null)
-const hasSelection = computed(() => selectedAgent.value !== null || selectedOrder.value !== null || selectedPlacement.value !== null)
+const hasSelection = computed(() => selectedAgent.value !== null || selectedOrder.value !== null || selectedPlacement.value !== null || selectedLine.value !== null)
 /** Basket bar shows while screens are picked and no card is open (ordering or calculator). */
 const showBasket = computed(() => PLACEMENT_SELECTION_ENABLED && showScreens.value && !selection.isEmpty && !hasSelection.value)
 
@@ -98,6 +107,8 @@ function clearSelection() {
   selectedAgent.value = null
   selectedOrder.value = null
   selectedPlacement.value = null
+  selectedLine.value = null
+  selectedStation.value = null
 }
 
 // --- Screens layer -----------------------------------------------------------
@@ -141,6 +152,75 @@ function focusPlacement(id: number) {
   if (!placement || !map) return
   map.setView([Number(placement.lat), Number(placement.lng)], 17, { animate: true })
   selectPlacement(placement)
+}
+
+function openMetroCatalogue() {
+  haptic('light')
+  router.push(ROUTES.metroAds)
+}
+
+function openCalculator() {
+  haptic('medium')
+  router.push(ROUTES.placementCalculator)
+}
+
+function selectLine(line: MetroLineData, station: MetroStation | null = null) {
+  haptic('light')
+  selectedLine.value = line
+  selectedStation.value = station
+  if (station) map?.panTo([station.lat, station.lng], { animate: true })
+}
+
+async function loadMetro() {
+  if (metroLoaded.value) return
+  try {
+    ;[metroLines.value, metroFormats.value] = await Promise.all([fetchMetroLines(), fetchAdFormats()])
+    metroLoaded.value = true
+  }
+  catch {
+    toast.error(locale.t.placements.metro.linesError)
+  }
+}
+
+/** Lines as coloured polylines through their stations; the picked line stays bold, the rest fade. */
+function renderMetro() {
+  if (!map || !metroLayer) return
+  metroLayer.clearLayers()
+  if (!showMetro.value) return
+
+  const styles = getComputedStyle(document.documentElement)
+  for (const line of metroLines.value) {
+    const color = styles.getPropertyValue(`--rb-metro-${line.code}`).trim() || styles.getPropertyValue('--primary').trim()
+    const dimmed = selectedLine.value !== null && selectedLine.value.code !== line.code
+    const path = line.stations.map(st => [st.lat, st.lng] as L.LatLngTuple)
+
+    // A wide transparent stroke under the visible one gives the line a finger-sized hit area.
+    L.polyline(path, { color, weight: 24, opacity: 0 }).on('click', (e) => {
+      // The map's own click clears the selection — keep this tap from reaching it.
+      L.DomEvent.stopPropagation(e)
+      selectLine(line)
+    }).addTo(metroLayer)
+    L.polyline(path, { color, weight: 6, opacity: dimmed ? 0.3 : 0.95, lineCap: 'round', lineJoin: 'round', interactive: false })
+      .addTo(metroLayer)
+
+    for (const st of line.stations) {
+      const active = selectedStation.value === st
+      L.circleMarker([st.lat, st.lng], {
+        radius: active ? 9 : 6,
+        color,
+        weight: 3,
+        fillColor: active ? color : '#fff',
+        fillOpacity: 1,
+        opacity: dimmed ? 0.4 : 1,
+      })
+        .bindTooltip(locale.locale === 'ru' ? st.name_ru : st.name_uz, { direction: 'top', offset: [0, -6] })
+        .on('click', (e) => {
+          L.DomEvent.stopPropagation(e)
+          selectLine(line, st)
+        })
+        .addTo(metroLayer)
+    }
+  }
 }
 
 function pickLayer(next: ClientLayer) {
@@ -204,6 +284,7 @@ let map: L.Map | null = null
 let markerLayer: L.LayerGroup | null = null
 let userLocationLayer: L.LayerGroup | null = null
 let placementLayer: L.MarkerClusterGroup | null = null
+let metroLayer: L.LayerGroup | null = null
 
 const agents = ref<PublicAgent[]>([])
 const orders = ref<LiveOrder[]>([])
@@ -306,7 +387,7 @@ function drawArea(lat: number, lng: number, radius: number | null | undefined, t
 function renderMarkers() {
   if (!map || !markerLayer) return
   markerLayer.clearLayers()
-  if (showScreens.value) return
+  if (showScreens.value || showMetro.value) return
   if (showRequests.value) {
     for (const o of filteredOrders.value) {
       drawArea(Number(o.lat), Number(o.lng), o.location_radius_m, 'request', () => selectOrder(o))
@@ -421,6 +502,7 @@ onMounted(async () => {
 
   markerLayer = L.layerGroup().addTo(map)
   userLocationLayer = L.layerGroup().addTo(map)
+  metroLayer = L.layerGroup().addTo(map)
   // 300+ screens city-wide: cluster into district bubbles until street zoom;
   // two faces of one pole spiderfy at max zoom instead of overlapping.
   placementLayer = L.markerClusterGroup({
@@ -448,10 +530,11 @@ onMounted(async () => {
   renderMarkers()
 
   // Coming back from the calculator ("add more screens") lands on the screens layer.
-  if (route.query.layer === 'screens' && !showRequests.value) layer.value = 'screens'
+  if ((route.query.layer === 'screens' || route.query.layer === 'metro') && !showRequests.value) layer.value = route.query.layer
 
   // Only auto-center when permission was already granted — first-time prompts need a tap.
-  if (hasLocationAccess()) {
+  // The metro layer frames the whole network instead of the user's surroundings.
+  if (hasLocationAccess() && !showMetro.value) {
     await centerOnUser()
   }
 })
@@ -471,6 +554,20 @@ watch(filteredOrders, (list) => {
     selectedOrder.value = null
   }
 })
+
+// Metro layer: load once, frame the whole network whenever it opens.
+watch(showMetro, async (on) => {
+  if (on) {
+    await loadMetro()
+    // The network spans the whole city — always open the layer framed on it.
+    const points = metroLines.value.flatMap(l => l.stations.map(st => [st.lat, st.lng] as L.LatLngTuple))
+    if (points.length) map?.fitBounds(L.latLngBounds(points), { padding: [28, 28], animate: false })
+  }
+  renderMarkers()
+  renderMetro()
+})
+
+watch([selectedLine, selectedStation], () => renderMetro())
 
 // Screens layer: load on first switch, redraw on filter/selection changes.
 watch(showScreens, async (on) => {
@@ -500,6 +597,7 @@ onBeforeUnmount(() => {
   map?.remove()
   map = null
   markerLayer = null
+  metroLayer = null
   userLocationLayer = null
   placementLayer = null
 })
@@ -566,6 +664,21 @@ onBeforeUnmount(() => {
             class="map-layer-tab__badge"
           >{{ selection.count }}</span>
         </button>
+        <!-- Metro: lines and stations; formats are sold per line. -->
+        <button
+          type="button"
+          role="tab"
+          class="map-layer-tab"
+          :class="layer === 'metro' && 'is-active'"
+          :aria-selected="layer === 'metro'"
+          @click="pickLayer('metro')"
+        >
+          {{ locale.t.placements.metro.tab }}
+          <span
+            v-if="selection.formatCount && layer !== 'metro'"
+            class="map-layer-tab__badge"
+          >{{ selection.formatCount }}</span>
+        </button>
       </div>
     </div>
 
@@ -615,7 +728,7 @@ onBeforeUnmount(() => {
     </Transition>
 
     <div
-      v-if="!showScreens && !hasSelection"
+      v-if="!showScreens && !showMetro && !hasSelection"
       class="safe-bottom absolute inset-x-0 bottom-0 z-[70] flex flex-col items-center gap-2 px-6 pb-4"
     >
       <p
@@ -683,6 +796,51 @@ onBeforeUnmount(() => {
         </button>
       </div>
     </Drawer>
+
+    <!-- Metro layer: hint + catalogue / calculator shortcuts, or the picked line -->
+    <div
+      v-if="showMetro && !hasSelection"
+      class="safe-bottom absolute inset-x-0 bottom-0 z-[70] flex flex-col items-center gap-2 px-6 pb-4"
+    >
+      <p class="rounded-full bg-white/95 px-3 py-1 text-xs font-semibold text-primary shadow-md">
+        {{ locale.t.placements.metro.mapHint }}
+      </p>
+      <div class="flex w-full max-w-sm gap-2">
+        <button
+          type="button"
+          class="flex h-12 min-w-0 flex-1 items-center justify-center gap-2 rounded-full bg-white px-4 text-sm font-semibold text-slate-900 shadow-lg"
+          @click="openMetroCatalogue"
+        >
+          <List class="size-5 shrink-0" />
+          <span class="truncate">{{ locale.t.placements.metro.allFormats }}</span>
+        </button>
+        <button
+          v-if="selection.formatCount"
+          type="button"
+          class="btn-brand flex h-12 shrink-0 items-center gap-2 rounded-full px-5 text-sm font-semibold"
+          @click="openCalculator"
+        >
+          {{ locale.t.placements.metro.calculate }}
+          <span class="rounded-full bg-white/20 px-2 py-0.5 text-xs">{{ selection.formatCount }}</span>
+        </button>
+      </div>
+    </div>
+
+    <Transition name="agent-card">
+      <div
+        v-if="selectedLine"
+        class="safe-bottom absolute inset-x-0 bottom-0 z-[75] px-4 pb-4"
+      >
+        <MetroLineSheet
+          :line="selectedLine"
+          :station="selectedStation"
+          :formats="metroFormats"
+          @close="clearSelection"
+          @catalogue="openMetroCatalogue"
+          @calculate="openCalculator"
+        />
+      </div>
+    </Transition>
 
     <Transition name="agent-card">
       <div

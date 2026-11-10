@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { computed, ref, watch } from 'vue'
-import type { Placement } from '@/modules/placements/types/placement'
+import type { AdFormat, Placement, SelectedFormat } from '@/modules/placements/types/placement'
 
 const STORAGE_KEY = 'adspace_placement_selection'
 
@@ -16,11 +16,26 @@ function restore(): Placement[] {
   }
 }
 
+const FORMATS_STORAGE_KEY = 'adspace_format_selection'
+
+function restoreFormats(): SelectedFormat[] {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(FORMATS_STORAGE_KEY) ?? '[]') as unknown
+    return Array.isArray(parsed)
+      ? (parsed as SelectedFormat[]).filter(f => typeof f?.format?.id === 'number' && f.quantity > 0)
+      : []
+  }
+  catch {
+    return []
+  }
+}
+
 /**
  * The client's "basket" of screens picked on the map, carried into the order
  * form (`/orders/new?placements=1,2,3`). Survives a reload via localStorage
  * (best effort — the Telegram WebView may drop it); cleared once the order is
- * sent.
+ * sent. Metro formats picked for the calculator live beside the screens
+ * (`formats`, with a quantity each) — the map basket only counts screens.
  */
 export const usePlacementSelectionStore = defineStore('placement-selection', () => {
   const items = ref<Placement[]>(restore())
@@ -41,6 +56,36 @@ export const usePlacementSelectionStore = defineStore('placement-selection', () 
     }
     catch { /* storage unavailable */ }
   }, { deep: true })
+
+  const formats = ref<SelectedFormat[]>(restoreFormats())
+  const formatCount = computed(() => formats.value.length)
+  /** Nothing at all to calculate — neither screens nor metro formats. */
+  const nothingPicked = computed(() => items.value.length === 0 && formats.value.length === 0)
+
+  watch(formats, (list) => {
+    try {
+      localStorage.setItem(FORMATS_STORAGE_KEY, JSON.stringify(list))
+    }
+    catch { /* storage unavailable */ }
+  }, { deep: true })
+
+  function formatQuantity(id: number) {
+    return formats.value.find(f => f.format.id === id)?.quantity ?? 0
+  }
+
+  /** Set how many units of a format are picked; 0 removes it. Packages are always 1. */
+  function setFormat(format: AdFormat, quantity: number) {
+    const capped = format.is_package ? Math.min(1, quantity) : Math.min(format.total_count, quantity)
+    const rest = formats.value.filter(f => f.format.id !== format.id)
+    const existing = formats.value.find(f => f.format.id === format.id)
+    if (capped <= 0) formats.value = rest
+    else if (existing) existing.quantity = capped
+    else formats.value = [...rest, { format, quantity: capped }]
+  }
+
+  function removeFormat(id: number) {
+    formats.value = formats.value.filter(f => f.format.id !== id)
+  }
 
   function has(id: number) {
     return items.value.some(p => p.id === id)
@@ -69,5 +114,8 @@ export const usePlacementSelectionStore = defineStore('placement-selection', () 
     items.value = []
   }
 
-  return { items, ids, count, isEmpty, singlePlatformOwner, has, add, remove, toggle, keep, clear }
+  return {
+    items, ids, count, isEmpty, singlePlatformOwner, has, add, remove, toggle, keep, clear,
+    formats, formatCount, nothingPicked, formatQuantity, setFormat, removeFormat,
+  }
 })
