@@ -5,6 +5,15 @@ export interface PassStrings {
   free: string
   gatewayUnavailable: string
   genericError: string
+  notApproved: string
+  cardDeclined: string
+  otpInvalid: string
+  paymentDead: string
+  inProgress: string
+  tooMany: string
+  network: string
+  savedCardGone: string
+  pendingTimeout: string
   paymentUnavailable: string
   unit: string
   payTotal: string
@@ -67,6 +76,15 @@ const uz: PassStrings = {
   free: "Hozircha bepul — buyurtmalar uchun to'lov olinmaydi",
   gatewayUnavailable: 'To‘lov tizimi hozircha mavjud emas. Keyinroq urinib ko‘ring.',
   genericError: 'Amalni bajarib bo‘lmadi. Qayta urinib ko‘ring.',
+  notApproved: "Arizangiz hali ko'rib chiqilmoqda. Balansni to'ldirish profil tasdiqlangandan keyin ochiladi.",
+  cardDeclined: "Bank to'lovni rad etdi. Kartadagi mablag'ni tekshiring yoki boshqa kartani sinang.",
+  otpInvalid: "SMS kod noto'g'ri yoki eskirgan. Kodni qayta kiriting.",
+  paymentDead: "Bu to'lov amalga oshmadi. Qaytadan boshlang.",
+  inProgress: "To'lov allaqachon tekshirilmoqda — bir necha soniya kuting.",
+  tooMany: "Urinishlar juda ko'p. Bir daqiqadan keyin qayta urinib ko'ring.",
+  network: "Internet aloqasi yo'q yoki javob kechikdi. Agar pul yechilgan bo'lsa, u balansga avtomatik tushadi.",
+  savedCardGone: 'Saqlangan karta topilmadi. Kartani qayta kiriting.',
+  pendingTimeout: "Bank hali javob bermadi. Pul yechilgan bo'lsa, balans bir necha daqiqada yangilanadi.",
   paymentUnavailable: 'To‘lov manbai mavjud emas. Keyinroq urinib ko‘ring.',
   unit: 'so‘m',
   payTotal: 'Jami',
@@ -129,6 +147,15 @@ const ru: PassStrings = {
   free: 'Пока бесплатно — плата за заказы не взимается',
   gatewayUnavailable: 'Платёжная система сейчас недоступна. Попробуйте позже.',
   genericError: 'Не удалось выполнить действие. Попробуйте ещё раз.',
+  notApproved: 'Ваша заявка ещё на проверке. Пополнение баланса откроется после одобрения профиля.',
+  cardDeclined: 'Банк отклонил платёж. Проверьте баланс карты или попробуйте другую карту.',
+  otpInvalid: 'Неверный или устаревший код из SMS. Введите код ещё раз.',
+  paymentDead: 'Этот платёж не прошёл. Начните заново.',
+  inProgress: 'Платёж уже проверяется — подождите несколько секунд.',
+  tooMany: 'Слишком много попыток. Попробуйте через минуту.',
+  network: 'Нет связи или ответ задержался. Если деньги списались, они поступят на баланс автоматически.',
+  savedCardGone: 'Сохранённая карта не найдена. Введите карту заново.',
+  pendingTimeout: 'Банк ещё не ответил. Если деньги списались, баланс обновится в течение нескольких минут.',
   paymentUnavailable: 'Источник оплаты недоступен. Попробуйте позже.',
   unit: 'сум',
   payTotal: 'Итого',
@@ -191,6 +218,15 @@ const en: PassStrings = {
   free: 'Free for now — no per-order fee',
   gatewayUnavailable: 'Payment is not available right now. Please try again later.',
   genericError: 'Could not complete the action. Please try again.',
+  notApproved: 'Your application is still under review. Topping up opens once your profile is approved.',
+  cardDeclined: 'The bank declined the payment. Check the card balance or try another card.',
+  otpInvalid: 'The SMS code is wrong or has expired. Enter the code again.',
+  paymentDead: 'This payment did not go through. Please start again.',
+  inProgress: 'The payment is already being checked — wait a few seconds.',
+  tooMany: 'Too many attempts. Try again in a minute.',
+  network: 'No connection or the answer was late. If money was taken, it reaches your balance automatically.',
+  savedCardGone: 'The saved card was not found. Enter the card again.',
+  pendingTimeout: 'The bank has not answered yet. If money was taken, the balance updates within a few minutes.',
   paymentUnavailable: 'Payment source is unavailable. Please try later.',
   unit: 'UZS',
   payTotal: 'Total',

@@ -165,18 +165,59 @@ function onOtpInput(e: Event) {
 }
 
 /* ── api ──────────────────────────────────────────────────────────── */
+type ApiErrorBody = { message?: string, code?: string, errors?: Record<string, string[]> }
+
+function errorCode(e: unknown): string | undefined {
+  return axios.isAxiosError(e) ? (e.response?.data as ApiErrorBody | undefined)?.code : undefined
+}
+
+/** A specific, actionable message for every error the card flow can return. */
 function messageOf(e: unknown): string {
   if (!axios.isAxiosError(e)) return t.value.genericError
-  const body = e.response?.data as { message?: string, code?: string, errors?: Record<string, string[]> } | undefined
-  if (e.response?.status === 503 || body?.code === 'gateway_unavailable') return t.value.gatewayUnavailable
+  // No answer at all: offline, Telegram WebView dropped the request, or a timeout.
+  if (!e.response) return t.value.network
+  const status = e.response.status
+  const body = e.response.data as ApiErrorBody | undefined
+  switch (body?.code) {
+    case 'gateway_unavailable':
+    case 'wallet_disabled':
+      return t.value.gatewayUnavailable
+    case 'profile_not_approved':
+      return t.value.notApproved
+    case 'saved_card_not_found':
+      return t.value.savedCardGone
+    case 'payment_failed':
+    case 'payment_not_found':
+      return t.value.paymentDead
+    case 'payment_in_progress':
+      return t.value.inProgress
+    // ATMOS's own wording (insufficient funds, card blocked, wrong code…) is safe to show.
+    case 'card_declined':
+      return body.message || t.value.cardDeclined
+    case 'otp_invalid':
+      return body.message || t.value.otpInvalid
+  }
   if (body?.errors?.card_number) return t.value.errCard
   if (body?.errors?.expiry) return t.value.errExpiry
-  // ATMOS's own wording for a declined card / wrong code is safe to show.
-  if (body?.code === 'card_declined' || body?.code === 'otp_invalid') return body.message || t.value.genericError
+  if (body?.errors?.otp) return t.value.otpInvalid
+  if (body?.errors?.amount_som) return body.errors.amount_som[0] ?? t.value.genericError
+  if (status === 503) return t.value.gatewayUnavailable
+  if (status === 403) return t.value.notApproved
+  if (status === 429) return t.value.tooMany
   return t.value.genericError
 }
 
+/** Top-up is closed for this account — say why before the agent types a card. */
+const blockedReason = computed<string | null>(() => {
+  if (!pass.value || pass.value.can_top_up !== false) return null
+  return pass.value.wallet_enabled ? t.value.notApproved : t.value.gatewayUnavailable
+})
+
 async function pay() {
+  if (blockedReason.value) {
+    error.value = blockedReason.value
+    return
+  }
   if (!canPay.value) {
     error.value = !cardValid.value ? t.value.errCard : t.value.errExpiry
     return
@@ -204,6 +245,7 @@ async function pay() {
   catch (e) {
     error.value = messageOf(e)
     haptic('heavy')
+    if (errorCode(e) === 'saved_card_not_found') void loadSavedCards()
   }
   finally {
     busy.value = false
@@ -218,11 +260,21 @@ async function confirm() {
     const res = await confirmCardPayment(paymentRef.value, otp.value)
     if (res.status === 'success') finish(res.summary)
     else if (res.status === 'pending') waitForBank()
-    else error.value = t.value.genericError
+    else backToCard(t.value.cardDeclined)
   }
   catch (e) {
-    error.value = messageOf(e)
-    otp.value = ''
+    const code = errorCode(e)
+    // The payment is closed (bank refused it, or it expired): a new code
+    // cannot revive it, so go back to the card — with "save card" it may
+    // already be saved, so refresh the list.
+    if (code === 'card_declined' || code === 'payment_failed' || code === 'payment_not_found') {
+      backToCard(messageOf(e))
+      void loadSavedCards()
+    }
+    else {
+      error.value = messageOf(e)
+      otp.value = ''
+    }
     haptic('heavy')
   }
   finally {
@@ -234,7 +286,7 @@ async function confirm() {
 function settle(res: CardPaymentStart) {
   if (res.status === 'success' && res.summary) finish(res.summary)
   else if (res.status === 'pending') waitForBank()
-  else error.value = t.value.genericError
+  else error.value = t.value.cardDeclined
 }
 
 /** The bank answered late — the summary endpoint settles pending payments. */
@@ -247,7 +299,7 @@ function waitForBank() {
     if (data && settled) finish(data)
     else if (Date.now() - startedAt > 90_000 && pollTimer) {
       clearInterval(pollTimer)
-      error.value = t.value.genericError
+      error.value = t.value.pendingTimeout
     }
   }, 3000)
 }
@@ -257,6 +309,11 @@ function finish(summary: NonNullable<typeof pass.value>) {
   store.completeTopup(summary)
   step.value = 'done'
   haptic('medium')
+}
+
+function backToCard(message: string) {
+  changeCard()
+  error.value = message
 }
 
 function changeCard() {
@@ -271,7 +328,10 @@ function done() {
 }
 
 onMounted(() => {
-  void store.ensureLoaded()
+  // Fresh, not cached: an applicant approved mid-session must not stay blocked.
+  void store.load().then(() => {
+    if (blockedReason.value) error.value = blockedReason.value
+  })
   void loadSavedCards()
 })
 

@@ -12,6 +12,8 @@ export interface AgentPass {
   /** pay_on_pick: minutes the picked agency has to take the job. */
   pick_pay_minutes: number
   balance_som: number | null
+  /** False while the provider profile is not approved (or the wallet is off). */
+  can_top_up?: boolean
 }
 
 /** Per-order `billing` on agent-facing order payloads. */
