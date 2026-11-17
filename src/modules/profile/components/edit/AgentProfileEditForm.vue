@@ -8,20 +8,19 @@ import { Button } from '@/core/ui/button'
 import { useToast } from '@/core/composables/useToast'
 import { useLocaleStore } from '@/core/i18n/locale.store'
 import AgentApplicationForm from '@/modules/agent/components/AgentApplicationForm.vue'
-import AgentDetailsForm from '@/modules/agent/components/AgentDetailsForm.vue'
 import AgentOfferCard from '@/modules/agent/components/AgentOfferCard.vue'
 import IndividualApplicationForm from '@/modules/agent/components/IndividualApplicationForm.vue'
 import LegalUpgradeCard from '@/modules/agent/components/LegalUpgradeCard.vue'
 import WorkReadinessCard from '@/modules/agent/components/WorkReadinessCard.vue'
-import AgentProfileCompletionBar from '@/modules/profile/components/edit/AgentProfileCompletionBar.vue'
+import AgentEditHub from '@/modules/profile/components/edit/AgentEditHub.vue'
 import AgentStatusCard from '@/modules/agent/components/AgentStatusCard.vue'
 import AgentVerificationReadOnly from '@/modules/profile/components/edit/AgentVerificationReadOnly.vue'
 import { useAgentStore } from '@/modules/agent/stores/agent.store'
 import type {
   AgentApplicationPayload,
-  AgentDetailsPayload,
   IndividualApplicationPayload,
 } from '@/modules/agent/types/agent'
+import { editSectionPath, sectionFromLegacyTab } from '@/modules/profile/lib/edit-sections'
 import { ROUTES } from '@/modules/shell/constants/routes'
 
 // Executor ("ijrochi") profile: one agent role, two legal tracks — individual
@@ -54,8 +53,11 @@ const upgradeMode = computed(() =>
   route.query.upgrade === '1' && Boolean(profile.value?.upgrade?.can_request),
 )
 
-onMounted(() => {
-  void Promise.all([agent.loadProfile(true), agent.loadCategories()])
+onMounted(async () => {
+  await Promise.all([agent.loadProfile(true), agent.loadCategories()])
+  // Old `?tab=` links (bot messages, bookmarks) open the matching section page.
+  const legacy = sectionFromLegacyTab(route.query.tab)
+  if (legacy && agent.isApproved) void router.replace(editSectionPath(legacy))
 })
 
 async function handleSubmit(payload: AgentApplicationPayload) {
@@ -92,13 +94,6 @@ function startUpgrade() {
   void router.push({ query: { ...route.query, upgrade: '1' } })
 }
 
-async function handleSaveDetails(payload: AgentDetailsPayload) {
-  const ok = await agent.submitDetails(payload)
-  if (ok) {
-    toast.success(locale.t.agent.savedToast)
-    void router.push(ROUTES.profile)
-  }
-}
 </script>
 
 <template>
@@ -205,21 +200,15 @@ async function handleSaveDetails(payload: AgentDetailsPayload) {
       </template>
 
       <template v-else-if="showDetails && profile">
-        <!-- Required before work starts — the matching tabs are right below. -->
-        <WorkReadinessCard hide-cta />
+        <!-- Required before work starts — the CTA opens the missing section. -->
+        <WorkReadinessCard />
         <LegalUpgradeCard
           :profile="profile"
           @start="startUpgrade"
         />
         <AgentOfferCard v-if="profile.offer?.needs_acceptance" />
-        <AgentProfileCompletionBar :percent="profile.completion_percent" />
-        <!-- Either track may list any category (agency and design). -->
-        <AgentDetailsForm
-          :profile="profile"
-          :categories="agent.categories"
-          :saving="agent.isSavingDetails"
-          @save="handleSaveDetails"
-        />
+        <!-- Section list — each opens its own page (`/profile/edit/:section`). -->
+        <AgentEditHub :profile="profile" />
       </template>
     </template>
   </div>

@@ -1,4 +1,5 @@
 import type { AgentProfile } from '@/modules/agent/types/agent'
+import { editSectionPath } from '@/modules/profile/lib/edit-sections'
 
 /**
  * Before an approved executor may start working (send an otklik), the profile
@@ -13,8 +14,8 @@ export interface WorkReadiness {
   blocked: boolean
   missingCategories: boolean
   missingLocation: boolean
-  /** The profile-edit tab to open first (`?tab=`). */
-  firstTab: 'categories' | 'links' | null
+  /** The profile-edit section to open first (`/profile/edit/:section`). */
+  firstTab: 'categories' | 'location' | null
 }
 
 export function workReadiness(profile: AgentProfile | null | undefined): WorkReadiness {
@@ -28,11 +29,11 @@ export function workReadiness(profile: AgentProfile | null | undefined): WorkRea
     blocked,
     missingCategories,
     missingLocation,
-    firstTab: missingCategories ? 'categories' : missingLocation ? 'links' : null,
+    firstTab: missingCategories ? 'categories' : missingLocation ? 'location' : null,
   }
 }
 
 /** Profile-edit link that opens straight on the first missing section. */
 export function workReadinessEditPath(readiness: WorkReadiness): string {
-  return readiness.firstTab ? `/profile/edit?tab=${readiness.firstTab}` : '/profile/edit'
+  return readiness.firstTab ? editSectionPath(readiness.firstTab) : '/profile/edit'
 }

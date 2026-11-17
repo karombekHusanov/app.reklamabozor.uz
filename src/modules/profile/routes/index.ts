@@ -11,7 +11,15 @@ export const profileRoutes: RouteRecordRaw[] = [
   {
     path: 'profile/edit',
     name: 'profile-edit',
+    meta: { hideTabBar: true },
     component: () => import('@/modules/profile/pages/ProfileEditPage.vue'),
+  },
+  {
+    // One executor-profile section per page (hub lives at `profile/edit`).
+    path: 'profile/edit/:section',
+    name: 'profile-edit-section',
+    meta: { hideTabBar: true },
+    component: () => import('@/modules/profile/pages/ProfileEditSectionPage.vue'),
   },
   {
     path: 'earnings',

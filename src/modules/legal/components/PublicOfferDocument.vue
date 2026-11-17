@@ -1,9 +1,14 @@
 <script setup lang="ts">
 import { Download } from '@lucide/vue'
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, watch } from 'vue'
 import Skeleton from '@/core/ui/Skeleton.vue'
 import { useLocaleStore } from '@/core/i18n/locale.store'
-import { fetchPublicOffer, type PublicOffer, type PublicOfferKind } from '../services/public-offer.service'
+import {
+  fetchPublicOffer,
+  type PublicOffer,
+  type PublicOfferKind,
+  type PublicOfferLocale,
+} from '../services/public-offer.service'
 
 const props = withDefaults(defineProps<{
   kind?: PublicOfferKind
@@ -20,23 +25,42 @@ const locale = useLocaleStore()
 const offer = ref<PublicOffer | null>(null)
 const loading = ref(true)
 const failed = ref(false)
+/** Reader switched to the binding Uzbek Cyrillic original. */
+const showingOriginal = ref(false)
+
+let requestId = 0
 
 async function load() {
+  const id = ++requestId
+  const target: PublicOfferLocale = showingOriginal.value ? 'uz-Cyrl' : locale.locale
   loading.value = true
   failed.value = false
   try {
-    offer.value = await fetchPublicOffer(props.kind)
+    const result = await fetchPublicOffer(props.kind, target)
+    if (id !== requestId) return
+    offer.value = result
     emit('loaded')
   }
   catch {
-    failed.value = true
+    if (id === requestId) failed.value = true
   }
   finally {
-    loading.value = false
+    if (id === requestId) loading.value = false
   }
 }
 
+function toggleOriginal() {
+  showingOriginal.value = !showingOriginal.value
+  load()
+}
+
 onMounted(load)
+
+// The app language changed — follow it (and drop back to the translation).
+watch(() => locale.locale, () => {
+  showingOriginal.value = false
+  load()
+})
 </script>
 
 <template>
@@ -78,12 +102,24 @@ onMounted(load)
       {{ locale.t.legal.download }}
     </a>
 
-    <p
-      v-if="locale.t.legal.offerLanguageNote"
-      class="text-xs text-muted-foreground"
-    >
-      {{ locale.t.legal.offerLanguageNote }}
-    </p>
+    <div class="space-y-2 rounded-2xl border border-border bg-card p-3 text-xs text-muted-foreground">
+      <p v-if="offer.translation_notice">
+        {{ offer.translation_notice }}
+      </p>
+      <p
+        v-else
+        class="font-medium text-foreground"
+      >
+        {{ locale.t.legal.originalBadge }}
+      </p>
+      <button
+        type="button"
+        class="pressable min-h-11 font-semibold text-primary underline underline-offset-2"
+        @click="toggleOriginal"
+      >
+        {{ showingOriginal ? locale.t.legal.showTranslation : locale.t.legal.showOriginal }}
+      </button>
+    </div>
 
     <h2 class="rb-font-display text-center text-[15px] font-extrabold leading-snug tracking-[-0.01em]">
       {{ offer.title }}

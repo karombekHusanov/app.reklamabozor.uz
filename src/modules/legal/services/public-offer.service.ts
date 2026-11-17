@@ -6,10 +6,21 @@ export interface PublicOfferClause {
   text: string
 }
 
+/** `uz-Cyrl` = the binding Uzbek Cyrillic original; the rest are informational translations. */
+export type PublicOfferLocale = 'uz-Cyrl' | 'uz' | 'ru' | 'en'
+
 export interface PublicOffer {
   title: string
   version: string
+  locale: PublicOfferLocale
+  is_original: boolean
+  original_locale: PublicOfferLocale
+  available_locales: PublicOfferLocale[]
+  /** "Translation for information; the Uzbek text prevails" — null on the original. */
+  translation_notice: string | null
+  /** PDF in the same language as the text. */
   pdf_url: string
+  original_pdf_url: string
   sections: { title: string, clauses: PublicOfferClause[] }[]
   requisites_title: string
   requisites: { label: string, value: string }[]
@@ -23,9 +34,16 @@ const OFFER_PATHS: Record<PublicOfferKind, string> = {
   agent: '/api/v1/legal/agent-offer',
 }
 
-/** A legally approved offer — same source as the downloadable PDF. */
-export async function fetchPublicOffer(kind: PublicOfferKind = 'client'): Promise<PublicOffer> {
+/**
+ * A legally approved offer in the requested language — same source as the
+ * downloadable PDF (whose `pdf_url` already carries the same locale).
+ */
+export async function fetchPublicOffer(
+  kind: PublicOfferKind = 'client',
+  locale: PublicOfferLocale = 'uz',
+): Promise<PublicOffer> {
   const { data } = await api.get<ApiSuccess<PublicOffer>>(OFFER_PATHS[kind], {
+    params: { locale },
     skipErrorToast: true,
   })
 
