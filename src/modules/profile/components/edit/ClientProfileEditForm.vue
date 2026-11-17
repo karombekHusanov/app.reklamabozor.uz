@@ -7,7 +7,8 @@ import StickyActionBar from '@/core/ui/StickyActionBar.vue'
 import { useToast } from '@/core/composables/useToast'
 import { useLocaleStore } from '@/core/i18n/locale.store'
 import { useAuthStore } from '@/modules/auth/stores/auth.store'
-import { fullName } from '@/modules/auth/types/user'
+import { fullName, isValidPersonName } from '@/modules/auth/types/user'
+import { navigateBack } from '@/core/lib/navigation'
 import LegalEntityVerificationCard from '@/modules/profile/components/LegalEntityVerificationCard.vue'
 import { ROUTES } from '@/modules/shell/constants/routes'
 
@@ -48,6 +49,10 @@ async function save() {
     toast.error(locale.t.profile.errName)
     return
   }
+  if (!isValidPersonName(form.first_name)) {
+    toast.error(locale.t.profile.errNameInvalid)
+    return
+  }
 
   saving.value = true
   const ok = await auth.updateProfile({
@@ -58,7 +63,7 @@ async function save() {
 
   if (ok) {
     toast.success(locale.t.profile.savedToast)
-    void router.push(ROUTES.profile)
+    navigateBack(router, ROUTES.profile)
   }
 }
 

@@ -8,7 +8,7 @@ export function hasInAppBackNavigation(): boolean {
 }
 
 /** Pop in-app history, or fall back to home when opened via external deep link. */
-export function navigateBack(router: Router, fallback = ROUTES.home): void {
+export function navigateBack(router: Router, fallback: string = ROUTES.home): void {
   if (hasInAppBackNavigation()) {
     router.back()
     return

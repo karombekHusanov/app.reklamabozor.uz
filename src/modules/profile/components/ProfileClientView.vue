@@ -1,6 +1,9 @@
 <script setup lang="ts">
-import { CheckCircle2, ClipboardList, Eye, MessageCircle, PenLine, Settings } from '@lucide/vue'
-import { useRoute } from 'vue-router'
+import { ArrowRight, CheckCircle2, ClipboardList, Eye, MessageCircle, PenLine, Settings } from '@lucide/vue'
+import { useRoute, useRouter } from 'vue-router'
+import Avatar from '@/core/ui/Avatar.vue'
+import { useAgentStore } from '@/modules/agent/stores/agent.store'
+import { useModeStore } from '@/modules/shell/stores/mode.store'
 import { computed, onMounted, ref } from 'vue'
 import { memberDuration } from '@/core/lib/date'
 import { ROUTES } from '@/modules/shell/constants/routes'
@@ -34,6 +37,17 @@ const emit = defineEmits<{
 
 const orders = useOrdersStore()
 const home = useHomeStore()
+const agent = useAgentStore()
+const mode = useModeStore()
+const router = useRouter()
+
+/** Agencies see their company here only as a doorway — it lives in Agent mode. */
+const agency = computed(() => (mode.canUseAgent ? agent.profile : null))
+
+function openAgency() {
+  mode.set('agent')
+  void router.replace(ROUTES.agentProfile)
+}
 const myRating = ref<RatingInfo | null>(null)
 
 const ACTIVE_STATUSES: OrderStatus[] = [
@@ -160,7 +174,7 @@ function becomeAgent() {
             <button
               type="button"
               class="cpv-action pressable"
-              @click="emit('navigate', ROUTES.profileEdit)"
+              @click="emit('navigate', `${ROUTES.profileEdit}?as=client`)"
             >
               <PenLine class="size-4" />
               {{ locale.t.profile.editShort }}
@@ -213,8 +227,28 @@ function becomeAgent() {
         @open-order="openOrder"
       />
 
+      <!-- Agencies: a doorway to their company profile (Agent mode). -->
+      <button
+        v-if="mode.canUseAgent"
+        type="button"
+        class="cpv-agency pressable"
+        @click="openAgency"
+      >
+        <Avatar
+          :src="agency?.company_logo ?? null"
+          :name="agency?.company_name || locale.t.profile.myAgencyTitle"
+          class="size-11 shrink-0 rounded-2xl"
+        />
+        <span class="cpv-agency__text">
+          <span class="cpv-agency__title">{{ agency?.company_name || locale.t.profile.myAgencyTitle }}</span>
+          <span class="cpv-agency__sub">{{ locale.t.profile.myAgencyBody }}</span>
+          <span class="cpv-agency__cta">{{ locale.t.profile.myAgencyOpen }} <ArrowRight class="size-3.5" /></span>
+        </span>
+      </button>
+
       <!-- Become an agency — always shown here (hiding it is a home-only option). -->
       <AgentInviteCard
+        v-else
         :dismissible="false"
         @open="becomeAgent"
       />
@@ -245,6 +279,15 @@ function becomeAgent() {
 }
 .cpv-action:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
 
+.cpv-agency {
+  display: flex; align-items: center; gap: 12px; width: 100%; padding: 14px; text-align: left; cursor: pointer;
+  background: var(--card); border: 1px solid var(--border); border-radius: var(--rb-r-tile); box-shadow: var(--rb-elev-1);
+}
+.cpv-agency:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.cpv-agency__text { display: flex; min-width: 0; flex-direction: column; gap: 2px; }
+.cpv-agency__title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 15px; font-weight: 800; color: var(--foreground); }
+.cpv-agency__sub { font-size: 12px; color: var(--muted-foreground); }
+.cpv-agency__cta { display: inline-flex; align-items: center; gap: 4px; margin-top: 2px; font-size: 12.5px; font-weight: 700; color: var(--primary); }
 .cpv-tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
 .cpv-tile {
   display: flex; flex-direction: column; align-items: stretch; gap: 8px; min-width: 0; min-height: 88px; padding: 12px 11px;

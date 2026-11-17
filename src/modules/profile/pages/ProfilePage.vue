@@ -8,7 +8,6 @@ import { useLocaleStore } from '@/core/i18n/locale.store'
 import { formatDate } from '@/core/lib/date'
 import { ROUTES } from '@/modules/shell/constants/routes'
 import { fullName, isBusinessUser } from '@/modules/auth/types/user'
-import ProfileAgentView from '@/modules/profile/components/ProfileAgentView.vue'
 import ProfileClientView from '@/modules/profile/components/ProfileClientView.vue'
 import ProfileGuestCard from '@/modules/profile/components/ProfileGuestCard.vue'
 
@@ -22,15 +21,7 @@ const displayName = computed(() => (user.value ? fullName(user.value) : ''))
 const isProvider = computed(() => (user.value ? isBusinessUser(user.value) : false))
 const memberSince = computed(() => (user.value ? formatDate(user.value.created_at) : ''))
 const profileTitle = computed(() => locale.t.profile.title)
-const profileSubtitle = computed(() => {
-  if (!user.value) return locale.t.profile.subtitleUser
-  if (isProvider.value) return locale.t.profile.subtitleAgent
-  return locale.t.profile.subtitleUser
-})
-
-const providerLoading = computed(() =>
-  isProvider.value && agent.isLoadingProfile && !agent.loaded,
-)
+const profileSubtitle = computed(() => locale.t.profile.subtitleUser)
 
 async function load() {
   if (!auth.isAuthenticated) return
@@ -69,20 +60,8 @@ async function handleLogout() {
 
     <section>
       <template v-if="auth.isAuthenticated && user">
-        <ProfileAgentView
-          v-if="isProvider"
-          :user="user"
-          :profile="agent.profile"
-          :display-name="displayName"
-          :member-since="memberSince"
-          :locale="locale"
-          :loading="providerLoading"
-          @navigate="navigate"
-          @logout="handleLogout"
-        />
-
+        <!-- Always the person: the agency lives in Agent mode (its own Profile tab). -->
         <ProfileClientView
-          v-else
           :user="user"
           :display-name="displayName"
           :member-since="memberSince"

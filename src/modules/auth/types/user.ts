@@ -47,6 +47,14 @@ export interface User {
 /** Roles that represent a business presence in the marketplace (has / can have an agent profile). */
 const BUSINESS_ROLES: readonly UserRole[] = ['agent', 'seller']
 
+/**
+ * A usable personal name: at least two letters. Telegram names such as "." or
+ * a lone emoji are kept as-is on sign-in but must be replaced by the user.
+ */
+export function isValidPersonName(name: string | null | undefined): boolean {
+  return ((name ?? '').match(/\p{L}/gu)?.length ?? 0) >= 2
+}
+
 export function fullName(user: Pick<User, 'first_name' | 'last_name'>): string {
   return [user.first_name, user.last_name].filter(Boolean).join(' ').trim()
 }

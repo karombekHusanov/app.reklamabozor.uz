@@ -1350,7 +1350,11 @@
     "clientMenuSignOut": "Sign out",
     "clientAvgOrderEmpty": "—",
     "editShort": "Edit",
-    "completeLine": "Profile {percent}% complete"
+    "completeLine": "Profile {percent}% complete",
+    "errNameInvalid": "Your name needs at least 2 letters.",
+    "myAgencyTitle": "My agency profile",
+    "myAgencyBody": "Agency name, KYC and balance live in Agent mode",
+    "myAgencyOpen": "Switch to Agent mode"
   },
   "business": {
     "title": "Business profile",
@@ -1766,7 +1770,8 @@
         "portfolio": "Portfolio",
         "categories": "Categories",
         "bank": "Bank details",
-        "offer": "Partnership offer"
+        "offer": "Partnership offer",
+        "personal": "Personal details"
       },
       "offerAccepted": "Accepted",
       "offerNeeded": "Accept",
@@ -2088,5 +2093,11 @@
     "clientAvatarHint": "Agents see your photo in chat",
     "phoneLocked": "Verified via Telegram — can't be changed",
     "verified": "verified"
+  },
+  "namePrompt": {
+    "title": "What's your name?",
+    "body": "Agencies will see you by this name. You can change it later in your profile.",
+    "save": "Save",
+    "later": "Later"
   }
 }

@@ -1350,7 +1350,11 @@
     "clientMenuSignOut": "Выйти",
     "clientAvgOrderEmpty": "—",
     "editShort": "Изменить",
-    "completeLine": "Профиль заполнен на {percent}%"
+    "completeLine": "Профиль заполнен на {percent}%",
+    "errNameInvalid": "В имени должно быть не меньше 2 букв.",
+    "myAgencyTitle": "Профиль агентства",
+    "myAgencyBody": "Название агентства, KYC и баланс — в режиме агента",
+    "myAgencyOpen": "Перейти в режим агента"
   },
   "business": {
     "title": "Бизнес-профиль",
@@ -1766,7 +1770,8 @@
         "portfolio": "Портфолио",
         "categories": "Категории",
         "bank": "Банковские реквизиты",
-        "offer": "Оферта для агентств"
+        "offer": "Оферта для агентств",
+        "personal": "Личные данные"
       },
       "offerAccepted": "Принята",
       "offerNeeded": "Примите",
@@ -2088,5 +2093,11 @@
     "clientAvatarHint": "Фото видно агентам в чате",
     "phoneLocked": "Подтверждён через Telegram — изменить нельзя",
     "verified": "подтверждено"
+  },
+  "namePrompt": {
+    "title": "Укажите ваше имя",
+    "body": "Агентства увидят вас под этим именем. Позже его можно изменить в профиле.",
+    "save": "Сохранить",
+    "later": "Позже"
   }
 }

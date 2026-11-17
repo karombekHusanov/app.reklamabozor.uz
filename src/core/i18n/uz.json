@@ -1350,7 +1350,11 @@
     "clientMenuSignOut": "Chiqish",
     "clientAvgOrderEmpty": "—",
     "editShort": "Tahrirlash",
-    "completeLine": "Profil {percent}% to'ldirilgan"
+    "completeLine": "Profil {percent}% to'ldirilgan",
+    "errNameInvalid": "Ismda kamida 2 ta harf bo‘lsin.",
+    "myAgencyTitle": "Agentlik profilim",
+    "myAgencyBody": "Agentlik nomi, KYC va balans — Agent rejimida",
+    "myAgencyOpen": "Agent rejimiga o‘tish"
   },
   "business": {
     "title": "Biznes profil",
@@ -1766,7 +1770,8 @@
         "portfolio": "Portfolio",
         "categories": "Kategoriyalar",
         "bank": "Bank rekvizitlari",
-        "offer": "Hamkorlik ofertasi"
+        "offer": "Hamkorlik ofertasi",
+        "personal": "Shaxsiy ma'lumotlar"
       },
       "offerAccepted": "Qabul qilingan",
       "offerNeeded": "Qabul qiling",
@@ -2088,5 +2093,11 @@
     "clientAvatarHint": "Rasm agentlar bilan chatda ko'rinadi",
     "phoneLocked": "Telegram orqali tasdiqlangan — o'zgartirib bo'lmaydi",
     "verified": "tasdiqlangan"
+  },
+  "namePrompt": {
+    "title": "Ismingizni kiriting",
+    "body": "Agentliklar sizni shu ism bilan ko‘radi. Keyin profilda o‘zgartirishingiz mumkin.",
+    "save": "Saqlash",
+    "later": "Keyinroq"
   }
 }

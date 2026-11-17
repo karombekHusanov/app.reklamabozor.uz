@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import AgentTabBar from '@/modules/shell/components/AgentTabBar.vue'
 import TabBar from '@/modules/shell/components/TabBar.vue'
 import PhoneGate from '@/modules/auth/components/PhoneGate.vue'
+import NamePromptDrawer from '@/modules/profile/components/NamePromptDrawer.vue'
 import { useAuthStore } from '@/modules/auth/stores/auth.store'
 import { ROUTES } from '@/modules/shell/constants/routes'
 import { useModeStore } from '@/modules/shell/stores/mode.store'
@@ -78,5 +79,7 @@ router.afterEach((to, from) => {
       <AgentTabBar v-if="!hideTabBar && mode.isAgent" />
       <TabBar v-else-if="!hideTabBar" />
     </Transition>
+    <!-- Unusable Telegram name ("." etc.) → ask once per session for a real one. -->
+    <NamePromptDrawer />
   </div>
 </template>

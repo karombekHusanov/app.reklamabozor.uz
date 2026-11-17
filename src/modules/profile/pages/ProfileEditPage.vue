@@ -13,11 +13,13 @@ const locale = useLocaleStore()
 const route = useRoute()
 
 // `?as=agent` lets a client open the executor form to BECOME one (the legal
-// track is picked inside, `&track=individual|legal`); otherwise the form
-// follows the active role. Legacy `?as=designer` links land on the same form.
+// track is picked inside, `&track=individual|legal`); `?as=client` is the
+// person's own name/avatar for everyone, agencies included. Otherwise the form
+// follows the active role. Legacy `?as=designer` links land on the agent form.
 const target = computed(() => {
   const as = route.query.as
   if (as === 'agent' || as === 'designer') return 'agent'
+  if (as === 'client') return 'client'
   return auth.user?.role
 })
 

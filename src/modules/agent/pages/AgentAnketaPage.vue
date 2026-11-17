@@ -30,6 +30,8 @@ const reviews = computed(() => rating.value?.stars_count ?? 0)
 
 const rows = computed(() => [
   { key: 'stats', label: t.value.rows.stats, value: '', to: ROUTES.earnings },
+  // The person behind the agency — their own name, separate from the company name.
+  { key: 'personal', label: t.value.rows.personal, value: auth.user ? fullName(auth.user) : '', to: `${ROUTES.profileEdit}?as=client` },
   { key: 'portfolio', label: t.value.rows.portfolio, value: String(profile.value?.portfolio.length || ''), to: ROUTES.profileEdit },
   { key: 'categories', label: t.value.rows.categories, value: String(profile.value?.categories.length || ''), to: ROUTES.profileEdit },
   { key: 'bank', label: t.value.rows.bank, value: '', to: ROUTES.profileEdit },
