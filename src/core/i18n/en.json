@@ -1782,6 +1782,14 @@
     "searchPlaceholder": "Agency or service",
     "assistantTitle": "Describe your task",
     "assistantBody": "The AI assistant finds a matching agency",
+    "mapPromo": {
+      "title": "Everything on the map",
+      "body": "Agencies, LED screens and metro ad spots — with locations and prices",
+      "agencies": "Agencies",
+      "screens": "LED screens",
+      "metro": "Metro",
+      "open": "Open the map"
+    },
     "myOrders": "My orders",
     "all": "All",
     "offers": "{count} offers received",

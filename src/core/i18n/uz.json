@@ -1782,6 +1782,14 @@
     "searchPlaceholder": "Agentlik yoki xizmat",
     "assistantTitle": "Vazifani yozing",
     "assistantBody": "AI yordamchi mos agentlikni topadi",
+    "mapPromo": {
+      "title": "Hammasi xaritada",
+      "body": "Agentliklar, LED ekranlar va metrodagi reklama joylari — manzil va narxlari bilan",
+      "agencies": "Agentliklar",
+      "screens": "LED ekranlar",
+      "metro": "Metro",
+      "open": "Xaritani ochish"
+    },
     "myOrders": "Buyurtmalarim",
     "all": "Hammasi",
     "offers": "{count} ta taklif keldi",

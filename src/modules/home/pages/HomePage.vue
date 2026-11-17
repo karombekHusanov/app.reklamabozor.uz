@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
- * Client home (Profi-style): top bar (workspace switch · map · call · bell),
- * greeting + avatar menu, sticky search, assistant card, active orders, top
+ * Client home (Profi-style): top bar (workspace switch · call · bell),
+ * greeting + avatar menu, sticky search, assistant card, map promo, active orders, top
  * agencies, "learn PRB" tiles and a fixed "tell us about your task" action.
  *
  * Retired sections — components kept in `modules/home/components/` for reuse,
@@ -20,6 +20,7 @@ import { fullName } from '@/modules/auth/types/user'
 import type { Category } from '@/modules/agent/types/agent'
 import ClientAgencyRail from '@/modules/home/components/ClientAgencyRail.vue'
 import ClientInfoTiles from '@/modules/home/components/ClientInfoTiles.vue'
+import ClientMapPromo from '@/modules/home/components/ClientMapPromo.vue'
 import ClientOrderCard from '@/modules/home/components/ClientOrderCard.vue'
 import ClientProfileMenu from '@/modules/home/components/ClientProfileMenu.vue'
 import { useHomeStore } from '@/modules/home/stores/home.store'
@@ -106,9 +107,7 @@ onUnmounted(() => { if (poll) clearInterval(poll) })
       <!-- Always the Client | Agent switch (no logo); non-providers get the agency application from "Agent". -->
       <ModeSwitch :badge="mode.canUseAgent ? home.newLiveOrdersCount : 0" />
       <TopBarActions
-        show-map
         :notification-count="home.notificationCount"
-        @map="go(ROUTES.map)"
         @notifications="go(ROUTES.notifications)"
       />
     </header>
@@ -157,6 +156,8 @@ onUnmounted(() => { if (poll) clearInterval(poll) })
           </span>
           <ChevronRight class="size-5 shrink-0 opacity-70" />
         </button>
+
+        <ClientMapPromo />
 
         <section
           v-if="activeOrders.length"
