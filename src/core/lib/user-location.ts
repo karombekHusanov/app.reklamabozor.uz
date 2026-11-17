@@ -1,4 +1,4 @@
-import WebApp from '@twa-dev/sdk'
+import WebApp from '@/core/lib/telegram-webapp'
 import { initializeTelegram, isInsideTelegram, supportsVersion } from '@/core/lib/telegram-init'
 
 export interface UserCoordinates {

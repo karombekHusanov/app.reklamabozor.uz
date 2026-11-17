@@ -1,4 +1,4 @@
-import WebApp from '@twa-dev/sdk'
+import WebApp from '@/core/lib/telegram-webapp'
 import { DARK_MODE_ENABLED } from '@/core/stores/theme.store'
 
 /** Payload sent to the backend's POST /api/v1/auth/telegram endpoint. */

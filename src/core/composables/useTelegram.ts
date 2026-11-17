@@ -1,4 +1,4 @@
-import WebApp from '@twa-dev/sdk'
+import WebApp from '@/core/lib/telegram-webapp'
 import { computed } from 'vue'
 import { initializeTelegram, readTelegramInitData } from '@/core/lib/telegram-init'
 

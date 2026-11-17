@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import WebApp from '@twa-dev/sdk'
+import WebApp from '@/core/lib/telegram-webapp'
 import { computed, ref, watch } from 'vue'
 import { hydratePref, readPref, writePref } from '@/core/lib/cloud-prefs'
 

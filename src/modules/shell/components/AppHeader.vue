@@ -1,8 +1,10 @@
 <script setup lang="ts">
+import { ChevronLeft } from '@lucide/vue'
 import { onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import type { HTMLAttributes } from 'vue'
-import WebApp from '@twa-dev/sdk'
+import WebApp from '@/core/lib/telegram-webapp'
+import { useLocaleStore } from '@/core/i18n/locale.store'
 import { navigateBack } from '@/core/lib/navigation'
 import { isInsideTelegram, supportsVersion } from '@/core/lib/telegram-init'
 
@@ -24,12 +26,14 @@ const props = withDefaults(defineProps<{
 })
 
 const router = useRouter()
+const locale = useLocaleStore()
 
 function goBack() {
   navigateBack(router)
 }
 
-// Back navigation is Telegram's native BackButton — the header draws no back control.
+// Back navigation is Telegram's native BackButton. Only when it can't be used
+// (plain browser, old client) does the header draw its own back control.
 const nativeBackActive = ref(false)
 
 onMounted(() => {
@@ -70,6 +74,16 @@ onBeforeUnmount(() => {
           class="flex items-center gap-2.5"
           :class="trailingOverlay && $slots.trailing ? 'pr-16' : ''"
         >
+          <button
+            v-if="showBack && !nativeBackActive"
+            type="button"
+            class="pressable flex size-10 shrink-0 items-center justify-center rounded-2xl border border-border/60 bg-card text-foreground"
+            :aria-label="locale.t.common.back"
+            @click="goBack"
+          >
+            <ChevronLeft class="size-5" />
+          </button>
+
           <div class="min-w-0 flex-1">
             <slot name="heading">
               <div class="min-w-0">

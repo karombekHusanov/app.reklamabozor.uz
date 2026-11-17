@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { computed, ref, watch } from 'vue'
-import WebApp from '@twa-dev/sdk'
+import WebApp from '@/core/lib/telegram-webapp'
 import { messages, type Locale } from './messages'
 import { hydratePref, readPref, writePref } from '@/core/lib/cloud-prefs'
 

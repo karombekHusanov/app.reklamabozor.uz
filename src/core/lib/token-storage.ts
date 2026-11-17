@@ -1,4 +1,4 @@
-import WebApp from '@twa-dev/sdk'
+import WebApp from '@/core/lib/telegram-webapp'
 import { TOKEN_STORAGE_KEY } from '@/core/constants'
 
 /**

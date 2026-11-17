@@ -1,5 +1,5 @@
 import { onBeforeUnmount, onMounted, ref } from 'vue'
-import WebApp from '@twa-dev/sdk'
+import WebApp from '@/core/lib/telegram-webapp'
 import { isInsideTelegram, supportsVersion } from '@/core/lib/telegram-init'
 
 function readVisualViewportInset(): number {

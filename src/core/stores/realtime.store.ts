@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import WebApp from '@twa-dev/sdk'
+import WebApp from '@/core/lib/telegram-webapp'
 import { Centrifuge, UnauthorizedError, type PublicationContext } from 'centrifuge'
 import { ref } from 'vue'
 import { api } from '@/core/api/client'

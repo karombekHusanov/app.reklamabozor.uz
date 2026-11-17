@@ -1,4 +1,4 @@
-import WebApp from '@twa-dev/sdk'
+import WebApp from '@/core/lib/telegram-webapp'
 
 /**
  * Durable key/value preference storage for the mini app, generalising the three-layer
